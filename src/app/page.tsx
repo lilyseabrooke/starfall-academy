@@ -1,33 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
+import React from 'react';
 import '@/styles/coming-soon.css';
-import TweaksPanel from '@/components/TweaksPanel';
 
 export default function Home() {
-  const [headlineSize, setHeadlineSize] = useState(60);
-  const [shimmerEnabled, setShimmerEnabled] = useState(true);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    document.documentElement.style.setProperty(
-      '--headline-scale',
-      (headlineSize / 100).toFixed(3)
-    );
-  }, [headlineSize]);
-
-  useEffect(() => {
-    document.documentElement.classList.toggle('shimmer-off', !shimmerEnabled);
-  }, [shimmerEnabled]);
-
-  if (!mounted) {
-    return null;
-  }
 
   return (
     <>
@@ -137,13 +113,6 @@ export default function Home() {
       </main>
 
       <p className="decree reveal d5">Semper ad astra</p>
-
-      <TweaksPanel
-        headlineSize={headlineSize}
-        onHeadlineSizeChange={setHeadlineSize}
-        shimmerEnabled={shimmerEnabled}
-        onShimmerChange={setShimmerEnabled}
-      />
     </>
   );
 }
