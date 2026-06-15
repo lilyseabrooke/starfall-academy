@@ -38,15 +38,12 @@
   font-display: swap;
 }
 
-/* UI sans + mono — loaded from Google Fonts. If offline, swap to local files. */
-@import url("https://fonts.googleapis.com/css2?family=Jost:ital,wght@0,300;0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap");
-
 :root {
   /* ---- Families -------------------------------------------------------- */
   --font-display: "Spectral", "Iowan Old Style", Georgia, serif;
   --font-serif:   "Spectral", "Iowan Old Style", Georgia, serif;
-  --font-sans:    "Jost", "Century Gothic", "Futura", system-ui, sans-serif;
-  --font-mono:    "JetBrains Mono", "SFMono-Regular", ui-monospace, monospace;
+  --font-sans:    var(--font-sans-google), "Century Gothic", "Futura", system-ui, sans-serif;
+  --font-mono:    var(--font-mono-google), "SFMono-Regular", ui-monospace, monospace;
 
   /* ---- Weights --------------------------------------------------------- */
   --weight-light:   300;
