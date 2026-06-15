@@ -7,13 +7,13 @@ import "@/styles/design-system.css";
 const jost = Jost({
   variable: "--font-sans-google",
   subsets: ["latin"],
-  weights: ["300", "400", "500", "600"],
+  weight: ["300", "400", "500", "600"],
 });
 
 const jetbrainsMono = JetBrains_Mono({
   variable: "--font-mono-google",
   subsets: ["latin"],
-  weights: ["400", "500"],
+  weight: ["400", "500"],
 });
 
 const geistSans = Geist({
