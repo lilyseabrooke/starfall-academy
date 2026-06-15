@@ -1,0 +1,72 @@
+/* ===========================================================================
+   Starfall Academy — Base element styling & text helpers
+   Applies the house type system to raw elements and provides a small set of
+   heading / eyebrow utilities used across components and kits.
+   =========================================================================== */
+
+body {
+  background: var(--surface-page);
+  color: var(--text-body);
+  font-family: var(--font-serif);
+  font-size: var(--text-md);
+  line-height: var(--leading-normal);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Headings — Spectral Bold, all caps, gilded by default ----------------- */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: var(--weight-bold);
+  color: var(--text-strong);
+  line-height: var(--leading-tight);
+  margin: 0;
+}
+
+::selection { background: color-mix(in oklab, var(--gold-500) 38%, transparent); color: var(--parchment-50); }
+
+a { color: var(--text-gold); text-decoration-color: var(--border-strong); text-underline-offset: 0.18em; }
+a:hover { color: var(--gold-300); }
+
+code, pre, kbd, samp { font-family: var(--font-mono); }
+
+/* ---- Display / heading helper classes --------------------------------- */
+.sa-display {
+  font-family: var(--font-display);
+  font-weight: var(--weight-bold);
+  font-size: var(--text-5xl);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--text-strong);
+}
+.sa-h1 { font-family: var(--font-display); font-weight: 700; font-size: var(--text-4xl); letter-spacing: var(--tracking-wide); text-transform: uppercase; line-height: var(--leading-tight); }
+.sa-h2 { font-family: var(--font-display); font-weight: 700; font-size: var(--text-3xl); letter-spacing: var(--tracking-wide); text-transform: uppercase; line-height: var(--leading-snug); }
+.sa-h3 { font-family: var(--font-display); font-weight: 700; font-size: var(--text-2xl); letter-spacing: var(--tracking-wide); text-transform: uppercase; line-height: var(--leading-snug); }
+.sa-h4 { font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); letter-spacing: var(--tracking-wide); }
+
+/* Eyebrow / overline — the gilded label above titles */
+.sa-eyebrow {
+  font-family: var(--font-sans);
+  font-weight: var(--weight-medium);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--text-gold);
+}
+
+/* Lead / body */
+.sa-lead { font-family: var(--font-serif); font-size: var(--text-lg); line-height: var(--leading-relaxed); color: var(--text-body); }
+.sa-body { font-family: var(--font-serif); font-size: var(--text-md); line-height: var(--leading-relaxed); color: var(--text-body); }
+.sa-small { font-family: var(--font-sans); font-size: var(--text-sm); color: var(--text-muted); }
+
+/* UI label — geometric sans, the workhorse for buttons / form labels */
+.sa-label {
+  font-family: var(--font-sans);
+  font-weight: var(--weight-medium);
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-wide);
+}
+
+/* A gilded horizontal rule */
+.sa-rule { height: 1px; border: 0; background: var(--rule-gold); opacity: 0.7; }

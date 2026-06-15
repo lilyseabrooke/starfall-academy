@@ -1,41 +1,149 @@
-import { createClient } from "@/lib/supabase/server";
+'use client';
 
-export default async function Home() {
-  const supabase = await createClient();
-  const { data: announcements } = await supabase
-    .from("announcements")
-    .select("id, message, created_at")
-    .order("created_at", { ascending: false });
+import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
+import '@/styles/coming-soon.css';
+import TweaksPanel from '@/components/TweaksPanel';
+
+export default function Home() {
+  const [headlineSize, setHeadlineSize] = useState(60);
+  const [shimmerEnabled, setShimmerEnabled] = useState(true);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      '--headline-scale',
+      (headlineSize / 100).toFixed(3)
+    );
+  }, [headlineSize]);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('shimmer-off', !shimmerEnabled);
+  }, [shimmerEnabled]);
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col gap-10 py-32 px-16">
-        <h1 className="text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">
-          Starfall Academy
+    <>
+      <div className="bg" aria-hidden="true">
+        <div className="bg__glow"></div>
+        <div className="bg__crest"></div>
+        <div className="motes">
+          <span className="mote" style={{
+            '--x': '16%',
+            '--y': '26%',
+            '--s': '3px',
+            '--o': '.5',
+            '--d': '12s',
+            '--delay': '0s'
+          } as React.CSSProperties}></span>
+          <span className="mote" style={{
+            '--x': '79%',
+            '--y': '22%',
+            '--s': '2px',
+            '--o': '.42',
+            '--d': '14s',
+            '--delay': '1.6s'
+          } as React.CSSProperties}></span>
+          <span className="mote" style={{
+            '--x': '30%',
+            '--y': '68%',
+            '--s': '2.5px',
+            '--o': '.46',
+            '--d': '11s',
+            '--delay': '.8s'
+          } as React.CSSProperties}></span>
+          <span className="mote" style={{
+            '--x': '88%',
+            '--y': '60%',
+            '--s': '3px',
+            '--o': '.4',
+            '--d': '15s',
+            '--delay': '3.2s'
+          } as React.CSSProperties}></span>
+          <span className="mote" style={{
+            '--x': '62%',
+            '--y': '80%',
+            '--s': '2px',
+            '--o': '.5',
+            '--d': '13s',
+            '--delay': '2.1s'
+          } as React.CSSProperties}></span>
+          <span className="mote" style={{
+            '--x': '10%',
+            '--y': '54%',
+            '--s': '2px',
+            '--o': '.38',
+            '--d': '16s',
+            '--delay': '4.5s'
+          } as React.CSSProperties}></span>
+          <span className="mote" style={{
+            '--x': '50%',
+            '--y': '14%',
+            '--s': '2.5px',
+            '--o': '.44',
+            '--d': '13.5s',
+            '--delay': '5.4s'
+          } as React.CSSProperties}></span>
+          <span className="mote" style={{
+            '--x': '72%',
+            '--y': '40%',
+            '--s': '2px',
+            '--o': '.36',
+            '--d': '12.5s',
+            '--delay': '6.2s'
+          } as React.CSSProperties}></span>
+          <span className="mote" style={{
+            '--x': '23%',
+            '--y': '42%',
+            '--s': '2px',
+            '--o': '.4',
+            '--d': '14.5s',
+            '--delay': '7.1s'
+          } as React.CSSProperties}></span>
+        </div>
+      </div>
+
+      <div className="frame" aria-hidden="true">
+        <span className="corner tl"></span>
+        <span className="corner tr"></span>
+        <span className="corner bl"></span>
+        <span className="corner br"></span>
+      </div>
+
+      <main className="stage">
+        <img
+          className="crest reveal d1"
+          src="/coming-soon/assets/crest-simple.png"
+          alt="Starfall Academy crest"
+          width={112}
+          height={112}
+        />
+        <p className="eyebrow reveal d2">Starfall Academy</p>
+        <h1 className="headline reveal d3">
+          Something is stirring in the ley lines<span className="ell">…</span>
         </h1>
-        <section>
-          <h2 className="text-sm font-medium uppercase tracking-widest text-zinc-400 mb-4">
-            Announcements
-          </h2>
-          {announcements && announcements.length > 0 ? (
-            <ul className="flex flex-col gap-3">
-              {announcements.map((a) => (
-                <li
-                  key={a.id}
-                  className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-5 py-4"
-                >
-                  <p className="text-zinc-800 dark:text-zinc-100">{a.message}</p>
-                  <time className="mt-1 block text-xs text-zinc-400">
-                    {new Date(a.created_at).toLocaleString()}
-                  </time>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-zinc-500">No announcements yet.</p>
-          )}
-        </section>
+        <div className="ornament reveal d4">
+          <span className="line"></span>
+          <span className="lozenge"></span>
+          <span className="line"></span>
+        </div>
       </main>
-    </div>
+
+      <p className="decree reveal d5">Semper ad astra</p>
+
+      <TweaksPanel
+        headlineSize={headlineSize}
+        onHeadlineSizeChange={setHeadlineSize}
+        shimmerEnabled={shimmerEnabled}
+        onShimmerChange={setShimmerEnabled}
+      />
+    </>
   );
 }
