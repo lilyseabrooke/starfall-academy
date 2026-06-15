@@ -1,0 +1,101 @@
+/* ===========================================================================
+   Starfall Academy — Color tokens
+   Palette sampled directly from the Academy crest:
+     gilded gold, four house colors (plum · forest · teal · crimson),
+     parchment banner, and the deep midnight ink of the heraldic creatures.
+   "Art Deco meets dark academia": gold on near-black, opulent and gilded.
+   =========================================================================== */
+
+:root {
+  /* ---- Ink / midnight canvas (dark academia base) ---------------------- */
+  --ink-950: #0b0c11;   /* deepest — page background          */
+  --ink-900: #111219;   /* app shell background               */
+  --ink-850: #161822;   /* raised panel                       */
+  --ink-800: #1c1f2b;   /* card surface                       */
+  --ink-700: #262a38;   /* card surface, raised               */
+  --ink-600: #333749;   /* hairline-heavy borders, hover fill */
+  --ink-500: #474c61;   /* disabled / faint strokes           */
+  --ink-400: #5e6479;   /* muted iconography                  */
+
+  /* ---- Gilded gold (primary brand accent) ------------------------------ */
+  --gold-100: #f4ecd2;
+  --gold-200: #ecddae;
+  --gold-300: #ddc983;
+  --gold-400: #c9ae63;
+  --gold-500: #b99d53;  /* primary gold — sampled from crest  */
+  --gold-600: #9a7f3d;
+  --gold-700: #745e2c;
+  --gold-800: #4f4020;
+
+  /* ---- Parchment (light surfaces, banner cream) ------------------------ */
+  --parchment-50:  #f7f3e7;
+  --parchment-100: #efead8;
+  --parchment-200: #e2dac2;
+  --parchment-300: #cdc1a1;
+  --parchment-400: #b3a784;
+
+  /* ---- House colors (heraldic quarters) -------------------------------- */
+  --plum-300:    #b3739b;
+  --plum-500:    #6b2c54;   /* top-left quarter                */
+  --plum-700:    #461934;
+
+  --forest-300:  #7fa183;
+  --forest-500:  #3d5440;   /* top-right quarter               */
+  --forest-700:  #243425;
+
+  --teal-300:    #62b4d4;
+  --teal-500:    #136687;   /* bottom-left quarter             */
+  --teal-700:    #0b3d52;
+
+  --crimson-300: #c2716f;
+  --crimson-500: #7a3636;   /* bottom-right quarter            */
+  --crimson-700: #4d1f1f;
+
+  /* ---- Semantic aliases ------------------------------------------------- */
+  /* Surfaces */
+  --surface-page:      var(--ink-950);
+  --surface-app:       var(--ink-900);
+  --surface-raised:    var(--ink-850);
+  --surface-card:      var(--ink-800);
+  --surface-card-hi:   var(--ink-700);
+  --surface-overlay:   color-mix(in oklab, var(--ink-950) 72%, transparent);
+  --surface-parchment: var(--parchment-100);
+
+  /* Text on dark */
+  --text-strong:  var(--parchment-50);
+  --text-body:    #d7d1c0;
+  --text-muted:   #968f7c;
+  --text-faint:   #6b6757;
+  --text-gold:    var(--gold-400);
+  --text-on-gold: var(--ink-950);
+  /* Text on parchment */
+  --text-ink:        #20222c;
+  --text-ink-muted:  #5b5848;
+
+  /* Brand */
+  --brand:         var(--gold-500);
+  --brand-hover:   var(--gold-400);
+  --brand-press:   var(--gold-600);
+  --brand-subtle:  color-mix(in oklab, var(--gold-500) 16%, var(--ink-900));
+
+  /* Borders & lines */
+  --border-subtle: color-mix(in oklab, var(--gold-500) 14%, transparent);
+  --border-default: color-mix(in oklab, var(--gold-500) 26%, transparent);
+  --border-strong: color-mix(in oklab, var(--gold-500) 50%, transparent);
+  --hairline:      color-mix(in oklab, var(--parchment-100) 10%, transparent);
+
+  /* Focus */
+  --focus-ring: color-mix(in oklab, var(--gold-400) 70%, transparent);
+
+  /* Status */
+  --success:     var(--forest-500);
+  --success-fg:  var(--forest-300);
+  --info:        var(--teal-500);
+  --info-fg:     var(--teal-300);
+  --danger:      var(--crimson-500);
+  --danger-fg:   var(--crimson-300);
+  --warning:     var(--gold-500);
+  --warning-fg:  var(--gold-300);
+  --arcane:      var(--plum-500);
+  --arcane-fg:   var(--plum-300);
+}

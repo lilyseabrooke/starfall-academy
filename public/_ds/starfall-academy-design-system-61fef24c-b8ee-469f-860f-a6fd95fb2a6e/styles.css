@@ -1,0 +1,12 @@
+/* ===========================================================================
+   Starfall Academy — Design System
+   Global entry point. Consumers link THIS file only.
+   This file is an import manifest — keep it as @import lines, no rules.
+   =========================================================================== */
+
+@import "tokens/fonts.css";
+@import "tokens/colors.css";
+@import "tokens/typography.css";
+@import "tokens/spacing.css";
+@import "tokens/effects.css";
+@import "tokens/base.css";
