@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   title: "Starfall Academy",
   description: "Something is stirring in the ley lines",
   icons: {
-    icon: "/coming-soon/assets/crest-simple.png",
+    icon: "/favicon.png",
   },
 };
 
