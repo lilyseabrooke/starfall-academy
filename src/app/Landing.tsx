@@ -432,14 +432,14 @@ export default function Landing({
                 <MessageCircle size={26} aria-hidden="true" />
               </span>
               <span className="lp-modal__eyebrow lp-modal__eyebrow--discord">
-                The Gathering
+                The Great Hall
               </span>
               <h2 className="lp-modal__title lp-modal__title--sent">
                 Join the Discord
               </h2>
               <p className="lp-modal__copy lp-modal__copy--sent">
-                Trade tales with fellow arcanists, find a table, and keep up
-                with the goings-on at the Academy.
+                Find a group to play with, see the latest out of the world, and
+                join the Starfall experience in our Discord server.
               </p>
               <a
                 className="sa-btn-primary"
