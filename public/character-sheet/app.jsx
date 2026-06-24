@@ -22,6 +22,12 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
 }/*EDITMODE-END*/;
 
 function App() {
+  // ---- Party roster (injected by the host from the DB, or seed if standalone) ----
+  const ROSTER = (typeof window !== "undefined" && Array.isArray(window.SF_ROSTER) && window.SF_ROSTER.length)
+    ? window.SF_ROSTER
+    : D.roster;
+  const HOST_ME = (typeof window !== "undefined" && window.SF_ME) ? window.SF_ME : null;
+
   // ---- Core UI / character state ----
   const [nav, setNav]               = React.useState("overview");
   const [c, setC]                   = React.useState(() => ({ ...D.character }));
@@ -30,7 +36,14 @@ function App() {
   // live in state (were read-only constants). Play mode reads these, not D.stats.
   const [stats, setStats]           = React.useState(() => D.stats.map((f) => ({ ...f, skills: f.skills.map((s) => ({ ...s })) })));
   const [schools, setSchools]       = React.useState(() => D.magicSchools.map((s) => ({ ...s, subjects: s.subjects.map((x) => ({ ...x })) })));
-  const [activeChar, setActiveChar] = React.useState((D.roster.find(r => r.active) || D.roster[0]).id);
+  const [activeChar, setActiveChar] = React.useState(HOST_ME || (ROSTER.find(r => r.active) || ROSTER[0]).id);
+  // Picking a party member navigates to their sheet (host); standalone falls
+  // back to switching the active member locally.
+  const pickChar = (id) => {
+    if (!id || id === activeChar) return;
+    if (window.SF_HOST && typeof window.SF_HOST.switchCharacter === "function") window.SF_HOST.switchCharacter(id);
+    else setActiveChar(id);
+  };
   const [t, setTweak]               = useTweaks(TWEAK_DEFAULTS);
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [collapsedStats, setCollapsedStats] = React.useState(() => new Set());
@@ -663,7 +676,7 @@ function App() {
 
   // ---- Give confirm ----
   const onGiveConfirm = (p) => {
-    const who = D.roster.find((r) => r.id === p.target) || { name: "a party-mate" };
+    const who = ROSTER.find((r) => r.id === p.target) || { name: "a party-mate" };
     if (p.kind === "materials") { adjustMaterials(-p.amount); toast("Sent " + p.amount + " materials to " + who.name); }
     else {
       const nm = p.subject ? p.subject.name : "It";
@@ -923,6 +936,8 @@ function App() {
     setRuneStack([]);
     setNav("overview");
     closeForge();
+    // Tell the host the build committed so create-mode persists it as a new row.
+    if (window.SF_HOST && typeof window.SF_HOST.notifyCommitted === "function") window.SF_HOST.notifyCommitted();
   };
 
   // ---- Navigation ----
@@ -931,6 +946,9 @@ function App() {
   const closeDrawer      = () => setDrawer(false);
   const onNavigate       = (id) => { if (id === "compendium") openDrawer(); else setNav(id); };
   React.useEffect(() => { window.__sfGoOverview = () => setNav("overview"); }, []);
+  // Host's "create a character" flow sets this flag (in the init payload) before
+  // mount, so we open the Forge on load without racing a one-shot message.
+  React.useEffect(() => { if (typeof window !== "undefined" && window.SF_OPEN_FORGE) openForgeNew(); }, []);
 
   // ---- Character vital + condition steppers ----
   const stepVital = (key, delta) => setC((prev) => {
@@ -1095,7 +1113,7 @@ function App() {
 
   return (
     <div className="sf-app" data-nav={nav}>
-      <SF_Sidebar data={D} active={nav} onNavigate={onNavigate} roster={D.roster} activeChar={activeChar} onPickChar={setActiveChar} compCount={D.compendium.length} onAddCharacter={openForgeNew} onEditCharacter={openForgeEdit} collapsed={sidebarCollapsed} onToggleSidebar={toggleSidebar} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
+      <SF_Sidebar data={D} active={nav} onNavigate={onNavigate} roster={ROSTER} activeChar={activeChar} onPickChar={pickChar} compCount={D.compendium.length} onAddCharacter={openForgeNew} onEditCharacter={openForgeEdit} collapsed={sidebarCollapsed} onToggleSidebar={toggleSidebar} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
       <main className="sf-main">
         <SF_TopBar title={titleMap[nav] || "Overview"} eyebrow={c.name + " · " + c.house} c={{ ...c, resolve: Math.max(0, 5 - conditions.filter((cd) => cd.value > 0).length), resolveMax: 5 }} onStep={stepVital} onRollAction={onRollAction} onOpenCompendium={openDrawer} onToggleMobileMenu={() => setMobileMenuOpen((v) => !v)} hideVitals={nav === "map"} searchQuery={searchQuery} onSearchQueryChange={setSearchQuery} searchResults={searchResults} onSearchSelect={handleSearchSelect} onSearchRoll={handleSearchRoll} onSearchRepair={handleSearchRepair} onSearchUse={handleSearchUse} searchMenuOpen={searchMenuOpen} onSearchMenuOpen={() => setSearchMenuOpen(true)} onSearchMenuClose={() => setSearchMenuOpen(false)} onSearchMobileOpen={() => setSearchMenuOpen(true)} />
 
@@ -1168,12 +1186,12 @@ function App() {
           <SF_InventoryPage
             materials={c.materials} caps={caps}
             artifacts={artifacts} potions={potions} recipes={recipes} plants={plants} wands={wands} glyphs={glyphs} items={items}
-            runeStack={runeStack} roster={D.roster} activeChar={activeChar} h={invH} />
+            runeStack={runeStack} roster={ROSTER} activeChar={activeChar} h={invH} />
         )}
 
         {nav === "map" && (
           <SF_MapPage
-            roster={D.roster} activeChar={activeChar}
+            roster={ROSTER} activeChar={activeChar}
             locations={locations} onSetLocation={setLocation}
             focusLocation={mapFocus} />
         )}
@@ -1190,7 +1208,7 @@ function App() {
       />
       <SF_ManualSpell open={manualOpen} onClose={() => { setManualOpen(false); setEditSpell(null); }} onSave={(sp) => { editSpell ? updateSpell(sp) : addSpell(sp); }} schools={D.magicSchools} editSpell={editSpell} />
       <SF_ManualInv open={!!manualKind} kind={manualKind} subjects={allSubjects} skills={stats.flatMap((st) => st.skills)} stats={stats} schools={schools} compendiumSpells={D.compendium.filter((e) => e.cat === "spell")} attuneFull={artifacts.filter((a) => a.attuned).length >= caps.attuneCap} sheafFull={heldCount >= caps.potionCap} editSubject={manualKind === "recipe" ? editRecipe : manualKind === "artifact" ? editArtifact : manualKind === "wand" ? editWand : manualKind === "plant" ? editPlant : manualKind === "glyph" ? editGlyph : null} cultivationCap={caps.plantCap} cultivationUsed={plants.reduce((s, p) => s + (p.value || 0), 0)} onSave={saveManual} onClose={() => { setManualKind(null); setEditRecipe(null); setEditArtifact(null); setEditWand(null); setEditPlant(null); setEditGlyph(null); }} />
-      <SF_GiveModal open={!!givePayload} payload={givePayload} roster={D.roster} activeChar={activeChar} onConfirm={onGiveConfirm} onClose={() => setGivePayload(null)} />
+      <SF_GiveModal open={!!givePayload} payload={givePayload} roster={ROSTER} activeChar={activeChar} onConfirm={onGiveConfirm} onClose={() => setGivePayload(null)} />
       <SF_ChoosePlantModal
         open={!!choosePlant}
         plant={choosePlant ? choosePlant.pl : null}

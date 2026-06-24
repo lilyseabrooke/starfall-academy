@@ -28,11 +28,14 @@ window.SF_HOST = (function () {
     mountFn();
   }
 
-  function init(sheet) {
+  function init(sheet, roster, me, openForge) {
     if (inited) return;
     inited = true;
     // Exposed for app.jsx's lazy state initializers to hydrate from.
     window.SF_SHEET = (sheet && typeof sheet === "object") ? sheet : null;
+    window.SF_ROSTER = Array.isArray(roster) && roster.length ? roster : null;
+    window.SF_ME = (typeof me === "string" && me) ? me : null;
+    window.SF_OPEN_FORGE = !!openForge;
     tryMount();
   }
 
@@ -40,7 +43,7 @@ window.SF_HOST = (function () {
     window.addEventListener("message", function (e) {
       const m = e.data;
       if (!m || typeof m !== "object") return;
-      if (m.type === "sf-sheet-init") init(m.sheet || null);
+      if (m.type === "sf-sheet-init") init(m.sheet || null, m.roster, m.me, m.openForge);
     });
     host.postMessage({ type: "sf-sheet-request" }, "*");
     // Fallback: if the host never answers, mount with seed data anyway.
@@ -60,6 +63,14 @@ window.SF_HOST = (function () {
       saveTimer = setTimeout(function () {
         host.postMessage({ type: "sf-sheet-save", sheet: snapshot }, "*");
       }, 600);
+    },
+    /** Ask the host to navigate to another party member's sheet. */
+    switchCharacter: function (id) {
+      if (host && id) host.postMessage({ type: "sf-switch-character", id: id }, "*");
+    },
+    /** Tell the host the Forge committed (so create-mode knows to persist). */
+    notifyCommitted: function () {
+      if (host) host.postMessage({ type: "sf-committed" }, "*");
     },
     get sheet() { return window.SF_SHEET; },
   };

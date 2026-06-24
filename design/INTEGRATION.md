@@ -30,9 +30,11 @@ Source data from the handoff (rulebook + asset CSVs + design plans) is stashed,
 ## Persistence bridge (host ⇄ iframe, postMessage)
 
 ```
-iframe → host : { type: "sf-sheet-request" }       on load
-host → iframe : { type: "sf-sheet-init", sheet }    seed from characters.sheet
-iframe → host : { type: "sf-sheet-save", sheet }    debounced edits
+iframe → host : sf-sheet-request                          on load
+host → iframe : sf-sheet-init { sheet, roster, me, openForge }
+iframe → host : sf-sheet-save { sheet }                   debounced edits
+iframe → host : sf-committed                              Forge "Begin" fired
+iframe → host : sf-switch-character { id }                party member picked
 ```
 
 - Iframe side: `public/character-sheet/host-bridge.js` defers the app mount
@@ -47,13 +49,34 @@ The `sheet` payload is the durable character state: `c`, `conditions`, `stats`,
 `schools`, `classes {rp, classState}`, `magic {bonuses, spells, moves}`,
 `inventory {…}`, and party `locations`.
 
-## Known limitations (milestone 1)
+## Milestone 2 — real characters & campaign party (single-player)
+
+Closes the phase-1 critical journey: sign in → see your characters (or the
+creator if none) → open one → party selector shows same-campaign characters →
+edits persist across visits.
+
+- **Creation via the Forge, create-on-commit.** `/characters/new` mounts the
+  sheet in create mode (`openForge`), and the DB row is only created when the
+  Forge commits (`sf-committed` arms the host; the first `sf-sheet-save`
+  POSTs `/api/characters` and navigates to `/characters/[newId]`). Cancel
+  creates nothing. Empty account → the creator entry on `/characters`.
+- **De-seeded roster.** `app.jsx` reads an injected `window.SF_ROSTER` / `SF_ME`
+  instead of the seed `D.roster`; the host builds the party from the owner's
+  characters sharing this one's `campaign_code`. Picking a party member posts
+  `sf-switch-character` → the host navigates to that sheet.
+- **Campaigns by code.** Migration adds `characters.campaign_code text` (the
+  `campaign_id uuid` column stays reserved for a real campaigns FK later). The
+  roster page assigns codes (new / join); party = your characters with the
+  same code. `PATCH /api/characters/[id]` accepts `campaign_code`; `DELETE`
+  removes a character; `POST /api/characters` creates one.
+
+## Known limitations
 
 - The prototype loads React / Babel / Lucide from unpkg at runtime (fine in the
   user's browser; a later port replaces this with bundled deps). Needs network
   in local dev.
-- A brand-new character starts from the prototype's seed (Lyra) until the Forge
-  creation wizard is wired — genuinely blank starts are a later milestone.
+- Party is currently the owner's *own* characters sharing a code (RLS scopes to
+  owner). Cross-user campaign membership arrives with multiplayer.
 - Party + dice are local-only in the prototype; real multiplayer is a later
   milestone (Supabase Realtime).
 
