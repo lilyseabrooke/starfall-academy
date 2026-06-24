@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { RosterMember } from "../roster";
+import LoadingScreen from "@/components/LoadingScreen";
 
 type Props = {
   /** "edit" persists to an existing row; "create" persists on the Forge's Begin. */
@@ -37,6 +38,11 @@ export default function CharacterSheetFrame({
 }: Props) {
   const router = useRouter();
   const frameRef = useRef<HTMLIFrameElement>(null);
+
+  // The vendored sheet is a heavy in-browser React+Babel bundle, so booting it
+  // can take a beat. Cover that gap with the Academy loading screen until the
+  // iframe's app mounts and asks for its init payload (sf-sheet-request).
+  const [sheetReady, setSheetReady] = useState(false);
 
   const idRef = useRef<string | null>(id ?? null);
   const sheetRef = useRef<unknown>(initialSheet ?? null);
@@ -117,6 +123,8 @@ export default function CharacterSheetFrame({
       switch (msg.type) {
         case "sf-sheet-request":
           sendInit();
+          // The app has mounted and is requesting data — safe to reveal it.
+          setSheetReady(true);
           break;
         case "sf-committed":
           committedRef.current = true;
@@ -134,26 +142,37 @@ export default function CharacterSheetFrame({
     return () => window.removeEventListener("message", onMessage);
   }, [mode, roster, me, router]);
 
+  // Safety net: if the sheet never reports back, don't trap the user behind
+  // the loading screen forever.
+  useEffect(() => {
+    if (sheetReady) return;
+    const t = setTimeout(() => setSheetReady(true), 12000);
+    return () => clearTimeout(t);
+  }, [sheetReady]);
+
   return (
-    <iframe
-      ref={frameRef}
-      src="/character-sheet/index.html"
-      title="Character sheet"
-      onLoad={() => {
-        const win = frameRef.current?.contentWindow;
-        if (!win) return;
-        win.postMessage(
-          {
-            type: "sf-sheet-init",
-            sheet: sheetRef.current ?? null,
-            roster: roster ?? null,
-            me: me ?? null,
-            openForge: mode === "create",
-          },
-          window.location.origin
-        );
-      }}
-      style={{ position: "fixed", inset: 0, width: "100%", height: "100%", border: 0 }}
-    />
+    <>
+      <iframe
+        ref={frameRef}
+        src="/character-sheet/index.html"
+        title="Character sheet"
+        onLoad={() => {
+          const win = frameRef.current?.contentWindow;
+          if (!win) return;
+          win.postMessage(
+            {
+              type: "sf-sheet-init",
+              sheet: sheetRef.current ?? null,
+              roster: roster ?? null,
+              me: me ?? null,
+              openForge: mode === "create",
+            },
+            window.location.origin
+          );
+        }}
+        style={{ position: "fixed", inset: 0, width: "100%", height: "100%", border: 0 }}
+      />
+      <LoadingScreen overlay done={sheetReady} />
+    </>
   );
 }
