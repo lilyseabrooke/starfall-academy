@@ -1,0 +1,762 @@
+/* ===========================================================================
+   Starfall Academy — Front landing page ("The Portal")
+   Ported from the Claude Design handoff (Landing.dc.html). Mirrors the same
+   design-system tokens used across the app.
+   =========================================================================== */
+
+* {
+  box-sizing: border-box;
+}
+
+.lp-root {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--grad-vignette);
+  background-color: var(--ink-950);
+  font-family: var(--font-sans);
+  color: var(--text-body);
+  overflow-y: auto;
+}
+
+/* ===================== SHARED HUD TOP BAR ===================== */
+.hud {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  min-height: 74px;
+  padding: var(--space-3) var(--space-7) var(--space-3) var(--space-6);
+  border-bottom: 1px solid var(--border-subtle);
+  background: color-mix(in oklab, var(--ink-900) 82%, transparent);
+  backdrop-filter: blur(10px);
+  box-shadow:
+    0 1px 0 color-mix(in oklab, var(--gold-500) 10%, transparent),
+    var(--shadow-md);
+}
+
+.hud-crest {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.55));
+}
+
+.hud-titles {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.hud-eyebrow {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--text-gold);
+}
+
+.hud-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-strong);
+}
+
+.hud-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-left: 22px;
+  margin-left: 6px;
+  border-left: 1px solid var(--border-default);
+  align-self: stretch;
+}
+
+.sa-link-hud {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color var(--dur-base);
+}
+.sa-link-hud:hover {
+  color: var(--gold-200);
+}
+
+.hud-spacer {
+  flex: 1;
+}
+
+.sa-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  background: var(--ink-850);
+  color: var(--text-body);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color var(--dur-base), color var(--dur-base),
+    box-shadow var(--dur-base);
+}
+.sa-btn-ghost:hover {
+  border-color: var(--gold-600);
+  color: var(--gold-200);
+  box-shadow: var(--glow-gold);
+}
+
+.hud-user {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.hud-user__id {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-right: 6px;
+}
+
+.hud-user__avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--grad-gold);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--ink-950);
+  box-shadow: var(--inset-hi);
+}
+
+.hud-user__name {
+  font-family: var(--font-serif);
+  font-size: 13px;
+  color: var(--text-strong);
+}
+
+.hud-burger {
+  display: none;
+  width: 42px;
+  height: 42px;
+  flex: none;
+  place-items: center;
+  padding: 0;
+  background: var(--ink-850);
+  color: var(--text-body);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: border-color var(--dur-base), color var(--dur-base),
+    box-shadow var(--dur-base);
+}
+.hud-burger:hover {
+  border-color: var(--gold-600);
+  color: var(--gold-200);
+  box-shadow: var(--glow-gold);
+}
+
+/* Mobile / tablet nav drawer */
+.hud-menu {
+  position: sticky;
+  top: 74px;
+  z-index: 19;
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+  background: color-mix(in oklab, var(--ink-900) 96%, transparent);
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-lg);
+  animation: saDrop 0.22s var(--ease-out);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hud-menu__link {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  height: 52px;
+  padding: 0 14px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-body);
+  text-decoration: none;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--hairline);
+  cursor: pointer;
+  transition: color var(--dur-base);
+}
+.hud-menu__link:hover {
+  color: var(--gold-200);
+}
+
+.hud-menu__discord {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  height: 52px;
+  margin-top: 8px;
+  padding: 0 14px;
+  border-radius: var(--radius-sm);
+  background: var(--ink-800);
+  border: 1px solid var(--border-default);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-gold);
+  text-decoration: none;
+  transition: color var(--dur-base), border-color var(--dur-base);
+}
+
+/* ===================== HERO / MAIN ===================== */
+.lp-main {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.lp-watermark {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(
+      58% 52% at 50% 50%,
+      color-mix(in oklab, var(--gold-500) 6%, transparent),
+      transparent 70%
+    ),
+    url("/coming-soon/assets/crest-lines.png") no-repeat center center /
+      min(620px, 50vw);
+  filter: saturate(0.2);
+  opacity: 0.5;
+  mix-blend-mode: screen;
+}
+
+.lp-hero {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 88px 24px 56px;
+}
+
+.lp-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 26px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--text-gold);
+}
+
+.lp-eyebrow__rule {
+  width: 34px;
+  height: 1px;
+  background: var(--rule-gold);
+}
+
+.lp-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(52px, 8vw, 104px);
+  line-height: 0.96;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--grad-gold);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-wrap: balance;
+}
+
+.lp-sub {
+  max-width: 60ch;
+  margin: 26px auto 0;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: clamp(16px, 1.9vw, 21px);
+  line-height: var(--leading-relaxed);
+  color: var(--text-body);
+  text-wrap: pretty;
+}
+
+.lp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 40px;
+}
+
+.sa-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+  height: 56px;
+  padding: 0 34px;
+  background: var(--grad-gold);
+  color: var(--ink-950);
+  border: 1px solid var(--gold-300);
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: var(--shadow-md), var(--inset-hi);
+  transition: box-shadow var(--dur-base), filter var(--dur-base),
+    transform var(--dur-base);
+}
+.sa-btn-primary:hover {
+  box-shadow: var(--glow-gold), var(--shadow-md);
+  filter: brightness(1.06);
+}
+.sa-btn-primary:active {
+  transform: translateY(1px);
+}
+
+.lp-actions .sa-btn-ghost {
+  height: 56px;
+  padding: 0 30px;
+  background: transparent;
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: 0.1em;
+}
+
+.lp-playhint {
+  margin: 18px 0 0;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* ===================== DESTINATION CARDS ===================== */
+.lp-dest {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 20px 24px 72px;
+}
+
+.lp-dest__head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.lp-dest__label {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--text-gold);
+}
+
+.lp-dest__rule {
+  flex: 1;
+  height: 1px;
+  background: var(--rule-gold);
+  opacity: 0.6;
+}
+
+.lp-dest__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(228px, 1fr));
+  gap: 16px;
+}
+
+.sa-card-dest {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px 22px 20px;
+  background: var(--ink-800);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm), var(--inset-hi);
+  text-decoration: none;
+  transition: transform var(--dur-base), border-color var(--dur-base),
+    box-shadow var(--dur-base);
+}
+.sa-card-dest:hover {
+  transform: translateY(-4px);
+  border-color: var(--gold-600);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5), var(--glow-gold), var(--inset-hi);
+}
+
+.sa-card-icon {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-md);
+  background: color-mix(in oklab, var(--gold-500) 12%, var(--ink-700));
+  border: 1px solid var(--border-default);
+  color: var(--gold-300);
+}
+
+.sa-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sa-card-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-strong);
+  transition: color var(--dur-base);
+}
+.sa-card-dest:hover .sa-card-name {
+  color: var(--gold-200);
+}
+
+.sa-card-blurb {
+  font-family: var(--font-serif);
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-muted);
+  text-wrap: pretty;
+}
+
+.sa-card-enter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.sa-card-chev {
+  color: var(--gold-700);
+  transition: color var(--dur-base), transform var(--dur-base);
+}
+.sa-card-dest:hover .sa-card-chev {
+  color: var(--gold-300);
+  transform: translateX(3px);
+}
+
+/* ===================== FOOTER ===================== */
+.lp-footer {
+  position: relative;
+  z-index: 1;
+  margin-top: auto;
+  padding: 24px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 18px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* ===================== MAGIC-LINK SIGN-IN MODAL ===================== */
+.lp-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--surface-overlay);
+  backdrop-filter: blur(6px);
+  animation: saFade 0.2s var(--ease-out);
+}
+
+.lp-modal {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  background: var(--ink-850);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl), var(--inset-hi);
+  padding: 34px 32px 30px;
+  animation: saRise 0.32s var(--ease-out);
+  overflow: hidden;
+}
+
+.lp-modal__watermark {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: url("/coming-soon/assets/crest-lines.png") no-repeat center -30px /
+    240px;
+  opacity: 0.05;
+  filter: saturate(0.2);
+}
+
+.lp-modal__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color var(--dur-base), border-color var(--dur-base);
+}
+.lp-modal__close:hover {
+  color: var(--gold-200);
+  border-color: var(--gold-600);
+}
+
+.lp-modal__inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.lp-modal__crest {
+  width: 52px;
+  height: 52px;
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.6));
+  margin-bottom: 18px;
+}
+
+.lp-modal__pane {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.lp-modal__eyebrow {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--text-gold);
+}
+
+.lp-modal__title {
+  margin: 8px 0 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 24px;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-strong);
+}
+
+.lp-modal__copy {
+  margin: 12px 0 22px;
+  font-family: var(--font-serif);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-muted);
+  text-wrap: pretty;
+}
+
+.lp-modal__label {
+  width: 100%;
+  text-align: left;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-gold);
+  margin-bottom: 7px;
+  display: block;
+}
+
+.sa-input-ml {
+  width: 100%;
+  height: 46px;
+  padding: 0 14px;
+  background: var(--ink-900);
+  color: var(--text-strong);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-serif);
+  font-size: 15px;
+  transition: border-color var(--dur-base), box-shadow var(--dur-base);
+}
+.sa-input-ml:focus {
+  outline: none;
+  border-color: var(--gold-500);
+  box-shadow: var(--glow-gold);
+}
+
+.lp-modal .sa-btn-primary {
+  width: 100%;
+  margin-top: 18px;
+  height: 50px;
+  font-size: 13px;
+  box-shadow: var(--shadow-sm), var(--inset-hi);
+}
+
+.lp-modal__error {
+  width: 100%;
+  margin: 14px 0 0;
+  font-family: var(--font-serif);
+  font-size: 13px;
+  color: var(--crimson-300);
+  text-align: center;
+}
+
+.lp-modal__oath {
+  margin: 16px 0 0;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+
+.lp-modal__sealed {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--forest-500) 30%, var(--ink-800));
+  border: 1px solid color-mix(in oklab, var(--forest-300) 40%, transparent);
+  color: var(--forest-300);
+  margin-bottom: 6px;
+}
+
+.lp-modal__title--sent {
+  margin-top: 14px;
+}
+
+.lp-modal__copy--sent {
+  margin: 12px 0 0;
+  line-height: 1.55;
+}
+
+.lp-modal__copy--sent strong {
+  color: var(--gold-200);
+  font-weight: 600;
+}
+
+.lp-modal .sa-btn-ghost--reset {
+  margin-top: 22px;
+  height: 42px;
+  padding: 0 20px;
+}
+
+/* ===================== ANIMATIONS ===================== */
+@keyframes saFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes saRise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes saDrop {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ===================== RESPONSIVE HUD ===================== */
+@media (max-width: 900px) {
+  .hud-nav {
+    display: none;
+  }
+  .hud-discord {
+    display: none;
+  }
+  .hud-burger {
+    display: grid;
+  }
+  .hud {
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
+    gap: var(--space-3);
+  }
+}
+@media (max-width: 480px) {
+  .hud-titles {
+    display: none;
+  }
+  .hud-signin-label {
+    display: none;
+  }
+}
