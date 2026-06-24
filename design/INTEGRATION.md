@@ -21,9 +21,12 @@ Source data from the handoff (rulebook + asset CSVs + design plans) is stashed,
 ## Live Compendium / Classes (Google Sheets)
 
 `public/character-sheet/compendium-db.js` fetches each tab of the Compendium
-workbook as CSV (via the CORS-friendly `gviz/tq?tqx=out:csv` endpoint), parses
-it by header name, and shapes it into the entry/class forms the sheet already
-consumes — then mutates `SF_DATA.compendium` in place and rebuilds
+workbook as CSV via the workbook's **Publish to web** endpoint
+(`/d/e/<pub-id>/pub?gid=…&single=true&output=csv` — the same snapshot the
+standalone `starfall-compendium` reader uses). That published snapshot is
+world-readable and CORS-friendly regardless of the document's own share setting,
+so there's no link-sharing dependency. Each CSV is parsed by header name and
+shaped into the entry/class forms the sheet already consumes — then mutates `SF_DATA.compendium` in place and rebuilds
 `SF_CLASSES.classes` through the parser `classes.js` exposes. This feeds the
 Compendium drawer, the character creator (the Forge), and the Classes list off
 the live database instead of the baked seed arrays. Boot is gated on

@@ -7,11 +7,15 @@
    the Classes list all read the same source of truth the GM edits.
 
    ── How it works ────────────────────────────────────────────────────────────
-   Each tab of the workbook is fetched as CSV through the Google Visualization
-   endpoint (CORS-friendly, unlike /export?format=csv), parsed by header name,
-   and shaped into the compendium-entry / class-row forms the rest of the sheet
-   already consumes. Nothing downstream changes: we mutate `SF_DATA.compendium`
-   in place and rebuild `SF_CLASSES.classes` via the parser classes.js exposes.
+   Each tab of the workbook is fetched as CSV through the workbook's
+   "Publish to web" endpoint (/d/e/<pub-id>/pub?…&output=csv). That snapshot is
+   world-readable and CORS-friendly independent of the document's own share
+   setting, so there is no "anyone with the link" dependency (it's the same
+   endpoint the standalone starfall-compendium reader uses). Each CSV is parsed
+   by header name and shaped into the compendium-entry / class-row forms the
+   rest of the sheet already consumes. Nothing downstream changes: we mutate
+   `SF_DATA.compendium` in place and rebuild `SF_CLASSES.classes` via the parser
+   classes.js exposes.
 
    The boot is gated on `SF_COMPENDIUM_DB.ready` (see app.jsx's mount tail), so
    the sheet renders from live data on first paint. If a tab can't be reached,
@@ -24,7 +28,11 @@
 (function () {
   "use strict";
 
+  // The live edit document (for reference) and its "Publish to web" id. The
+  // pub id is per-document and stable; it is what makes the snapshot readable
+  // without link-sharing the doc itself.
   var SHEET_ID = "1DUyigWDvmE2DnQ7eJucjP6BqthEMVf61rAGrF8f-N2M";
+  var PUB_ID   = "2PACX-1vTXtnorBMPVkIS5vVvc1hiPA_9MNwo3v5gcC__rVMLa28HHCjuKjCm5f_dwQgXfWVF9jF9rfl6oLsfd";
 
   // Tab → GID (the default tab, gid 0, is Spells).
   var GID = {
@@ -39,8 +47,8 @@
   };
 
   var csvUrl = function (gid) {
-    return "https://docs.google.com/spreadsheets/d/" + SHEET_ID +
-           "/gviz/tq?tqx=out:csv&gid=" + gid;
+    return "https://docs.google.com/spreadsheets/d/e/" + PUB_ID +
+           "/pub?gid=" + gid + "&single=true&output=csv";
   };
 
   var D = window.SF_DATA;
@@ -113,6 +121,32 @@
     return PALETTE[h % PALETTE.length];
   }
 
+  // Canonical spell tier (badge / filter value) from the raw LEVEL string.
+  // Hex rows carry the AP in the tag, e.g. "HEX (4AP)" — strip it for the tier.
+  function spellTier(level) {
+    var l = String(level || "").trim().toLowerCase();
+    if (l.indexOf("hex") !== -1)       return "Hex";
+    if (l.indexOf("legendary") !== -1) return "Legendary";
+    if (l.indexOf("advanced") !== -1)  return "Advanced";
+    if (l.indexOf("standard") !== -1)  return "Standard";
+    if (l.indexOf("basic") !== -1)     return "Basic";
+    return titleCase(level);
+  }
+  // AP from spell level: Basic 1, Standard 2, Advanced 3, Legendary 4. Hex AP is
+  // read out of its level tag (e.g. "(4AP)"), falling back to 0 for variable.
+  function spellAp(level) {
+    var l = String(level || "").trim().toLowerCase();
+    if (l.indexOf("hex") !== -1) {
+      var m = /(\d+)\s*ap/.exec(l) || /\(\s*(\d+)/.exec(l);
+      return m ? parseInt(m[1], 10) : 0;
+    }
+    if (l.indexOf("legendary") !== -1) return 4;
+    if (l.indexOf("advanced") !== -1)  return 3;
+    if (l.indexOf("standard") !== -1)  return 2;
+    if (l.indexOf("basic") !== -1)     return 1;
+    return 0;
+  }
+
   /* ----------------------- per-category transforms ---------------------- */
   // Columns: NAME, LEVEL, DC, SUBJECT, STAT, RITUAL, VOLATILE, DESCRIPTION,
   //          HIGHER-LEVEL BEHAVIOR, ID
@@ -127,9 +161,9 @@
     if (ritual) meta.push("Ritual");
     return {
       id: rid(row, "spell"), cat: "spell", name: (row.NAME || "").trim(),
-      tone: info.tone || "plum", level: titleCase(row.LEVEL), meta: meta, cost: "",
+      tone: info.tone || "plum", level: spellTier(row.LEVEL), meta: meta, cost: "",
       subjectKey: info.key || slug(row.SUBJECT), subject: subject,
-      school: info.school || "", stat: stat,
+      school: info.school || "", stat: stat, ap: spellAp(row.LEVEL),
       dc: dc, ritual: ritual, volatile: yes(row.VOLATILE),
       desc: (row.DESCRIPTION || "").trim(),
       higherLevel: (row["HIGHER-LEVEL BEHAVIOR"] || "").trim(),
