@@ -1249,10 +1249,14 @@ function App() {
 }
 
 // Mount through the host bridge: it waits for the host's initial sheet (or
-// falls back to seed data when run standalone), then calls this.
+// falls back to seed data when run standalone), then calls this. We also wait
+// on the live Compendium / Classes loader so the sheet paints from the real
+// database (it resolves immediately to seed data if the Sheet is unreachable).
 const __sfMount = () => ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+const __sfReady = (window.SF_COMPENDIUM_DB && window.SF_COMPENDIUM_DB.ready) || Promise.resolve();
+const __sfBoot  = () => __sfReady.then(__sfMount, __sfMount);
 if (window.SF_HOST && typeof window.SF_HOST.onMount === "function") {
-  window.SF_HOST.onMount(__sfMount);
+  window.SF_HOST.onMount(__sfBoot);
 } else {
-  __sfMount();
+  __sfBoot();
 }
