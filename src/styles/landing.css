@@ -685,6 +685,16 @@
   margin-bottom: 6px;
 }
 
+.lp-modal__sealed--discord {
+  background: color-mix(in oklab, var(--gold-500) 18%, var(--ink-800));
+  border-color: color-mix(in oklab, var(--gold-400) 45%, transparent);
+  color: var(--gold-300);
+}
+
+.lp-modal__eyebrow--discord {
+  margin-top: 14px;
+}
+
 .lp-modal__title--sent {
   margin-top: 14px;
 }

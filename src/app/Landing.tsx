@@ -31,8 +31,11 @@ const NAV_LINKS: NavLink[] = [
   { name: "Compendium", icon: BookOpen, href: "#" },
   { name: "Gamebook", icon: ScrollText, href: "#" },
   { name: "Map", icon: Map, href: "#" },
-  { name: "Character Ledger", icon: BookMarked, href: "/characters" },
+  { name: "Character Ledger", icon: BookMarked, href: "#" },
 ];
+
+// TODO: replace with the real Discord invite link.
+const DISCORD_INVITE_URL = "https://discord.gg/your-invite-here";
 
 const DESTINATIONS: Destination[] = [
   {
@@ -57,7 +60,7 @@ const DESTINATIONS: Destination[] = [
   {
     name: "Character Ledger",
     icon: BookMarked,
-    href: "/characters",
+    href: "#",
     blurb: "The legends of the arcane world.",
   },
 ];
@@ -74,6 +77,7 @@ export default function Landing({
   const router = useRouter();
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showDiscord, setShowDiscord] = useState(false);
   const [showSignIn, setShowSignIn] = useState(false);
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
@@ -91,6 +95,15 @@ export default function Landing({
 
   function closeSignIn() {
     setShowSignIn(false);
+  }
+
+  function openDiscord() {
+    setShowDiscord(true);
+    setMenuOpen(false);
+  }
+
+  function closeDiscord() {
+    setShowDiscord(false);
   }
 
   async function sendLink() {
@@ -160,10 +173,10 @@ export default function Landing({
 
         <span className="hud-spacer" />
 
-        <a className="sa-btn-ghost hud-discord" href="#">
+        <button className="sa-btn-ghost hud-discord" onClick={openDiscord}>
           <MessageCircle size={15} aria-hidden="true" />
           Discord
-        </a>
+        </button>
 
         {signedIn ? (
           <div className="hud-user">
@@ -214,14 +227,10 @@ export default function Landing({
               </Link>
             );
           })}
-          <a
-            className="hud-menu__discord"
-            href="#"
-            onClick={() => setMenuOpen(false)}
-          >
+          <button className="hud-menu__discord" onClick={openDiscord}>
             <MessageCircle size={18} aria-hidden="true" />
             Join the Discord
-          </a>
+          </button>
         </nav>
       )}
 
@@ -267,7 +276,7 @@ export default function Landing({
         {/* ===================== DESTINATION CARDS ===================== */}
         <section className="lp-dest">
           <div className="lp-dest__head">
-            <span className="lp-dest__label">Explore the Realm</span>
+            <span className="lp-dest__label">Explore the Academy</span>
             <span className="lp-dest__rule" />
           </div>
           <div className="lp-dest__grid">
@@ -375,12 +384,12 @@ export default function Landing({
                     <MailCheck size={26} aria-hidden="true" />
                   </span>
                   <h2 className="lp-modal__title lp-modal__title--sent">
-                    Check Your Scrolls
+                    Runic Key Sent
                   </h2>
                   <p className="lp-modal__copy lp-modal__copy--sent">
-                    A sign-in link is winging its way to{" "}
-                    <strong>{email.trim()}</strong>. Click it within fifteen
-                    minutes to enter the Academy.
+                    We&apos;ve blinked the key to your email. Hit the link and
+                    step through the gates into the Citadel. Your key expires in
+                    15 minutes.
                   </p>
                   <button
                     className="sa-btn-ghost sa-btn-ghost--reset"
@@ -394,6 +403,54 @@ export default function Landing({
                   </button>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===================== DISCORD INVITE MODAL ===================== */}
+      {showDiscord && (
+        <div
+          className="lp-modal-overlay"
+          onClick={closeDiscord}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Join the Discord"
+        >
+          <div className="lp-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="lp-modal__watermark" aria-hidden="true" />
+            <button
+              className="lp-modal__close"
+              onClick={closeDiscord}
+              aria-label="Close"
+            >
+              <X size={15} aria-hidden="true" />
+            </button>
+
+            <div className="lp-modal__inner">
+              <span className="lp-modal__sealed lp-modal__sealed--discord">
+                <MessageCircle size={26} aria-hidden="true" />
+              </span>
+              <span className="lp-modal__eyebrow lp-modal__eyebrow--discord">
+                The Gathering
+              </span>
+              <h2 className="lp-modal__title lp-modal__title--sent">
+                Join the Discord
+              </h2>
+              <p className="lp-modal__copy lp-modal__copy--sent">
+                Trade tales with fellow arcanists, find a table, and keep up
+                with the goings-on at the Academy.
+              </p>
+              <a
+                className="sa-btn-primary"
+                href={DISCORD_INVITE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={closeDiscord}
+              >
+                <MessageCircle size={17} aria-hidden="true" />
+                Join the Server
+              </a>
             </div>
           </div>
         </div>
