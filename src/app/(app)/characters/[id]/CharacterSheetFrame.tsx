@@ -64,12 +64,19 @@ export default function CharacterSheetFrame({
       sheetRef.current = sheet;
 
       if (idRef.current) {
-        await fetch(`/api/characters/${idRef.current}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sheet }),
-          keepalive: true,
-        }).catch(() => {});
+        try {
+          const res = await fetch(`/api/characters/${idRef.current}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sheet }),
+            keepalive: true,
+          });
+          if (!res.ok) {
+            console.error("Character save failed", res.status, await res.text().catch(() => ""));
+          }
+        } catch (err) {
+          console.error("Character save request failed", err);
+        }
         return;
       }
 
@@ -87,9 +94,14 @@ export default function CharacterSheetFrame({
           idRef.current = newId;
           router.replace(`/characters/${newId}`);
         } else {
+          const detail = await res.text().catch(() => "");
+          console.error("Character create failed", res.status, detail);
           creatingRef.current = false;
+          // Creation is the critical path — don't let it fail silently.
+          alert("Couldn't save the new character. Please try again.\n\n" + detail);
         }
-      } catch {
+      } catch (err) {
+        console.error("Character create request failed", err);
         creatingRef.current = false;
       }
     }
