@@ -1,0 +1,138 @@
+/* ===========================================================================
+   Map tab — embedded campus map + party whereabouts panel
+   =========================================================================== */
+.sf-map {
+  flex: 1; min-height: 0; box-sizing: border-box;
+  display: grid; grid-template-columns: 1fr 0;
+  padding-bottom: 56px; /* clear the fixed roll-log dock */
+}
+.sf-map.is-open { grid-template-columns: 1fr 340px; }
+
+/* ---- map stage (the embedded atlas) ------------------------------------ */
+.sf-map__stage { position: relative; min-width: 0; background: var(--ink-950); }
+.sf-map__frame { width: 100%; height: 100%; border: 0; display: block; }
+
+/* edge peek tab to reveal the whereabouts panel (shown when collapsed) */
+.sf-map__peek {
+  position: absolute; right: 0; top: 50%; transform: translateY(-50%); z-index: 5;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 14px 7px;
+  background: color-mix(in oklab, var(--ink-850) 92%, transparent);
+  border: 1px solid var(--border-default); border-right: 0;
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+  box-shadow: var(--shadow-md, 0 8px 20px rgba(0,0,0,.4));
+  backdrop-filter: blur(6px);
+  color: var(--text-body); cursor: pointer;
+  transition: border-color var(--dur-fast), color var(--dur-fast), background var(--dur-fast), padding-right var(--dur-fast);
+}
+.sf-map__peek:hover { color: var(--text-strong); border-color: var(--border-strong); background: var(--ink-800); padding-right: 11px; }
+.sf-map__peek svg { width: 16px; height: 16px; color: var(--gold-400); }
+.sf-map__peek-label {
+  writing-mode: vertical-rl; transform: rotate(180deg);
+  font-family: var(--font-sans); font-size: 11px; font-weight: 500;
+  letter-spacing: var(--tracking-wide); text-transform: uppercase;
+}
+.sf-map__peek-n { font-family: var(--font-mono); font-size: 10px; color: var(--text-faint); }
+
+/* ---- whereabouts panel ------------------------------------------------- */
+.sf-map__panel {
+  display: flex; flex-direction: column; min-height: 0; min-width: 0; overflow: hidden;
+  background: color-mix(in oklab, var(--ink-950) 70%, transparent);
+  border-left: 1px solid var(--hairline);
+}
+.sf-map__head { position: relative; }
+.sf-map__close {
+  position: absolute; top: var(--space-4); right: var(--space-4);
+  display: grid; place-items: center; width: 30px; height: 30px;
+  background: transparent; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
+  color: var(--text-muted); cursor: pointer;
+  transition: color var(--dur-fast), border-color var(--dur-fast), background var(--dur-fast);
+}
+.sf-map__close:hover { color: var(--text-strong); border-color: var(--border-default); background: var(--ink-800); }
+.sf-map__close svg { width: 16px; height: 16px; }
+.sf-map__head {
+  padding: var(--space-5) var(--space-5) var(--space-4);
+  border-bottom: 1px solid var(--hairline);
+}
+.sf-map__head h2 {
+  margin: 2px 0 0; font-family: var(--font-display); font-weight: 700;
+  text-transform: uppercase; letter-spacing: var(--tracking-wide);
+  font-size: var(--text-xl); color: var(--text-strong);
+}
+.sf-map__head p {
+  margin: var(--space-2) 0 0; font-family: var(--font-serif);
+  font-size: 12.5px; line-height: 1.4; color: var(--text-muted);
+}
+
+.sf-map__list {
+  flex: 1; min-height: 0; overflow-y: auto;
+  padding: var(--space-4) var(--space-5) var(--space-5);
+  display: flex; flex-direction: column; gap: var(--space-3);
+  scrollbar-color: var(--ink-600) transparent;
+}
+
+/* a single character's whereabouts card */
+.sf-loc {
+  background: var(--surface-card); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md); box-shadow: var(--shadow-sm);
+  padding: var(--space-3) var(--space-4);
+  display: flex; flex-direction: column; gap: var(--space-3);
+  transition: border-color var(--dur-base) var(--ease-standard);
+}
+.sf-loc.is-self {
+  border-color: var(--border-strong);
+  background: linear-gradient(180deg, color-mix(in oklab, var(--gold-500) 7%, var(--surface-card)), var(--surface-card));
+  box-shadow: var(--inset-hi), var(--shadow-sm);
+}
+.sf-loc__top { display: flex; align-items: center; gap: var(--space-3); }
+.sf-loc__av {
+  flex: 0 0 auto; width: 36px; height: 36px; border-radius: var(--radius-pill);
+  display: grid; place-items: center;
+  font-family: var(--font-mono); font-size: 13px; font-weight: 700;
+  color: var(--parchment-50); border: 1px solid var(--border-default);
+}
+.sf-loc__av.t-plum    { background: var(--plum-500); }
+.sf-loc__av.t-forest  { background: var(--forest-500); }
+.sf-loc__av.t-teal    { background: var(--teal-500); }
+.sf-loc__av.t-crimson { background: var(--crimson-500); }
+.sf-loc__av.t-gold    { background: var(--grad-gold); color: var(--ink-950); border-color: transparent; }
+.sf-loc.is-self .sf-loc__av { box-shadow: 0 0 0 2px color-mix(in oklab, var(--gold-400) 60%, transparent); }
+
+.sf-loc__id { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+.sf-loc__name { font-family: var(--font-sans); font-weight: 500; font-size: var(--text-sm); color: var(--text-strong); }
+.sf-loc__you { font-family: var(--font-sans); font-size: 10px; letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--text-gold); }
+.sf-loc__where {
+  margin-left: auto; display: flex; align-items: center; gap: 7px;
+  font-family: var(--font-serif); font-size: 12.5px; color: var(--text-muted); text-align: right;
+}
+.sf-loc__dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; box-shadow: 0 0 0 1px rgba(0,0,0,.4); }
+
+/* edit row: select + map-pick button */
+.sf-loc__edit { display: grid; grid-template-columns: 1fr auto; gap: var(--space-2); align-items: center; }
+.sf-map-select {
+  width: 100%; appearance: none;
+  font-family: var(--font-sans); font-size: 13px; color: var(--text-body);
+  background: var(--ink-850); border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm); padding: 8px 30px 8px 10px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23b99d53' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center;
+  cursor: pointer; transition: border-color var(--dur-fast);
+}
+.sf-map-select:hover { border-color: var(--border-strong); }
+.sf-map-select:focus-visible { outline: none; border-color: var(--gold-500); box-shadow: var(--focus-ring); }
+.sf-map-select option { background: var(--ink-850); color: var(--text-body); }
+
+.sf-loc__pin {
+  flex: 0 0 auto; display: grid; place-items: center;
+  width: 36px; height: 36px; border-radius: var(--radius-sm);
+  background: var(--ink-850); border: 1px solid var(--border-default);
+  color: var(--gold-400); cursor: pointer;
+  transition: background var(--dur-fast), border-color var(--dur-fast), color var(--dur-fast);
+}
+.sf-loc__pin:hover { background: var(--ink-700); border-color: var(--border-strong); color: var(--gold-300); }
+.sf-loc__pin.is-active { background: var(--grad-gold); color: var(--ink-950); border-color: transparent; box-shadow: var(--glow-gold); }
+.sf-loc__pin svg { width: 16px; height: 16px; }
+
+@media (max-width: 1100px) {
+  .sf-map.is-open { grid-template-columns: 1fr 300px; }
+}

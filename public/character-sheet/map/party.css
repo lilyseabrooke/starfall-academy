@@ -1,0 +1,58 @@
+/* ===========================================================================
+   Party-location overlay — markers + pick-mode UI (inside the embedded map)
+   =========================================================================== */
+
+/* Marker layer never intercepts pointer events — regions stay clickable. */
+.party-layer,
+.party-layer * { pointer-events: none; }
+
+.pm-stem {
+  stroke: var(--gold-500);
+  stroke-width: 2;
+  stroke-dasharray: 3 4;
+  opacity: 0.7;
+}
+.pm-dot {
+  fill: var(--gold-400);
+  stroke: var(--ink-950);
+  stroke-width: 1.5;
+}
+
+.pm-av .pm-ring {
+  fill: var(--ink-950);
+  stroke: var(--gold-500);
+  stroke-width: 2;
+}
+.pm-av .pm-fill { fill: var(--ink-700); }
+
+/* House tones */
+.pm-av.t-plum    .pm-fill { fill: var(--plum-500); }
+.pm-av.t-forest  .pm-fill { fill: var(--forest-500); }
+.pm-av.t-teal    .pm-fill { fill: var(--teal-500); }
+.pm-av.t-crimson .pm-fill { fill: var(--crimson-500); }
+.pm-av.t-gold    .pm-fill { fill: var(--gold-600); }
+
+.pm-initials {
+  fill: var(--parchment-50);
+  font-family: var(--font-mono, "JetBrains Mono", monospace);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* The active character is gilded and lifted forward */
+.pm-av.is-self .pm-ring {
+  stroke: var(--gold-300);
+  stroke-width: 3;
+  filter: drop-shadow(0 0 6px color-mix(in oklab, var(--gold-400) 70%, transparent));
+}
+
+/* drop shadow so avatars read against the map */
+.pm-av { filter: drop-shadow(0 3px 5px rgba(0,0,0,0.45)); }
+
+/* ---- pick-mode banner + cursor ----------------------------------------- */
+body.is-picking .region { cursor: crosshair; }
+body.is-picking .region__shape { transition: filter .15s ease; }
+body.is-picking .region:hover .region__shape {
+  filter: brightness(1.18) drop-shadow(0 0 10px color-mix(in oklab, var(--gold-400) 60%, transparent));
+}

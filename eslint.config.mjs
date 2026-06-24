@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Static assets, not app source: the vendored character-sheet prototype
+    // (its own standalone React 18 + Babel bundle) and stashed design handoff.
+    "public/**",
+    "design/**",
   ]),
 ]);
 
