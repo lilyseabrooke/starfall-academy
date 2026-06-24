@@ -264,6 +264,45 @@ body {
   margin: 0;
 }
 
+/* ---- Discreet entrance to the app (sign in / character roster) --------- */
+.enter {
+  position: fixed;
+  top: clamp(20px, 4vh, 40px);
+  right: clamp(22px, 4vw, 48px);
+  z-index: 3;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: clamp(11px, 1vw, 13px);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  text-decoration: none;
+  color: color-mix(in oklab, var(--gold-400) 62%, var(--text-muted));
+  padding: 6px 2px;
+  transition: color var(--dur-base) var(--ease-standard);
+}
+.enter::after {
+  content: "";
+  display: block;
+  height: 1px;
+  margin-top: 4px;
+  background: var(--rule-gold);
+  transform: scaleX(0);
+  transform-origin: right center;
+  transition: transform var(--dur-base) var(--ease-standard);
+}
+.enter:hover {
+  color: var(--gold-300);
+}
+.enter:hover::after {
+  transform: scaleX(1);
+  transform-origin: left center;
+}
+.enter:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+
 /* ---- Motion: plate draws in, content rises (resting = visible) --------- */
 @media (prefers-reduced-motion: no-preference) {
   .frame {

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import '@/styles/coming-soon.css';
 
 export default function Home() {
@@ -113,6 +114,8 @@ export default function Home() {
       </main>
 
       <p className="decree reveal d5">Semper ad astra</p>
+
+      <Link href="/characters" className="enter reveal d5">Enter</Link>
     </>
   );
 }
