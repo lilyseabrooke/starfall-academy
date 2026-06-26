@@ -106,11 +106,23 @@ export interface Spell {
   higherLevel?: string;
   success?: string;
   fail?: string;
+  /** Set when the spell was granted by an equipped wand. */
+  fromWand?: string;
 }
 
 /* ----------------------------------------------------------------- moves -- */
 
-/** A move on the Overview rail — manual, class-granted, or artifact-granted. */
+/** One ability a (class-linked) move can be rolled with, resolved to a source. */
+export interface MoveRollOption {
+  ability?: string;
+  kind: "skill" | "subject";
+  stat: string;
+  skill?: string;
+  subjectKey?: string;
+  label: string;
+}
+
+/** A move on the Overview rail — manual, class-granted, wand/plant/artifact-granted. */
 export interface Move {
   id: string;
   name: string;
@@ -118,19 +130,32 @@ export interface Move {
   stat?: string;
   skill?: string;
   bonus?: number;
-  dc?: number;
+  dc?: number | null;
   desc?: string;
   success?: string;
   fail?: string;
-  /** Set when the move was granted by an attuned artifact. */
+  // Class-linked move extras (parsed from the move() tag):
+  rollOptions?: MoveRollOption[];
+  addRank?: boolean;
+  rankConditional?: string | null;
+  backfire?: boolean;
+  fromClass?: string;
+  classLabel?: string;
+  rankLevel?: number;
+  // Provenance for auto-managed grants:
+  fromWand?: string;
+  fromPlant?: string;
   fromArtifact?: string;
   artifactCondition?: ArtifactCondition;
+  artifactLevel?: string;
+  artifactCost?: number;
 }
 
 /* --------------------------------------------------------------- bonuses -- */
 
-export type BonusType = "stat" | "subject" | "skill" | "resist" | "spell" | "improve";
-export type BonusValueMode = "flat" | "class";
+export type BonusType = "stat" | "subject" | "skill" | "resist" | "spell" | "improve" | string;
+/** "flat" = fixed value · "class" = tracks a class rank · "dos" = shifts outcome tiers. */
+export type BonusValueMode = "flat" | "class" | "dos";
 
 /** A ledger entry that adjusts a total. Conditional bonuses are offered as an
  *  opt-in in the roll window rather than applied live. */
@@ -147,7 +172,11 @@ export interface Bonus {
   classKey?: string;
   classLabel?: string;
   conditional?: boolean;
-  condNote?: string;
+  condNote?: string | null;
+  // Provenance for auto-managed grants:
+  fromWand?: string;
+  fromPlant?: string;
+  fromArtifact?: string;
 }
 
 /* --------------------------------------------------------------- classes -- */
@@ -262,6 +291,8 @@ export interface Artifact {
   dc: number;
   desc: string;
   move: ArtifactMove;
+  /** Build cost (carried on compendium-granted artifacts; absent on seed). */
+  cost?: number;
 }
 
 export interface Potion {
@@ -299,6 +330,17 @@ export interface Plant {
 
 export type WandEffectKind = "bonus" | "move" | "spell" | "ability";
 
+export interface WandEffectMove {
+  name: string;
+  stat: string;
+  skill: string;
+  bonus?: number;
+  dc?: number | null;
+  desc?: string;
+  success?: string;
+  fail?: string;
+}
+
 export interface WandEffect {
   kind: WandEffectKind;
   label: string;
@@ -307,6 +349,8 @@ export interface WandEffect {
   target?: string;
   targetLabel?: string;
   value?: number;
+  /** move effects */
+  move?: WandEffectMove;
   /** spell effects */
   spell?: Spell;
   /** ability effects */
