@@ -74,7 +74,18 @@ function Avatar({ name, initials, tone, size }) {
 /* --------------------------------- App ----------------------------------- */
 function GMApp() {
   const [tab, setTab] = React.useState("party");
-  const [party, setParty] = React.useState(() => GD.party.map((p) => ({ ...p, conds: { ...p.conds }, facs: { ...p.facs } })));
+  // Live campaign party from the host (cross-user), or the seed party when run
+  // standalone. Mounted in-app, SF_GM_INIT.party is the real roster (possibly
+  // empty before any player has joined).
+  const [party, setParty] = React.useState(() => {
+    const init = (typeof window !== "undefined") ? window.SF_GM_INIT : null;
+    const src = init && Array.isArray(init.party) ? init.party : GD.party;
+    return src.map((p) => ({
+      ...p,
+      conds: { fear: 0, despair: 0, wound: 0, loss: 0, doubt: 0, ...(p.conds || {}) },
+      facs: { focus: 10, creativity: 10, logic: 10, insight: 10, body: 10, charm: 10, ...(p.facs || {}) },
+    }));
+  });
   const [npcs, setNpcs] = React.useState(() => GD.npcsBasic.map((n) => ({ ...n, conds: { ...n.conds } })));
   const [notes, setNotes] = React.useState(() => GD.notes.map((n) => ({ ...n })));
   const [activeNoteId, setActiveNoteId] = React.useState(GD.notes[0] ? GD.notes[0].id : null);
