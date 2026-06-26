@@ -1,0 +1,230 @@
+/* Scoped under .sf-sheet for the native sheet. GENERATED from
+   public/character-sheet/bonus.css by scripts/scope-css.js — edit the source there. */
+/* ===========================================================================
+   Starfall Academy — Bonus editor styling
+   Composes against the design-system tokens; mirrors the manual-add modal.
+   =========================================================================== */
+
+.sf-sheet .sf-bonus-modal { max-width: 560px; }
+
+/* ── Type picker: grouped chips ─────────────────────────────────────────── */
+.sf-sheet .sf-bgrp { margin-top: var(--space-2); }
+.sf-sheet .sf-bgrp + .sf-bgrp { margin-top: var(--space-3); }
+.sf-sheet .sf-bgrp__cap {
+  display: block;
+  font-family: var(--font-ui, "Jost", sans-serif);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold-300, #c9ae63);
+  opacity: 0.8;
+  margin-bottom: var(--space-2);
+}
+.sf-sheet .sf-bgrp__chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.sf-sheet .sf-bchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 11px;
+  border-radius: var(--radius-pill, 999px);
+  border: 1px solid var(--border-default, rgba(201,174,99,0.22));
+  background: var(--ink-700, #1b1e29);
+  color: var(--parchment-200, #d8cfb8);
+  font-family: var(--font-ui, "Jost", sans-serif);
+  font-size: 12.5px;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: background var(--dur-fast, 140ms) var(--ease-standard, ease),
+              border-color var(--dur-fast, 140ms) var(--ease-standard, ease),
+              color var(--dur-fast, 140ms) var(--ease-standard, ease);
+}
+.sf-sheet .sf-bchip svg { width: 1.05em; height: 1.05em; opacity: 0.85; }
+.sf-sheet .sf-bchip:hover { background: var(--ink-600, #232734); border-color: var(--border-strong, rgba(201,174,99,0.4)); }
+.sf-sheet .sf-bchip.is-on {
+  background: var(--grad-gold, linear-gradient(135deg, #d8be78, #a9893f));
+  border-color: var(--gold-400, #c9ae63);
+  color: var(--ink-950, #0b0c11);
+  font-weight: 600;
+  box-shadow: var(--glow-gold, 0 0 0 1px rgba(201,174,99,0.4));
+}
+.sf-sheet .sf-bchip.is-on svg { opacity: 1; }
+
+/* ── Value mode segmented control ───────────────────────────────────────── */
+.sf-sheet .sf-bseg {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--border-default, rgba(201,174,99,0.22));
+  background: var(--ink-800, #14161f);
+  margin-bottom: var(--space-2);
+}
+.sf-sheet .sf-bseg__opt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 6px;
+  border: 0;
+  border-radius: var(--radius-sm, 5px);
+  background: transparent;
+  color: var(--parchment-200, #d8cfb8);
+  font-family: var(--font-ui, "Jost", sans-serif);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--dur-fast, 140ms) var(--ease-standard, ease), color var(--dur-fast, 140ms) var(--ease-standard, ease);
+}
+.sf-sheet .sf-bseg__opt svg { width: 1.2em; height: 1.2em; opacity: 0.8; }
+.sf-sheet .sf-bseg__opt:hover { background: var(--ink-600, #232734); }
+.sf-sheet .sf-bseg__opt.is-on {
+  background: var(--grad-gold, linear-gradient(135deg, #d8be78, #a9893f));
+  color: var(--ink-950, #0b0c11);
+  font-weight: 600;
+}
+.sf-sheet .sf-bseg__opt.is-on svg { opacity: 1; }
+
+/* ── Flat value stepper ─────────────────────────────────────────────────── */
+.sf-sheet .sf-bval-flat { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.sf-sheet .sf-bstep {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--border-default, rgba(201,174,99,0.22));
+  border-radius: var(--radius-md, 8px);
+  overflow: hidden;
+  background: var(--ink-800, #14161f);
+}
+.sf-sheet .sf-bstep__btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 40px; border: 0; cursor: pointer;
+  background: var(--ink-700, #1b1e29);
+  color: var(--gold-200, #e3d3a0);
+  transition: background var(--dur-fast, 140ms) var(--ease-standard, ease);
+}
+.sf-sheet .sf-bstep__btn:hover { background: var(--ink-600, #232734); }
+.sf-sheet .sf-bstep__btn svg { width: 1em; height: 1em; }
+.sf-sheet .sf-bstep__num {
+  width: 72px; border: 0; outline: 0; text-align: center;
+  background: transparent;
+  color: var(--parchment-50, #f3ecda);
+  font-family: var(--font-data, "JetBrains Mono", monospace);
+  font-size: 18px; font-weight: 600;
+  -moz-appearance: textfield;
+}
+.sf-sheet .sf-bstep__num::-webkit-outer-spin-button, .sf-sheet .sf-bstep__num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.sf-sheet .sf-bval-flat__hint {
+  flex: 1 1 160px;
+  font-family: var(--font-body, "Spectral", serif);
+  font-size: 12.5px; color: var(--ink-300, #8d92a3);
+}
+.sf-sheet .sf-bval-class { display: grid; gap: var(--space-2); }
+
+/* ── Live / conditional rows ────────────────────────────────────────────── */
+.sf-sheet .sf-brow { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.sf-sheet .sf-bcond {
+  display: inline-flex; align-items: center; gap: 8px;
+  margin-top: var(--space-2);
+  padding: 8px 10px;
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--border-default, rgba(201,174,99,0.22));
+  border-radius: var(--radius-md, 8px);
+  background: var(--ink-800, #14161f);
+  color: var(--parchment-200, #d8cfb8);
+  font-family: var(--font-ui, "Jost", sans-serif);
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color var(--dur-fast, 140ms) var(--ease-standard, ease), background var(--dur-fast, 140ms) var(--ease-standard, ease);
+}
+.sf-sheet .sf-bcond:hover { background: var(--ink-700, #1b1e29); }
+.sf-sheet .sf-bcond__box {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; flex: 0 0 auto;
+  border-radius: 4px;
+  border: 1px solid var(--border-strong, rgba(201,174,99,0.4));
+  color: transparent;
+}
+.sf-sheet .sf-bcond__box svg { width: 0.85em; height: 0.85em; }
+.sf-sheet .sf-bcond.is-on { border-color: var(--gold-400, #c9ae63); }
+.sf-sheet .sf-bcond.is-on .sf-bcond__box {
+  background: var(--grad-gold, linear-gradient(135deg, #d8be78, #a9893f));
+  color: var(--ink-950, #0b0c11);
+}
+.sf-sheet .sf-modal__hint--warn { color: var(--crimson-300, #d98a8a); }
+
+/* ── More options disclosure ─────────────────────────────────────────────── */
+.sf-sheet .sf-bmore-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: var(--space-2);
+  padding: 7px 11px;
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--border-subtle, rgba(201,174,99,0.14));
+  border-radius: var(--radius-md, 8px);
+  background: transparent;
+  color: var(--ink-300, #8d92a3);
+  font-family: var(--font-ui, "Jost", sans-serif);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: border-color var(--dur-fast, 140ms) var(--ease-standard, ease),
+              color var(--dur-fast, 140ms) var(--ease-standard, ease),
+              background var(--dur-fast, 140ms) var(--ease-standard, ease);
+}
+.sf-sheet .sf-bmore-toggle svg { width: 0.9em; height: 0.9em; flex: 0 0 auto; }
+.sf-sheet .sf-bmore-toggle:hover { border-color: var(--border-default, rgba(201,174,99,0.22)); color: var(--parchment-200, #d8cfb8); }
+.sf-sheet .sf-bmore-toggle.is-open {
+  border-color: var(--border-default, rgba(201,174,99,0.22));
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  color: var(--parchment-200, #d8cfb8);
+}
+.sf-sheet .sf-bmore-toggle.has-sel { color: var(--gold-300, #c9ae63); border-color: var(--border-default, rgba(201,174,99,0.22)); }
+.sf-sheet .sf-bmore {
+  border: 1px solid var(--border-default, rgba(201,174,99,0.22));
+  border-top: none;
+  border-radius: 0 0 var(--radius-md, 8px) var(--radius-md, 8px);
+  padding: var(--space-3);
+  background: var(--ink-800, #14161f);
+}
+.sf-sheet .sf-bmore__chips {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--space-2);
+}
+.sf-sheet .sf-bmore .sf-bchip {
+  width: 100%;
+  justify-content: center;
+}
+
+/* Ledger row: let the meta row wrap so a long type label never shoves the
+   switch off the right edge. The controls keep margin-left:auto and stay right. */
+.sf-sheet .sf-bonus__target { flex-wrap: wrap; row-gap: 8px; }
+.sf-sheet .sf-bonus__type { white-space: nowrap; }
+.sf-sheet .sf-bonus__chip { white-space: nowrap; }
+
+/* ── Ledger row affordances: edit / class-rank value chip ───────────────── */
+.sf-sheet .sf-bonus { position: relative; }
+.sf-sheet .sf-bonus__edit {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px;
+  border: 1px solid var(--border-subtle, rgba(201,174,99,0.14));
+  border-radius: var(--radius-sm, 5px);
+  background: transparent;
+  color: var(--ink-300, #8d92a3);
+  cursor: pointer;
+  transition: color var(--dur-fast, 140ms) var(--ease-standard, ease), border-color var(--dur-fast, 140ms) var(--ease-standard, ease);
+}
+.sf-sheet .sf-bonus__edit:hover { color: var(--gold-200, #e3d3a0); border-color: var(--border-strong, rgba(201,174,99,0.4)); }
+.sf-sheet .sf-bonus__edit svg { width: 0.95em; height: 0.95em; }
+.sf-sheet .sf-bonus__val.is-class { display: inline-flex; flex-direction: column; align-items: flex-end; line-height: 1.05; }
+.sf-sheet .sf-bonus__valtag {
+  font-family: var(--font-ui, "Jost", sans-serif);
+  font-size: 8.5px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--gold-300, #c9ae63); opacity: 0.85; font-weight: 500;
+}
