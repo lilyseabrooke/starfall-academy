@@ -83,7 +83,6 @@ function GMApp() {
     return src.map((p) => ({
       ...p,
       conds: { fear: 0, despair: 0, wound: 0, loss: 0, doubt: 0, ...(p.conds || {}) },
-      facs: { focus: 10, creativity: 10, logic: 10, insight: 10, body: 10, charm: 10, ...(p.facs || {}) },
     }));
   });
   const [npcs, setNpcs] = React.useState(() => GD.npcsBasic.map((n) => ({ ...n, conds: { ...n.conds } })));
@@ -121,13 +120,31 @@ function GMApp() {
   const { log, dock } = roll.state;
   const { pushRoll, setDock } = roll.handlers;
 
+  // Action scene: combatants' Action Rolls are made on their own sheets and
+  // stream back through the shared log. Read each new one into the AP tracker
+  // (degrees of success → AP, 0 on a failure), capped at the member's AP max.
+  const appliedActionRolls = React.useRef(new Set());
+  React.useEffect(() => {
+    if (!action.active) return;
+    let next = null;
+    for (const r of log) {
+      if (r.kind !== "action" || appliedActionRolls.current.has(r.id)) continue;
+      appliedActionRolls.current.add(r.id);
+      if (!r.who || !action.included.includes(r.who.id)) continue;
+      const pc = party.find((p) => p.id === r.who.id);
+      const apVal = r.pass ? clampN(r.degrees || 1, 0, pc ? pc.apMax : 6) : 0;
+      (next || (next = {}))[r.who.id] = apVal;
+    }
+    if (next) setAction((s) => ({ ...s, ap: { ...s.ap, ...next } }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [log, action.active, action.included]);
+
   // ---- Status toast (GM narration / grants — the sheet's inv-toast) ------
   const [status, setStatus] = React.useState(null);
   const statusTimer = React.useRef(null);
   const toast = (msg) => { setStatus(msg); clearTimeout(statusTimer.current); statusTimer.current = setTimeout(() => setStatus(null), 3200); };
 
   const gmWho = () => ({ name: "Game Master", tone: "gold", gm: true });
-  const pcWho = (p) => ({ id: p.id, name: p.name, initials: p.initials, tone: p.tone });
 
   // ---- Mutators ----------------------------------------------------------
   // (Party conditions are now inflicted on the player's own sheet via a forced
@@ -236,16 +253,19 @@ function GMApp() {
   const toggleSelect = (pcId) => setAction((s) => ({ ...s, selected: s.selected.includes(pcId) ? s.selected.filter((id) => id !== pcId) : [...s.selected, pcId] }));
   const beginAction = () => {
     const included = action.included.length > 0 ? action.included : party.map((p) => p.id);
-    const ap = {};
+    // Each combatant's Action Roll is made on the *player's* own sheet (2d10 +
+    // their Insight vs DC 10). We prompt them and let the results stream back;
+    // the AP effect below reads each incoming action roll into the tracker.
+    // Mark existing action rolls as already-seen so only fresh ones count.
+    appliedActionRolls.current = new Set(roll.state.log.filter((r) => r.kind === "action").map((r) => r.id));
     included.forEach((pcId) => {
       const pc = party.find((p) => p.id === pcId); if (!pc) return;
-      // The real Action Roll from the sheet: 2d10 + Insight vs DC 10; starting
-      // AP = degrees of success (0 on a failure), capped at the member's AP max.
-      const made = pushRoll({ who: pcWho(pc), kind: "action", label: "Action Roll · " + pc.name, stat: "Insight", mod: pc.facs.insight || 0, dc: 10, meta: ["Action Roll", "DC 10 Insight"] });
-      ap[pcId] = made.pass ? clampN(made.degrees, 0, pc.apMax) : 0;
+      if (window.SF_HOST && typeof window.SF_HOST.requestRoll === "function") {
+        window.SF_HOST.requestRoll({ kind: "action", target: pc.sheetId, dc: 10 });
+      }
     });
-    setAction({ active: true, included, selected: [], ap, changeApId: null });
-    toast("Action scene begun · " + included.length + " combatant" + (included.length === 1 ? "" : "s") + ".");
+    setAction({ active: true, included, selected: [], ap: {}, changeApId: null });
+    toast("Action scene begun · prompted " + included.length + " combatant" + (included.length === 1 ? "" : "s") + " to roll.");
   };
   const endAction = () => { setAction({ active: false, included: [], selected: [], ap: {}, changeApId: null }); toast("Action scene ended."); };
   const apClamp = (id, v, ap) => { const pc = party.find((p) => p.id === id); return clampN(v, 0, pc ? pc.apMax : 6); };

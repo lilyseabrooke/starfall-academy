@@ -47,11 +47,10 @@ export function toRosterMember(row: CharacterRow, activeId: string): RosterMembe
 }
 
 // ---- GM party board projection -------------------------------------------
-// The GM dashboard (gm.jsx) renders each party member with live vitals and runs
-// real mechanics off them (Force-Resist uses `facs[resistId]`, Action uses
-// `facs.insight` + `apMax`). This shapes a DB character row + its sheet JSONB
-// into that member form. `facs` are base stat ranks (live magic bonuses aren't
-// reconstructed server-side yet); `conds` are the sheet's condition counts.
+// The GM dashboard (gm.jsx) lists each party member with display vitals
+// (resolve / AP / materials / conditions). It no longer needs the character's
+// stats: GM-initiated player rolls (Force-Resist, Action) are *prompted* and
+// rolled on the player's own sheet, so the authoritative stats never leave it.
 
 export type GMPartyMember = {
   id: string;
@@ -66,10 +65,8 @@ export type GMPartyMember = {
   apMax: number;
   materials: number;
   conds: Record<string, number>;
-  facs: Record<string, number>;
 };
 
-type SheetStat = { id?: string; rank?: number };
 type SheetCondition = { id?: string; value?: number };
 type SheetFull = {
   c?: SheetCharacter & {
@@ -79,11 +76,9 @@ type SheetFull = {
     resolve?: number;
     materials?: number;
   };
-  stats?: SheetStat[];
   conditions?: SheetCondition[];
 };
 
-const CORE_STATS = ["focus", "creativity", "logic", "insight", "body", "charm"];
 const COND_IDS = ["fear", "despair", "wound", "loss", "doubt"];
 
 export function toGMPartyMember(row: CharacterRow): GMPartyMember {
@@ -92,15 +87,6 @@ export function toGMPartyMember(row: CharacterRow): GMPartyMember {
   const name = (c.name || row.name || "Unnamed").toString();
   const houseFull = (c.house || "").toString().replace(/\s+House$/i, "").trim();
   const tone = c.houseTone || (houseFull ? HOUSE_TONE[houseFull] : "") || "gold";
-
-  const facs: Record<string, number> = {};
-  for (const id of CORE_STATS) facs[id] = 10; // matches the sheet's facs() default
-  if (Array.isArray(sheet.stats)) {
-    for (const s of sheet.stats) {
-      const key = (s?.id || "").toString();
-      if (CORE_STATS.includes(key) && typeof s.rank === "number") facs[key] = s.rank;
-    }
-  }
 
   const conds: Record<string, number> = {};
   for (const id of COND_IDS) conds[id] = 0;
@@ -124,6 +110,5 @@ export function toGMPartyMember(row: CharacterRow): GMPartyMember {
     apMax: Number(c.actionPointsMax) || 6,
     materials: Number(c.materials) || 0,
     conds,
-    facs,
   };
 }

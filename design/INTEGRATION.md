@@ -204,13 +204,15 @@ Migration `20260626000001_multiplayer_membership_and_rolls.sql`:
 
 ### Bridge protocol additions
 ```
-iframe → host : sf-roll-ready                roll engine mounted (ask for backlog)
-iframe → host : sf-roll        { roll }       a local roll to persist + share
-host → iframe : sf-roll-remote { roll }       backlog / another player's roll / own echo
+iframe → host : sf-roll-ready                  roll engine mounted (ask for backlog)
+iframe → host : sf-roll          { roll }       a local roll to persist + share
+host → iframe : sf-roll-remote   { roll }       backlog / another player's roll / own echo
+iframe → host : sf-roll-request  { prompt }     GM asks a player to roll (Force-Resist/Action)
+host → iframe : sf-prompt-remote { prompt }     prompt delivered to every member
 ```
-- `host-bridge.js` / `gm-host-bridge.js` gained `shareRoll()` / `onRoll()` (with
-  a buffer so no roll predates the sink) and set `window.SF_MULTIPLAYER` /
-  `SF_CAMPAIGN_ID` from the init payload's `campaignId`.
+- `host-bridge.js` / `gm-host-bridge.js` gained `shareRoll()` / `onRoll()` and
+  `requestRoll()` / `onPrompt()` (each with a buffer so nothing predates its
+  sink) and set `window.SF_MULTIPLAYER` / `SF_CAMPAIGN_ID` from the init payload.
 - `roll-state.js` (marked block) shares every locally-made roll and injects
   remote ones, **deduped by `makeRoll` id** (a client's own echo collapses to
   one). Shared rolls are JSON-cloned so a function field (`hl`) can't break
@@ -220,13 +222,32 @@ host → iframe : sf-roll-remote { roll }       backlog / another player's roll 
   GM party shape (`toGMPartyMember` in `roster.ts`) and passes it through
   `sf-gm-init`; `gm.jsx` reads `SF_GM_INIT.party` (seed only when standalone).
 
+### GM-initiated rolls are prompts, not GM-side rolls
+The GM never computes a player's roll. **Force-Resist** and **Begin Action**
+emit a *prompt* (transient Realtime **broadcast** on the rolls channel; no
+table, no replay) targeting the player's character id. Only the sheet where
+`prompt.target === SF_ME` acts on it:
+- **Force-Resist** opens the existing `BackfireResist` preset to the GM's
+  condition + DC (`openForcedResist`); the sheet rolls the save with its **own**
+  stats and, on a failure, inflicts the condition (the sheet owns conditions).
+- **Begin Action** fans out one prompt per combatant; each player's sheet
+  auto-rolls `2d10 + own Insight vs DC 10`. Results stream back through the
+  shared log; the GM's AP tracker reads each incoming action roll
+  (`gm.jsx` effect over `log`) into `action.ap`.
+
+This is why the GM party projection carries **no stats** — `toGMPartyMember`
+keeps only display vitals (resolve / AP / materials / conditions). An **offline
+target simply never receives the prompt → silent no-op** (by design). NPC rolls
+have no player sheet and still roll GM-side.
+
 ### Deferred / known edges (next slices)
 - **Cross-user sheet view is read-ish.** The party selector can now switch to a
   campaign-mate's sheet (RLS allows the read), but writes are owner-only, so
   edits there won't persist (logged). A proper read-only/spectator sheet mode is
   a follow-up.
-- **GM `facs` are base stat ranks** — live magic bonuses aren't reconstructed
-  server-side yet, so Force-Resist/Action use base ranks for real members.
+- The GM board's displayed conditions/AP are a snapshot from load; a forced
+  save now updates the *player's* sheet, but that change isn't yet reflected
+  back onto the GM board live (needs cross-user sheet-state sync).
 - Presence ("who's at the table") and live **map locations** weren't in this
   slice. Party-nav links opening a member's sheet from the GM rail still toast.
 

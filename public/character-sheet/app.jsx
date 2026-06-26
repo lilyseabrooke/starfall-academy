@@ -274,7 +274,7 @@ function App() {
   const { subjectByKey, schoolToneOf, subjectBonusFor, bonusFor, condBonusesFor, spellMod, moveMod,
           statBonusFor, moveBonusFor, rollBonusFor, resolveVal, dosShiftFor } = magic.helpers;
   const { log, dock, pending, resistRoll, artifactResistRoll } = roll.state;
-  const { openPrompt, confirmPrompt, cancelPrompt, onResist, openForcedResist, closeResist, closeArtifactResist, setDock, meWho,
+  const { pushRoll, openPrompt, confirmPrompt, cancelPrompt, onResist, openForcedResist, closeResist, closeArtifactResist, setDock, meWho,
           conjureParty, conjureGM, conjureInflection } = roll.handlers;
 
   // ---- Derived character helpers ----
@@ -424,6 +424,10 @@ function App() {
      DC; the player's own sheet rolls it (BackfireResist uses our facRank), and
      on a failed save we apply the condition here — the sheet owns that state. */
   const forcedResistRef = React.useRef(null);
+  // Keep the live Insight modifier in a ref so an action prompt rolls with the
+  // character's *current* stats (the prompt handler registers once).
+  const insightModRef = React.useRef(0);
+  React.useEffect(() => { insightModRef.current = effFacRank("Insight"); });
   React.useEffect(() => {
     if (!window.SF_HOST || typeof window.SF_HOST.onPrompt !== "function") return;
     window.SF_HOST.onPrompt((prompt) => {
@@ -431,6 +435,15 @@ function App() {
       if (prompt.kind === "resist" && prompt.condition) {
         forcedResistRef.current = { conditionId: prompt.condition };
         openForcedResist({ conditionId: prompt.condition, dc: prompt.dc });
+      } else if (prompt.kind === "action") {
+        // Action Roll: 2d10 + Insight vs DC 10 — no player choice, so roll it
+        // straight and let it flow to the shared log (the GM reads AP from it).
+        const dc = prompt.dc != null ? prompt.dc : 10;
+        pushRoll({
+          who: meWho(), kind: "action", label: "Action Roll",
+          stat: "Insight", mod: insightModRef.current, dc,
+          meta: ["Action Roll", "DC " + dc + " Insight"],
+        });
       }
     });
   }, []);
