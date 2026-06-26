@@ -97,7 +97,7 @@ export interface Spell {
   school: string;
   stat: string;
   ap?: number;
-  dc: number;
+  dc: number | null;
   ritual: boolean;
   volatile: boolean;
   /** Days remaining to learn; 0 = known. */
@@ -134,6 +134,10 @@ export interface Move {
   desc?: string;
   success?: string;
   fail?: string;
+  // Manual-move extras:
+  ap?: number;
+  kind?: string;
+  subjectKey?: string;
   // Class-linked move extras (parsed from the move() tag):
   rollOptions?: MoveRollOption[];
   addRank?: boolean;
