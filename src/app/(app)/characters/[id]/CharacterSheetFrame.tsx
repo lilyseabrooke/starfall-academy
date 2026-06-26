@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { RosterMember } from "../roster";
 import LoadingScreen from "@/components/LoadingScreen";
+import { useRollChannel } from "../../useRollChannel";
 
 type Props = {
   /** "edit" persists to an existing row; "create" persists on the Forge's Begin. */
@@ -12,6 +13,8 @@ type Props = {
   initialSheet?: unknown;
   roster?: RosterMember[];
   me?: string | null;
+  /** When the character is in a real campaign, the shared roll channel id. */
+  campaignId?: string | null;
 };
 
 /**
@@ -35,9 +38,13 @@ export default function CharacterSheetFrame({
   initialSheet,
   roster,
   me,
+  campaignId,
 }: Props) {
   const router = useRouter();
   const frameRef = useRef<HTMLIFrameElement>(null);
+
+  // Shared dice log: stream this campaign's rolls in/out of the iframe.
+  useRollChannel(campaignId ?? null, frameRef, id ?? null);
 
   // The vendored sheet is a heavy in-browser React+Babel bundle, so booting it
   // can take a beat. Cover that gap with the Academy loading screen until the
@@ -59,6 +66,7 @@ export default function CharacterSheetFrame({
           sheet: sheetRef.current ?? null,
           roster: roster ?? null,
           me: me ?? null,
+          campaignId: campaignId ?? null,
           // In create mode, the sheet opens straight into the Forge.
           openForge: mode === "create",
         },
@@ -140,7 +148,7 @@ export default function CharacterSheetFrame({
 
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [mode, roster, me, router]);
+  }, [mode, roster, me, campaignId, router]);
 
   // Safety net: if the sheet never reports back, don't trap the user behind
   // the loading screen forever.
@@ -165,6 +173,7 @@ export default function CharacterSheetFrame({
               sheet: sheetRef.current ?? null,
               roster: roster ?? null,
               me: me ?? null,
+              campaignId: campaignId ?? null,
               openForge: mode === "create",
             },
             window.location.origin

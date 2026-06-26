@@ -274,7 +274,7 @@ function App() {
   const { subjectByKey, schoolToneOf, subjectBonusFor, bonusFor, condBonusesFor, spellMod, moveMod,
           statBonusFor, moveBonusFor, rollBonusFor, resolveVal, dosShiftFor } = magic.helpers;
   const { log, dock, pending, resistRoll, artifactResistRoll } = roll.state;
-  const { openPrompt, confirmPrompt, cancelPrompt, onResist, closeResist, closeArtifactResist, setDock, meWho,
+  const { pushRoll, openPrompt, confirmPrompt, cancelPrompt, onResist, openForcedResist, closeResist, closeArtifactResist, setDock, meWho,
           conjureParty, conjureGM, conjureInflection } = roll.handlers;
 
   // ---- Derived character helpers ----
@@ -417,6 +417,50 @@ function App() {
     window.SF_HOST.save(serializeSheet());
   }, [c, conditions, stats, schools, rp, classState, bonuses, spells, moves,
       artifacts, potions, recipes, plants, wands, glyphs, items, runeStack, locations]);
+
+  /* ---- GM roll prompts (added for multiplayer) --------------------------
+     When the GM forces a save on this character, the host delivers a prompt
+     targeting SF_ME. We open the resist prompt preset to the GM's condition +
+     DC; the player's own sheet rolls it (BackfireResist uses our facRank), and
+     on a failed save we apply the condition here — the sheet owns that state. */
+  const forcedResistRef = React.useRef(null);
+  // Keep the live Insight modifier in a ref so an action prompt rolls with the
+  // character's *current* stats (the prompt handler registers once).
+  const insightModRef = React.useRef(0);
+  React.useEffect(() => { insightModRef.current = effFacRank("Insight"); });
+  React.useEffect(() => {
+    if (!window.SF_HOST || typeof window.SF_HOST.onPrompt !== "function") return;
+    window.SF_HOST.onPrompt((prompt) => {
+      if (!prompt || prompt.target !== window.SF_ME) return; // not for me → ignore
+      if (prompt.kind === "resist" && prompt.condition) {
+        forcedResistRef.current = { conditionId: prompt.condition };
+        openForcedResist({ conditionId: prompt.condition, dc: prompt.dc });
+      } else if (prompt.kind === "action") {
+        // Action Roll: 2d10 + Insight vs DC 10 — no player choice, so roll it
+        // straight and let it flow to the shared log (the GM reads AP from it).
+        const dc = prompt.dc != null ? prompt.dc : 10;
+        pushRoll({
+          who: meWho(), kind: "action", label: "Action Roll",
+          stat: "Insight", mod: insightModRef.current, dc,
+          meta: ["Action Roll", "DC " + dc + " Insight"],
+        });
+      }
+    });
+  }, []);
+  // Wrap the resist callback: log the roll (shared), then — only for a forced
+  // save that failed — inflict the condition on this sheet.
+  const handleResist = (args) => {
+    const made = onResist(args);
+    const forced = forcedResistRef.current;
+    forcedResistRef.current = null;
+    if (forced && made && made.pass === false) {
+      setConditions((cs) => cs.map((x) =>
+        x.id === args.condition.id
+          ? { ...x, value: Math.min(x.max != null ? x.max : 99, (x.value || 0) + 1) }
+          : x));
+    }
+  };
+  const handleResistClose = () => { forcedResistRef.current = null; closeResist(); };
 
   // ---- invH: wires inventory setters + magic sync + roll prompt ----
   // op() is a shorthand that injects `who` so call-sites stay lean.
@@ -1224,7 +1268,7 @@ function App() {
       <SF_RollToasts log={log} position={t.toastPosition} cap={t.stackCap} lifetime={Math.round(t.toastLifetime * 1000)} graceMs={Math.round(t.graceTail * 1000)} expandDefault={t.expandDefault} />
       <SF_RollDock log={log} open={dock} onToggle={() => setDock((v) => !v)} meId={activeChar} />
       <SF_RollPrompt pending={pending} onConfirm={confirmPrompt} onCancel={cancelPrompt} />
-      <SF_BackfireResist open={!!resistRoll} roll={resistRoll} conditions={conditions} facRank={facRank} onResist={onResist} onClose={closeResist} />
+      <SF_BackfireResist open={!!resistRoll} roll={resistRoll} conditions={conditions} facRank={facRank} onResist={handleResist} onClose={handleResistClose} />
       <SF_ArtifactBackfire open={!!artifactResistRoll} roll={artifactResistRoll} effFacRank={effFacRank} subRank={subRank} onRoll={onArtifactResist} onClose={closeArtifactResist} />
 
       <TweaksPanel>

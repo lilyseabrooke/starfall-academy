@@ -39,7 +39,14 @@ export async function POST(request: Request) {
       .select("id")
       .single();
 
-    if (!error && data) return NextResponse.json({ id: data.id });
+    if (!error && data) {
+      // Record the GM as a member so cross-user reads (party, rolls) include
+      // them from the start. Best-effort: the campaign already exists.
+      await supabase
+        .from("campaign_members")
+        .insert({ campaign_id: data.id, user_id: user.id, role: "gm" });
+      return NextResponse.json({ id: data.id });
+    }
     // 23505 = unique_violation (code already taken) — try a fresh code.
     if (error && error.code !== "23505") {
       return NextResponse.json({ error: error.message }, { status: 400 });

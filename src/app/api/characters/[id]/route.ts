@@ -23,7 +23,26 @@ export async function PATCH(
     return NextResponse.json({ error: "invalid json" }, { status: 400 });
   }
 
-  const update: { sheet?: unknown; name?: string; campaign_code?: string | null } = {};
+  // Campaign membership goes through the RPCs so a join links the character to
+  // the real campaign + a player membership row (and a code with no matching
+  // campaign still records as a legacy code-only group). "" / null leaves.
+  if ("campaign_code" in body) {
+    const code = body.campaign_code;
+    if (code === null || code === "") {
+      const { error } = await supabase.rpc("leave_campaign", { p_character: id });
+      if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+    } else if (typeof code === "string" && code.trim()) {
+      const { error } = await supabase.rpc("join_campaign", {
+        p_code: code.trim(),
+        p_character: id,
+      });
+      if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+    } else {
+      return NextResponse.json({ error: "invalid campaign_code" }, { status: 400 });
+    }
+  }
+
+  const update: { sheet?: unknown; name?: string } = {};
 
   if ("sheet" in body) {
     const sheet = body.sheet;
@@ -38,26 +57,13 @@ export async function PATCH(
     if (name) update.name = name;
   }
 
-  // Campaign code: a non-empty string joins/creates a party; "" or null leaves.
-  if ("campaign_code" in body) {
-    const code = body.campaign_code;
-    if (code === null || code === "") {
-      update.campaign_code = null;
-    } else if (typeof code === "string" && code.trim()) {
-      update.campaign_code = code.trim().toUpperCase();
-    } else {
-      return NextResponse.json({ error: "invalid campaign_code" }, { status: 400 });
+  if (Object.keys(update).length > 0) {
+    const { error } = await supabase.from("characters").update(update).eq("id", id);
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
     }
-  }
-
-  if (Object.keys(update).length === 0) {
+  } else if (!("campaign_code" in body)) {
     return NextResponse.json({ error: "nothing to update" }, { status: 400 });
-  }
-
-  const { error } = await supabase.from("characters").update(update).eq("id", id);
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
   return NextResponse.json({ ok: true });

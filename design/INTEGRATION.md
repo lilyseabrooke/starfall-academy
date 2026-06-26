@@ -167,15 +167,95 @@ The GM view is reachable from the signed-in app:
 - **Full** NPC sheets stored like characters (`type='npc'`). Only **basic** NPCs
   (Strong/Weak) exist now, matching the handoff.
 
+## Multiplayer — shared dice log + cross-user party
+
+Closes roadmap **F2 + the Multiplayer (shared dice / party) slice**: a campaign's
+members can now see each other. Built **bridge-first** (no F1 port required).
+
+### Membership (F2) — `campaign_members`
+Migration `20260626000001_multiplayer_membership_and_rolls.sql`:
+- **`campaign_members`** (`campaign_id`, `user_id`, `role` `player|gm`,
+  `character_id`, unique `(campaign_id, user_id)`) is the real membership model.
+  The reserved **`characters.campaign_id`** FK is now wired (→ `campaigns`,
+  `on delete set null`).
+- **Join-by-code stays the UX, backed by the table.** `join_campaign(code,
+  character)` / `leave_campaign(character)` are `SECURITY DEFINER` RPCs (called
+  from `PATCH /api/characters/[id]`): they verify the character is yours,
+  resolve code→campaign, and upsert membership + set `campaign_id` atomically. A
+  code with **no** matching campaign still records `campaign_code` (legacy
+  code-only grouping) with `campaign_id` left null. Creating a campaign inserts a
+  `gm` membership.
+- **RLS opens to campaign-scoped reads.** A `SECURITY DEFINER` helper
+  `campaigns_for_user()` (GM-owned ∪ member-of) avoids the self-referential
+  recursion trap; policies read `… in (select campaigns_for_user())`. Added:
+  members read each other's **characters** (full sheet; writes stay owner-only),
+  the **campaign** row, and **member** rows. RPCs/`campaigns_for_user` are
+  revoked from `anon`.
+
+### Shared, durable dice log — `rolls` + Realtime
+- **`rolls`** (`campaign_id`, `actor_id`, `character_id`, `payload jsonb`,
+  `created_at`) is an immutable, campaign-scoped log on the `supabase_realtime`
+  publication. RLS: members read/insert (insert checks `actor_id = auth.uid()`).
+- The iframe **host** owns the channel (`src/app/(app)/useRollChannel.ts`, used
+  by both `CharacterSheetFrame` and `GMViewFrame`): replays recent backlog on
+  the iframe's `sf-roll-ready`, subscribes to `postgres_changes` INSERTs, and
+  persists the iframe's local rolls. **Durable** → reloads + late joiners get
+  history.
+
+### Bridge protocol additions
+```
+iframe → host : sf-roll-ready                  roll engine mounted (ask for backlog)
+iframe → host : sf-roll          { roll }       a local roll to persist + share
+host → iframe : sf-roll-remote   { roll }       backlog / another player's roll / own echo
+iframe → host : sf-roll-request  { prompt }     GM asks a player to roll (Force-Resist/Action)
+host → iframe : sf-prompt-remote { prompt }     prompt delivered to every member
+```
+- `host-bridge.js` / `gm-host-bridge.js` gained `shareRoll()` / `onRoll()` and
+  `requestRoll()` / `onPrompt()` (each with a buffer so nothing predates its
+  sink) and set `window.SF_MULTIPLAYER` / `SF_CAMPAIGN_ID` from the init payload.
+- `roll-state.js` (marked block) shares every locally-made roll and injects
+  remote ones, **deduped by `makeRoll` id** (a client's own echo collapses to
+  one). Shared rolls are JSON-cloned so a function field (`hl`) can't break
+  postMessage/storage. In multiplayer the log starts empty (the demo seed is
+  skipped) and fills from the backlog.
+- **GM party board is real** now: `gm/[id]` projects each member's sheet into the
+  GM party shape (`toGMPartyMember` in `roster.ts`) and passes it through
+  `sf-gm-init`; `gm.jsx` reads `SF_GM_INIT.party` (seed only when standalone).
+
+### GM-initiated rolls are prompts, not GM-side rolls
+The GM never computes a player's roll. **Force-Resist** and **Begin Action**
+emit a *prompt* (transient Realtime **broadcast** on the rolls channel; no
+table, no replay) targeting the player's character id. Only the sheet where
+`prompt.target === SF_ME` acts on it:
+- **Force-Resist** opens the existing `BackfireResist` preset to the GM's
+  condition + DC (`openForcedResist`); the sheet rolls the save with its **own**
+  stats and, on a failure, inflicts the condition (the sheet owns conditions).
+- **Begin Action** fans out one prompt per combatant; each player's sheet
+  auto-rolls `2d10 + own Insight vs DC 10`. Results stream back through the
+  shared log; the GM's AP tracker reads each incoming action roll
+  (`gm.jsx` effect over `log`) into `action.ap`.
+
+This is why the GM party projection carries **no stats** — `toGMPartyMember`
+keeps only display vitals (resolve / AP / materials / conditions). An **offline
+target simply never receives the prompt → silent no-op** (by design). NPC rolls
+have no player sheet and still roll GM-side.
+
+### Deferred / known edges (next slices)
+- **Cross-user sheet view is read-ish.** The party selector can now switch to a
+  campaign-mate's sheet (RLS allows the read), but writes are owner-only, so
+  edits there won't persist (logged). A proper read-only/spectator sheet mode is
+  a follow-up.
+- The GM board's displayed conditions/AP are a snapshot from load; a forced
+  save now updates the *player's* sheet, but that change isn't yet reflected
+  back onto the GM board live (needs cross-user sheet-state sync).
+- Presence ("who's at the table") and live **map locations** weren't in this
+  slice. Party-nav links opening a member's sheet from the GM rail still toast.
+
 ## Known limitations
 
 - The prototype loads React / Babel / Lucide from unpkg at runtime (fine in the
   user's browser; a later port replaces this with bundled deps). Needs network
   in local dev.
-- Party is currently the owner's *own* characters sharing a code (RLS scopes to
-  owner). Cross-user campaign membership arrives with multiplayer.
-- Party + dice are local-only in the prototype; real multiplayer is a later
-  milestone (Supabase Realtime).
 
 ## Pre-existing, unrelated
 
