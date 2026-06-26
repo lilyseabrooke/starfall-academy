@@ -41,12 +41,29 @@ export interface RollStateOptions {
   onShareRoll?: (roll: Roll) => void;
 }
 
+/** A conditional bonus offered as an opt-in in the roll prompt. */
+export interface CondBonusOption {
+  id: string;
+  source: string;
+  value: number;
+  targetLabel: string;
+  condNote: string | null;
+}
+
 /** A prompt partial: a roll input whose `who` is filled in at confirm time
- *  (defaults to the active character via meWho()). */
+ *  (defaults to the active character via meWho()). Spell/wandcraft prompts add
+ *  casting context the RollPrompt reads. */
 export type PromptPartial = Omit<RollInput, "who"> & {
   who?: RollWho;
   onCast?: (matCost: number) => void;
   onResult?: (roll: Roll) => void;
+  // Spell-cast context:
+  spellLevel?: string;
+  spellAp?: number;
+  spellVolatile?: boolean;
+  canRitual?: boolean;
+  condBonuses?: CondBonusOption[];
+  materials?: number;
 };
 
 export interface PendingPrompt {

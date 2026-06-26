@@ -225,6 +225,7 @@ export interface RollCrit {
   label?: string;
   text?: string;
   backfire?: boolean;
+  artifactBackfire?: boolean;
   on?: "one" | "ten" | "always";
 }
 
