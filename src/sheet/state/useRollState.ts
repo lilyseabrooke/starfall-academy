@@ -14,7 +14,7 @@
    an incoming roll, deduped by id so a client's own echo collapses to one.
    =========================================================================== */
 import * as React from "react";
-import type { Condition, Roll, Tone } from "../types";
+import type { Condition, Roll, RollWho, Tone } from "../types";
 import { makeRoll, type RollInput } from "../data/roll-engine";
 import type { PoolRoll } from "../data/seed";
 
@@ -41,12 +41,17 @@ export interface RollStateOptions {
   onShareRoll?: (roll: Roll) => void;
 }
 
+/** A prompt partial: a roll input whose `who` is filled in at confirm time
+ *  (defaults to the active character via meWho()). */
+export type PromptPartial = Omit<RollInput, "who"> & {
+  who?: RollWho;
+  onCast?: (matCost: number) => void;
+  onResult?: (roll: Roll) => void;
+};
+
 export interface PendingPrompt {
   id: number;
-  partial: RollInput & {
-    onCast?: (matCost: number) => void;
-    onResult?: (roll: Roll) => void;
-  };
+  partial: PromptPartial;
   rect: DOMRect;
 }
 
@@ -146,6 +151,7 @@ export function useRollState(data: RollStateData, activeChar: string, options: R
     const roll = makeRoll({
       ...partial,
       ...(rest as Partial<RollInput>),
+      who: partial.who || meWho(),
       mod: mergedMod,
       meta: mergedMeta.length ? mergedMeta : null,
     });
