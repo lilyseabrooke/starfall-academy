@@ -1,11 +1,64 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import RosterList from "./RosterList";
-import CampaignsList from "./CampaignsList";
+import CharactersView, {
+  type CharacterCard,
+  type CampaignCard,
+} from "./CharactersView";
 
 export const metadata = {
   title: "Characters — Starfall Academy",
 };
+
+type SheetCharacter = {
+  name?: string;
+  pronouns?: string;
+  year?: string;
+  house?: string;
+  houseTone?: string;
+};
+
+// House → design-system tone, for rows whose sheet predates houseTone.
+const HOUSE_TONE: Record<string, string> = {
+  Dragon: "plum",
+  Boar: "forest",
+  Dolphin: "teal",
+  Eagle: "crimson",
+  Scorpion: "gold",
+};
+
+function initialsOf(name: string) {
+  return (
+    name
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((w) => w[0] || "")
+      .join("")
+      .toUpperCase() || "??"
+  );
+}
+
+function toCard(row: {
+  id: string;
+  name: string | null;
+  sheet: unknown;
+  campaign_code: string | null;
+}): CharacterCard {
+  const c = ((row.sheet as { c?: SheetCharacter })?.c ?? {}) as SheetCharacter;
+  const name = (c.name || row.name || "Unnamed").toString();
+  // Sheets store the long house name ("Dragon House"); the card shows "Dragon".
+  const houseFull = (c.house || "").replace(/\s+House$/i, "").trim();
+  const tone = c.houseTone || (houseFull ? HOUSE_TONE[houseFull] : "") || "gold";
+  return {
+    id: row.id,
+    name,
+    monogram: initialsOf(name),
+    pronouns: c.pronouns?.trim() || "",
+    year: c.year?.toString().trim() || "",
+    house: houseFull || "Unsorted",
+    tone,
+    campaign: row.campaign_code,
+  };
+}
 
 export default async function CharactersPage() {
   const supabase = await createClient();
@@ -13,59 +66,33 @@ export default async function CharactersPage() {
   // campaigns).
   const { data: characters } = await supabase
     .from("characters")
-    .select("id, name, type, campaign_code, updated_at")
+    .select("id, name, sheet, campaign_code, updated_at")
     .order("updated_at", { ascending: false });
   const { data: campaigns } = await supabase
     .from("campaigns")
     .select("id, name, code, updated_at")
     .order("updated_at", { ascending: false });
 
-  const hasCharacters = !!characters && characters.length > 0;
-  const hasCampaigns = !!campaigns && campaigns.length > 0;
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  // Nothing yet → straight to the creator.
-  if (!hasCharacters && !hasCampaigns) {
-    return (
-      <main className="mx-auto flex min-h-screen max-w-xl flex-col items-center justify-center gap-6 px-6 text-center">
-        <h1 className="text-2xl font-semibold">Forge your first character</h1>
-        <p className="text-gray-500">
-          You don&apos;t have any characters yet. Begin the rite to create one.
-        </p>
-        <Link
-          href="/characters/new"
-          className="rounded bg-black px-5 py-2.5 text-white hover:bg-gray-800"
-        >
-          Create a character
-        </Link>
-      </main>
-    );
-  }
+  const characterCards = (characters ?? []).map(toCard);
+  const campaignCards: CampaignCard[] = (campaigns ?? []).map((cm) => {
+    const name = (cm.name || "Untitled campaign").toString();
+    return {
+      id: cm.id,
+      name,
+      monogram: initialsOf(name),
+      code: cm.code ?? "",
+    };
+  });
 
   return (
-    <main className="mx-auto max-w-2xl px-6 py-12">
-      <div className="mb-8 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Your characters</h1>
-        <Link
-          href="/characters/new"
-          className="rounded bg-black px-4 py-2 text-white hover:bg-gray-800"
-        >
-          New character
-        </Link>
-      </div>
-
-      {hasCharacters ? (
-        <RosterList characters={characters} />
-      ) : (
-        <p className="text-gray-500">
-          You don&apos;t have any characters yet.{" "}
-          <Link href="/characters/new" className="text-blue-600 hover:underline">
-            Create one
-          </Link>
-          .
-        </p>
-      )}
-
-      <CampaignsList campaigns={campaigns ?? []} />
-    </main>
+    <CharactersView
+      characters={characterCards}
+      campaigns={campaignCards}
+      userEmail={user?.email ?? null}
+    />
   );
 }
