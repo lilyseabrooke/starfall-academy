@@ -155,8 +155,8 @@ export interface Bonus {
 /** Per-class progression: current rank + the option chosen at each reached level. */
 export interface ClassRankState {
   rank: number;
-  /** level (number) → chosen side/option id. */
-  choices: Record<string, string>;
+  /** level → chosen option index (0 = left option, 1 = right option). */
+  choices: Record<string, number>;
 }
 
 /** classState: class id → its rank/choices. */
@@ -382,6 +382,7 @@ export interface CompendiumEntry {
   ap?: number;
   dc?: number;
   ritual?: boolean;
+  volatile?: boolean;
   higherLevel?: string;
   // artifact / potion / plant / glyph fields
   mat?: number;

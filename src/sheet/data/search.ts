@@ -21,21 +21,7 @@ import type {
   Stat,
   Wand,
 } from "../types";
-
-/** Minimal class shapes the index reads (full ClassDef lives in the classes
- *  module). Kept structural here to avoid a cyclic dependency. */
-export interface ClassRungOption {
-  title?: string;
-  name?: string;
-}
-export interface ClassRung {
-  options?: Record<string, ClassRungOption>;
-}
-export interface ClassLike {
-  id: string;
-  name: string;
-  ranks: ClassRung[];
-}
+import type { ClassDef } from "./classes";
 
 /** Map region shapes the index reads (full map types live with the map tab). */
 export interface MapPlace {
@@ -66,7 +52,7 @@ export interface SearchContext {
   wands?: Wand[];
   conditions?: Condition[];
   classState?: ClassState;
-  classes?: ClassLike[];
+  classes?: ClassDef[];
   locations?: MapRegion[];
   bonuses?: Bonus[];
 }
@@ -167,7 +153,7 @@ export function buildIndex(ctx: SearchContext): SearchResult[] {
             results.push({
               id: `class-ability-${classEntry.id}-${L}-${chosenSide}`,
               type: "class-ability",
-              name: opt.title || opt.name || "",
+              name: opt.title || "",
               category: "Class Ability",
               data: { classEntry, rung, opt, rankLevel: L, side: chosenSide },
               section: "classes",
