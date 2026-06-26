@@ -32,7 +32,7 @@ export interface ShelfHeadProps {
   meter?: React.ReactNode;
   onManual?: () => void;
   onCompendium?: () => void;
-  onTake?: () => void;
+  onTake?: (e: React.MouseEvent) => void;
   onRefreshAll?: () => void;
   onToggleAll?: () => void;
   allOpen?: boolean;
