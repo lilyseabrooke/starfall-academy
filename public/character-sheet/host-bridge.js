@@ -32,6 +32,10 @@ window.SF_HOST = (function () {
   let rollSink = null;
   const rollQueue = [];
 
+  // Roll-prompt wiring (GM → this player): same buffered-sink pattern.
+  let promptSink = null;
+  const promptQueue = [];
+
   function tryMount() {
     if (mounted || !mountFn || !inited) return;
     mounted = true;
@@ -57,12 +61,19 @@ window.SF_HOST = (function () {
     else rollQueue.push(roll);
   }
 
+  function injectPrompt(prompt) {
+    if (!prompt || typeof prompt !== "object") return;
+    if (promptSink) promptSink(prompt);
+    else promptQueue.push(prompt);
+  }
+
   if (host) {
     window.addEventListener("message", function (e) {
       const m = e.data;
       if (!m || typeof m !== "object") return;
       if (m.type === "sf-sheet-init") init(m.sheet || null, m.roster, m.me, m.openForge, m.campaignId);
       else if (m.type === "sf-roll-remote") injectRoll(m.roll);
+      else if (m.type === "sf-prompt-remote") injectPrompt(m.prompt);
     });
     host.postMessage({ type: "sf-sheet-request" }, "*");
     // Fallback: if the host never answers, mount with seed data anyway.
@@ -84,6 +95,15 @@ window.SF_HOST = (function () {
     /** Share a locally-made roll with the campaign. No-op when not multiplayer. */
     shareRoll: function (roll) {
       if (host && window.SF_MULTIPLAYER && roll) host.postMessage({ type: "sf-roll", roll: roll }, "*");
+    },
+    /** Ask the campaign to make a roll (GM use). No-op when not multiplayer. */
+    requestRoll: function (prompt) {
+      if (host && window.SF_MULTIPLAYER && prompt) host.postMessage({ type: "sf-roll-request", prompt: prompt }, "*");
+    },
+    /** Register a sink for incoming roll prompts; flush any that arrived early. */
+    onPrompt: function (fn) {
+      promptSink = fn;
+      while (promptQueue.length) fn(promptQueue.shift());
     },
     /** Debounced persistence of a serialized sheet snapshot up to the host. */
     save: function (snapshot) {

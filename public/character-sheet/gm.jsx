@@ -130,25 +130,28 @@ function GMApp() {
   const pcWho = (p) => ({ id: p.id, name: p.name, initials: p.initials, tone: p.tone });
 
   // ---- Mutators ----------------------------------------------------------
-  const bumpCondParty = (pcId, condId, d) => setParty((s) => s.map((p) => p.id !== pcId ? p : { ...p, conds: { ...p.conds, [condId]: clampN((p.conds[condId] || 0) + d, 0, 3) } }));
+  // (Party conditions are now inflicted on the player's own sheet via a forced
+  // save, not bumped GM-side — see promptResist.)
   const bumpCondNpc = (npcId, condId, d) => setNpcs((s) => s.map((n) => n.id !== npcId ? n : { ...n, conds: { ...n.conds, [condId]: clampN((n.conds[condId] || 0) + d, 0, 3) } }));
   const addMaterials = (pcId, n) => setParty((s) => s.map((p) => p.id !== pcId ? p : { ...p, materials: Math.max(0, p.materials + n) }));
 
   /* ----------------------------- Force resist --------------------------- */
   const openResist = (pcId) => setResist({ pcId, cond: "fear", dc: 12, dcText: null, rolled: null });
   const patchResist = (patch) => setResist((r) => r ? { ...r, ...patch } : r);
-  const rollResist = () => {
+  // Force-Resist no longer rolls on the GM side: it prompts the targeted
+  // player, whose own sheet rolls the save with its own stats (and inflicts the
+  // condition on a failure). The GM never needs the character's stats. The roll
+  // lands in the shared ledger; if the player is offline the prompt is a silent
+  // no-op. NPC rolls (no player sheet) still roll GM-side, unchanged.
+  const promptResist = () => {
     const r = resist; if (!r) return;
     const pc = party.find((p) => p.id === r.pcId); if (!pc) return;
     const cond = GD.CONDS.find((c) => c.id === r.cond);
-    const mod = pc.facs[cond.resistId] || 0;
-    // Routed through the shared roll engine: 2d10 + resist stat vs DC, with the
-    // standard Resist crit profile (auto-fail on a 1, auto-succeed on a 10).
-    const made = pushRoll({ who: pcWho(pc), label: "Resist " + cond.name + " (DC " + r.dc + ")", kind: "resist", stat: cond.resist, mod, dc: r.dc, meta: [cond.name, cond.resist] });
-    const pass = made.pass;
-    if (!pass) bumpCondParty(pc.id, cond.id, 1);
-    toast(pc.name + (pass ? " resisted " + cond.name : " failed — " + cond.name + " +1") + " · rolled " + made.total + " vs DC " + r.dc + ".");
-    patchResist({ rolled: { total: made.total, dice: made.dice, mod: made.mod, pass, cond: cond.name, dc: r.dc } });
+    if (window.SF_HOST && typeof window.SF_HOST.requestRoll === "function") {
+      window.SF_HOST.requestRoll({ kind: "resist", target: pc.sheetId, condition: cond.id, dc: r.dc });
+    }
+    toast("Asked " + pc.name + " to resist " + cond.name + " (DC " + r.dc + ").");
+    setResist(null);
   };
 
   /* ------------------------------- Grant -------------------------------- */
@@ -319,7 +322,7 @@ function GMApp() {
       <window.SF_RollToasts log={log} position="br" cap={3} lifetime={5000} graceMs={1500} expandDefault={false} />
 
       {/* GM modals */}
-      {resist && <ResistModal resist={resist} party={party} conds={GD.CONDS} onPatch={patchResist} onRoll={rollResist} onClose={() => setResist(null)} />}
+      {resist && <ResistModal resist={resist} party={party} conds={GD.CONDS} onPatch={patchResist} onRoll={promptResist} onClose={() => setResist(null)} />}
       {grant && <GrantDrawer grant={grant} party={party} matChips={GD.matChips} onPatch={patchGrant} onGrantMaterials={grantMaterials} onGrantItem={grantItem} onClose={() => setGrant(null)} />}
       {addNpc && <AddNpcModal addNpc={addNpc} onPatch={patchAddNpc} onConfirm={confirmAddNpc} onDelete={(id) => { deleteNpc(id); setAddNpc(null); }} onClose={() => setAddNpc(null)} />}
       {timeModal && <TimeModal time={time} setTime={setTime} onAdvance={advanceTime} onSleep={sleepTime} onClose={() => setTimeModal(false)} />}
@@ -603,7 +606,6 @@ function ActionTab({ party, action, onToggleInclude, onToggleSelect, onBegin, on
 function ResistModal({ resist, party, conds, onPatch, onRoll, onClose }) {
   const pc = party.find((p) => p.id === resist.pcId) || party[0];
   const cond = conds.find((c) => c.id === resist.cond);
-  const mod = pc.facs[cond.resistId] || 0;
   return (
     <div className="gm-scrim" onClick={onClose}>
       <div className="gm-modal" onClick={(e) => e.stopPropagation()}>
@@ -618,11 +620,10 @@ function ResistModal({ resist, party, conds, onPatch, onRoll, onClose }) {
             <div className="gm-condpick">
               {conds.map((c) => {
                 const on = resist.cond === c.id;
-                const m = pc.facs[c.resistId] || 0;
                 return (
                   <button key={c.id} className={"gm-condpick__btn" + (on ? " is-on" : "")} style={on ? { borderColor: c.color, background: "color-mix(in oklab," + c.color + " 16%,var(--ink-800))" } : null} onClick={() => onPatch({ cond: c.id, rolled: null })}>
                     <span style={{ color: c.color }} className="gm-condpick__name">{c.name}</span>
-                    <span className="gm-condpick__meta">{c.resist} · +{m}</span>
+                    <span className="gm-condpick__meta">{c.resist}</span>
                   </button>
                 );
               })}
@@ -638,24 +639,13 @@ function ResistModal({ resist, party, conds, onPatch, onRoll, onClose }) {
               <button className="gm-dc__btn" onClick={() => onPatch({ dc: resist.dc + 1, dcText: null, rolled: null })}>+</button>
             </div>
           </div>
-          <p className="gm-modal__info">{pc.name} resists {cond.name} with {cond.resist} (+{mod}). Roll 2d10 + {mod} against DC {resist.dc}.</p>
-          {resist.rolled && (
-            <div className="gm-resist-result" style={{ borderColor: resist.rolled.pass ? "var(--forest-300)" : "var(--crimson-300)", background: "color-mix(in oklab," + (resist.rolled.pass ? "var(--forest-300)" : "var(--crimson-300)") + " 12%,var(--ink-850))" }}>
-              <span className="gm-resist-result__calc">{resist.rolled.dice[0]} + {resist.rolled.dice[1]}{resist.rolled.mod ? " + " + resist.rolled.mod : ""}</span>
-              <span className="gm-resist-result__total">{resist.rolled.total}</span>
-              <span className="gm-resist-result__vs">vs DC {resist.rolled.dc}</span>
-              <div className="gm-resist-result__verdict">
-                <span style={{ color: resist.rolled.pass ? "var(--forest-300)" : "var(--crimson-300)" }}>{resist.rolled.pass ? "Resisted" : "Failed"}</span>
-                <span className="gm-resist-result__note">{resist.rolled.pass ? "No condition inflicted" : resist.rolled.cond + " +1 inflicted"}</span>
-              </div>
-            </div>
-          )}
+          <p className="gm-modal__info">{pc.name} will roll their {cond.resist} save against DC {resist.dc} on their own sheet. The result lands in the shared roll log.</p>
         </div>
         <div className="gm-modal__foot">
-          <span className="gm-modal__footnote">Failure inflicts the condition; success spares them.</span>
+          <span className="gm-modal__footnote">A failed save inflicts the condition on the player's sheet.</span>
           <div className="gm-modal__footbtns">
-            <button className="gm-btn" onClick={onClose}>Done</button>
-            <button className="gm-btn-gold" onClick={onRoll}><Ic name="dices" />{resist.rolled ? "Roll again" : "Roll resist"}</button>
+            <button className="gm-btn" onClick={onClose}>Cancel</button>
+            <button className="gm-btn-gold" onClick={onRoll}><Ic name="send" />Prompt to resist</button>
           </div>
         </div>
       </div>

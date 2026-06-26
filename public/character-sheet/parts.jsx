@@ -1579,6 +1579,13 @@
     const rcfg = (roll && roll.resist) || null;
     React.useEffect(() => {
       if (open && roll) {
+        // GM-forced save: the condition + DC are set by the Game Master.
+        if (roll.forced) {
+          const fc = roll.forced.condition;
+          setCond(conditions.find((c) => c.id === fc) ? fc : conditions[0].id);
+          setDc(roll.forced.dc != null ? String(roll.forced.dc) : "");
+          return;
+        }
         const want = (rcfg && rcfg.condition) || "wound";
         setCond(conditions.find((c) => c.id === want) ? want : conditions[0].id);
         if (rcfg && rcfg.dcPerDegree) setDc(String(Math.max(1, rcfg.dcPerDegree * (roll.degrees || 1))));

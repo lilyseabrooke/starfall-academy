@@ -103,13 +103,34 @@
 
     const onResist = ({ condition, dc, mod }) => {
       const meta = resistRoll && resistRoll.resist ? [resistRoll.resist.eyebrow || "Resist"] : ["Backfire recoil"];
-      pushRoll({
+      return pushRoll({
         who: meWho(),
         label: "Resist " + condition.name,
         kind: "resist",
         stat: condition.resist,
         mod, dc,
         meta,
+      });
+    };
+
+    // GM-forced save: open the resist prompt preset to the condition + DC the GM
+    // chose. The player's own sheet supplies the stat (via BackfireResist's
+    // facRank), so the GM never needs the character's stats. `forced` locks the
+    // condition; the consequence (condition +1 on a failure) is applied by the
+    // host sheet, which owns the conditions state.
+    const openForcedResist = ({ conditionId, dc }) => {
+      setResistRoll({
+        id: "gmreq-" + Date.now(),
+        label: "Forced save",
+        dc: dc != null ? dc : null,
+        degrees: 1,
+        forced: { condition: conditionId, dc: dc != null ? dc : null },
+        resist: {
+          condition: conditionId,
+          eyebrow: "Game Master",
+          heading: "A save is called for",
+          verdict: "The Game Master calls for a save — roll to resist.",
+        },
       });
     };
 
@@ -136,7 +157,7 @@
       state: { log, dock, pending, resistRoll, artifactResistRoll },
       handlers: {
         pushRoll, openPrompt, confirmPrompt, cancelPrompt,
-        onResist, closeResist, closeArtifactResist,
+        onResist, openForcedResist, closeResist, closeArtifactResist,
         setDock,
         conjureParty, conjureGM, conjureInflection,
         meWho,

@@ -15,6 +15,14 @@ type FrameRef = { current: HTMLIFrameElement | null };
  *   host → iframe : sf-roll-remote { roll }       backlog item / another player's
  *                                                 roll / this client's own echo
  *
+ * Roll prompts (GM asks a player to roll; the player's own sheet does the math):
+ *   iframe → host : sf-roll-request  { prompt }   GM → "player X, resist Fear DC 14"
+ *   host → iframe : sf-prompt-remote { prompt }   delivered to every member
+ *
+ * Prompts are transient Realtime *broadcast* (not stored): if the target is
+ * offline they simply never arrive — a silent no-op, by design. Roll *results*
+ * still flow back durably through the `rolls` table below.
+ *
  * Durability: rolls are written to the `rolls` table and streamed back via
  * postgres_changes; on `sf-roll-ready` the host replays recent history so
  * reloads and late joiners see the log. The iframe dedups by the roll's id, so
@@ -36,6 +44,11 @@ export function useRollChannel(
     function postToFrame(roll: unknown) {
       const win = frameRef.current?.contentWindow;
       if (win) win.postMessage({ type: "sf-roll-remote", roll }, window.location.origin);
+    }
+
+    function postPromptToFrame(prompt: unknown) {
+      const win = frameRef.current?.contentWindow;
+      if (win) win.postMessage({ type: "sf-prompt-remote", prompt }, window.location.origin);
     }
 
     async function ensureUserId() {
@@ -77,13 +90,16 @@ export function useRollChannel(
       if (!msg || typeof msg !== "object") return;
       if (msg.type === "sf-roll-ready") sendBacklog();
       else if (msg.type === "sf-roll") persistRoll(msg.roll);
+      else if (msg.type === "sf-roll-request" && msg.prompt) {
+        // Broadcast the GM's prompt to the party (transient; no replay).
+        channel.send({ type: "broadcast", event: "prompt", payload: msg.prompt });
+      }
     }
-    window.addEventListener("message", onMessage);
 
-    // Live inserts (including this client's own) → forward to the iframe, which
-    // dedups by roll id.
     const channel = supabase
       .channel(`rolls:${campaignId}`)
+      // Live inserts (including this client's own) → forward to the iframe,
+      // which dedups by roll id.
       .on(
         "postgres_changes",
         {
@@ -94,7 +110,11 @@ export function useRollChannel(
         },
         (payload) => postToFrame((payload.new as { payload: unknown }).payload)
       )
+      // GM roll prompts → forward to the iframe (only the target acts on it).
+      .on("broadcast", { event: "prompt" }, ({ payload }) => postPromptToFrame(payload))
       .subscribe();
+
+    window.addEventListener("message", onMessage);
 
     return () => {
       cancelled = true;

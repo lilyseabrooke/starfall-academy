@@ -29,6 +29,8 @@ window.SF_HOST = (function () {
   // Shared roll wiring (see host-bridge.js for the mirror on the player side).
   let rollSink = null;
   const rollQueue = [];
+  let promptSink = null;
+  const promptQueue = [];
 
   function tryMount() {
     if (mounted || !mountFn || !inited) return;
@@ -53,12 +55,19 @@ window.SF_HOST = (function () {
     else rollQueue.push(roll);
   }
 
+  function injectPrompt(prompt) {
+    if (!prompt || typeof prompt !== "object") return;
+    if (promptSink) promptSink(prompt);
+    else promptQueue.push(prompt);
+  }
+
   if (host) {
     window.addEventListener("message", function (e) {
       const m = e.data;
       if (!m || typeof m !== "object") return;
       if (m.type === "sf-gm-init") init(m.data || null);
       else if (m.type === "sf-roll-remote") injectRoll(m.roll);
+      else if (m.type === "sf-prompt-remote") injectPrompt(m.prompt);
     });
     host.postMessage({ type: "sf-gm-request" }, "*");
     // Fallback: if the host never answers, mount with seed data anyway.
@@ -79,6 +88,15 @@ window.SF_HOST = (function () {
     /** Share a locally-made roll with the campaign. No-op when not multiplayer. */
     shareRoll: function (roll) {
       if (host && window.SF_MULTIPLAYER && roll) host.postMessage({ type: "sf-roll", roll: roll }, "*");
+    },
+    /** Ask the campaign to make a roll (GM use). No-op when not multiplayer. */
+    requestRoll: function (prompt) {
+      if (host && window.SF_MULTIPLAYER && prompt) host.postMessage({ type: "sf-roll-request", prompt: prompt }, "*");
+    },
+    /** Register a sink for incoming roll prompts; flush any that arrived early. */
+    onPrompt: function (fn) {
+      promptSink = fn;
+      while (promptQueue.length) fn(promptQueue.shift());
     },
   };
 })();
