@@ -34,6 +34,6 @@ export interface InvHandlers {
   repairWand: (w: Wand, anchorEl: HTMLElement) => void;
   setWandCondition: (w: Wand, value: number) => void;
   takePotion: (p: Potion, anchorEl: HTMLElement) => void;
-  useItem: (it: Item, anchorEl: HTMLElement) => void;
+  useItem: (it: Item, anchorEl?: HTMLElement | null) => void;
   usePlant: (pl: Plant, anchorEl: HTMLElement) => void;
 }

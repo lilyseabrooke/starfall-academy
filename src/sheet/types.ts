@@ -366,11 +366,15 @@ export interface Wand {
   id: string;
   dbId?: string;
   name: string;
+  /** Display level/tier (drives card accent); absent on seed wands. */
+  level?: string;
   equipped: boolean;
   /** Condition tracked in materials, 0..maxCondition. */
   condition: number;
   maxCondition: number;
   twisted?: boolean;
+  /** Transient flag while the wand is being crafted (can't equip yet). */
+  crafting?: boolean;
   desc: string;
   effect: WandEffect;
 }
@@ -389,6 +393,12 @@ export interface Item {
   name: string;
   qty: number;
   desc: string;
+  // Optional fields carried on compendium-sourced items (absent on seed items):
+  cost?: number;
+  singleUse?: boolean | string;
+  check?: string | null;
+  tags?: string[] | string;
+  dbId?: string;
 }
 
 /** The inventory slice (app.jsx inventory state). `runeStack` is the in-progress
