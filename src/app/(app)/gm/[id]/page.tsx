@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { toGMPartyMember, type CharacterRow } from "../../characters/roster";
 import GMViewFrame from "./GMViewFrame";
 
 export const metadata = {
@@ -28,5 +29,14 @@ export default async function GMToolsPage({
 
   if (error || !campaign) notFound();
 
-  return <GMViewFrame campaign={campaign} />;
+  // The campaign's player characters (cross-user — RLS lets the GM read members'
+  // characters). NPCs (type='npc') are managed in the GM view, not the party board.
+  const { data: partyRows } = await supabase
+    .from("characters")
+    .select("id, name, sheet")
+    .eq("campaign_id", campaign.id)
+    .eq("type", "pc");
+  const party = (partyRows ?? []).map((r) => toGMPartyMember(r as CharacterRow));
+
+  return <GMViewFrame campaign={campaign} party={party} />;
 }

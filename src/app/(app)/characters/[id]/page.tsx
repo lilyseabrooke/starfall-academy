@@ -19,15 +19,28 @@ export default async function CharacterSheetPage({
   // RLS guarantees this only returns a row the user owns.
   const { data: character, error } = await supabase
     .from("characters")
-    .select("id, name, sheet, campaign_code")
+    .select("id, name, sheet, campaign_code, campaign_id")
     .eq("id", id)
     .single();
 
   if (error || !character) notFound();
 
-  // Party = the user's characters that share this one's campaign code.
+  // Party + realtime channel:
+  // - Joined a real campaign (campaign_id) → the whole party, cross-user (RLS
+  //   lets campaign-mates read each other) + a shared roll channel.
+  // - Legacy code-only group (campaign_code, no campaign) → the user's own
+  //   characters sharing that code, no realtime.
+  // - Unaffiliated → just this character.
   let roster: RosterMember[];
-  if (character.campaign_code) {
+  let campaignId: string | null = null;
+  if (character.campaign_id) {
+    campaignId = character.campaign_id;
+    const { data: party } = await supabase
+      .from("characters")
+      .select("id, name, sheet")
+      .eq("campaign_id", character.campaign_id);
+    roster = (party ?? []).map((p) => toRosterMember(p as CharacterRow, character.id));
+  } else if (character.campaign_code) {
     const { data: party } = await supabase
       .from("characters")
       .select("id, name, sheet")
@@ -44,6 +57,7 @@ export default async function CharacterSheetPage({
       initialSheet={character.sheet}
       roster={roster}
       me={character.id}
+      campaignId={campaignId}
     />
   );
 }

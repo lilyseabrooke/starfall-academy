@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import LoadingScreen from "@/components/LoadingScreen";
+import { useRollChannel } from "../../useRollChannel";
+import type { GMPartyMember } from "../../characters/roster";
 
 type Campaign = { id: string; name: string | null; code: string | null };
 
@@ -17,9 +19,19 @@ type Campaign = { id: string; name: string | null; code: string | null };
  * the campaign name/code is wired through today. Real campaign-backed data lands
  * with the multiplayer + GM data milestone (see design/INTEGRATION.md).
  */
-export default function GMViewFrame({ campaign }: { campaign: Campaign }) {
+export default function GMViewFrame({
+  campaign,
+  party,
+}: {
+  campaign: Campaign;
+  party: GMPartyMember[];
+}) {
   const frameRef = useRef<HTMLIFrameElement>(null);
   const [ready, setReady] = useState(false);
+
+  // Shared dice log: the GM's rolls broadcast to the party, and the party's
+  // rolls land in the GM ledger. characterId is null — the GM rolls as the GM.
+  useRollChannel(campaign.id, frameRef, null);
 
   useEffect(() => {
     function sendInit() {
@@ -28,7 +40,11 @@ export default function GMViewFrame({ campaign }: { campaign: Campaign }) {
       win.postMessage(
         {
           type: "sf-gm-init",
-          data: { campaign: { id: campaign.id, name: campaign.name, code: campaign.code } },
+          data: {
+            campaign: { id: campaign.id, name: campaign.name, code: campaign.code },
+            campaignId: campaign.id,
+            party,
+          },
         },
         window.location.origin
       );
@@ -49,7 +65,7 @@ export default function GMViewFrame({ campaign }: { campaign: Campaign }) {
 
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [campaign]);
+  }, [campaign, party]);
 
   // Safety net: never trap the user behind the loading screen.
   useEffect(() => {
@@ -70,7 +86,11 @@ export default function GMViewFrame({ campaign }: { campaign: Campaign }) {
           win.postMessage(
             {
               type: "sf-gm-init",
-              data: { campaign: { id: campaign.id, name: campaign.name, code: campaign.code } },
+              data: {
+                campaign: { id: campaign.id, name: campaign.name, code: campaign.code },
+                campaignId: campaign.id,
+                party,
+              },
             },
             window.location.origin
           );
