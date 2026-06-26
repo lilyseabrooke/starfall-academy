@@ -86,6 +86,87 @@ edits persist across visits.
   same code. `PATCH /api/characters/[id]` accepts `campaign_code`; `DELETE`
   removes a character; `POST /api/characters` creates one.
 
+## GM view (Faculty View) — the GM dashboard handoff
+
+The Claude Design "Starfall Academy GM tools" handoff is landed as a **seed-data
+prototype** alongside the character sheet, deliberately reusing the sheet's
+shared systems so a single source change to the fundamental mechanics shows up
+in both views. (Strategy agreed: land it working now; real campaign membership,
+cross-user party, GM role and persistence come with the roadmap's campaigns + GM
+milestone — see `design/ROADMAP.md`.)
+
+### Where it lives
+All under `public/character-sheet/`, next to the sheet so they share modules:
+
+- `gm.html` — entry. Same boot order and CSS as `index.html`, but mounts
+  `gm.jsx` instead of `app.jsx` and loads `gm-host-bridge.js` + `gm-data.js`.
+  Runs standalone at `/character-sheet/gm.html`, and is mounted in the app at
+  `/gm/[id]` (see "Mounted in the app" below).
+- `gm.jsx` — the GM app root (`GMApp`). Tabs: **Party board, NPCs, Notes,
+  Action scene**. Modals: **Force-Resist, Add/Edit NPC, Time tracker, Grant
+  drawer**.
+- `gm-data.js` (`window.SF_GM_DATA`) — seed party / basic NPCs / notes / time /
+  roll-ledger seed. The analogue of the sheet's `data.js` roster.
+- `gm.css` — GM-only surfaces only (party/NPC/action/notes/modals). The shell is
+  styled by the shared `app.css` / `rolls.css` / `inventory.css`.
+- `gm-host-bridge.js` — gates the mount like `host-bridge.js`, with GM-flavoured
+  message names (`sf-gm-request` / `sf-gm-init`) reserved for the future live
+  mount. Standalone mounts immediately on seed data.
+
+### What is shared vs. authored fresh (the placeholders that were replaced)
+The handoff prototype re-implemented several things the sheet already owns; those
+were dropped in favour of the sheet's definitive versions:
+
+- **Roll engine + ledger + dock + toasts** → `window.useRollState`,
+  `SF_RollDock`, `SF_RollToasts` (roll-state.js / rolls.jsx). GM dice (Force
+  Resist, NPC Strong/Weak, Action rolls, the GM quick-roll) go through
+  `pushRoll`, so styling/mechanics match the sheet. **GM narration / grants are
+  status toasts** (the sheet's `sf-inv-toast`), not ledger rows — the shared
+  ledger renders rolls, so non-roll "events" map onto the status toast instead
+  of extending the roll engine.
+- **Left nav bar** → `SF_Sidebar` was generalised with a `gm` config (in
+  `parts.jsx`) so both views share one component, its CSS and the mobile
+  slide-in. Player rendering is unchanged when `gm` is absent.
+- **Compendium** → the Grant drawer reuses the shared `sf-drawer` / `sf-scrim`
+  chrome and reads the real `SF_DATA.compendium`. It adds the GM-only bits the
+  sheet doesn't have: a **Materials** granting tab and a per-entry **Grant to
+  &lt;member&gt;** action.
+- **Mechanics derived from the sheet, not invented:** Force-Resist rolls the
+  targeted player's resist stat vs a GM-set DC through the shared resist roll
+  (auto-fail on a natural 1, auto-succeed on a 10). "Begin Action" rolls each
+  combatant's real **Action Roll** (2d10 + Insight vs DC 10; starting AP =
+  degrees of success, capped at AP max) — the same formula already in `app.jsx`,
+  replacing the prototype's `// filler` AP placeholder.
+
+### Mounted in the app
+The GM view is reachable from the signed-in app:
+
+- **`campaigns` table** (migration `20260626000000_create_campaigns.sql`): the
+  first slice of roadmap F2. A campaign is GM-owned (`gm_id`) with a join `code`
+  and a `name`; RLS is `gm_id = auth.uid()` (member reads arrive with
+  multiplayer). The `code` reuses the player join-code format so it ties to the
+  existing `characters.campaign_code` grouping later. **Remember table grants** —
+  done in the migration.
+- **`/api/campaigns`** (POST create with a generated unique code) and
+  **`/api/campaigns/[id]`** (PATCH rename / DELETE), mirroring the characters API.
+- **`/characters`** gained a "Campaigns you run" section (`CampaignsList.tsx`)
+  below the roster, mirroring the page's card styling. It lists the user's GM
+  campaigns and links each to `/gm/[id]`; a "New campaign" action creates one.
+- **`/gm/[id]`** (auth-gated, RLS-scoped fetch) renders `GMViewFrame`, an iframe
+  host for `gm.html` that passes the campaign `{name, code}` through the
+  `sf-gm-init` bridge so the GM top bar shows the real campaign name.
+
+### Deferred (next milestones, not built here)
+- Live data: party from real campaign membership, cross-user reads (RLS),
+  persistence of GM-owned NPCs / notes / time. Today the GM tools still run on
+  seed data — only the campaign identity (name/code) is wired through.
+- Party nav links open character sheets (currently a status toast); wiring lands
+  with cross-user campaign reads.
+- Players' `campaign_code` ↔ `campaigns.code` are not yet reconciled into shared
+  membership (the GM's party is still resolved per the phase-1 stopgap).
+- **Full** NPC sheets stored like characters (`type='npc'`). Only **basic** NPCs
+  (Strong/Weak) exist now, matching the handoff.
+
 ## Known limitations
 
 - The prototype loads React / Babel / Lucide from unpkg at runtime (fine in the

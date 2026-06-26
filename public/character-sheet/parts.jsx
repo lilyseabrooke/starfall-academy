@@ -33,7 +33,58 @@
   const TONE_500 = SHARED.TONE_500;
 
   /* ----------------------------- Sidebar -------------------------------- */
-  function Sidebar({ data, active, onNavigate, roster, activeChar, onPickChar, compCount, onAddCharacter, onEditCharacter, collapsed, onToggleSidebar, mobileOpen, onMobileClose }) {
+  function Sidebar({ data, active, onNavigate, roster, activeChar, onPickChar, compCount, onAddCharacter, onEditCharacter, collapsed, onToggleSidebar, mobileOpen, onMobileClose, gm }) {
+    // GM variant — same chrome (slide-in, collapse, nav styling) as the player
+    // sheet, with the GM's "The Table" tabs and "The Party" links out to sheets.
+    // Reuses the shared sf-side / sf-nav / sf-roster classes so any styling or
+    // mobile slide-in change made for the sheet shows up here too.
+    if (gm) {
+      return (
+        <aside className={"sf-side sf-side--gm" + (collapsed ? " is-collapsed" : "") + (mobileOpen ? " is-mobile-open" : "")}>
+          <div className="sf-brand">
+            <Crest form="simple" size={38} basePath="assets" />
+            <div className="sf-brand__wm">
+              <span className="sf-brand__name">Starfall</span>
+              <span className="sf-brand__sub">{gm.brandSub || "Faculty View"}</span>
+            </div>
+            <button className="sf-side__close" onClick={onMobileClose} aria-label="Close menu"><Ic name="x" /></button>
+          </div>
+
+          <nav className="sf-nav">
+            <div className="sf-nav__label sf-eyebrow">{gm.tableLabel || "The Table"}</div>
+            {(gm.tabs || []).map((n) => (
+              <button key={n.id} className={"sf-nav__item" + (n.active ? " is-active" : "")} onClick={() => { n.onClick && n.onClick(); if (onMobileClose) onMobileClose(); }} title={collapsed ? n.label : undefined}>
+                <Ic name={n.icon} />
+                <span className="sf-side__label">{n.label}</span>
+                {n.count != null && n.count !== "" ? <span className="sf-nav__count">{n.count}</span> : null}
+              </button>
+            ))}
+          </nav>
+
+          <nav className="sf-nav sf-nav--party">
+            <div className="sf-nav__label sf-eyebrow">{gm.partyLabel || "The Party"}</div>
+            <div className="sf-roster">
+              {(gm.party || []).map((p) => (
+                <button key={p.id} className="sf-roster__item sf-roster__item--link" onClick={() => { p.onOpen && p.onOpen(p.id); if (onMobileClose) onMobileClose(); }} title={collapsed ? p.name + " · " + p.house : ("Open " + p.name + "’s character sheet")}>
+                  <span className={"sf-avatar t-" + p.tone}>{p.initials}</span>
+                  <span className="sf-roster__meta">
+                    <span className="sf-roster__name">{p.name}</span>
+                    <span className="sf-roster__house">{p.house}</span>
+                  </span>
+                  <Ic name="arrow-up-right" className="sf-roster__go" />
+                </button>
+              ))}
+            </div>
+          </nav>
+
+          <button className="sf-side__toggle-btn" onClick={onToggleSidebar} title={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
+            <Ic name={collapsed ? "chevrons-right" : "chevrons-left"} />
+            <span className="sf-side__label">{collapsed ? "Expand" : "Collapse"}</span>
+          </button>
+        </aside>
+      );
+    }
+
     const nav = [
       { id: "overview", label: "Overview", icon: "shield-half" },
       { id: "classes", label: "Classes", icon: "graduation-cap" },

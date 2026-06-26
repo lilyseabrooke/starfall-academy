@@ -1,5 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
-import CharactersView, { type CharacterCard } from "./CharactersView";
+import CharactersView, {
+  type CharacterCard,
+  type CampaignCard,
+} from "./CharactersView";
 
 export const metadata = {
   title: "Characters — Starfall Academy",
@@ -59,17 +62,37 @@ function toCard(row: {
 
 export default async function CharactersPage() {
   const supabase = await createClient();
-  // RLS scopes this to the signed-in owner.
+  // RLS scopes both queries to the signed-in user (owner of characters, GM of
+  // campaigns).
   const { data: characters } = await supabase
     .from("characters")
     .select("id, name, sheet, campaign_code, updated_at")
+    .order("updated_at", { ascending: false });
+  const { data: campaigns } = await supabase
+    .from("campaigns")
+    .select("id, name, code, updated_at")
     .order("updated_at", { ascending: false });
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const cards = (characters ?? []).map(toCard);
+  const characterCards = (characters ?? []).map(toCard);
+  const campaignCards: CampaignCard[] = (campaigns ?? []).map((cm) => {
+    const name = (cm.name || "Untitled campaign").toString();
+    return {
+      id: cm.id,
+      name,
+      monogram: initialsOf(name),
+      code: cm.code ?? "",
+    };
+  });
 
-  return <CharactersView characters={cards} userEmail={user?.email ?? null} />;
+  return (
+    <CharactersView
+      characters={characterCards}
+      campaigns={campaignCards}
+      userEmail={user?.email ?? null}
+    />
+  );
 }

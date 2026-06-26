@@ -9,20 +9,26 @@ import {
   ArrowRightLeft,
   BookMarked,
   BookOpen,
+  Check,
   Compass,
+  Copy,
+  Crown,
   Feather,
   KeyRound,
   LogOut,
   Map,
   Menu,
   MessageCircle,
+  Pencil,
   Plus,
   ScrollText,
   Settings2,
   Sparkles,
   Swords,
+  Trash2,
   UserMinus,
   UsersRound,
+  Wand2,
   X,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -38,6 +44,13 @@ export type CharacterCard = {
   house: string;
   tone: string;
   campaign: string | null;
+};
+
+export type CampaignCard = {
+  id: string;
+  name: string;
+  monogram: string;
+  code: string;
 };
 
 type IconType = typeof BookOpen;
@@ -65,25 +78,44 @@ function makeCode() {
   ).join("");
 }
 
+type ManageTarget = { kind: "character" | "campaign"; id: string };
+
 export default function CharactersView({
   characters,
+  campaigns,
   userEmail,
 }: {
   characters: CharacterCard[];
+  campaigns: CampaignCard[];
   userEmail: string | null;
 }) {
   const router = useRouter();
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [showDiscord, setShowDiscord] = useState(false);
-  // The character whose manage popup is open, plus its inner view.
-  const [manageId, setManageId] = useState<string | null>(null);
-  const [manageView, setManageView] = useState<"menu" | "join">("menu");
+  // The card whose manage popup is open, plus its inner view.
+  const [manage, setManage] = useState<ManageTarget | null>(null);
+  const [manageView, setManageView] = useState<"menu" | "join" | "rename">(
+    "menu"
+  );
   const [joinCode, setJoinCode] = useState("");
+  const [renameValue, setRenameValue] = useState("");
   const [busy, setBusy] = useState(false);
+  // New-campaign popup (asks for a name before opening the GM tools).
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createName, setCreateName] = useState("");
+  const [copied, setCopied] = useState<string | null>(null);
 
   const avatarInitial = (userEmail?.trim()[0] ?? "I").toUpperCase();
-  const managed = characters.find((c) => c.id === manageId) ?? null;
+
+  const managedCharacter =
+    manage?.kind === "character"
+      ? characters.find((c) => c.id === manage.id) ?? null
+      : null;
+  const managedCampaign =
+    manage?.kind === "campaign"
+      ? campaigns.find((c) => c.id === manage.id) ?? null
+      : null;
 
   async function signOut() {
     const supabase = createClient();
@@ -91,16 +123,18 @@ export default function CharactersView({
     router.refresh();
   }
 
-  function openManage(id: string) {
-    setManageId(id);
+  function openManage(target: ManageTarget, name?: string) {
+    setManage(target);
     setManageView("menu");
     setJoinCode("");
+    setRenameValue(name ?? "");
   }
   function closeManage() {
-    setManageId(null);
+    setManage(null);
   }
 
-  async function setCampaign(id: string, code: string | null) {
+  // ---- character campaign membership (phase-1 join code on the character) ----
+  async function setCharacterCampaign(id: string, code: string | null) {
     setBusy(true);
     await fetch(`/api/characters/${id}`, {
       method: "PATCH",
@@ -112,13 +146,70 @@ export default function CharactersView({
     router.refresh();
   }
 
-  async function remove(id: string) {
+  async function removeCharacter(id: string) {
     if (!confirm("Withdraw this character? This cannot be undone.")) return;
     setBusy(true);
     await fetch(`/api/characters/${id}`, { method: "DELETE" }).catch(() => {});
     setBusy(false);
     closeManage();
     router.refresh();
+  }
+
+  // ---- campaigns the user runs as GM ----
+  async function createCampaign() {
+    if (busy) return;
+    const name = createName.trim();
+    if (!name) return;
+    setBusy(true);
+    try {
+      const res = await fetch("/api/campaigns", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (res.ok) {
+        const { id } = await res.json();
+        router.push(`/gm/${id}`);
+        return;
+      }
+    } catch {
+      /* fall through to re-enable the form */
+    }
+    setBusy(false);
+  }
+
+  async function renameCampaign(id: string, name: string) {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    setBusy(true);
+    await fetch(`/api/campaigns/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: trimmed }),
+    }).catch(() => {});
+    setBusy(false);
+    closeManage();
+    router.refresh();
+  }
+
+  async function removeCampaign(id: string) {
+    if (!confirm("Delete this campaign? This cannot be undone.")) return;
+    setBusy(true);
+    await fetch(`/api/campaigns/${id}`, { method: "DELETE" }).catch(() => {});
+    setBusy(false);
+    closeManage();
+    router.refresh();
+  }
+
+  function copyCode(code: string) {
+    navigator.clipboard?.writeText(code).catch(() => {});
+    setCopied(code);
+    window.setTimeout(() => setCopied((c) => (c === code ? null : c)), 1600);
+  }
+
+  function openCreate() {
+    setCreateName("");
+    setCreateOpen(true);
   }
 
   return (
@@ -224,8 +315,8 @@ export default function CharactersView({
       <main className="cp-main">
         <div className="cp-watermark" aria-hidden="true" />
 
+        {/* -------------------- CHARACTERS -------------------- */}
         <section className="cp-section">
-          {/* page heading */}
           <div className="cp-head">
             <div>
               <div className="cp-eyebrow">
@@ -249,7 +340,6 @@ export default function CharactersView({
 
           <div className="cp-rule" />
 
-          {/* character grid */}
           <div className="cp-grid">
             {characters.map((ch) => {
               const toneClass = KNOWN_TONES.has(ch.tone)
@@ -257,7 +347,6 @@ export default function CharactersView({
                 : "house--gold";
               return (
                 <article key={ch.id} className={`sa-char-card ${toneClass}`}>
-                  {/* top: token + identity */}
                   <div className="cp-card__top">
                     <div className="cp-token">
                       <span className="cp-token__ring" />
@@ -281,7 +370,6 @@ export default function CharactersView({
 
                   <div className="cp-card__divider" />
 
-                  {/* bottom: campaign status */}
                   <div className="cp-card__campaign">
                     <span className="cp-card__campaign-label">Campaign</span>
 
@@ -303,7 +391,9 @@ export default function CharactersView({
                         </Link>
                         <button
                           className="sa-manage"
-                          onClick={() => openManage(ch.id)}
+                          onClick={() =>
+                            openManage({ kind: "character", id: ch.id })
+                          }
                         >
                           <Settings2 size={15} aria-hidden="true" />
                           Manage
@@ -312,7 +402,9 @@ export default function CharactersView({
                     ) : (
                       <button
                         className="sa-join"
-                        onClick={() => openManage(ch.id)}
+                        onClick={() =>
+                          openManage({ kind: "character", id: ch.id })
+                        }
                       >
                         <Compass
                           className="sa-join__icon"
@@ -337,7 +429,6 @@ export default function CharactersView({
               );
             })}
 
-            {/* new character tile */}
             <Link className="sa-newcard" href="/characters/new">
               <span className="sa-newcard__icon">
                 <Plus size={24} aria-hidden="true" />
@@ -347,11 +438,115 @@ export default function CharactersView({
           </div>
         </section>
 
+        {/* -------------------- CAMPAIGNS -------------------- */}
+        <section className="cp-section cp-section--campaigns">
+          <div className="cp-head">
+            <div>
+              <div className="cp-eyebrow">
+                <span className="cp-eyebrow__rule" />
+                War Room · {campaigns.length}{" "}
+                {campaigns.length === 1 ? "campaign" : "campaigns"} running
+              </div>
+              <h1 className="cp-title">Campaigns You Run</h1>
+              <p className="cp-lede">
+                The games you steer as Game Master. Open one for the GM tools,
+                share its join code with your players, or summon a new campaign
+                into being.
+              </p>
+            </div>
+            <button className="sa-btn-primary" onClick={openCreate}>
+              <Crown size={17} aria-hidden="true" />
+              New Campaign
+            </button>
+          </div>
+
+          <div className="cp-rule" />
+
+          <div className="cp-grid">
+            {campaigns.map((cm) => (
+              <article key={cm.id} className="sa-char-card house--gold">
+                <div className="cp-card__top">
+                  <div className="cp-token">
+                    <span className="cp-token__ring" />
+                    <span className="cp-token__face">
+                      <span className="cp-token__mono">{cm.monogram}</span>
+                    </span>
+                  </div>
+                  <div className="cp-id">
+                    <span className="cp-id__name">{cm.name}</span>
+                    <span className="cp-id__pronouns">Game Master</span>
+                    <div className="cp-id__meta">
+                      <span className="cp-pill">GM</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="cp-card__divider" />
+
+                <div className="cp-card__campaign">
+                  <span className="cp-card__campaign-label">Join Code</span>
+
+                  <Link className="sa-open" href={`/gm/${cm.id}`}>
+                    <span className="sa-open__icon">
+                      <Wand2 size={18} aria-hidden="true" />
+                    </span>
+                    <span className="cp-code">{cm.code}</span>
+                    <span className="sa-open__go">
+                      Open GM Tools
+                      <ArrowRight
+                        className="sa-open-chev"
+                        size={14}
+                        aria-hidden="true"
+                      />
+                    </span>
+                  </Link>
+
+                  <div className="cp-card__actions">
+                    <button
+                      className="sa-manage cp-copy"
+                      onClick={() => copyCode(cm.code)}
+                      disabled={!cm.code}
+                    >
+                      {copied === cm.code ? (
+                        <>
+                          <Check size={15} aria-hidden="true" />
+                          Copied
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={15} aria-hidden="true" />
+                          Copy Code
+                        </>
+                      )}
+                    </button>
+                    <button
+                      className="sa-manage"
+                      onClick={() =>
+                        openManage({ kind: "campaign", id: cm.id }, cm.name)
+                      }
+                    >
+                      <Settings2 size={15} aria-hidden="true" />
+                      Manage
+                    </button>
+                  </div>
+                </div>
+              </article>
+            ))}
+
+            <button className="sa-newcard" onClick={openCreate}>
+              <span className="sa-newcard__icon">
+                <Plus size={24} aria-hidden="true" />
+              </span>
+              <span className="sa-newcard__label">Found a New Campaign</span>
+            </button>
+          </div>
+        </section>
+
         <footer className="lp-footer">Starfall Academy · Semper Ad Astra</footer>
       </main>
 
-      {/* ===================== MANAGE / JOIN POPUP ===================== */}
-      {managed && (
+      {/* ===================== CHARACTER MANAGE / JOIN POPUP ===================== */}
+      {managedCharacter && (
         <div
           className="lp-modal-overlay"
           onClick={closeManage}
@@ -371,19 +566,19 @@ export default function CharactersView({
             {manageView === "menu" ? (
               <>
                 <span className="cp-modal__eyebrow">
-                  {managed.campaign
+                  {managedCharacter.campaign
                     ? "Manage Enrollment"
                     : "Campaign Enrollment"}
                 </span>
-                <h2 className="cp-modal__title">{managed.name}</h2>
+                <h2 className="cp-modal__title">{managedCharacter.name}</h2>
                 <p className="cp-modal__copy">
-                  {managed.campaign
-                    ? `Currently enrolled in ${managed.campaign}.`
+                  {managedCharacter.campaign
+                    ? `Currently enrolled in ${managedCharacter.campaign}.`
                     : "Not yet enrolled in a campaign."}
                 </p>
 
                 <div className="cp-modal__opts">
-                  {managed.campaign ? (
+                  {managedCharacter.campaign ? (
                     <>
                       <button
                         className="sa-manage-opt"
@@ -407,7 +602,9 @@ export default function CharactersView({
                       <button
                         className="sa-manage-opt sa-manage-opt-danger"
                         disabled={busy}
-                        onClick={() => setCampaign(managed.id, null)}
+                        onClick={() =>
+                          setCharacterCampaign(managedCharacter.id, null)
+                        }
                       >
                         <span className="sa-manage-opt__icon sa-manage-opt__icon--crimson">
                           <UserMinus size={18} aria-hidden="true" />
@@ -427,7 +624,9 @@ export default function CharactersView({
                       <button
                         className="sa-manage-opt"
                         disabled={busy}
-                        onClick={() => setCampaign(managed.id, makeCode())}
+                        onClick={() =>
+                          setCharacterCampaign(managedCharacter.id, makeCode())
+                        }
                       >
                         <span className="sa-manage-opt__icon sa-manage-opt__icon--gold">
                           <Sparkles size={18} aria-hidden="true" />
@@ -466,7 +665,7 @@ export default function CharactersView({
                   <button
                     className="sa-manage-opt sa-manage-opt-danger"
                     disabled={busy}
-                    onClick={() => remove(managed.id)}
+                    onClick={() => removeCharacter(managedCharacter.id)}
                   >
                     <span className="sa-manage-opt__icon sa-manage-opt__icon--crimson">
                       <UserMinus size={18} aria-hidden="true" />
@@ -492,7 +691,7 @@ export default function CharactersView({
                   Back
                 </button>
                 <span className="cp-modal__eyebrow">Join a Campaign</span>
-                <h2 className="cp-modal__title">{managed.name}</h2>
+                <h2 className="cp-modal__title">{managedCharacter.name}</h2>
                 <p className="cp-modal__copy">
                   Enter the code shared by your game to enroll in that campaign.
                 </p>
@@ -501,7 +700,7 @@ export default function CharactersView({
                   onSubmit={(e) => {
                     e.preventDefault();
                     const code = joinCode.trim().toUpperCase();
-                    if (code) setCampaign(managed.id, code);
+                    if (code) setCharacterCampaign(managedCharacter.id, code);
                   }}
                 >
                   <input
@@ -522,6 +721,186 @@ export default function CharactersView({
                 </form>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ===================== CAMPAIGN MANAGE POPUP ===================== */}
+      {managedCampaign && (
+        <div
+          className="lp-modal-overlay"
+          onClick={closeManage}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Manage campaign"
+        >
+          <div className="cp-modal" onClick={(e) => e.stopPropagation()}>
+            <button
+              className="cp-modal__close"
+              onClick={closeManage}
+              aria-label="Close"
+            >
+              <X size={15} aria-hidden="true" />
+            </button>
+
+            {manageView === "rename" ? (
+              <>
+                <button
+                  className="cp-modal__back"
+                  onClick={() => setManageView("menu")}
+                >
+                  <ArrowLeft size={14} aria-hidden="true" />
+                  Back
+                </button>
+                <span className="cp-modal__eyebrow">Rename Campaign</span>
+                <h2 className="cp-modal__title">{managedCampaign.name}</h2>
+                <p className="cp-modal__copy">
+                  Give this campaign a new name. Its join code stays the same.
+                </p>
+                <form
+                  className="cp-join-form"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    renameCampaign(managedCampaign.id, renameValue);
+                  }}
+                >
+                  <input
+                    className="sa-input-ml cp-input-name"
+                    value={renameValue}
+                    onChange={(e) => setRenameValue(e.target.value)}
+                    placeholder="Campaign name"
+                    maxLength={120}
+                    autoFocus
+                  />
+                  <button
+                    className="sa-btn-primary"
+                    type="submit"
+                    disabled={busy || !renameValue.trim()}
+                  >
+                    <Check size={15} aria-hidden="true" />
+                    Save
+                  </button>
+                </form>
+              </>
+            ) : (
+              <>
+                <span className="cp-modal__eyebrow">Manage Campaign</span>
+                <h2 className="cp-modal__title">{managedCampaign.name}</h2>
+                <p className="cp-modal__copy">
+                  Join code{" "}
+                  <span className="cp-code cp-code--inline">
+                    {managedCampaign.code}
+                  </span>
+                  .
+                </p>
+
+                <div className="cp-modal__opts">
+                  <Link
+                    className="sa-manage-opt"
+                    href={`/gm/${managedCampaign.id}`}
+                  >
+                    <span className="sa-manage-opt__icon sa-manage-opt__icon--gold">
+                      <Wand2 size={18} aria-hidden="true" />
+                    </span>
+                    <span className="sa-manage-opt__text">
+                      <span className="sa-manage-opt__title">Open GM Tools</span>
+                      <span className="sa-manage-opt__sub">
+                        Run the game from the Game Master view.
+                      </span>
+                    </span>
+                  </Link>
+                  <button
+                    className="sa-manage-opt"
+                    onClick={() => {
+                      setRenameValue(managedCampaign.name);
+                      setManageView("rename");
+                    }}
+                  >
+                    <span className="sa-manage-opt__icon sa-manage-opt__icon--teal">
+                      <Pencil size={18} aria-hidden="true" />
+                    </span>
+                    <span className="sa-manage-opt__text">
+                      <span className="sa-manage-opt__title">
+                        Rename Campaign
+                      </span>
+                      <span className="sa-manage-opt__sub">
+                        Change the name shown to you and your players.
+                      </span>
+                    </span>
+                  </button>
+                  <button
+                    className="sa-manage-opt sa-manage-opt-danger"
+                    disabled={busy}
+                    onClick={() => removeCampaign(managedCampaign.id)}
+                  >
+                    <span className="sa-manage-opt__icon sa-manage-opt__icon--crimson">
+                      <Trash2 size={18} aria-hidden="true" />
+                    </span>
+                    <span className="sa-manage-opt__text">
+                      <span className="sa-manage-opt__title">
+                        Delete Campaign
+                      </span>
+                      <span className="sa-manage-opt__sub">
+                        Permanently remove this campaign.
+                      </span>
+                    </span>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ===================== NEW CAMPAIGN POPUP ===================== */}
+      {createOpen && (
+        <div
+          className="lp-modal-overlay"
+          onClick={() => !busy && setCreateOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="New campaign"
+        >
+          <div className="cp-modal" onClick={(e) => e.stopPropagation()}>
+            <button
+              className="cp-modal__close"
+              onClick={() => setCreateOpen(false)}
+              aria-label="Close"
+              disabled={busy}
+            >
+              <X size={15} aria-hidden="true" />
+            </button>
+
+            <span className="cp-modal__eyebrow">Found a Campaign</span>
+            <h2 className="cp-modal__title">Name Your Campaign</h2>
+            <p className="cp-modal__copy">
+              Name the game you&apos;ll run as Game Master. We&apos;ll mint a
+              join code and open the GM tools.
+            </p>
+            <form
+              className="cp-join-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                createCampaign();
+              }}
+            >
+              <input
+                className="sa-input-ml cp-input-name"
+                value={createName}
+                onChange={(e) => setCreateName(e.target.value)}
+                placeholder="The Hollow Observatory"
+                maxLength={120}
+                autoFocus
+              />
+              <button
+                className="sa-btn-primary"
+                type="submit"
+                disabled={busy || !createName.trim()}
+              >
+                <Crown size={15} aria-hidden="true" />
+                {busy ? "Founding…" : "Found"}
+              </button>
+            </form>
           </div>
         </div>
       )}

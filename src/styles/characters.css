@@ -107,6 +107,12 @@
   margin: 30px 0 32px;
 }
 
+/* The campaigns block sits beneath characters, separated by a faint rule. */
+.cp-section--campaigns {
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+
 /* ===================== CHARACTER GRID ===================== */
 .cp-grid {
   display: grid;
@@ -347,6 +353,37 @@
   border-color: var(--gold-600);
   color: var(--text-strong);
   background: var(--ink-800);
+}
+.sa-manage:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* The prominent join code shown in a campaign's "Open GM Tools" row. */
+.cp-code {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 17px;
+  letter-spacing: 0.16em;
+  color: var(--gold-200);
+  text-transform: uppercase;
+}
+.cp-code--inline {
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  color: var(--gold-200);
+}
+
+/* Side-by-side Copy + Manage actions on a campaign card. */
+.cp-card__actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+.cp-card__actions .sa-manage {
+  margin-top: 0;
+  flex: 1;
 }
 
 .sa-join {
@@ -596,6 +633,12 @@
   padding: 0 20px;
   font-size: 12px;
   flex: none;
+}
+/* Free-text name inputs (campaign create / rename) read as prose, not a code. */
+.cp-join-form .sa-input-ml.cp-input-name {
+  font-family: var(--font-serif);
+  text-transform: none;
+  letter-spacing: normal;
 }
 .cp-modal__back {
   display: inline-flex;
