@@ -255,6 +255,10 @@ function GMApp() {
   /* --------------------------- GM quick roll ---------------------------- */
   const quickRoll = () => { const made = pushRoll({ who: gmWho(), kind: "roll", label: "Quick roll · 2d10", stat: "", mod: 0 }); toast("Rolled 2d10 = " + made.total + "."); };
 
+  // Campaign identity comes from the host (sf-gm-init, set on the bridge before
+  // mount) when embedded in the app; falls back to the seed name standalone.
+  const campaignName = (window.SF_GM_INIT && window.SF_GM_INIT.campaign && window.SF_GM_INIT.campaign.name) || GD.campaign.name;
+
   // ---- Sidebar config (shared SF_Sidebar) --------------------------------
   const TAB_META = { party: { eyebrow: "The Party", title: "Party Board", count: party.length }, npcs: { eyebrow: "Cast", title: "NPCs", count: npcs.length }, notes: { eyebrow: "The Desk", title: "Campaign Journal", count: notes.length }, action: { eyebrow: "The Field", title: "Action Scene", count: "" } };
   const sidebarGm = {
@@ -277,7 +281,7 @@ function GMApp() {
         <header className="sf-top gm-top">
           <button className="sf-hamburger" onClick={() => setMobileOpen((v) => !v)} aria-label="Open navigation"><Ic name="menu" /></button>
           <div className="sf-top__titles">
-            <span className="sf-eyebrow gm-top__campaign">{GD.campaign.name}</span>
+            <span className="sf-eyebrow gm-top__campaign">{campaignName}</span>
             <h1 className="sf-top__h1">{TAB_META[tab].title}</h1>
           </div>
           <div className="sf-top__spacer" />

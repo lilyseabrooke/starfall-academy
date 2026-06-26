@@ -100,8 +100,8 @@ All under `public/character-sheet/`, next to the sheet so they share modules:
 
 - `gm.html` — entry. Same boot order and CSS as `index.html`, but mounts
   `gm.jsx` instead of `app.jsx` and loads `gm-host-bridge.js` + `gm-data.js`.
-  Runs standalone at `/character-sheet/gm.html` (no app route yet — not meant to
-  be reachable from the site until the GM milestone).
+  Runs standalone at `/character-sheet/gm.html`, and is mounted in the app at
+  `/gm/[id]` (see "Mounted in the app" below).
 - `gm.jsx` — the GM app root (`GMApp`). Tabs: **Party board, NPCs, Notes,
   Action scene**. Modals: **Force-Resist, Add/Edit NPC, Time tracker, Grant
   drawer**.
@@ -138,11 +138,32 @@ were dropped in favour of the sheet's definitive versions:
   degrees of success, capped at AP max) — the same formula already in `app.jsx`,
   replacing the prototype's `// filler` AP placeholder.
 
+### Mounted in the app
+The GM view is reachable from the signed-in app:
+
+- **`campaigns` table** (migration `20260626000000_create_campaigns.sql`): the
+  first slice of roadmap F2. A campaign is GM-owned (`gm_id`) with a join `code`
+  and a `name`; RLS is `gm_id = auth.uid()` (member reads arrive with
+  multiplayer). The `code` reuses the player join-code format so it ties to the
+  existing `characters.campaign_code` grouping later. **Remember table grants** —
+  done in the migration.
+- **`/api/campaigns`** (POST create with a generated unique code) and
+  **`/api/campaigns/[id]`** (PATCH rename / DELETE), mirroring the characters API.
+- **`/characters`** gained a "Campaigns you run" section (`CampaignsList.tsx`)
+  below the roster, mirroring the page's card styling. It lists the user's GM
+  campaigns and links each to `/gm/[id]`; a "New campaign" action creates one.
+- **`/gm/[id]`** (auth-gated, RLS-scoped fetch) renders `GMViewFrame`, an iframe
+  host for `gm.html` that passes the campaign `{name, code}` through the
+  `sf-gm-init` bridge so the GM top bar shows the real campaign name.
+
 ### Deferred (next milestones, not built here)
 - Live data: party from real campaign membership, cross-user reads (RLS),
-  persistence of GM-owned NPCs / notes / time. Today these are local seed state.
+  persistence of GM-owned NPCs / notes / time. Today the GM tools still run on
+  seed data — only the campaign identity (name/code) is wired through.
 - Party nav links open character sheets (currently a status toast); wiring lands
-  when the GM view mounts in the app next to `/characters/[id]`.
+  with cross-user campaign reads.
+- Players' `campaign_code` ↔ `campaigns.code` are not yet reconciled into shared
+  membership (the GM's party is still resolved per the phase-1 stopgap).
 - **Full** NPC sheets stored like characters (`type='npc'`). Only **basic** NPCs
   (Strong/Weak) exist now, matching the handoff.
 
