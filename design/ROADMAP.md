@@ -39,6 +39,23 @@ Delivered:
 - **Campaigns by code** (stopgap; see below) + a roster page with new/join/leave.
 - Account entry point on the teaser; auth redirect lands on `/characters`.
 
+**Phase 2 — F2 + multiplayer + GM tools — shipped this cycle** (see
+`design/INTEGRATION.md` for the architecture; all on Supabase Realtime, still
+bridge-first / pre-F1):
+- **F2 done.** Real `campaign_members` (player/gm roles), the `characters.campaign_id`
+  FK wired, join/leave via `SECURITY DEFINER` RPCs, and RLS opened to
+  campaign-scoped reads (a `campaigns_for_user()` helper avoids recursion).
+- **Multiplayer (dice + party).** Durable shared roll log (`rolls` table +
+  postgres_changes), cross-user party roster (player selector + the GM board now
+  show real members, not seed).
+- **GM tools as prompts, not GM-side rolls.** Force-Resist and Begin Action
+  *prompt* the targeted player, whose own sheet rolls with its own stats (offline
+  target = silent no-op). The GM never needs player stats — `facs` was removed.
+- **Decided, do not re-litigate:** GM **write-sync** (grants/conditions/vitals
+  writing to player sheets) is the next big goal, and we chose to **do F1 first**
+  so the clean shared-state model falls out of the port rather than fighting the
+  monolithic blob through the bridge. See the F1 section for the kickoff plan.
+
 Operational fixes already applied (don't re-debug these):
 - Supabase **table grants** on `public.characters` (the table was missing
   `select/insert/update/delete` for `authenticated` — every read/write was
@@ -74,16 +91,53 @@ Operational fixes already applied (don't re-debug these):
 
 Ordered roughly by dependency. Foundational items unblock multiple features.
 
-### F1 — Port the sheet to native React 19 (the "then-port" half)
+### F1 — Port the sheet to native React 19 (the "then-port" half) — NEXT UP
 - **Goal:** replace the iframe + in-browser Babel + `window.SF_*` globals with
   bundled ES modules and the app's React 19, under the App Router.
-- **Why:** unlocks server-side data access, real bundling/perf, and lets
-  realtime/GM/compendium features be plain React instead of postMessage.
-- **Notes:** can be incremental — port module-by-module (the prototype is
-  already split: `*-state.js`, `parts.jsx`, `rolls.jsx`, `inventory.jsx`, the
-  Forge, the map). The bridge's `serialize/hydrate` shape is the contract to
-  preserve. This is large; sequence it against feature pressure — some features
-  (basic realtime dice) can ship through the bridge first if needed.
+- **Why now:** it's the prerequisite we chose for clean GM **write-sync** (extract
+  session-mutable vitals from the monolithic `sheet` blob into atomic storage —
+  hard to do safely against the vendored prototype, natural during the port). It
+  also kills the unpkg-CDN / in-browser-Babel runtime (a production non-starter)
+  and turns the realtime/GM/prompt wiring from postMessage into plain hooks.
+
+**What the port replaces** (the current boot is all in
+`public/character-sheet/index.html`):
+- in-browser `@babel/standalone` → Turbopack compiles `.tsx` at build time
+- React 18 UMD (unpkg) → the app's bundled **React 19**
+- `window.SF_*` singletons + ordered `<script>`s → ES module imports/exports
+- `_ds_bundle.js` UMD global (`window.StarfallAcademyDesignSystem_61fef2`) →
+  an importable design-system module (wrap the bundle or port its components)
+- Lucide UMD → **`lucide-react`** (already a dependency)
+- iframe + `host-bridge.js`/`sf-*` postMessage → inline React; props + hooks +
+  direct persistence. The bridge's `serializeSheet`/`applySheet` **shape is the
+  contract to preserve** across the port.
+
+**Suggested porting order (leaf-first, incremental):**
+1. Foundations: make the design system importable; map icons to `lucide-react`;
+   import the CSS; convert pure data/util (`data.js`, `shared.js`,
+   `compendium-db.js`) to ES modules.
+2. State hooks → typed modules: `roll-state`, `magic-state`, `inventory-state`,
+   `classes-state`, `forge-state` (already `useState` hooks — mostly mechanical).
+3. Shared UI `parts.jsx` (~97 KB), then features (`rolls`, `inventory`,
+   `classes`, `bonus`, `search-menu`, `map-tab`, `tweaks-panel`).
+4. The Forge (`forge-steps`, `forge`).
+5. Roots: `app.jsx` / `gm.jsx` become native components rendered by the App
+   Router pages; retire the iframes and the bridge.
+
+**The hard parts (not the mechanical bulk):** ~600 KB of loose Babel JSX →
+typed TSX; consuming the opaque design-system UMD as a module; the live
+Compendium's *mutate-`SF_DATA`-in-place* pattern (doesn't fit React — restructure
+into data loading); de-isolating ~300 KB of global CSS without collisions;
+React 18→19 diffs with **no test suite** (every step is a manual regression).
+
+**Sizing / sequencing:** this is the single largest roadmap item — weeks, not a
+session. For write-sync specifically, start with steps **2 + 5** (state layer +
+player-sheet root, where vitals live), then extract shared state, then GM
+write-sync as native hooks. **Read `node_modules/next/dist/docs/` before writing
+App Router code** (per AGENTS.md — this Next.js differs from training).
+**Suggested first PR:** foundations (step 1) + one ported state hook (e.g.
+`roll-state`) rendered natively behind a flag, proving the build/design-system/CSS
+path end to end before fanning out.
 
 ### F2 — Campaigns as a first-class entity
 - **Goal:** real `campaigns` table (id, name, owner/GM, created_at) + a
@@ -96,32 +150,30 @@ Ordered roughly by dependency. Foundational items unblock multiple features.
   *campaign-relevant* data (see Multiplayer). Keep join-by-code as the UX for
   *joining* a campaign, but back it with the table. Remember table grants.
 
-### Multiplayer (real-time, single-campaign)
-- **Goal:** a live shared session for a campaign's party.
-- **Scope:**
-  - **Shared dice log** across the party (the roll engine already tags rolls
-    with an actor/`meId` and renders a shared `log`/toasts/dock — wire it to a
-    server channel).
-  - **Party presence + locations** (the embedded map already has a postMessage
-    party bridge in `map/party.js`; back it with realtime).
-  - **Cross-user visibility:** RLS policies so campaign-mates can read each
-    other's characters (currently owner-only).
-  - Decide what's shared vs private (rolls/presence/locations/visible vitals)
-    and what stays owner-only.
-- **Depends on:** F2 (membership + roles + RLS). **Tech:** Supabase Realtime
-  (broadcast + presence for ephemeral; Postgres-changes for durable).
+### Multiplayer (real-time, single-campaign) — DICE + PARTY SHIPPED
+- **Done:** durable **shared dice log** (`rolls` + postgres_changes) and
+  **cross-user visibility** (RLS campaign-scoped reads). See `INTEGRATION.md`.
+- **Still open:** **presence** ("who's at the table") and live **map locations**
+  (`map/party.js` exists; back it with realtime broadcast/presence). Decide the
+  shared-vs-private surface as more vitals go live.
+- **Tech:** Supabase Realtime (postgres_changes for durable; broadcast for
+  ephemeral — already used for GM prompts).
 
-### GM access & GM view
-- **Goal:** a GM role within a campaign with tools distinct from the player view.
-- **Scope:**
-  - Role from `campaign_members.role = 'gm'`.
-  - GM can **view all party sheets** (read; scoped write where it makes sense),
-    **adjudicate/trigger rolls** (the roll-prompt system already has GM/"Game
-    Master" actor concepts in `rolls.jsx`), and **manage NPCs** (`type='npc'`
-    already exists in schema).
-  - A dedicated **GM screen/view** (party overview, NPC roster, map control,
-    prompt-pushing) rather than a single player sheet.
-- **Depends on:** F2, Multiplayer (shared channel). Likely smoother after F1.
+### GM access & GM view — ROLE + PROMPT TOOLS SHIPPED; WRITE-SYNC NEXT
+- **Done:** GM role from `campaign_members.role = 'gm'`; GM **reads** all party
+  sheets (RLS); the GM board shows real members; **Force-Resist + Begin Action
+  are prompts** the player's own sheet rolls (no GM-side stats). See
+  `INTEGRATION.md`.
+- **Still open (the write-sync milestone — gated on F1 by our decision):**
+  - GM **writes** to player sheets — grant materials/items/spells, apply
+    conditions, adjust resolve/AP — without clobbering the player's own edits.
+    The clean fix is to extract session-mutable vitals out of the `sheet` blob
+    (do it during F1); GM writes then go through scoped `SECURITY DEFINER` RPCs
+    (not a blanket write policy) + bidirectional realtime apply.
+  - **Persist GM-owned state:** NPCs as real `type='npc'` rows, campaign notes,
+    and the time tracker (these have no player-concurrency, so they can land as
+    smaller pieces once the substrate exists).
+- **Depends on:** F1 (chosen first), then the write-sync substrate above.
 
 ### Live Compendium (DB-backed, replaces seed data)
 - **Goal:** the Compendium reads from a real shared database instead of the
