@@ -12,6 +12,15 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 
+import "@/ds/ds.css";
+import "./styles/app.css";
+import "./styles/rolls.css";
+import "./styles/inventory.css";
+import "./styles/bonus.css";
+import "./styles/map.css";
+import "./styles/forge.css";
+import "./styles/forge-alloc.css";
+
 import { SEED } from "./data/seed";
 import { CLASSES } from "./data/classes";
 import { INV } from "./data/inventory";
@@ -125,7 +134,7 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
     else setActiveChar(cid);
   };
 
-  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const [t] = useTweaks(TWEAK_DEFAULTS);
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [collapsedStats, setCollapsedStats] = React.useState<Set<string>>(() => new Set());
   const toggleStatCollapsed = (sid: string) => setCollapsedStats((prev) => { const n = new Set(prev); if (n.has(sid)) n.delete(sid); else n.add(sid); return n; });
@@ -318,6 +327,8 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
 
   const hydratedRef = React.useRef(false);
   React.useEffect(() => {
+    // Hydrate once from the server-provided sheet, before the first save.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (initialSheet && Object.keys(initialSheet).length) applySheet(initialSheet);
     const tid = setTimeout(() => { hydratedRef.current = true; }, 0);
     return () => clearTimeout(tid);
@@ -851,7 +862,8 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
   const openCompendiumTo = (cat: string) => { setCompCat(cat); setDrawer(true); };
   const closeDrawer = () => setDrawer(false);
   const onNavigate = (navId: string) => { if (navId === "compendium") openDrawer(); else setNav(navId); };
-  React.useEffect(() => { if (mode === "create") openForgeNew(); }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  React.useEffect(() => { if (mode === "create") openForgeNew(); }, [mode]);
 
   // ---- Character vital + condition steppers ----
   const stepVital = (key: string, delta: number) => setC((prev) => {
@@ -988,6 +1000,7 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
   const plantSum = plants.reduce((s, p) => s + (p.value || 0), 0);
 
   return (
+    <div className="sf-sheet" style={{ position: "fixed", inset: 0, overflow: "hidden" }}>
     <div className="sf-app" data-nav={nav}>
       <Sidebar active={nav} onNavigate={onNavigate} roster={ROSTER} activeChar={activeChar} onPickChar={pickChar} compCount={D.compendium.length} onAddCharacter={openForgeNew} onEditCharacter={openForgeEdit} collapsed={sidebarCollapsed} onToggleSidebar={toggleSidebar} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
       <main className="sf-main">
@@ -1082,6 +1095,7 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
       <RollPrompt pending={pending} onConfirm={confirmPrompt} onCancel={cancelPrompt} />
       <BackfireResist open={!!resistRoll} roll={resistRoll} conditions={conditions} facRank={facRank} onResist={handleResist} onClose={handleResistClose} />
       <ArtifactBackfireModal open={!!artifactResistRoll} roll={artifactResistRoll} effFacRank={effFacRank} subRank={subRank} onRoll={onArtifactResist} onClose={closeArtifactResist} />
+    </div>
     </div>
   );
 

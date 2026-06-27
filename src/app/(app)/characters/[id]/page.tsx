@@ -1,7 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { toRosterMember, type CharacterRow, type RosterMember } from "../roster";
-import CharacterSheetFrame from "./CharacterSheetFrame";
+import { CharacterSheet } from "@/sheet/CharacterSheet";
+import type { SerializedSheet } from "@/sheet/types";
 
 export default async function CharacterSheetPage({
   params,
@@ -51,10 +52,10 @@ export default async function CharacterSheetPage({
   }
 
   return (
-    <CharacterSheetFrame
+    <CharacterSheet
       mode="edit"
       id={character.id}
-      initialSheet={character.sheet}
+      initialSheet={character.sheet as SerializedSheet | null}
       roster={roster}
       me={character.id}
       campaignId={campaignId}

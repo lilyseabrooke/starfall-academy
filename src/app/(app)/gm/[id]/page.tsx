@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { toGMPartyMember, type CharacterRow } from "../../characters/roster";
-import GMViewFrame from "./GMViewFrame";
+import { GmView } from "@/sheet/GmView";
 
 export const metadata = {
   title: "GM Tools — Starfall Academy",
@@ -38,5 +38,5 @@ export default async function GMToolsPage({
     .eq("type", "pc");
   const party = (partyRows ?? []).map((r) => toGMPartyMember(r as CharacterRow));
 
-  return <GMViewFrame campaign={campaign} party={party} />;
+  return <GmView campaign={campaign} party={party} />;
 }

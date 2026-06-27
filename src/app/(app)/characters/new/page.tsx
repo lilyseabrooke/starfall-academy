@@ -1,4 +1,4 @@
-import CharacterSheetFrame from "../[id]/CharacterSheetFrame";
+import { CharacterSheet } from "@/sheet/CharacterSheet";
 
 export const metadata = {
   title: "New character — Starfall Academy",
@@ -7,5 +7,5 @@ export const metadata = {
 // Opens the sheet in create mode: the Forge auto-opens, and the character row
 // is only created when the build is committed (Begin).
 export default function NewCharacterPage() {
-  return <CharacterSheetFrame mode="create" id={null} />;
+  return <CharacterSheet mode="create" id={null} />;
 }
