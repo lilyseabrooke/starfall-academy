@@ -1,0 +1,40 @@
+"use client";
+
+import * as React from "react";
+import { Badge } from "@/ds";
+import { Icon } from "../Icon";
+import type { CharacterVitals } from "../../types";
+
+const CREST_LINES = "/_ds/starfall-academy-design-system-61fef24c-b8ee-469f-860f-a6fd95fb2a6e/assets/crest-lines.png";
+
+export function IdentityHero({ c }: { c: CharacterVitals; onEdit?: () => void }) {
+  return (
+    <section className="sf-hero">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img className="sf-hero__crest" src={CREST_LINES} alt="" />
+      <div className="sf-hero__main">
+        <span className="sf-eyebrow">{c.title}</span>
+        <h1 className="sf-hero__name">{c.name}</h1>
+        <div className="sf-hero__meta">
+          <Badge tone={c.houseTone === "silver" ? "neutral" : c.houseTone} dot>{c.house}</Badge>
+          <span className="sf-meta-dot" />
+          <span className="sf-hero__metaitem"><b>Year</b> {c.year}</span>
+          {c.pronouns ? (
+            <React.Fragment>
+              <span className="sf-meta-dot" />
+              <span className="sf-hero__metaitem">{c.pronouns}</span>
+            </React.Fragment>
+          ) : null}
+        </div>
+        {c.bio ? <p className="sf-hero__bio">{c.bio}</p> : null}
+      </div>
+      <div className="sf-hero__side">
+        <div className="sf-materials">
+          <Icon name="gem" />
+          <span className="sf-materials__num">{c.materials.toLocaleString()}</span>
+        </div>
+        <span className="sf-materials__cap">Materials</span>
+      </div>
+    </section>
+  );
+}
