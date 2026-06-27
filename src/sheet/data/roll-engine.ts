@@ -27,6 +27,8 @@ export interface CritSide {
   label?: string;
   text?: string;
   backfire?: boolean;
+  /** Artifact boons backfire into an Artificy save rather than a condition resist. */
+  artifactBackfire?: boolean;
 }
 export interface CritSpec {
   fail?: CritSide;

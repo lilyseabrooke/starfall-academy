@@ -235,6 +235,8 @@ export interface RollResist {
   eyebrow?: string;
   heading?: string;
   verdict?: string;
+  /** DC added per degree of failure on a forced backfire save. */
+  dcPerDegree?: number;
 }
 
 /** The output of makeRoll() — also the shared/durable roll payload (the `hl`
@@ -277,9 +279,13 @@ export interface ArtifactMove {
   stat: string;
   skill: string;
   bonus: number;
-  dc: number;
-  success: string;
-  fail: string;
+  /** Null when the boon rolls without a fixed DC (manual / compendium artifacts). */
+  dc: number | null;
+  success?: string;
+  fail?: string;
+  /** Carried on manual/compendium-built boons; unused by the roll engine. */
+  name?: string;
+  desc?: string;
 }
 
 export interface Artifact {
