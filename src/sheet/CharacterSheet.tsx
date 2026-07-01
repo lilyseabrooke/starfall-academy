@@ -879,7 +879,12 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
     
     setForge({ open: true, mode: "edit", draft: F.draftFromLive(forgeData, { c, stats, schools, classState }) });
   };
-  const closeForge = () => setForge((s) => ({ ...s, open: false }));
+  const closeForge = () => {
+    // In create mode there's no character until the Forge commits — closing
+    // without committing would otherwise leave the seed demo sheet showing.
+    if (admission.mode === "new" && mode === "create") { router.push("/characters"); return; }
+    setForge((s) => ({ ...s, open: false }));
+  };
 
   const commitForge = (draft: Draft) => {
     

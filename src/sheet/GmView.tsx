@@ -91,12 +91,12 @@ export function GmView({ campaign, party: hostParty }: GmViewProps) {
   const router = useRouter();
   const [tab, setTab] = React.useState("party");
   const [party, setParty] = React.useState<GmPartyMember[]>(() => {
-    const src: GmPartyMember[] = hostParty && hostParty.length ? (hostParty as unknown as GmPartyMember[]) : GM_SEED.party;
+    const src: GmPartyMember[] = (hostParty as unknown as GmPartyMember[]) ?? [];
     return src.map((p) => ({ ...p, conds: { fear: 0, despair: 0, wound: 0, loss: 0, doubt: 0, ...(p.conds || {}) } }));
   });
-  const [npcs, setNpcs] = React.useState<GmNpc[]>(() => GM_SEED.npcsBasic.map((n) => ({ ...n, conds: { ...n.conds } })));
-  const [notes, setNotes] = React.useState<GmNote[]>(() => GM_SEED.notes.map((n) => ({ ...n })));
-  const [activeNoteId, setActiveNoteId] = React.useState<string | null>(GM_SEED.notes[0] ? GM_SEED.notes[0].id : null);
+  const [npcs, setNpcs] = React.useState<GmNpc[]>(() => []);
+  const [notes, setNotes] = React.useState<GmNote[]>(() => []);
+  const [activeNoteId, setActiveNoteId] = React.useState<string | null>(null);
   const [tagFilter, setTagFilter] = React.useState("");
   const [confirmDeleteNoteId, setConfirmDeleteNoteId] = React.useState<string | null>(null);
 
@@ -122,7 +122,7 @@ export function GmView({ campaign, party: hostParty }: GmViewProps) {
   // ---- Shared roll engine (single source with the player sheet) ----------
   const engineD = React.useMemo(() => ({
     roster: party.map((p) => ({ id: p.id, name: p.name, initials: p.initials, tone: p.tone as Tone })).concat([{ id: "__gm__", name: "Game Master", initials: "GM", tone: "gold" as Tone }]) as RollRosterMember[],
-    ledgerSeed: GM_SEED.ledgerSeed,
+    ledgerSeed: [],
     partyPool: [],
     gmPool: [],
     gmInflection: { actor: "Game Master", label: "", kind: "roll", stat: "", mod: 0 },
@@ -506,7 +506,7 @@ export function GmView({ campaign, party: hostParty }: GmViewProps) {
   /* --------------------------- GM quick roll ---------------------------- */
   const quickRoll = () => { const made = pushRoll({ who: gmWho(), kind: "roll", label: "Quick roll · 2d10", stat: "", mod: 0 }); toast("Rolled 2d10 = " + made.total + "."); };
 
-  const campaignName = campaign.name || GM_SEED.campaign.name;
+  const campaignName = campaign.name || "Untitled campaign";
 
   const TAB_META: Record<string, { title: string }> = { party: { title: "Party Board" }, npcs: { title: "NPCs" }, notes: { title: "Campaign Journal" }, action: { title: "Action Scene" } };
   const sidebarGm = {
