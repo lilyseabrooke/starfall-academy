@@ -77,18 +77,23 @@ export function SpellCard({ spell, mod, schoolTone, onRoll, onRemove, onLearn, o
   return (
     <div className={"sf-spell" + (open ? " is-open" : " is-collapsed") + (learned ? "" : " is-unlearned") + (backfire === "always" ? " is-hex" : "")} style={style}>
       <div className="sf-spell__head" onClick={onToggle} role="button" tabIndex={0} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onToggle && onToggle()}>
-        <span className="sf-spell__name">{spell.name}</span>
-        <span className="sf-chip sf-chip--field sf-chip--head"><Icon name="sparkles" /> {spell.subject}</span>
-        <Badge tone={badgeTone} square>{String(spell.level).replace(/\s*\(.*?\)\s*/g, "").trim()}</Badge>
-        {spell.dc != null ? <span className="sf-spell__head-dc">DC {spell.dc}</span> : null}
-        {learned ? (
-          <button className="sf-roll-btn" onClick={(e) => { e.stopPropagation(); onRoll(spell, e); }}><Icon name="dices" /> Cast</button>
-        ) : (
-          <button className="sf-roll-btn" onClick={(e) => { e.stopPropagation(); onLearn(spell, e); }}><Icon name="book-open" /> Learn</button>
-        )}
-        {onEdit && <button className="sf-spell__edit" title="Edit spell" onClick={(e) => { e.stopPropagation(); onEdit(spell); }}><Icon name="pencil" /></button>}
-        <button className="sf-spell__remove" title="Remove spell" onClick={(e) => { e.stopPropagation(); onRemove(spell); }}><Icon name="x" /></button>
-        <span className="sf-spell__chev"><Icon name={open ? "chevron-up" : "chevron-down"} /></span>
+        <div className="sf-spell__headline">
+          <span className="sf-spell__name">{spell.name}</span>
+          <div className="sf-spell__submeta">
+            <Badge tone={badgeTone} square>{String(spell.level).replace(/\s*\(.*?\)\s*/g, "").trim()}</Badge>
+            <span className="sf-spell__metatxt">{[spell.subject, spell.dc != null ? "DC " + spell.dc : null].filter(Boolean).join(" · ")}</span>
+          </div>
+        </div>
+        <div className="sf-spell__actions">
+          {learned ? (
+            <button className="sf-roll-btn" onClick={(e) => { e.stopPropagation(); onRoll(spell, e); }}><Icon name="dices" /> Cast</button>
+          ) : (
+            <button className="sf-roll-btn" onClick={(e) => { e.stopPropagation(); onLearn(spell, e); }}><Icon name="book-open" /> Learn</button>
+          )}
+          {onEdit && <button className="sf-spell__edit" title="Edit spell" onClick={(e) => { e.stopPropagation(); onEdit(spell); }}><Icon name="pencil" /></button>}
+          <button className="sf-spell__remove" title="Remove spell" onClick={(e) => { e.stopPropagation(); onRemove(spell); }}><Icon name="x" /></button>
+          <span className="sf-spell__chev"><Icon name={open ? "chevron-up" : "chevron-down"} /></span>
+        </div>
       </div>
       {open && (
         <React.Fragment>
