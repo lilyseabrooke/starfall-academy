@@ -3,13 +3,15 @@
 import * as React from "react";
 import { Badge } from "@/ds";
 import { Icon } from "../Icon";
+import { TONE_700 } from "../../data/shared";
 import type { CharacterVitals } from "../../types";
 
 const CREST_LINES = "/_ds/starfall-academy-design-system-61fef24c-b8ee-469f-860f-a6fd95fb2a6e/assets/crest-lines.png";
 
 export function IdentityHero({ c }: { c: CharacterVitals; onEdit?: () => void }) {
+  const heroTint = TONE_700[c.houseTone] || TONE_700.plum;
   return (
-    <section className="sf-hero">
+    <section className="sf-hero" style={{ "--sf-hero-tint": heroTint } as React.CSSProperties}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img className="sf-hero__crest" src={CREST_LINES} alt="" />
       <div className="sf-hero__main">
