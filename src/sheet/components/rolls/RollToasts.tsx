@@ -80,6 +80,10 @@ export function RollToasts({ log, cap: capN, lifetime, graceMs, expandDefault, p
     clearTimers(id);
     setToasts((p) => p.filter((t) => t.roll.id !== id));
   };
+  const clearAll = () => {
+    Object.keys(timers.current).forEach(clearTimers);
+    setToasts([]);
+  };
   const beginLeave = (id: string) => {
     setToasts((p) => p.map((t) => (t.roll.id === id ? { ...t, leaving: true } : t)));
     const t = timers.current[id] || (timers.current[id] = {});
@@ -113,6 +117,12 @@ export function RollToasts({ log, cap: capN, lifetime, graceMs, expandDefault, p
       return;
     }
     const fresh = log.filter((r) => !seen.current.has(r.id));
+    // A batch of >1 new rolls in one update is a backlog replay (e.g. joining
+    // a campaign), not a live roll — record it as seen without popping toasts.
+    if (fresh.length > 1) {
+      fresh.forEach((r) => seen.current.add(r.id));
+      return;
+    }
     fresh.reverse().forEach((r) => {
       seen.current.add(r.id);
       add(r);
@@ -149,26 +159,41 @@ export function RollToasts({ log, cap: capN, lifetime, graceMs, expandDefault, p
     }, 0);
   };
 
+  const active = toasts.filter((t) => !t.leaving);
+  // "br"/"bc" stacks grow upward from a bottom anchor (column-reverse), so the
+  // clear button must be the *last* DOM child there to land above the stack;
+  // "tr" grows downward from a top anchor, so it must be the first child.
+  const reversed = position !== "tr";
+  const clearBtn = active.length > 0 && (
+    <button key="clear" className="sf-toasts__clear" onClick={clearAll}>
+      <Icon name="x" /> Clear all
+    </button>
+  );
+
   return (
     <div className={"sf-toasts pos-" + position} aria-live="polite">
-      {toasts.map((t) => {
-        const expanded = t.hover || t.pinned || expandDefault;
-        return (
-          <div
-            key={t.roll.id}
-            className={"sf-rtoast out-" + headline(t.roll).key + (t.roll.crit ? " is-crit is-crit-" + t.roll.crit.kind : "") + (t.leaving ? " is-leaving" : "") + (t.pinned ? " is-pinned" : "")}
-            style={{ "--grace": cfg.current.graceMs + "ms" } as React.CSSProperties}
-            onMouseEnter={() => onEnter(t.roll.id)}
-            onMouseLeave={() => onLeave(t.roll.id)}
-            onClick={() => togglePin(t.roll.id)}
-          >
-            {t.pinned && <span className="sf-rtoast__pin"><Icon name="pin" /></span>}
-            <button className="sf-rtoast__x" aria-label="Dismiss" onClick={(e) => { e.stopPropagation(); remove(t.roll.id); }}><Icon name="x" /></button>
-            {t.roll.crit ? <CritBurst kind={t.roll.crit.kind} /> : t.roll.outcome === "inflection" ? <CritBurst kind="inflect" /> : null}
-            <RollEntry roll={t.roll} expanded={expanded} compact hint />
-          </div>
-        );
-      })}
+      {!reversed && clearBtn}
+      <div className={"sf-toasts__list" + (reversed ? " is-reversed" : "")}>
+        {toasts.map((t) => {
+          const expanded = t.hover || t.pinned || expandDefault;
+          return (
+            <div
+              key={t.roll.id}
+              className={"sf-rtoast out-" + headline(t.roll).key + (t.roll.crit ? " is-crit is-crit-" + t.roll.crit.kind : "") + (t.leaving ? " is-leaving" : "") + (t.pinned ? " is-pinned" : "")}
+              style={{ "--grace": cfg.current.graceMs + "ms" } as React.CSSProperties}
+              onMouseEnter={() => onEnter(t.roll.id)}
+              onMouseLeave={() => onLeave(t.roll.id)}
+              onClick={() => togglePin(t.roll.id)}
+            >
+              {t.pinned && <span className="sf-rtoast__pin"><Icon name="pin" /></span>}
+              <button className="sf-rtoast__x" aria-label="Dismiss" onClick={(e) => { e.stopPropagation(); remove(t.roll.id); }}><Icon name="x" /></button>
+              {t.roll.crit ? <CritBurst kind={t.roll.crit.kind} /> : t.roll.outcome === "inflection" ? <CritBurst kind="inflect" /> : null}
+              <RollEntry roll={t.roll} expanded={expanded} compact hint />
+            </div>
+          );
+        })}
+      </div>
+      {reversed && clearBtn}
     </div>
   );
 }
