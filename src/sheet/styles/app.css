@@ -148,6 +148,7 @@
 .sf-sheet .sf-top__eyebrow { white-space: nowrap; overflow: hidden; }
 .sf-sheet .sf-top__h1 { font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: var(--tracking-wide); font-size: var(--text-xl); color: var(--text-strong); margin: 0; }
 .sf-sheet .sf-top__spacer { flex: 1; }
+.sf-sheet .sf-top__status { display: flex; align-items: center; gap: var(--space-5); }
 
 /* Campaign clock badge (GM: clickable, opens the Clock modal; player: same
    look, read-only — TimeBadge picks the variant via whether onClick is set). */
@@ -1353,13 +1354,19 @@
     order: 2;
     flex: none;
   }
-  .sf-sheet .sf-vitals {
+  /* Clock + vitals share a centered row below the title, wrapping together */
+  .sf-sheet .sf-top__status {
     order: 3;
     flex: 0 0 100%;
+    flex-wrap: wrap;
     justify-content: center;
     border-top: 1px solid var(--hairline);
     padding-top: var(--space-3);
     margin-top: var(--space-2);
+    gap: var(--space-3);
+  }
+  .sf-sheet .sf-vitals {
+    justify-content: center;
     gap: var(--space-3);
   }
   /* Tighten vital cards slightly to keep the row compact */
@@ -1394,15 +1401,20 @@
     order: 2;
     flex: none;
   }
-  /* Row 2 + 3: vitals, full-width, wrapping */
-  .sf-sheet .sf-vitals {
+  /* Row 2+: clock (own line) then vitals, full-width, wrapping */
+  .sf-sheet .sf-top__status {
     order: 3;
     flex: 0 0 100%;
-    flex-wrap: wrap;
-    justify-content: center;
+    flex-direction: column;
+    align-items: center;
     border-top: 1px solid var(--hairline);
     padding-top: var(--space-3);
     margin-top: var(--space-2);
+    gap: var(--space-2);
+  }
+  .sf-sheet .sf-vitals {
+    flex-wrap: wrap;
+    justify-content: center;
     gap: var(--space-2);
   }
   /* AP and Trouble share row 2 */
