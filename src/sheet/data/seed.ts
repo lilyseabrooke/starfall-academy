@@ -316,7 +316,7 @@ export const SEED: SeedData = {
     { id: "spell", label: "Spells", icon: "sparkles" },
     { id: "artifact", label: "Artifacts", icon: "gem" },
     { id: "potion", label: "Potions", icon: "flask-conical" },
-    { id: "wand", label: "Wands", icon: "wand-2" },
+    { id: "wand", label: "Wands", icon: "wand-sparkles" },
     { id: "glyph", label: "Glyphs", icon: "pen-tool" },
     { id: "item", label: "Items", icon: "package" },
     { id: "plant", label: "Plants", icon: "leaf" },

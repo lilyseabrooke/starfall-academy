@@ -686,7 +686,7 @@ export function AdmissionInventory({ D, draft, set }: { D: ForgeData; draft: Dra
         )}
       </InventorySection>
 
-      <InventorySection icon="wand-2" title="Wands" note={`Wandcrafting grants ${y.craftMat} mats · ${craftSpent} mats chosen`}>
+      <InventorySection icon="wand-sparkles" title="Wands" note={`Wandcrafting grants ${y.craftMat} mats · ${craftSpent} mats chosen`}>
         {y.craftMat === 0 ? (
           <p className="sf-fhint sf-fhint--mut">Put points into <b>Wandcrafting</b> to take more wands (200 mats of wand per rank).</p>
         ) : (
