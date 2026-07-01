@@ -85,12 +85,13 @@ const TWEAK_DEFAULTS = {
   ladderDensity: "roomy",
 };
 
-/** A GM-broadcast roll prompt (resist save / action roll). */
+/** A GM-broadcast roll prompt (resist save / action roll / materials grant). */
 interface GmPrompt {
   target?: string;
   kind?: string;
   condition?: string;
   dc?: number | null;
+  amount?: number;
 }
 
 export interface CharacterSheetProps {
@@ -356,6 +357,9 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
     } else if (prompt.kind === "action") {
       const dc = prompt.dc != null ? prompt.dc : 10;
       pushRoll({ who: meWho(), kind: "action", label: "Action Roll", stat: "Insight", mod: insightModRef.current, dc, meta: ["Action Roll", "DC " + dc + " Insight"] });
+    } else if (prompt.kind === "grant" && prompt.amount) {
+      adjustMaterials(prompt.amount);
+      toast("The Game Master granted you +" + prompt.amount.toLocaleString() + " materials");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [me]);

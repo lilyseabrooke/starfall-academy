@@ -182,7 +182,12 @@ export function GmView({ campaign, party: hostParty }: GmViewProps) {
     const g = grant; if (!g) return;
     const n = g.matAmt;
     if (g.pcId === "__all__") { setParty((s) => s.map((p) => ({ ...p, materials: p.materials + n }))); toast("+" + n.toLocaleString() + " Materials granted to all " + party.length + " party members."); }
-    else { const pc = party.find((p) => p.id === g.pcId); if (!pc) return; addMaterials(pc.id, n); toast("+" + n.toLocaleString() + " Materials to " + pc.name + " (" + (pc.materials + n).toLocaleString() + " total)."); }
+    else {
+      const pc = party.find((p) => p.id === g.pcId); if (!pc) return;
+      addMaterials(pc.id, n);
+      if (pc.sheetId) rollSync.requestRoll({ kind: "grant", target: pc.sheetId, amount: n });
+      toast("+" + n.toLocaleString() + " Materials to " + pc.name + " (" + (pc.materials + n).toLocaleString() + " total).");
+    }
   };
   const grantItem = (entry: { name: string }) => {
     const g = grant; if (!g) return;
