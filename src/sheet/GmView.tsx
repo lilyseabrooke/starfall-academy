@@ -27,7 +27,8 @@ import { RollDock } from "./components/rolls/RollDock";
 import { RollToasts } from "./components/rolls/RollToasts";
 import { Icon } from "./components/Icon";
 import type { GMPartyMember } from "@/app/(app)/characters/roster";
-import type { Roll, Tone } from "./types";
+import type { CompendiumEntry, Roll, SerializedSheet, Tone } from "./types";
+import { computeCompendiumGrant } from "./data/compendium-grant";
 
 const clampN = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
@@ -209,17 +210,56 @@ export function GmView({ campaign, party: hostParty }: GmViewProps) {
     }
   };
 
+  // The category a compendium entry's cat maps to on sheet.inventory, mirroring
+  // the field computeCompendiumGrant resolves to on the player's own sheet.
+  const INVENTORY_FIELD_BY_CAT: Record<string, keyof NonNullable<SerializedSheet["inventory"]>> = {
+    artifact: "artifacts", potion: "recipes", plant: "plants", wand: "wands", glyph: "glyphs", item: "items",
+  };
+
+  // Durable half of an item grant: read the target's current inventory field,
+  // compute the new array with the same transform the player's own Archive
+  // drawer uses (computeCompendiumGrant), then write it back via the
+  // GM-authorized grant_sheet_field RPC — so it lands even if the player
+  // never comes online to trigger the live broadcast + their own autosave.
+  const persistItemGrant = (pc: GmPartyMember, entry: CompendiumEntry) => {
+    if (!pc.sheetId) return;
+    const field = INVENTORY_FIELD_BY_CAT[entry.cat];
+    if (!field) return;
+    const supabase = createClient();
+    supabase
+      .from("characters")
+      .select("sheet")
+      .eq("id", pc.sheetId)
+      .single()
+      .then(({ data, error }) => {
+        if (error || !data?.sheet) { console.error("Couldn't read inventory for " + pc.name, error?.message); toast("Couldn't save " + entry.name + " for " + pc.name + " — try again."); return; }
+        const inventory = (data.sheet as SerializedSheet).inventory || {};
+        const current = (inventory[field] || []) as never;
+        const res = computeCompendiumGrant(entry, current);
+        if (!res) return;
+        supabase
+          .rpc("grant_sheet_field", { p_character: pc.sheetId, p_field: res.field, p_value: res.value })
+          .then(({ error: rpcError }) => {
+            if (rpcError) { console.error(entry.name + " grant failed to persist for " + pc.name, rpcError.message); toast("Couldn't save " + entry.name + " for " + pc.name + " — try again."); }
+          });
+      });
+  };
+
   // Compendium item grants: broadcast a live "item" prompt carrying the
   // compendium entry id + category. The target sheet already knows how to
   // turn a compendium id into the right inventory record (the same onAdd it
   // uses for its own Archive drawer), so it applies + persists itself when
-  // online — same live-first pattern as materials, without re-deriving the
-  // per-category shape (artifact/potion/plant/wand/glyph/item) a second time.
-  const grantItem = (entry: { id?: string; name: string }) => {
+  // online — same live-first pattern as materials. persistItemGrant covers
+  // the durable side for when the player isn't online to catch the broadcast.
+  const grantItem = (entry: CompendiumEntry) => {
     const g = grant; if (!g) return;
     const targets = g.pcId === "__all__" ? party : party.filter((p) => p.id === g.pcId);
     const who = g.pcId === "__all__" ? "the whole party" : (targets[0] ? targets[0].name : "");
-    if (entry.id) targets.forEach((pc) => { if (pc.sheetId) rollSync.requestRoll({ kind: "item", target: pc.sheetId, cat: g.cat, entryId: entry.id }); });
+    targets.forEach((pc) => {
+      if (!pc.sheetId) return;
+      rollSync.requestRoll({ kind: "item", target: pc.sheetId, cat: g.cat, entryId: entry.id });
+      persistItemGrant(pc, entry);
+    });
     toast(entry.name + " passed to " + who + ".");
   };
 
@@ -688,7 +728,7 @@ function ResistModal({ resist, party, conds, onPatch, onRoll, onClose }: { resis
 
 /* ============================== GRANT DRAWER ============================= */
 function GrantDrawer({ grant, party, matChips, matStep, onPatch, onGrantMaterials, onGrantItem, onClose }: {
-  grant: GrantState; party: GmPartyMember[]; matChips: number[]; matStep: number; onPatch: (patch: Partial<GrantState>) => void; onGrantMaterials: () => void; onGrantItem: (e: { id?: string; name: string; desc: string }) => void; onClose: () => void;
+  grant: GrantState; party: GmPartyMember[]; matChips: number[]; matStep: number; onPatch: (patch: Partial<GrantState>) => void; onGrantMaterials: () => void; onGrantItem: (e: CompendiumEntry) => void; onClose: () => void;
 }) {
   const pc = grant.pcId === "__all__" ? { name: "The Whole Party", materials: party.reduce((a, p) => a + p.materials, 0) } : (party.find((p) => p.id === grant.pcId) || party[0]);
   const isMat = grant.cat === "materials";
