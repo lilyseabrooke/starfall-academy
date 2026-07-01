@@ -15,6 +15,7 @@ import "@/ds/ds.css";
 import "./styles/app.css";
 import "./styles/rolls.css";
 import "./styles/gm.css";
+import "./styles/inventory.css";
 
 import { SEED } from "./data/seed";
 import { GM_SEED, type GmCondDef, type GmNote, type GmNpc, type GmPartyMember, type GmTime } from "./data/gm-seed";
