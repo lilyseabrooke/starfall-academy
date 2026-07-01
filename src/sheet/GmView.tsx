@@ -29,6 +29,7 @@ import { DAYS, BLOCKS } from "./data/time";
 
 import { Sidebar } from "./components/parts/Sidebar";
 import { RollDock } from "./components/rolls/RollDock";
+import { RollPrompt } from "./components/rolls/RollPrompt";
 import { RollToasts } from "./components/rolls/RollToasts";
 import { Icon } from "./components/Icon";
 import { Compendium } from "./components/parts/Compendium";
@@ -131,8 +132,8 @@ export function GmView({ campaign, party: hostParty }: GmViewProps) {
 
   const shareRef = React.useRef<(r: Roll) => void>(() => {});
   const roll = useRollState(engineD, "__gm__", { multiplayer: true, onShareRoll: (r) => shareRef.current(r) });
-  const { log, dock } = roll.state;
-  const { pushRoll, setDock, injectRemote } = roll.handlers;
+  const { log, dock, pending } = roll.state;
+  const { openPrompt, confirmPrompt, cancelPrompt, setDock, injectRemote } = roll.handlers;
 
   const rollSync = useRollSync({ campaignId: campaign.id, characterId: null, onRemoteRoll: injectRemote });
   React.useEffect(() => { shareRef.current = rollSync.shareRoll; }, [rollSync.shareRoll]);
@@ -381,10 +382,10 @@ export function GmView({ campaign, party: hostParty }: GmViewProps) {
     else { setNpcs((s) => [...s, { id: "npc_" + Math.random().toString(36).slice(2, 9), name, kind: a.title.trim() || "NPC", icon, maxResolve: a.resolve, strong: a.strong, weak: a.weak, conds: { fear: 0, despair: 0, wound: 0, loss: 0, doubt: 0 } }]); toast(name + " added to the cast."); }
     setAddNpc(null);
   };
-  const rollNpc = (n: GmNpc, kind: "strong" | "weak") => {
+  const rollNpc = (n: GmNpc, kind: "strong" | "weak", e: React.MouseEvent<HTMLElement>) => {
     const who: Roll["who"] = { name: n.name, initials: initialsFor(n.name), tone: "crimson" };
     const mod = kind === "strong" ? n.strong : n.weak;
-    pushRoll({ who, kind: "roll", label: (kind === "strong" ? "Strong" : "Weak") + " roll · " + n.name, stat: "", mod });
+    openPrompt({ who, kind: "roll", label: (kind === "strong" ? "Strong" : "Weak") + " roll · " + n.name, stat: "", mod, canSecret: true }, e.currentTarget);
   };
 
   /* ------------------------------- Notes -------------------------------- */
@@ -504,7 +505,7 @@ export function GmView({ campaign, party: hostParty }: GmViewProps) {
   };
 
   /* --------------------------- GM quick roll ---------------------------- */
-  const quickRoll = () => { const made = pushRoll({ who: gmWho(), kind: "roll", label: "Quick roll · 2d10", stat: "", mod: 0 }); toast("Rolled 2d10 = " + made.total + "."); };
+  const quickRoll = (e: React.MouseEvent<HTMLElement>) => openPrompt({ who: gmWho(), kind: "roll", label: "GM Roll · 2d10", stat: "", mod: 0, canSecret: true }, e.currentTarget);
 
   const campaignName = campaign.name || "Untitled campaign";
 
@@ -547,6 +548,7 @@ export function GmView({ campaign, party: hostParty }: GmViewProps) {
 
       <RollDock log={log} open={dock} onToggle={() => setDock((v) => !v)} meId="__gm__" />
       <RollToasts log={log} position="br" cap={3} lifetime={5000} graceMs={1500} expandDefault={false} />
+      <RollPrompt pending={pending} onConfirm={confirmPrompt} onCancel={cancelPrompt} />
 
       {resist && <ResistModal resist={resist} party={party} conds={GM_SEED.CONDS} onPatch={patchResist} onRoll={promptResist} onClose={() => setResist(null)} />}
       {grant && <GrantDrawer grant={grant} party={party} matChips={GM_SEED.matChips} matStep={GM_SEED.matStep} onPatch={patchGrant} onGrantMaterials={grantMaterials} onClose={() => setGrant(null)} />}
@@ -644,7 +646,7 @@ function PartyTab({ party, onResist, onGrant, onGrantAll, onArchive, onArchiveAl
 }
 
 /* =============================== NPCS TAB ================================ */
-function NpcsTab({ npcs, conds, onAdd, onEdit, onRoll, onBumpCond }: { npcs: GmNpc[]; conds: GmCondDef[]; onAdd: () => void; onEdit: (id: string) => void; onRoll: (n: GmNpc, kind: "strong" | "weak") => void; onBumpCond: (npcId: string, condId: string, d: number) => void }) {
+function NpcsTab({ npcs, conds, onAdd, onEdit, onRoll, onBumpCond }: { npcs: GmNpc[]; conds: GmCondDef[]; onAdd: () => void; onEdit: (id: string) => void; onRoll: (n: GmNpc, kind: "strong" | "weak", e: React.MouseEvent<HTMLElement>) => void; onBumpCond: (npcId: string, condId: string, d: number) => void }) {
   return (
     <div>
       <div className="gm-sec-head">
@@ -686,8 +688,8 @@ function NpcsTab({ npcs, conds, onAdd, onEdit, onRoll, onBumpCond }: { npcs: GmN
                 ))}
               </div>
               <div className="gm-npc__rolls">
-                <button className="gm-roll-strong" onClick={() => onRoll(n, "strong")}><Icon name="trending-up" />Strong <span className="gm-roll-num">+{n.strong}</span></button>
-                <button className="gm-roll-weak" onClick={() => onRoll(n, "weak")}><Icon name="trending-down" />Weak <span className="gm-roll-num">+{n.weak}</span></button>
+                <button className="gm-roll-strong" onClick={(e) => onRoll(n, "strong", e)}><Icon name="trending-up" />Strong <span className="gm-roll-num">+{n.strong}</span></button>
+                <button className="gm-roll-weak" onClick={(e) => onRoll(n, "weak", e)}><Icon name="trending-down" />Weak <span className="gm-roll-num">+{n.weak}</span></button>
               </div>
             </article>
           );
