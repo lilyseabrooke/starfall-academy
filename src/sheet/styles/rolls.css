@@ -388,12 +388,14 @@
 .sf-sheet .sf-prompt__casttime svg { width: 12px; height: 12px; }
 .sf-sheet .sf-prompt__seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
 .sf-sheet .sf-prompt__segbtn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-1, 4px);
   cursor: pointer; height: var(--control-sm, 30px);
   appearance: none; -webkit-appearance: none;
   font-family: var(--font-sans); font-size: 11px; letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--text-muted);
   background: var(--ink-800); border: 1px solid var(--border-subtle); border-radius: var(--radius-xs);
   transition: color var(--dur-fast), background var(--dur-fast), border-color var(--dur-fast);
 }
+.sf-sheet .sf-prompt__segbtn svg { width: 12px; height: 12px; flex: none; }
 .sf-sheet .sf-prompt__segbtn:hover { color: var(--text-strong); }
 .sf-sheet .sf-prompt__segbtn.is-active { color: var(--gold-100); background: var(--brand-subtle); border-color: var(--border-default); }
 .sf-sheet .sf-prompt__num--cost { width: 64px; }
