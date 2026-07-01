@@ -21,19 +21,28 @@ import { SEED } from "./data/seed";
 import { GM_SEED, type GmCondDef, type GmNote, type GmNpc, type GmPartyMember, type GmTime } from "./data/gm-seed";
 import { useRollState, type RollRosterMember } from "./state/useRollState";
 import { useRollSync } from "./integration/useRollSync";
+import { useCompendium } from "./data/compendium";
+import { INV } from "./data/inventory";
 
 import { Sidebar } from "./components/parts/Sidebar";
 import { RollDock } from "./components/rolls/RollDock";
 import { RollToasts } from "./components/rolls/RollToasts";
 import { Icon } from "./components/Icon";
+import { Compendium } from "./components/parts/Compendium";
 import type { GMPartyMember } from "@/app/(app)/characters/roster";
 import type { CompendiumEntry, Roll, SerializedSheet, Tone } from "./types";
-import { computeCompendiumGrant } from "./data/compendium-grant";
+import {
+  computeCompendiumGrant,
+  computeAttunedArtifactGrant,
+  computeLearningSpellGrant,
+  computePotionSheafGrant,
+  computePotionRecipeGrant,
+  computeWandCraftGrant,
+} from "./data/compendium-grant";
 
 const clampN = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
 const TONE3: Record<string, string> = { plum: "var(--plum-300)", forest: "var(--forest-300)", teal: "var(--teal-300)", crimson: "var(--crimson-300)", gold: "var(--gold-300)", silver: "var(--text-strong)" };
-const LEVELCOLOR: Record<string, string> = { Basic: "var(--forest-300)", Standard: "var(--teal-300)", Advanced: "var(--plum-300)", Legendary: "var(--gold-300)", Twisted: "var(--crimson-300)", HEX: "var(--crimson-300)" };
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const BLOCKS = [
   { label: "Morning", icon: "sunrise" },
@@ -42,16 +51,6 @@ const BLOCKS = [
   { label: "Night", icon: "moon" },
 ];
 const NPC_ICONS = ["user-round", "skull", "cat", "scroll", "crown", "shield", "wand-2", "flask-conical", "eye", "ghost", "book-open", "key-round", "anchor", "feather", "flame", "snowflake", "zap", "star", "moon", "compass", "gem", "bird", "fish", "tree-pine", "mountain", "waves", "bug", "sword"];
-const GRANT_CATS = [
-  { id: "materials", icon: "circle-star", label: "Materials" },
-  { id: "artifact", icon: "gem", label: "Artifacts" },
-  { id: "potion", icon: "flask-conical", label: "Potions" },
-  { id: "plant", icon: "leaf", label: "Plants" },
-  { id: "wand", icon: "wand-2", label: "Wands" },
-  { id: "glyph", icon: "pen-tool", label: "Glyphs" },
-  { id: "item", icon: "package", label: "Items" },
-];
-
 const initialsFor = (name: string) => (name || "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
 /* ----------------------------- small visuals ----------------------------- */
@@ -81,7 +80,8 @@ function Avatar({ name, initials, tone, size }: { name?: string; initials?: stri
 type Campaign = { id: string; name: string | null; code: string | null };
 
 interface ResistState { pcId: string; cond: string; dc: number; dcText: string | null; rolled: number | null }
-interface GrantState { pcId: string; cat: string; matAmt: number; matText: string | null; q: string; openId: string | null }
+interface GrantState { pcId: string; matAmt: number; matText: string | null }
+interface ArchiveGrantState { pcId: string }
 interface AddNpcState { editId: string | null; name: string; title: string; resolve: number; strong: number; weak: number; icon: string; confirmDelete: boolean }
 interface ActionState { active: boolean; included: string[]; selected: string[]; ap: Record<string, number>; changeApId: string | null }
 
@@ -104,6 +104,10 @@ export function GmView({ campaign, party: hostParty }: GmViewProps) {
 
   const [resist, setResist] = React.useState<ResistState | null>(null);
   const [grant, setGrant] = React.useState<GrantState | null>(null);
+  const [archiveGrant, setArchiveGrant] = React.useState<ArchiveGrantState | null>(null);
+  const [archiveCat, setArchiveCat] = React.useState("spell");
+  const [archiveTarget, setArchiveTarget] = React.useState<SerializedSheet | null>(null);
+  const [archiveLastAdded, setArchiveLastAdded] = React.useState<string | null>(null);
   const [addNpc, setAddNpc] = React.useState<AddNpcState | null>(null);
   const [time, setTime] = React.useState<GmTime>(() => ({ ...GM_SEED.time }));
   const [timeModal, setTimeModal] = React.useState(false);
@@ -178,8 +182,8 @@ export function GmView({ campaign, party: hostParty }: GmViewProps) {
   };
 
   /* ------------------------------- Grant -------------------------------- */
-  const openGrant = (pcId: string) => setGrant({ pcId, cat: "materials", matAmt: 50, matText: null, q: "", openId: null });
-  const openGrantAll = () => setGrant({ pcId: "__all__", cat: "materials", matAmt: 50, matText: null, q: "", openId: null });
+  const openGrant = (pcId: string) => setGrant({ pcId, matAmt: 50, matText: null });
+  const openGrantAll = () => setGrant({ pcId: "__all__", matAmt: 50, matText: null });
   const patchGrant = (patch: Partial<GrantState>) => setGrant((g) => g ? { ...g, ...patch } : g);
 
   // Persist a materials grant for one party member: broadcasts a live "grant"
@@ -210,57 +214,160 @@ export function GmView({ campaign, party: hostParty }: GmViewProps) {
     }
   };
 
-  // The category a compendium entry's cat maps to on sheet.inventory, mirroring
-  // the field computeCompendiumGrant resolves to on the player's own sheet.
-  const INVENTORY_FIELD_BY_CAT: Record<string, keyof NonNullable<SerializedSheet["inventory"]>> = {
-    artifact: "artifacts", potion: "recipes", plant: "plants", wand: "wands", glyph: "glyphs", item: "items",
-  };
+  /* ------------------------------- Archive -------------------------------
+     The GM's Archive drawer is the SAME Compendium component/live data the
+     player's own sheet uses (real Google-Sheets-backed entries, styling,
+     search/filter/sort, and every specialized action — attuned vs. unattuned
+     artifacts, potion sheaf vs. recipe, spell learning vs. fully-learned,
+     wand crafting) — not a hand-rolled lookalike. Each action broadcasts a
+     live prompt (instant update if the target is online) and separately
+     persists durably via grant_sheet_field / grant_attuned_artifact, mirroring
+     the materials grant pattern. ---------------------------------------- */
+  const comp = useCompendium();
+  const compendiumData = React.useMemo(() => ({ compendiumCats: SEED.compendiumCats, compendium: comp.compendium }), [comp.compendium]);
 
-  // Durable half of an item grant: read the target's current inventory field,
-  // compute the new array with the same transform the player's own Archive
-  // drawer uses (computeCompendiumGrant), then write it back via the
-  // GM-authorized grant_sheet_field RPC — so it lands even if the player
-  // never comes online to trigger the live broadcast + their own autosave.
-  const persistItemGrant = (pc: GmPartyMember, entry: CompendiumEntry) => {
-    if (!pc.sheetId) return;
-    const field = INVENTORY_FIELD_BY_CAT[entry.cat];
-    if (!field) return;
-    const supabase = createClient();
-    supabase
-      .from("characters")
-      .select("sheet")
-      .eq("id", pc.sheetId)
-      .single()
-      .then(({ data, error }) => {
-        if (error || !data?.sheet) { console.error("Couldn't read inventory for " + pc.name, error?.message); toast("Couldn't save " + entry.name + " for " + pc.name + " — try again."); return; }
-        const inventory = (data.sheet as SerializedSheet).inventory || {};
-        const current = (inventory[field] || []) as never;
-        const res = computeCompendiumGrant(entry, current);
-        if (!res) return;
-        supabase
-          .rpc("grant_sheet_field", { p_character: pc.sheetId, p_field: res.field, p_value: res.value })
-          .then(({ error: rpcError }) => {
-            if (rpcError) { console.error(entry.name + " grant failed to persist for " + pc.name, rpcError.message); toast("Couldn't save " + entry.name + " for " + pc.name + " — try again."); }
-          });
-      });
-  };
+  const openArchive = (pcId: string) => setArchiveGrant({ pcId });
+  const closeArchive = () => { setArchiveGrant(null); setArchiveTarget(null); };
 
-  // Compendium item grants: broadcast a live "item" prompt carrying the
-  // compendium entry id + category. The target sheet already knows how to
-  // turn a compendium id into the right inventory record (the same onAdd it
-  // uses for its own Archive drawer), so it applies + persists itself when
-  // online — same live-first pattern as materials. persistItemGrant covers
-  // the durable side for when the player isn't online to catch the broadcast.
-  const grantItem = (entry: CompendiumEntry) => {
-    const g = grant; if (!g) return;
-    const targets = g.pcId === "__all__" ? party : party.filter((p) => p.id === g.pcId);
-    const who = g.pcId === "__all__" ? "the whole party" : (targets[0] ? targets[0].name : "");
-    targets.forEach((pc) => {
-      if (!pc.sheetId) return;
-      rollSync.requestRoll({ kind: "item", target: pc.sheetId, cat: g.cat, entryId: entry.id });
-      persistItemGrant(pc, entry);
+  const archiveLastAddedTimer = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const flashArchiveAdded = (name: string) => { setArchiveLastAdded(name); clearTimeout(archiveLastAddedTimer.current); archiveLastAddedTimer.current = setTimeout(() => setArchiveLastAdded(null), 2600); };
+
+  // Fetch the selected single target's sheet so the drawer's caps/checkmarks
+  // (attunement slots, potion sheaf space, cultivation space, already-added
+  // entries) reflect that player exactly like their own Archive would. For
+  // "__all__" there's no single recipient to reflect, so the UI bypasses caps
+  // — but the actual write for each party member still respects THEIR OWN
+  // current caps (computePotionSheafGrant etc. check the freshly-read array).
+  React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (!archiveGrant || archiveGrant.pcId === "__all__") { setArchiveTarget(null); return; }
+    const pc = party.find((p) => p.id === archiveGrant.pcId);
+    if (!pc?.sheetId) { setArchiveTarget(null); return; }
+    let cancelled = false;
+    createClient().from("characters").select("sheet").eq("id", pc.sheetId).single().then(({ data }) => {
+      if (!cancelled) setArchiveTarget((data?.sheet as SerializedSheet) || null);
     });
-    toast(entry.name + " passed to " + who + ".");
+    return () => { cancelled = true; };
+  }, [archiveGrant, party]);
+
+  const subjectRank = (schools: SerializedSheet["schools"] | undefined, key: string): number => {
+    for (const sc of schools || []) { const f = (sc.subjects || []).find((s) => s.key === key); if (f) return f.rank || 0; }
+    return 0;
+  };
+  const derivedAddedIds = (sheet: SerializedSheet | null): string[] => {
+    if (!sheet) return [];
+    const ids: string[] = [];
+    const strip = (arr: { id: string }[] | undefined, prefix: string) => (arr || []).forEach((x) => { if (x.id.startsWith(prefix)) ids.push(x.id.slice(prefix.length)); });
+    strip(sheet.inventory?.artifacts, "art-comp-");
+    strip(sheet.inventory?.recipes, "rec-comp-");
+    strip(sheet.inventory?.wands, "wnd-comp-");
+    strip(sheet.inventory?.glyphs, "gly-comp-");
+    strip(sheet.magic?.spells, "sp-comp-");
+    return ids;
+  };
+  const archiveCaps = React.useMemo(() => {
+    const sheet = archiveGrant && archiveGrant.pcId !== "__all__" ? archiveTarget : null;
+    if (!sheet) return { attuneFull: false, potionSheafCount: 0, potionCap: Infinity, cultivationCap: 0, plantSum: 0, potionRecipes: [] as { name: string }[], addedIds: [] as string[] };
+    const attunedCount = (sheet.inventory?.artifacts || []).filter((a) => a.attuned).length;
+    const attuneCap = INV.attuneCap(subjectRank(sheet.schools, "artificy"));
+    const potionSheafCount = (sheet.inventory?.potions || []).reduce((s, p) => s + p.qty, 0);
+    const plantSum = (sheet.inventory?.plants || []).reduce((s, p) => s + (p.value || 0), 0);
+    return {
+      attuneFull: attunedCount >= attuneCap,
+      potionSheafCount,
+      potionCap: INV.potionCap,
+      cultivationCap: INV.plantCap(subjectRank(sheet.schools, "herbalism")),
+      plantSum,
+      potionRecipes: sheet.inventory?.recipes || [],
+      addedIds: derivedAddedIds(sheet),
+    };
+  }, [archiveGrant, archiveTarget]);
+
+  const archiveTargets = () => archiveGrant ? (archiveGrant.pcId === "__all__" ? party : party.filter((p) => p.id === archiveGrant.pcId)) : [];
+  const archiveWho = () => !archiveGrant ? "" : archiveGrant.pcId === "__all__" ? "the whole party" : (archiveTargets()[0] ? archiveTargets()[0].name : "");
+
+  const mergeSheetField = (sheet: SerializedSheet, field: string, value: unknown[]): SerializedSheet =>
+    (field === "spells" || field === "moves")
+      ? { ...sheet, magic: { ...sheet.magic, [field]: value } } as SerializedSheet
+      : { ...sheet, inventory: { ...sheet.inventory, [field]: value } } as SerializedSheet;
+
+  // Durable single-field write: read the target's current array, compute the
+  // new one, write it back via grant_sheet_field. Shared by every variant
+  // except attunement (which writes two fields atomically — see below).
+  const persistFieldGrant = (pc: GmPartyMember, readCurrent: (sheet: SerializedSheet) => unknown[], compute: (current: never) => { field: string; value: unknown[] } | null) => {
+    if (!pc.sheetId) return;
+    const supabase = createClient();
+    supabase.from("characters").select("sheet").eq("id", pc.sheetId).single().then(({ data, error }) => {
+      if (error || !data?.sheet) { console.error("Couldn't read sheet for " + pc.name, error?.message); toast("Couldn't save grant for " + pc.name + " — try again."); return; }
+      const sheet = data.sheet as SerializedSheet;
+      const res = compute(readCurrent(sheet) as never);
+      if (!res) return; // capped, already held, or not applicable — skip this target
+      supabase.rpc("grant_sheet_field", { p_character: pc.sheetId, p_field: res.field, p_value: res.value }).then(({ error: rpcError }) => {
+        if (rpcError) { console.error("Grant failed to persist for " + pc.name, rpcError.message); toast("Couldn't save grant for " + pc.name + " — try again."); return; }
+        if (archiveGrant && archiveGrant.pcId === pc.id) setArchiveTarget((prev) => prev ? mergeSheetField(prev, res.field, res.value) : prev);
+      });
+    });
+  };
+
+  const persistAttunedGrant = (pc: GmPartyMember, entry: CompendiumEntry) => {
+    if (!pc.sheetId) return;
+    const supabase = createClient();
+    supabase.from("characters").select("sheet").eq("id", pc.sheetId).single().then(({ data, error }) => {
+      if (error || !data?.sheet) { console.error("Couldn't read sheet for " + pc.name, error?.message); toast("Couldn't save grant for " + pc.name + " — try again."); return; }
+      const sheet = data.sheet as SerializedSheet;
+      const res = computeAttunedArtifactGrant(entry, sheet.inventory?.artifacts || [], sheet.magic?.moves || []);
+      if (!res) return;
+      supabase.rpc("grant_attuned_artifact", { p_character: pc.sheetId, p_artifacts: res.artifacts, p_moves: res.moves }).then(({ error: rpcError }) => {
+        if (rpcError) { console.error("Attune grant failed to persist for " + pc.name, rpcError.message); toast("Couldn't save grant for " + pc.name + " — try again."); return; }
+        if (archiveGrant && archiveGrant.pcId === pc.id) setArchiveTarget((prev) => prev ? { ...prev, inventory: { ...prev.inventory, artifacts: res.artifacts }, magic: { ...prev.magic, moves: res.moves } } as SerializedSheet : prev);
+      });
+    });
+  };
+
+  const readInventory = (field: string) => (sheet: SerializedSheet) => field === "spells" ? (sheet.magic?.spells || []) : (((sheet.inventory as unknown as Record<string, unknown[]> | undefined) || {})[field] || []);
+
+  // The category a compendium entry's cat maps to on sheet, mirroring the
+  // field computeCompendiumGrant resolves to on the player's own sheet.
+  const INVENTORY_FIELD_BY_CAT: Record<string, string> = {
+    spell: "spells", artifact: "artifacts", potion: "recipes", plant: "plants", wand: "wands", glyph: "glyphs", item: "items",
+  };
+
+  const broadcastAndToast = (entry: CompendiumEntry, variant?: "attuned" | "learning" | "sheaf" | "recipe" | "craft") => {
+    archiveTargets().forEach((pc) => { if (pc.sheetId) rollSync.requestRoll({ kind: "item", target: pc.sheetId, cat: entry.cat, entryId: entry.id, variant }); });
+    flashArchiveAdded(entry.name);
+    toast(entry.name + " passed to " + archiveWho() + ".");
+  };
+
+  const gmOnAdd = (cid: string) => {
+    const e = comp.compendium.find((x) => x.id === cid); if (!e) return;
+    const field = INVENTORY_FIELD_BY_CAT[e.cat]; if (!field) return;
+    archiveTargets().forEach((pc) => persistFieldGrant(pc, readInventory(field), (current) => computeCompendiumGrant(e, current)));
+    broadcastAndToast(e);
+  };
+  const gmOnAddAttuned = (cid: string) => {
+    const e = comp.compendium.find((x) => x.id === cid); if (!e) return;
+    archiveTargets().forEach((pc) => persistAttunedGrant(pc, e));
+    broadcastAndToast(e, "attuned");
+  };
+  const gmOnAddLearning = (cid: string) => {
+    const e = comp.compendium.find((x) => x.id === cid); if (!e) return;
+    archiveTargets().forEach((pc) => persistFieldGrant(pc, readInventory("spells"), (current) => computeLearningSpellGrant(e, current)));
+    broadcastAndToast(e, "learning");
+  };
+  const gmOnAddPotionSheaf = (cid: string) => {
+    const e = comp.compendium.find((x) => x.id === cid); if (!e) return;
+    archiveTargets().forEach((pc) => persistFieldGrant(pc, readInventory("potions"), (current) => computePotionSheafGrant(e, current, INV.potionCap)));
+    broadcastAndToast(e, "sheaf");
+  };
+  const gmOnAddPotionRecipe = (cid: string) => {
+    const e = comp.compendium.find((x) => x.id === cid); if (!e) return;
+    archiveTargets().forEach((pc) => persistFieldGrant(pc, readInventory("recipes"), (current) => computePotionRecipeGrant(e, current)));
+    broadcastAndToast(e, "recipe");
+  };
+  const gmOnAddWandCraft = (cid: string) => {
+    const e = comp.compendium.find((x) => x.id === cid); if (!e) return;
+    archiveTargets().forEach((pc) => persistFieldGrant(pc, readInventory("wands"), (current) => computeWandCraftGrant(e, current)));
+    broadcastAndToast(e, "craft");
   };
 
   /* ------------------------------- NPCs --------------------------------- */
@@ -379,7 +486,7 @@ export function GmView({ campaign, party: hostParty }: GmViewProps) {
         </header>
 
         <div className="sf-canvas gm-canvas">
-          {tab === "party" && <PartyTab party={party} onResist={openResist} onGrant={openGrant} onGrantAll={openGrantAll} />}
+          {tab === "party" && <PartyTab party={party} onResist={openResist} onGrant={openGrant} onGrantAll={openGrantAll} onArchive={openArchive} onArchiveAll={() => setArchiveGrant({ pcId: "__all__" })} />}
           {tab === "npcs" && <NpcsTab npcs={npcs} conds={GM_SEED.CONDS} onAdd={openAddNpc} onEdit={openEditNpc} onRoll={rollNpc} onBumpCond={bumpCondNpc} />}
           {tab === "notes" && <NotesTab notes={notes} activeId={activeNoteId} setActiveId={setActiveNoteId} tagFilter={tagFilter} setTagFilter={setTagFilter} onCreate={createNote} onPatch={patchNote} confirmId={confirmDeleteNoteId} setConfirmId={setConfirmDeleteNoteId} onDelete={deleteNote} />}
           {tab === "action" && <ActionTab party={party} action={action} onToggleInclude={toggleInclude} onToggleSelect={toggleSelect} onBegin={beginAction} onEnd={endAction} onThreat={threatMove} onTargeted={targetedThreat} onOpening={opening} onChangeAp={changeAp} onTarget={targetPlayer} setChangeApId={(id) => setAction((s) => ({ ...s, changeApId: s.changeApId === id ? null : id }))} />}
@@ -390,7 +497,30 @@ export function GmView({ campaign, party: hostParty }: GmViewProps) {
       <RollToasts log={log} position="br" cap={3} lifetime={5000} graceMs={1500} expandDefault={false} />
 
       {resist && <ResistModal resist={resist} party={party} conds={GM_SEED.CONDS} onPatch={patchResist} onRoll={promptResist} onClose={() => setResist(null)} />}
-      {grant && <GrantDrawer grant={grant} party={party} matChips={GM_SEED.matChips} matStep={GM_SEED.matStep} onPatch={patchGrant} onGrantMaterials={grantMaterials} onGrantItem={grantItem} onClose={() => setGrant(null)} />}
+      {grant && <GrantDrawer grant={grant} party={party} matChips={GM_SEED.matChips} matStep={GM_SEED.matStep} onPatch={patchGrant} onGrantMaterials={grantMaterials} onClose={() => setGrant(null)} />}
+      {archiveGrant && (
+        <Compendium
+          open
+          onClose={closeArchive}
+          data={compendiumData}
+          addedIds={archiveCaps.addedIds}
+          onAdd={gmOnAdd}
+          onAddAttuned={gmOnAddAttuned}
+          onAddLearning={gmOnAddLearning}
+          onAddPotionSheaf={gmOnAddPotionSheaf}
+          onAddPotionRecipe={gmOnAddPotionRecipe}
+          onAddWandCraft={gmOnAddWandCraft}
+          potionSheafCount={archiveCaps.potionSheafCount}
+          potionCap={archiveCaps.potionCap}
+          potionRecipes={archiveCaps.potionRecipes}
+          lastAdded={archiveLastAdded}
+          cultivationCap={archiveCaps.cultivationCap}
+          plantSum={archiveCaps.plantSum}
+          attuneFull={archiveCaps.attuneFull}
+          cat={archiveCat}
+          setCat={setArchiveCat}
+        />
+      )}
       {addNpc && <AddNpcModal addNpc={addNpc} onPatch={patchAddNpc} onConfirm={confirmAddNpc} onDelete={(id) => { deleteNpc(id); setAddNpc(null); }} onClose={() => setAddNpc(null)} />}
       {timeModal && <TimeModal time={time} setTime={setTime} onAdvance={advanceTime} onSleep={sleepTime} onClose={() => setTimeModal(false)} />}
 
@@ -403,7 +533,7 @@ export function GmView({ campaign, party: hostParty }: GmViewProps) {
 }
 
 /* ============================== PARTY TAB ================================= */
-function PartyTab({ party, onResist, onGrant, onGrantAll }: { party: GmPartyMember[]; onResist: (id: string) => void; onGrant: (id: string) => void; onGrantAll: () => void }) {
+function PartyTab({ party, onResist, onGrant, onGrantAll, onArchive, onArchiveAll }: { party: GmPartyMember[]; onResist: (id: string) => void; onGrant: (id: string) => void; onGrantAll: () => void; onArchive: (id: string) => void; onArchiveAll: () => void }) {
   return (
     <div>
       <div className="gm-sec-head">
@@ -438,6 +568,7 @@ function PartyTab({ party, onResist, onGrant, onGrantAll }: { party: GmPartyMemb
             <div className="gm-pc__btns">
               <button className="gm-btn" onClick={() => onResist(pc.id)}><Icon name="shield-alert" style={{ color: "var(--crimson-300)" }} />Resist</button>
               <button className="gm-btn" onClick={() => onGrant(pc.id)}><Icon name="gift" style={{ color: "var(--gold-300)" }} />Grant</button>
+              <button className="gm-btn" onClick={() => onArchive(pc.id)}><Icon name="library-big" style={{ color: "var(--plum-300)" }} />Archive</button>
             </div>
           </article>
         ))}
@@ -448,6 +579,13 @@ function PartyTab({ party, onResist, onGrant, onGrantAll }: { party: GmPartyMemb
           <span className="gm-grantall__sub">Each member receives the same amount</span>
         </div>
         <button className="gm-btn-gold" onClick={onGrantAll}><Icon name="circle-star" />Grant to All</button>
+      </div>
+      <div className="gm-grantall">
+        <div className="gm-grantall__txt">
+          <span className="gm-grantall__title">Grant from the Archive to the whole party</span>
+          <span className="gm-grantall__sub">Each member receives the same entry</span>
+        </div>
+        <button className="gm-btn-gold" onClick={onArchiveAll}><Icon name="library-big" />Archive for All</button>
       </div>
     </div>
   );
@@ -727,89 +865,44 @@ function ResistModal({ resist, party, conds, onPatch, onRoll, onClose }: { resis
 }
 
 /* ============================== GRANT DRAWER ============================= */
-function GrantDrawer({ grant, party, matChips, matStep, onPatch, onGrantMaterials, onGrantItem, onClose }: {
-  grant: GrantState; party: GmPartyMember[]; matChips: number[]; matStep: number; onPatch: (patch: Partial<GrantState>) => void; onGrantMaterials: () => void; onGrantItem: (e: CompendiumEntry) => void; onClose: () => void;
+function GrantDrawer({ grant, party, matChips, matStep, onPatch, onGrantMaterials, onClose }: {
+  grant: GrantState; party: GmPartyMember[]; matChips: number[]; matStep: number; onPatch: (patch: Partial<GrantState>) => void; onGrantMaterials: () => void; onClose: () => void;
 }) {
   const pc = grant.pcId === "__all__" ? { name: "The Whole Party", materials: party.reduce((a, p) => a + p.materials, 0) } : (party.find((p) => p.id === grant.pcId) || party[0]);
-  const isMat = grant.cat === "materials";
-  const q = (grant.q || "").toLowerCase();
-  const entries = isMat ? [] : (SEED.compendium || []).filter((e) => e.cat === grant.cat && (!q || (e.name + " " + (e.meta || []).join(" ") + " " + (e.desc || "")).toLowerCase().includes(q)));
   return (
     <React.Fragment>
       <div className="sf-scrim open" onClick={onClose} />
-      <aside className="sf-drawer open gm-grant" role="dialog" aria-label="Grant from the Compendium">
+      <aside className="sf-drawer open gm-grant" role="dialog" aria-label="Grant Materials">
         <div className="sf-drawer__head">
-          <span className="sf-fac__glyph" style={{ background: "var(--brand-subtle)", color: "var(--gold-200)" }}><Icon name="library-big" /></span>
+          <span className="sf-fac__glyph" style={{ background: "var(--brand-subtle)", color: "var(--gold-200)" }}><Icon name="circle-star" /></span>
           <div className="sf-drawer__title">
-            <span className="sf-eyebrow">The Archive · grant to {pc.name}</span>
-            <h2>Compendium</h2>
+            <span className="sf-eyebrow">Grant to {pc.name}</span>
+            <h2>Materials</h2>
           </div>
           <button className="gm-modal__x" onClick={onClose}><Icon name="x" /></button>
         </div>
-        <div className="sf-drawer__search">
-          <Icon name="search" />
-          <input value={grant.q || ""} onChange={(e) => onPatch({ q: e.target.value })} placeholder="Search the archive…" />
-        </div>
-        <div className="gm-grant__tabs">
-          {GRANT_CATS.map((c) => (
-            <button key={c.id} className={"gm-grant__tab" + (grant.cat === c.id ? " is-on" : "")} onClick={() => onPatch({ cat: c.id, openId: null })}><Icon name={c.icon} />{c.label}</button>
-          ))}
-        </div>
         <div className="gm-grant__body">
-          {isMat ? (
-            <div className="gm-grant__mat">
-              <div className="gm-grant__matcard">
-                <span className="gm-grant__matglyph"><Icon name="circle-star" /></span>
-                <div className="gm-grant__matheld">
-                  <span className="gm-field-label">{pc.name} holds</span>
-                  <span className="gm-grant__matnum">{pc.materials.toLocaleString()}<span className="gm-grant__matunit"> materials</span></span>
-                </div>
-              </div>
-              <div className="gm-field-label">Amount</div>
-              <div className="gm-grant__matstepper">
-                <button className="gm-dc__btn" disabled={grant.matAmt <= matStep} onClick={() => onPatch({ matAmt: Math.max(matStep, grant.matAmt - matStep), matText: null })}>−</button>
-                <input type="number" min={matStep} step={matStep} className="gm-dc__input gm-grant__matinput" value={grant.matText != null ? grant.matText : grant.matAmt}
-                  onChange={(e) => { const raw = e.target.value; const v = parseInt(raw, 10); const patch: Partial<GrantState> = { matText: raw }; if (!isNaN(v)) patch.matAmt = Math.max(1, v); onPatch(patch); }}
-                  onBlur={() => { const v = parseInt(grant.matText || "", 10); onPatch({ matAmt: isNaN(v) ? grant.matAmt : Math.max(1, v), matText: null }); }} />
-                <button className="gm-dc__btn" onClick={() => onPatch({ matAmt: grant.matAmt + matStep, matText: null })}>+</button>
-              </div>
-              <div className="gm-grant__chips">
-                {matChips.map((v) => <button key={v} className={"gm-grant__chip" + (grant.matAmt === v ? " is-on" : "")} onClick={() => onPatch({ matAmt: v, matText: null })}>+{v}</button>)}
-              </div>
-              <button className="gm-btn-gold gm-btn-block" onClick={onGrantMaterials}><Icon name="gift" />Grant {grant.matAmt.toLocaleString()} materials</button>
-            </div>
-          ) : (
-            <div>
-              <div className="gm-field-label">{entries.length} {entries.length === 1 ? "entry" : "entries"}</div>
-              <div className="gm-grant__entries">
-                {entries.map((e) => {
-                  const open = grant.openId === e.id;
-                  const lvl = (e.level || "").split(" ")[0];
-                  return (
-                    <div key={e.id} className="gm-grant__entry">
-                      <div className="gm-grant__entryhead" onClick={() => onPatch({ openId: open ? null : e.id })}>
-                        <div className="gm-grant__entryid">
-                          <span className="gm-grant__entryname">{e.name}</span>
-                          <div className="gm-grant__entrymeta">
-                            <span className="gm-grant__entrylvl" style={{ color: LEVELCOLOR[lvl] || "var(--text-muted)" }}><span className="gm-house__dot" style={{ background: LEVELCOLOR[lvl] || "var(--text-muted)" }} />{e.level}</span>
-                            <span className="gm-grant__entrysub">{(e.meta || []).join(" · ")}</span>
-                          </div>
-                        </div>
-                        <button className="gm-btn" onClick={(ev) => { ev.stopPropagation(); onGrantItem(e); }}><Icon name="gift" style={{ color: "var(--gold-300)" }} />Grant</button>
-                        <Icon name={open ? "chevron-up" : "chevron-down"} />
-                      </div>
-                      {open && (
-                        <div className="gm-grant__entrybody">
-                          <p>{e.desc}</p>
-                          <button className="gm-btn-gold" onClick={() => onGrantItem(e)}><Icon name="gift" />Grant to {pc.name}</button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+          <div className="gm-grant__mat">
+            <div className="gm-grant__matcard">
+              <span className="gm-grant__matglyph"><Icon name="circle-star" /></span>
+              <div className="gm-grant__matheld">
+                <span className="gm-field-label">{pc.name} holds</span>
+                <span className="gm-grant__matnum">{pc.materials.toLocaleString()}<span className="gm-grant__matunit"> materials</span></span>
               </div>
             </div>
-          )}
+            <div className="gm-field-label">Amount</div>
+            <div className="gm-grant__matstepper">
+              <button className="gm-dc__btn" disabled={grant.matAmt <= matStep} onClick={() => onPatch({ matAmt: Math.max(matStep, grant.matAmt - matStep), matText: null })}>−</button>
+              <input type="number" min={matStep} step={matStep} className="gm-dc__input gm-grant__matinput" value={grant.matText != null ? grant.matText : grant.matAmt}
+                onChange={(e) => { const raw = e.target.value; const v = parseInt(raw, 10); const patch: Partial<GrantState> = { matText: raw }; if (!isNaN(v)) patch.matAmt = Math.max(1, v); onPatch(patch); }}
+                onBlur={() => { const v = parseInt(grant.matText || "", 10); onPatch({ matAmt: isNaN(v) ? grant.matAmt : Math.max(1, v), matText: null }); }} />
+              <button className="gm-dc__btn" onClick={() => onPatch({ matAmt: grant.matAmt + matStep, matText: null })}>+</button>
+            </div>
+            <div className="gm-grant__chips">
+              {matChips.map((v) => <button key={v} className={"gm-grant__chip" + (grant.matAmt === v ? " is-on" : "")} onClick={() => onPatch({ matAmt: v, matText: null })}>+{v}</button>)}
+            </div>
+            <button className="gm-btn-gold gm-btn-block" onClick={onGrantMaterials}><Icon name="gift" />Grant {grant.matAmt.toLocaleString()} materials</button>
+          </div>
         </div>
       </aside>
     </React.Fragment>
