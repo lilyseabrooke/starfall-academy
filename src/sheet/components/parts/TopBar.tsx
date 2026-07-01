@@ -4,7 +4,9 @@ import * as React from "react";
 import { Icon } from "../Icon";
 import { Stars } from "./Stars";
 import { SearchMenu } from "./SearchMenu";
+import { TimeBadge } from "./TimeBadge";
 import type { CharacterVitals } from "../../types";
+import type { GmTime } from "../../data/gm-seed";
 import type { SearchResult as SearchResultData } from "../../data/search";
 
 export interface TopBarProps {
@@ -15,6 +17,8 @@ export interface TopBarProps {
   onRollAction?: () => void;
   onToggleMobileMenu: () => void;
   hideVitals?: boolean;
+  /** The campaign clock, read-only — same look as the GM's, no interaction. */
+  time?: GmTime;
   searchQuery: string;
   onSearchQueryChange: (q: string) => void;
   searchResults: SearchResultData[];
@@ -29,7 +33,7 @@ export interface TopBarProps {
 }
 
 export function TopBar({
-  title, eyebrow, c, onStep, onRollAction, onToggleMobileMenu, hideVitals,
+  title, eyebrow, c, onStep, onRollAction, onToggleMobileMenu, hideVitals, time,
   searchQuery, onSearchQueryChange, searchResults, onSearchSelect, onSearchRoll,
   onSearchRepair, onSearchUse, searchMenuOpen, onSearchMenuOpen, onSearchMenuClose, onSearchMobileOpen,
 }: TopBarProps) {
@@ -85,6 +89,8 @@ export function TopBar({
         <h1 className="sf-top__h1">{title}</h1>
       </div>
       <div className="sf-top__spacer" />
+
+      {time && <TimeBadge time={time} />}
 
       <div className="sf-vitals">
         <div className="sf-vital is-ap">

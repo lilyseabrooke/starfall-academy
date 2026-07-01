@@ -105,7 +105,10 @@ export function toGMPartyMember(row: CharacterRow): GMPartyMember {
     tone,
     house: houseFull ? `${houseFull} House` : "Unsorted",
     className: (c.title || "").toString(),
-    resolve: Number(c.resolve) || 0,
+    // Resolve isn't its own stored stat — it's 5 minus the character's total
+    // condition severity, same formula as the player's own TopBar computes
+    // (roster.ts previously read the raw, disconnected c.resolve field here).
+    resolve: Math.max(0, 5 - Object.values(conds).reduce((s, v) => s + v, 0)),
     ap: Number(c.actionPoints) || 0,
     apMax: Number(c.actionPointsMax) || 6,
     materials: Number(c.materials) || 0,

@@ -11,6 +11,8 @@
    =========================================================================== */
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { markJumpOrigin } from "./nav-return";
 
 import "@/ds/ds.css";
 import "./styles/app.css";
@@ -29,6 +31,8 @@ import { spellCrit, artifactBackfireDC, spellLevelKey } from "./data/roll-engine
 import { blank as blankBonus } from "./data/bonus";
 import { buildIndex, search as runSearch, type SearchResult } from "./data/search";
 import { useCompendium } from "./data/compendium";
+import { computeCompendiumGrant, computeAttunedArtifactGrant, computeLearningSpellGrant, computePotionSheafGrant, computePotionRecipeGrant, computeWandCraftGrant } from "./data/compendium-grant";
+import type { GmTime } from "./data/gm-seed";
 
 import { useClassState } from "./state/useClassState";
 import { useMagicState } from "./state/useMagicState";
@@ -85,12 +89,23 @@ const TWEAK_DEFAULTS = {
   ladderDensity: "roomy",
 };
 
-/** A GM-broadcast roll prompt (resist save / action roll). */
+/** A GM-broadcast roll prompt (resist save / action roll / materials grant). */
 interface GmPrompt {
   target?: string;
   kind?: string;
   condition?: string;
   dc?: number | null;
+  amount?: number;
+  cat?: string;
+  entryId?: string;
+  /** For kind:"item" — which specialized handler to route to (default = onAdd). */
+  variant?: "attuned" | "learning" | "sheaf" | "recipe" | "craft";
+  /** For kind:"ap" — the new actionPoints value the GM's Action Scene set. */
+  value?: number;
+  /** For kind:"time" — the campaign clock the GM set. */
+  day?: number;
+  block?: number;
+  enabled?: boolean;
 }
 
 export interface CharacterSheetProps {
@@ -130,7 +145,7 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
 
   const pickChar = (cid: string) => {
     if (!cid || cid === activeChar) return;
-    if (me) router.push(`/characters/${cid}`);
+    if (me) { markJumpOrigin(`/characters/${me}`); router.push(`/characters/${cid}`); }
     else setActiveChar(cid);
   };
 
@@ -345,17 +360,57 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
   /* ---- Shared roll sync + GM prompts ------------------------------------ */
   const forcedResistRef = React.useRef<{ conditionId: string } | null>(null);
   const insightModRef = React.useRef(0);
+
+  // The campaign clock — read-only here (the GM's Clock modal is what sets
+  // it). Loaded once on mount so a reload shows the current time even before
+  // the next live "time" broadcast; onPrompt keeps it live after that.
+  const [gmTime, setGmTime] = React.useState<GmTime>({ day: 0, block: 0, enabled: false });
+  React.useEffect(() => {
+    if (!campaignId) return;
+    let cancelled = false;
+    createClient().from("campaigns").select("time_day,time_block,time_enabled").eq("id", campaignId).single().then(({ data }) => {
+      if (!cancelled && data) setGmTime({ day: data.time_day ?? 0, block: data.time_block ?? 0, enabled: !!data.time_enabled });
+    });
+    return () => { cancelled = true; };
+  }, [campaignId]);
   React.useEffect(() => { insightModRef.current = effFacRank("Insight"); });
 
   const onPrompt = React.useCallback((raw: unknown) => {
     const prompt = raw as GmPrompt | null;
-    if (!prompt || prompt.target !== me) return;
+    if (!prompt) return;
+    if (prompt.kind === "time") {
+      // Campaign-wide — no target, everyone at the table sees the same clock.
+      setGmTime({ day: prompt.day ?? 0, block: prompt.block ?? 0, enabled: !!prompt.enabled });
+      return;
+    }
+    if (prompt.target !== me) return;
     if (prompt.kind === "resist" && prompt.condition) {
       forcedResistRef.current = { conditionId: prompt.condition };
       openForcedResist({ conditionId: prompt.condition, dc: prompt.dc ?? null });
     } else if (prompt.kind === "action") {
       const dc = prompt.dc != null ? prompt.dc : 10;
-      pushRoll({ who: meWho(), kind: "action", label: "Action Roll", stat: "Insight", mod: insightModRef.current, dc, meta: ["Action Roll", "DC " + dc + " Insight"] });
+      const r = pushRoll({ who: meWho(), kind: "action", label: "Action Roll", stat: "Insight", mod: insightModRef.current, dc, meta: ["Action Roll", "DC " + dc + " Insight"] });
+      setC((prev) => ({ ...prev, actionPoints: r.pass ? Math.min(Math.max(0, r.degrees || 0), prev.actionPointsMax) : 0 }));
+    } else if (prompt.kind === "ap" && prompt.value != null) {
+      setC((prev) => ({ ...prev, actionPoints: Math.min(Math.max(0, prompt.value as number), prev.actionPointsMax) }));
+      toast("The Game Master set your Action Points to " + prompt.value + ".");
+    } else if (prompt.kind === "grant" && prompt.amount) {
+      adjustMaterials(prompt.amount);
+      toast("The Game Master granted you +" + prompt.amount.toLocaleString() + " materials");
+    } else if (prompt.kind === "item" && prompt.entryId) {
+      const e = D.compendium.find((x) => x.id === prompt.entryId);
+      // onAdd/onAddAttuned/etc. are declared later in this component; by the
+      // time this callback actually fires (after a full render), the closure
+      // sees them fine.
+      /* eslint-disable react-hooks/immutability */
+      if (prompt.variant === "attuned") onAddAttuned(prompt.entryId);
+      else if (prompt.variant === "learning") onAddLearning(prompt.entryId);
+      else if (prompt.variant === "sheaf") onAddPotionSheaf(prompt.entryId);
+      else if (prompt.variant === "recipe") onAddPotionRecipe(prompt.entryId);
+      else if (prompt.variant === "craft") onAddWandCraft(prompt.entryId);
+      else onAdd(prompt.entryId);
+      /* eslint-enable react-hooks/immutability */
+      toast("The Game Master granted you " + (e ? e.name : "an item"));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [me]);
@@ -744,14 +799,14 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
     if (added.includes(cid) && e?.cat !== "plant" && e?.cat !== "item") return;
     if (e?.cat !== "plant" && e?.cat !== "item") setAdded((a) => [...a, cid]);
     finishToast(e ? e.name : null);
-    if (e && e.cat === "spell") addSpell({ id: "sp-comp-" + e.id, name: e.name, level: e.level, subjectKey: e.subjectKey || "", subject: e.subject || "", school: e.school || "", stat: e.stat || "", ap: e.ap || 0, dc: e.dc ?? null, ritual: !!e.ritual, volatile: false, days: 0, desc: e.desc });
+    if (e && e.cat === "spell") { const res = computeCompendiumGrant(e, spells); if (res?.field === "spells") magic.setState.setSpells(res.value); }
     else if (e && e.cat === "move") magic.handlers.addMoveFromCompendium(e);
-    else if (e && e.cat === "artifact") setArtifacts((prev) => [...prev, { id: "art-comp-" + e.id, name: e.name, level: e.level, tone: e.tone, subject: e.subject || "—", intensity: e.intensity != null ? e.intensity : 3, attuned: false, condition: "stable", skills: [], dc: 0, desc: e.desc, move: { name: e.name + " — Boon", stat: "Insight", skill: "—", bonus: 0, dc: null, desc: e.desc } }]);
-    else if (e && e.cat === "potion") { const cost = parseInt(String(e.cost || "0").replace(/[^0-9]/g, ""), 10) || 0; setRecipes((prev) => [...prev, { id: "rec-comp-" + e.id, name: e.name, tone: e.tone, intensity: e.intensity != null ? e.intensity : 1, cost, desc: e.desc }]); }
-    else if (e && e.cat === "plant") setPlants((prev) => [...prev, { id: "plt-comp-" + e.id, name: e.name, tone: e.tone, value: e.value || 0, intensity: e.intensity || 1, used: false, removeOnUse: !!e.removeOnUse, requiresRoll: e.requiresRoll || "YES", desc: e.desc, ability: e.ability || e.desc }]);
-    else if (e && e.cat === "wand") { const bm = /([+-]?\d+)\s+(.+)/.exec(e.bonusLabel || ""); const val = bm ? parseInt(bm[1], 10) : 0; const lbl = bm ? bm[2] : "Bonus"; setWands((prev) => [...prev, { id: "wnd-comp-" + e.id, name: e.name, equipped: false, condition: 6, maxCondition: 6, desc: e.desc, effect: { kind: "bonus", label: lbl, type: "subject", target: lbl.toLowerCase(), targetLabel: lbl, value: val } }]); }
-    else if (e && e.cat === "glyph") setGlyphs((prev) => [...prev, { id: "gly-comp-" + e.id, name: e.name, tone: e.tone, cost: e.value || 0, intensity: e.intensity || 1, desc: e.desc }]);
-    else if (e && e.cat === "item") setItems((prev) => { const ex = prev.find((x) => x.name === e.name); if (ex) return prev.map((x) => (x.id === ex.id ? { ...x, qty: (x.qty || 1) + 1 } : x)); return [...prev, { id: "itm-comp-" + e.id, name: e.name, qty: 1, cost: e.cost == null ? undefined : Number(e.cost), singleUse: e.singleUse ?? false, check: e.check ?? null, tags: e.tags ?? [], desc: e.desc }]; });
+    else if (e && e.cat === "artifact") { const res = computeCompendiumGrant(e, artifacts); if (res?.field === "artifacts") setArtifacts(res.value); }
+    else if (e && e.cat === "potion") { const res = computeCompendiumGrant(e, recipes); if (res?.field === "recipes") setRecipes(res.value); }
+    else if (e && e.cat === "plant") { const res = computeCompendiumGrant(e, plants); if (res?.field === "plants") setPlants(res.value); }
+    else if (e && e.cat === "wand") { const res = computeCompendiumGrant(e, wands); if (res?.field === "wands") setWands(res.value); }
+    else if (e && e.cat === "glyph") { const res = computeCompendiumGrant(e, glyphs); if (res?.field === "glyphs") setGlyphs(res.value); }
+    else if (e && e.cat === "item") { const res = computeCompendiumGrant(e, items); if (res?.field === "items") setItems(res.value); }
     clearLastAddedSoon();
   };
 
@@ -761,59 +816,52 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
   const onAddAttuned = (cid: string) => {
     if (added.includes(cid)) return;
     const e = D.compendium.find((x) => x.id === cid);
-    if (!e || e.cat !== "artifact") return;
-    const art: Artifact = { id: "art-comp-" + e.id, name: e.name, level: e.level, tone: e.tone, subject: e.subject || "—", intensity: 0, attuned: true, condition: "stable", skills: [], dc: 0, desc: e.desc, move: { name: e.name + " — Boon", stat: "Insight", skill: "—", bonus: 0, dc: null, desc: e.desc } };
+    if (!e) return;
+    const res = computeAttunedArtifactGrant(e, artifacts, moves);
+    if (!res) return;
     setAdded((a) => [...a, cid]);
     finishToast(e.name);
-    setArtifacts((prev) => [...prev, art]);
-    magic.handlers.addArtMove(art);
+    setArtifacts(res.artifacts);
+    magic.setState.setMoves(res.moves);
     clearLastAddedSoon();
   };
 
-  const learnDaysFor = (level: string) => {
-    const l = (level || "").toLowerCase();
-    if (l.startsWith("basic")) return 1;
-    if (l.startsWith("standard")) return 2;
-    if (l.startsWith("advanced")) return 5;
-    return 10;
-  };
   const onAddLearning = (cid: string) => {
     if (added.includes(cid)) return;
     const e = D.compendium.find((x) => x.id === cid);
-    if (!e || e.cat !== "spell") return;
+    if (!e) return;
+    const res = computeLearningSpellGrant(e, spells);
+    if (!res) return;
     setAdded((a) => [...a, cid]);
     finishToast(e.name);
-    addSpell({ id: "sp-comp-" + e.id, name: e.name, level: e.level, subjectKey: e.subjectKey || "", subject: e.subject || "", school: e.school || "", stat: e.stat || "", ap: e.ap || 0, dc: e.dc ?? null, ritual: !!e.ritual, volatile: false, days: learnDaysFor(e.level), desc: e.desc });
+    magic.setState.setSpells(res.value);
     clearLastAddedSoon();
   };
 
   const onAddPotionSheaf = (cid: string) => {
     const e = D.compendium.find((x) => x.id === cid);
-    if (!e || e.cat !== "potion") return;
-    setPotions((prev) => {
-      if (prev.reduce((s, p) => s + p.qty, 0) >= INV.potionCap) return prev;
-      const ex = prev.find((p) => p.name === e.name);
-      if (ex) return prev.map((p) => (p.id === ex.id ? { ...p, qty: p.qty + 1 } : p));
-      return [...prev, { id: "pot-comp-" + e.id, name: e.name, tone: e.tone, intensity: e.intensity != null ? e.intensity : 1, qty: 1, desc: e.desc }];
-    });
+    if (!e) return;
+    const res = computePotionSheafGrant(e, potions, INV.potionCap);
+    if (!res) return;
+    setPotions(res.value);
     finishToast(e.name);
     clearLastAddedSoon();
   };
   const onAddPotionRecipe = (cid: string) => {
     const e = D.compendium.find((x) => x.id === cid);
-    if (!e || e.cat !== "potion") return;
-    if (recipes.find((r) => r.name === e.name)) return;
-    const cost = parseInt(String(e.cost || "0").replace(/[^0-9]/g, ""), 10) || 0;
-    setRecipes((prev) => [...prev, { id: "rec-comp-" + e.id, name: e.name, tone: e.tone, intensity: e.intensity != null ? e.intensity : 1, cost, desc: e.desc }]);
+    if (!e) return;
+    const res = computePotionRecipeGrant(e, recipes);
+    if (!res) return;
+    setRecipes(res.value);
     finishToast(e.name);
     clearLastAddedSoon();
   };
   const onAddWandCraft = (cid: string) => {
     const e = D.compendium.find((x) => x.id === cid);
-    if (!e || e.cat !== "wand") return;
-    const bm = /([+-]?\d+)\s+(.+)/.exec(e.bonusLabel || ""); const val = bm ? parseInt(bm[1], 10) : 0; const lbl = bm ? bm[2] : "Bonus";
-    const matMax = e.mat || 6;
-    setWands((prev) => [...prev, { id: "wnd-craft-" + e.id + "-" + Date.now(), name: e.name, equipped: false, condition: 0, maxCondition: matMax, crafting: true, desc: e.desc, effect: { kind: "bonus", label: lbl, type: "subject", target: lbl.toLowerCase(), targetLabel: lbl, value: val } }]);
+    if (!e) return;
+    const res = computeWandCraftGrant(e, wands);
+    if (!res) return;
+    setWands(res.value);
     finishToast(e.name);
     clearLastAddedSoon();
   };
@@ -1004,7 +1052,7 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
     <div className="sf-app" data-nav={nav}>
       <Sidebar active={nav} onNavigate={onNavigate} roster={ROSTER} activeChar={activeChar} onPickChar={pickChar} compCount={D.compendium.length} onAddCharacter={openForgeNew} onEditCharacter={openForgeEdit} collapsed={sidebarCollapsed} onToggleSidebar={toggleSidebar} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
       <main className="sf-main">
-        <TopBar title={titleMap[nav] || "Overview"} eyebrow={c.name + " · " + c.house} c={{ ...c, resolve: Math.max(0, 5 - conditions.filter((cd) => cd.value > 0).length), resolveMax: 5 }} onStep={stepVital} onRollAction={onRollAction} onToggleMobileMenu={() => setMobileMenuOpen((v) => !v)} hideVitals={nav === "map"} searchQuery={searchQuery} onSearchQueryChange={setSearchQuery} searchResults={searchResults} onSearchSelect={handleSearchSelect} onSearchRoll={handleSearchRoll} onSearchRepair={handleSearchRepair} onSearchUse={handleSearchUse} searchMenuOpen={searchMenuOpen} onSearchMenuOpen={() => setSearchMenuOpen(true)} onSearchMenuClose={() => setSearchMenuOpen(false)} onSearchMobileOpen={() => setSearchMenuOpen(true)} />
+        <TopBar title={titleMap[nav] || "Overview"} eyebrow={c.name + " · " + c.house} c={{ ...c, resolve: Math.max(0, 5 - conditions.reduce((s, cd) => s + cd.value, 0)), resolveMax: 5 }} onStep={stepVital} onRollAction={onRollAction} onToggleMobileMenu={() => setMobileMenuOpen((v) => !v)} hideVitals={nav === "map"} time={campaignId ? gmTime : undefined} searchQuery={searchQuery} onSearchQueryChange={setSearchQuery} searchResults={searchResults} onSearchSelect={handleSearchSelect} onSearchRoll={handleSearchRoll} onSearchRepair={handleSearchRepair} onSearchUse={handleSearchUse} searchMenuOpen={searchMenuOpen} onSearchMenuOpen={() => setSearchMenuOpen(true)} onSearchMenuClose={() => setSearchMenuOpen(false)} onSearchMobileOpen={() => setSearchMenuOpen(true)} />
 
         {nav === "overview" && (
           <div className="sf-canvas">
