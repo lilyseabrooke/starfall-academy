@@ -98,8 +98,20 @@
   /* Capped so an expanded card can never grow the stack past the viewport
      and push the Clear-all button off-screen; overflow scrolls instead. */
   max-height: calc(100vh - 180px); overflow-y: auto; overflow-x: visible;
+  scrollbar-width: thin; scrollbar-color: transparent transparent;
+  transition: scrollbar-color 300ms var(--ease-standard);
 }
 .sf-sheet .sf-toasts__list.is-reversed { flex-direction: column-reverse; }
+.sf-sheet .sf-toasts__list:hover { scrollbar-color: var(--ink-600) transparent; }
+.sf-sheet .sf-toasts__list::-webkit-scrollbar { width: 6px; }
+.sf-sheet .sf-toasts__list::-webkit-scrollbar-track { background: transparent; }
+.sf-sheet .sf-toasts__list::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: var(--radius-pill);
+  transition: background 300ms var(--ease-standard);
+}
+.sf-sheet .sf-toasts__list:hover::-webkit-scrollbar-thumb { background: var(--ink-600); }
+.sf-sheet .sf-toasts__list:hover::-webkit-scrollbar-thumb:hover { background: var(--ink-500); }
 
 .sf-sheet .sf-toasts__clear {
   align-self: flex-end; flex-shrink: 0; pointer-events: auto; cursor: pointer;
