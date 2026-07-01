@@ -428,22 +428,56 @@ export function GmView({ campaign, party: hostParty }: GmViewProps) {
   };
   const endAction = () => { setAction({ active: false, included: [], selected: [], ap: {}, changeApId: null }); toast("Action scene ended."); };
   const apClamp = (id: string, v: number) => { const pc = party.find((p) => p.id === id); return clampN(v, 0, pc ? pc.apMax : 6); };
-  const threatMove = () => { setAction((s) => { const ap = { ...s.ap }; s.included.forEach((id) => { ap[id] = apClamp(id, (ap[id] || 0) + 1); }); return { ...s, ap }; }); toast("Threat Move — all combatants +1 AP."); };
-  const targetedThreat = () => setAction((s) => {
-    const ap = { ...s.ap };
-    if (s.selected.length === 0) { s.included.forEach((id) => { ap[id] = apClamp(id, (ap[id] || 0) + 2); }); toast("Targeted Threat — all combatants +2 AP."); }
-    else { s.included.forEach((id) => { ap[id] = apClamp(id, (ap[id] || 0) + (s.selected.includes(id) ? 2 : 1)); }); const names = s.selected.map((id) => (party.find((p) => p.id === id) || { name: "" }).name).filter(Boolean).join(", "); toast("Targeted Threat — " + names + " +2 AP, others +1 AP."); }
-    return { ...s, ap, selected: [] };
-  });
-  const opening = (n: number) => setAction((s) => {
-    const ap = { ...s.ap };
-    const targets = s.selected.length > 0 ? s.selected : s.included;
+
+  // Push a GM Action Scene AP change live to the target's own sheet: broadcasts
+  // an "ap" prompt (instant update + toast if they're online) and durably sets
+  // it via set_action_points, mirroring the materials/compendium grant pattern.
+  // Unlike materials this is a SET not an increment — action.ap already holds
+  // the intended absolute value after clamping.
+  const persistActionPoints = (id: string, value: number) => {
+    const pc = party.find((p) => p.id === id);
+    if (!pc || !pc.sheetId) return;
+    rollSync.requestRoll({ kind: "ap", target: pc.sheetId, value });
+    createClient().rpc("set_action_points", { p_character: pc.sheetId, p_value: value }).then(({ error }) => {
+      if (error) { console.error("AP update failed to persist for " + pc.name, error.message); toast("Couldn't save Action Points for " + pc.name + " — try again."); }
+    });
+  };
+
+  const threatMove = () => {
+    const ap = { ...action.ap };
+    action.included.forEach((id) => { ap[id] = apClamp(id, (ap[id] || 0) + 1); });
+    setAction((s) => ({ ...s, ap }));
+    action.included.forEach((id) => persistActionPoints(id, ap[id]));
+    toast("Threat Move — all combatants +1 AP.");
+  };
+  const targetedThreat = () => {
+    const ap = { ...action.ap };
+    if (action.selected.length === 0) { action.included.forEach((id) => { ap[id] = apClamp(id, (ap[id] || 0) + 2); }); toast("Targeted Threat — all combatants +2 AP."); }
+    else { action.included.forEach((id) => { ap[id] = apClamp(id, (ap[id] || 0) + (action.selected.includes(id) ? 2 : 1)); }); const names = action.selected.map((id) => (party.find((p) => p.id === id) || { name: "" }).name).filter(Boolean).join(", "); toast("Targeted Threat — " + names + " +2 AP, others +1 AP."); }
+    setAction((s) => ({ ...s, ap, selected: [] }));
+    action.included.forEach((id) => persistActionPoints(id, ap[id]));
+  };
+  const opening = (n: number) => {
+    const ap = { ...action.ap };
+    const targets = action.selected.length > 0 ? action.selected : action.included;
     targets.forEach((id) => { ap[id] = apClamp(id, (ap[id] || 0) + n); });
-    toast("Opening +" + n + " AP → " + (s.selected.length > 0 ? s.selected.length + " selected" : "all") + ".");
-    return { ...s, ap, selected: [] };
-  });
-  const changeAp = (pcId: string, d: number) => setAction((s) => ({ ...s, ap: { ...s.ap, [pcId]: apClamp(pcId, (s.ap[pcId] || 0) + d) }, changeApId: null }));
-  const targetPlayer = (pcId: string) => { setAction((s) => { const ap = { ...s.ap }; s.included.forEach((id) => { ap[id] = apClamp(id, (ap[id] || 0) + (id === pcId ? 2 : 1)); }); return { ...s, ap }; }); const pc = party.find((p) => p.id === pcId); toast((pc ? pc.name : "Target") + " targeted — +2 AP, others +1 AP."); };
+    toast("Opening +" + n + " AP → " + (action.selected.length > 0 ? action.selected.length + " selected" : "all") + ".");
+    setAction((s) => ({ ...s, ap, selected: [] }));
+    targets.forEach((id) => persistActionPoints(id, ap[id]));
+  };
+  const changeAp = (pcId: string, d: number) => {
+    const value = apClamp(pcId, (action.ap[pcId] || 0) + d);
+    setAction((s) => ({ ...s, ap: { ...s.ap, [pcId]: value }, changeApId: null }));
+    persistActionPoints(pcId, value);
+  };
+  const targetPlayer = (pcId: string) => {
+    const ap = { ...action.ap };
+    action.included.forEach((id) => { ap[id] = apClamp(id, (ap[id] || 0) + (id === pcId ? 2 : 1)); });
+    setAction((s) => ({ ...s, ap }));
+    action.included.forEach((id) => persistActionPoints(id, ap[id]));
+    const pc = party.find((p) => p.id === pcId);
+    toast((pc ? pc.name : "Target") + " targeted — +2 AP, others +1 AP.");
+  };
 
   /* --------------------------- GM quick roll ---------------------------- */
   const quickRoll = () => { const made = pushRoll({ who: gmWho(), kind: "roll", label: "Quick roll · 2d10", stat: "", mod: 0 }); toast("Rolled 2d10 = " + made.total + "."); };

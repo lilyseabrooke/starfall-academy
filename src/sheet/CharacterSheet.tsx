@@ -97,6 +97,8 @@ interface GmPrompt {
   entryId?: string;
   /** For kind:"item" — which specialized handler to route to (default = onAdd). */
   variant?: "attuned" | "learning" | "sheaf" | "recipe" | "craft";
+  /** For kind:"ap" — the new actionPoints value the GM's Action Scene set. */
+  value?: number;
 }
 
 export interface CharacterSheetProps {
@@ -361,7 +363,11 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
       openForcedResist({ conditionId: prompt.condition, dc: prompt.dc ?? null });
     } else if (prompt.kind === "action") {
       const dc = prompt.dc != null ? prompt.dc : 10;
-      pushRoll({ who: meWho(), kind: "action", label: "Action Roll", stat: "Insight", mod: insightModRef.current, dc, meta: ["Action Roll", "DC " + dc + " Insight"] });
+      const r = pushRoll({ who: meWho(), kind: "action", label: "Action Roll", stat: "Insight", mod: insightModRef.current, dc, meta: ["Action Roll", "DC " + dc + " Insight"] });
+      setC((prev) => ({ ...prev, actionPoints: r.pass ? Math.min(Math.max(0, r.degrees || 0), prev.actionPointsMax) : 0 }));
+    } else if (prompt.kind === "ap" && prompt.value != null) {
+      setC((prev) => ({ ...prev, actionPoints: Math.min(Math.max(0, prompt.value as number), prev.actionPointsMax) }));
+      toast("The Game Master set your Action Points to " + prompt.value + ".");
     } else if (prompt.kind === "grant" && prompt.amount) {
       adjustMaterials(prompt.amount);
       toast("The Game Master granted you +" + prompt.amount.toLocaleString() + " materials");
