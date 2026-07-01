@@ -6,7 +6,7 @@
    Classes, Allocation (the codex + astrolabes), Inventory, Spells.
    =========================================================================== */
 import * as React from "react";
-import { Badge, Select } from "@/ds";
+import { Badge, Button, Select } from "@/ds";
 import { Icon } from "../components/Icon";
 import { TONE_500, TONE_FG, levelTone } from "../data/shared";
 import type { CompendiumEntry, MagicSchool, Stat } from "../types";
@@ -592,6 +592,17 @@ const forgeSpellRank = (v: unknown) => {
 };
 const sfield = (e: CompendiumEntry, k: string) => (e as unknown as Record<string, unknown>)[k];
 
+/** Compendium-style fact rows for a spell — the readable at-a-glance stats. */
+const spellFacts = (e: CompendiumEntry): Array<[string, string | number]> => {
+  const f: Array<[string, string | number]> = [];
+  if (e.subject) f.push(["Field", e.subject]);
+  if (e.stat) f.push(["Base", e.stat]);
+  if (e.ap != null) f.push(["AP", e.ap]);
+  if (e.dc != null) f.push(["DC", e.dc]);
+  if (e.ritual) f.push(["Ritual", "Yes"]);
+  return f;
+};
+
 export function AdmissionSpells({ D, draft, set }: { D: ForgeData; draft: Draft; set: SetFn }) {
   const quota = F.yearById(D, draft.yearId).spells as Record<string, number>;
   const tally = F.spellTally(draft, D);
@@ -602,8 +613,10 @@ export function AdmissionSpells({ D, draft, set }: { D: ForgeData; draft: Draft;
   const [filters, setFilters] = React.useState({ subject: "any", stat: "any", level: "any", ritual: "any" });
   const [sortOpen, setSortOpen] = React.useState(false);
   const [filterOpen, setFilterOpen] = React.useState(false);
+  const [openIds, setOpenIds] = React.useState<Record<string, boolean>>({});
   const sortRef = React.useRef<HTMLDivElement>(null);
   const filterRef = React.useRef<HTMLDivElement>(null);
+  const toggleOpen = (id: string) => setOpenIds((m) => ({ ...m, [id]: !m[id] }));
 
   React.useEffect(() => {
     if (!sortOpen && !filterOpen) return;
@@ -661,6 +674,12 @@ export function AdmissionSpells({ D, draft, set }: { D: ForgeData; draft: Draft;
   const pickSort = (field: string) => setSort((s) => (s.field === field ? { field, dir: s.dir === "asc" ? "desc" : "asc" } : { field, dir: "asc" }));
   const sortLabel = (FORGE_SPELL_SORT.find((f) => f[0] === sort.field) || FORGE_SPELL_SORT[0])[1];
 
+  // Quick reference of what's been taken so far — level-ordered, removable.
+  const chosen = draft.spells
+    .map((id) => allSpells.find((s) => s.id === id))
+    .filter((e): e is CompendiumEntry => !!e)
+    .sort((a, b) => forgeSpellRank(a.level) - forgeSpellRank(b.level) || a.name.localeCompare(b.name));
+
   const toggle = (e: CompendiumEntry) => {
     const on = draft.spells.includes(e.id);
     if (on) {
@@ -688,6 +707,36 @@ export function AdmissionSpells({ D, draft, set }: { D: ForgeData; draft: Draft;
           </div>
         ))}
       </div>
+
+      {chosen.length > 0 ? (
+        <div className="sf-staken">
+          <div className="sf-staken__head">
+            <Icon name="sparkles" />
+            <span className="sf-staken__t">Your loadout</span>
+            <span className="sf-staken__n">{chosen.length} spell{chosen.length === 1 ? "" : "s"}</span>
+          </div>
+          <div className="sf-staken__chips">
+            {chosen.map((e) => {
+              const lt = levelTone(e.level);
+              return (
+                <button
+                  key={e.id}
+                  type="button"
+                  className="sf-staken__chip"
+                  style={{ "--ent-accent": lt ? TONE_500[lt] : "var(--ink-500)" } as React.CSSProperties}
+                  onClick={() => toggle(e)}
+                  title={"Remove " + e.name}
+                  aria-label={"Remove " + e.name + " from your loadout"}
+                >
+                  <span className="sf-staken__dot" />
+                  <span className="sf-staken__nm">{e.name}</span>
+                  <Icon name="x" />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
 
       <div className="sf-comp-toolbar sf-spell-toolbar">
         <span className="sf-comp-count">{visible.length === allSpells.length ? allSpells.length + " spells" : visible.length + " of " + allSpells.length}</span>
@@ -743,21 +792,68 @@ export function AdmissionSpells({ D, draft, set }: { D: ForgeData; draft: Draft;
       </div>
 
       {visible.length === 0 ? (
-        <p className="sf-fhint sf-fhint--mut">No spells match — try adjusting your filters.</p>
+        <div className="sf-comp-empty">
+          <Icon name="search-x" />
+          <p>No spells match — try adjusting your search or filters.</p>
+          {facetCount || q ? <button className="sf-filter-reset" onClick={() => { resetFilters(); setQ(""); }}>Clear filters</button> : null}
+        </div>
       ) : (
-        <div className="sf-pick">
+        <div className="sf-spell-list">
           {visible.map((e) => {
             const on = draft.spells.includes(e.id);
             const full = !on && (tally[e.level] || 0) >= (quota[e.level] || 0);
+            const isOpen = !!openIds[e.id];
             const lt = levelTone(e.level);
+            const facts = spellFacts(e);
             return (
-              <button key={e.id} type="button" disabled={full} onClick={() => toggle(e)} className={"sf-pick__item" + (on ? " is-on" : "") + (full ? " is-blocked" : "")}>
-                <span className="sf-pick__check"><Icon name={on ? "check" : "plus"} /></span>
-                <span className="sf-pick__body">
-                  <span className="sf-pick__name">{e.name}<span className="sf-pick__cost"><Badge tone={lt && lt !== "silver" ? lt : "neutral"} dot>{e.level}</Badge></span></span>
-                  <span className="sf-pick__desc">{e.meta ? e.meta.join(" · ") + " — " : ""}{e.desc}</span>
-                </span>
-              </button>
+              <div
+                key={e.id}
+                className={"sf-entry" + (isOpen ? " is-open" : "") + (on ? " is-picked" : "") + (full ? " is-blocked" : "") + (lt ? "" : " is-neutral")}
+                style={{ "--ent-accent": lt ? TONE_500[lt] : "var(--ink-500)" } as React.CSSProperties}
+              >
+                <div className="sf-entry__head" onClick={() => toggleOpen(e.id)}>
+                  <div className="sf-entry__headline">
+                    <span className="sf-entry__name">{e.name}</span>
+                    <div className="sf-entry__meta">
+                      <Badge tone={lt && lt !== "silver" ? lt : "neutral"} dot>{e.level}</Badge>
+                      {(e.meta || []).length ? <span className="sf-entry__metatxt">{(e.meta || []).join(" · ")}</span> : null}
+                    </div>
+                  </div>
+                  <div className="sf-entry__actions">
+                    <button
+                      className={"sf-entry__add" + (on ? " is-picked" : "")}
+                      disabled={full}
+                      onClick={(ev) => { ev.stopPropagation(); toggle(e); }}
+                      title={on ? "Remove from loadout" : full ? "You've taken every " + e.level + " spell for your year" : "Add to loadout"}
+                      aria-label={on ? "Remove " + e.name + " from loadout" : "Add " + e.name + " to loadout"}
+                    >
+                      <Icon name={on ? "check" : "plus"} />
+                    </button>
+                    <span className="sf-entry__chev"><Icon name="chevron-down" /></span>
+                  </div>
+                </div>
+                <div className="sf-entry__body" hidden={!isOpen}>
+                  <div className="sf-entry__rule" />
+                  {facts.length ? (
+                    <div className="sf-entry__facts">
+                      {facts.map(([k, v]) => <div key={k} className="sf-fact"><span className="sf-fact__k">{k}</span><span className="sf-fact__v">{v}</span></div>)}
+                    </div>
+                  ) : null}
+                  <p className="sf-entry__desc">{e.desc}</p>
+                  {e.higherLevel ? (
+                    <div className="sf-entry__ability">
+                      <span className="sf-entry__ability-lbl"><Icon name="trending-up" /> Higher-level behavior</span>
+                      <p className="sf-entry__ability-text">{e.higherLevel}</p>
+                    </div>
+                  ) : null}
+                  <div className="sf-entry__foot">
+                    <span className="sf-entry__cost" />
+                    <Button variant={on ? "secondary" : "primary"} size="sm" iconLeft={<Icon name={on ? "check" : "plus"} />} disabled={full} onClick={() => toggle(e)}>
+                      {on ? "Remove from loadout" : full ? "Year is full" : "Add to loadout"}
+                    </Button>
+                  </div>
+                </div>
+              </div>
             );
           })}
         </div>
