@@ -444,14 +444,14 @@ export default function CharactersView({
             <div>
               <div className="cp-eyebrow">
                 <span className="cp-eyebrow__rule" />
-                War Room · {campaigns.length}{" "}
+                Administration · {campaigns.length}{" "}
                 {campaigns.length === 1 ? "campaign" : "campaigns"} running
               </div>
-              <h1 className="cp-title">Campaigns You Run</h1>
+              <h1 className="cp-title">My Campaigns</h1>
               <p className="cp-lede">
-                The games you steer as Game Master. Open one for the GM tools,
-                share its join code with your players, or summon a new campaign
-                into being.
+                The stories you run as GM. Open any of the campaigns to access
+                the GM tools for running your game, or start a new campaign
+                and share its join code to invite players to your game.
               </p>
             </div>
             <button className="sa-btn-primary" onClick={openCreate}>
@@ -874,8 +874,7 @@ export default function CharactersView({
             <span className="cp-modal__eyebrow">Found a Campaign</span>
             <h2 className="cp-modal__title">Name Your Campaign</h2>
             <p className="cp-modal__copy">
-              Name the game you&apos;ll run as Game Master. We&apos;ll mint a
-              join code and open the GM tools.
+              Give your campaign a name to begin.
             </p>
             <form
               className="cp-join-form"
@@ -888,7 +887,7 @@ export default function CharactersView({
                 className="sa-input-ml cp-input-name"
                 value={createName}
                 onChange={(e) => setCreateName(e.target.value)}
-                placeholder="The Hollow Observatory"
+                placeholder="The Basilisk Incident"
                 maxLength={120}
                 autoFocus
               />
@@ -898,7 +897,7 @@ export default function CharactersView({
                 disabled={busy || !createName.trim()}
               >
                 <Crown size={15} aria-hidden="true" />
-                {busy ? "Founding…" : "Found"}
+                {busy ? "Creating…" : "CREATE"}
               </button>
             </form>
           </div>
