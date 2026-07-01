@@ -80,6 +80,10 @@ export function RollToasts({ log, cap: capN, lifetime, graceMs, expandDefault, p
     clearTimers(id);
     setToasts((p) => p.filter((t) => t.roll.id !== id));
   };
+  const clearAll = () => {
+    Object.keys(timers.current).forEach(clearTimers);
+    setToasts([]);
+  };
   const beginLeave = (id: string) => {
     setToasts((p) => p.map((t) => (t.roll.id === id ? { ...t, leaving: true } : t)));
     const t = timers.current[id] || (timers.current[id] = {});
@@ -155,8 +159,20 @@ export function RollToasts({ log, cap: capN, lifetime, graceMs, expandDefault, p
     }, 0);
   };
 
+  const active = toasts.filter((t) => !t.leaving);
+  // "br"/"bc" stacks grow upward from a bottom anchor (column-reverse), so the
+  // clear button must be the *last* DOM child there to land above the stack;
+  // "tr" grows downward from a top anchor, so it must be the first child.
+  const reversed = position !== "tr";
+  const clearBtn = active.length > 0 && (
+    <button key="clear" className="sf-toasts__clear" onClick={clearAll}>
+      <Icon name="x" /> Clear all
+    </button>
+  );
+
   return (
     <div className={"sf-toasts pos-" + position} aria-live="polite">
+      {!reversed && clearBtn}
       {toasts.map((t) => {
         const expanded = t.hover || t.pinned || expandDefault;
         return (
@@ -175,6 +191,7 @@ export function RollToasts({ log, cap: capN, lifetime, graceMs, expandDefault, p
           </div>
         );
       })}
+      {reversed && clearBtn}
     </div>
   );
 }

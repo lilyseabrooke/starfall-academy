@@ -92,6 +92,20 @@
 .sf-sheet .sf-toasts.pos-br { bottom: 84px; right: 24px; flex-direction: column-reverse; }
 .sf-sheet .sf-toasts.pos-bc { bottom: 84px; left: 50%; transform: translateX(-50%); flex-direction: column-reverse; }
 
+.sf-sheet .sf-toasts__clear {
+  align-self: flex-end; pointer-events: auto; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 10px; border-radius: var(--radius-xs);
+  background: color-mix(in oklab, var(--ink-900) 88%, transparent);
+  border: 1px solid var(--border-subtle);
+  font-family: var(--font-sans); font-size: 10px; font-weight: 500;
+  letter-spacing: var(--tracking-wide); text-transform: uppercase;
+  color: var(--text-muted);
+  transition: color var(--dur-fast), background var(--dur-fast), border-color var(--dur-fast);
+}
+.sf-sheet .sf-toasts__clear svg { width: 12px; height: 12px; }
+.sf-sheet .sf-toasts__clear:hover { color: var(--gold-200); background: var(--ink-700); border-color: var(--border-default); }
+
 .sf-sheet .sf-rtoast {
   position: relative; pointer-events: auto; cursor: pointer;
   padding: var(--space-4); border-radius: var(--radius-md);
