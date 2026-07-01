@@ -30,7 +30,7 @@ const MANUAL_CFG: Record<string, ManualCfg> = {
     fields: [["name", "Name", "text"], ["intensity", "Intensity", "spinless"], ["twisted", "Twisted", "switch"], ["desc", "Description", "area"]],
     placeholders: { name: "e.g. Angel's Balm", desc: "What does the potion do?" } },
   plant: { title: "New plant", eyebrow: "THE GARDEN", icon: "leaf", fields: [], placeholders: { name: "e.g. Passionoak", desc: "What kind of plant is this?", ability: "What benefit does the plant provide?" } },
-  wand: { title: "New wand", eyebrow: "THE WAND STUDIO", icon: "wand-2", fields: [] },
+  wand: { title: "New wand", eyebrow: "THE WAND STUDIO", icon: "wand-sparkles", fields: [] },
   glyph: { title: "New glyph", eyebrow: "RUNIC LIBRARY", icon: "pen-tool",
     fields: [["name", "Name", "text"], ["cost", "Cost", "number"], ["intensity", "Intensity", "number"], ["desc", "Description", "area"]],
     placeholders: { name: "e.g. Sight", desc: "What domain does this glyph represent?" } },

@@ -29,7 +29,7 @@ interface ClassData {
 const STEPS = [
   { id: "identity", label: "Identity", icon: "user-round" },
   { id: "classes", label: "Classes", icon: "graduation-cap" },
-  { id: "wand", label: "Starting Wand", icon: "wand-2" },
+  { id: "wand", label: "Starting Wand", icon: "wand-sparkles" },
   { id: "allocation", label: "Stats & Abilities", icon: "sliders-horizontal" },
   { id: "inventory", label: "Inventory", icon: "backpack" },
   { id: "spells", label: "Spells", icon: "sparkles" },
@@ -135,7 +135,7 @@ function WandStep({ D, draft, set }: { D: ForgeData; draft: Draft; set: SetFn })
       <div className="sf-fwands">
         {D.creation.startingWands.map((w) => (
           <button key={w.id} type="button" onClick={() => pickWand(w.id)} className={"sf-fwand" + (draft.wandId === w.id ? " is-active" : "")}>
-            <span className="sf-fwand__glyph"><Icon name="wand-2" /></span>
+            <span className="sf-fwand__glyph"><Icon name="wand-sparkles" /></span>
             <span className="sf-fwand__name">{w.name}</span>
             <span className="sf-fwand__grant">{w.grant}</span>
             <span className="sf-fwand__desc">{w.desc}</span>

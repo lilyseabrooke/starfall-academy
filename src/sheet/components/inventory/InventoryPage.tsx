@@ -66,7 +66,7 @@ export function InventoryPage({ materials, caps, artifacts, potions, recipes, pl
   const jump = [
     { id: "potions", label: "Potions", icon: "flask-conical", n: heldCount },
     { id: "artifacts", label: "Artifacts", icon: "gem", n: artifacts.length },
-    { id: "wands", label: "Wands", icon: "wand-2", n: wands.length },
+    { id: "wands", label: "Wands", icon: "wand-sparkles", n: wands.length },
     { id: "plants", label: "Plants", icon: "leaf", n: plants.length },
     { id: "glyphs", label: "Glyphs", icon: "pen-tool", n: glyphs.length },
     { id: "items", label: "Items", icon: "package", n: items.length },
@@ -142,7 +142,7 @@ export function InventoryPage({ materials, caps, artifacts, potions, recipes, pl
 
       <section className="sf-shelf" id="shelf-wands">
         <ShelfHead
-          icon="wand-2"
+          icon="wand-sparkles"
           eyebrow="Casting channel"
           title="Wands"
           meter={<span className="sf-equipread">{equippedWand ? <React.Fragment><Icon name="check-circle" /> {equippedWand.name}</React.Fragment> : <React.Fragment><Icon name="circle-dashed" /> none equipped</React.Fragment>}</span>}
@@ -157,7 +157,7 @@ export function InventoryPage({ materials, caps, artifacts, potions, recipes, pl
             {wands.map((w) => <WandCard key={w.id} w={w} h={h} open={wnd.openIds.has(w.id)} onToggle={() => wnd.toggle(w.id)} />)}
           </div>
         ) : (
-          <EmptyShelf icon="wand-2" text="No wands in the satchel yet." />
+          <EmptyShelf icon="wand-sparkles" text="No wands in the satchel yet." />
         )}
       </section>
 

@@ -47,7 +47,7 @@ import {
 const clampN = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
 const TONE3: Record<string, string> = { plum: "var(--plum-300)", forest: "var(--forest-300)", teal: "var(--teal-300)", crimson: "var(--crimson-300)", gold: "var(--gold-300)", silver: "var(--text-strong)" };
-const NPC_ICONS = ["user-round", "skull", "cat", "scroll", "crown", "shield", "wand-2", "flask-conical", "eye", "ghost", "book-open", "key-round", "anchor", "feather", "flame", "snowflake", "zap", "star", "moon", "compass", "gem", "bird", "fish", "tree-pine", "mountain", "waves", "bug", "sword"];
+const NPC_ICONS = ["user-round", "skull", "cat", "scroll", "crown", "shield", "wand-sparkles", "flask-conical", "eye", "ghost", "book-open", "key-round", "anchor", "feather", "flame", "snowflake", "zap", "star", "moon", "compass", "gem", "bird", "fish", "tree-pine", "mountain", "waves", "bug", "sword"];
 const initialsFor = (name: string) => (name || "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
 /* ----------------------------- small visuals ----------------------------- */

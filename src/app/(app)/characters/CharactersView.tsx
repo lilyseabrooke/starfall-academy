@@ -28,7 +28,7 @@ import {
   Trash2,
   UserMinus,
   UsersRound,
-  Wand2,
+  WandSparkles,
   X,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -488,7 +488,7 @@ export default function CharactersView({
 
                   <Link className="sa-open" href={`/gm/${cm.id}`}>
                     <span className="sa-open__icon">
-                      <Wand2 size={18} aria-hidden="true" />
+                      <WandSparkles size={18} aria-hidden="true" />
                     </span>
                     <span className="cp-code">{cm.code}</span>
                     <span className="sa-open__go">
@@ -800,7 +800,7 @@ export default function CharactersView({
                     href={`/gm/${managedCampaign.id}`}
                   >
                     <span className="sa-manage-opt__icon sa-manage-opt__icon--gold">
-                      <Wand2 size={18} aria-hidden="true" />
+                      <WandSparkles size={18} aria-hidden="true" />
                     </span>
                     <span className="sa-manage-opt__text">
                       <span className="sa-manage-opt__title">Open GM Tools</span>
