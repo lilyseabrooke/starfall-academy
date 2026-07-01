@@ -69,10 +69,8 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function Landing({
   signedIn,
-  userEmail,
 }: {
   signedIn: boolean;
-  userEmail: string | null;
 }) {
   const router = useRouter();
 
@@ -83,8 +81,6 @@ export default function Landing({
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const avatarInitial = (userEmail?.trim()[0] ?? "I").toUpperCase();
 
   function openSignIn() {
     setShowSignIn(true);
@@ -179,16 +175,10 @@ export default function Landing({
         </button>
 
         {signedIn ? (
-          <div className="hud-user">
-            <div className="hud-user__id">
-              <span className="hud-user__avatar">{avatarInitial}</span>
-              <span className="hud-user__name">Initiate</span>
-            </div>
-            <button className="sa-btn-ghost" onClick={signOut}>
-              <LogOut size={15} aria-hidden="true" />
-              Sign Out
-            </button>
-          </div>
+          <button className="sa-btn-ghost" onClick={signOut}>
+            <LogOut size={15} aria-hidden="true" />
+            Sign Out
+          </button>
         ) : (
           <button className="sa-btn-ghost" onClick={openSignIn}>
             <KeyRound size={15} aria-hidden="true" />

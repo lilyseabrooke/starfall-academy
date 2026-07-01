@@ -83,11 +83,9 @@ type ManageTarget = { kind: "character" | "campaign"; id: string };
 export default function CharactersView({
   characters,
   campaigns,
-  userEmail,
 }: {
   characters: CharacterCard[];
   campaigns: CampaignCard[];
-  userEmail: string | null;
 }) {
   const router = useRouter();
 
@@ -105,8 +103,6 @@ export default function CharactersView({
   const [createOpen, setCreateOpen] = useState(false);
   const [createName, setCreateName] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
-
-  const avatarInitial = (userEmail?.trim()[0] ?? "I").toUpperCase();
 
   const managedCharacter =
     manage?.kind === "character"
@@ -256,16 +252,10 @@ export default function CharactersView({
           Discord
         </button>
 
-        <div className="hud-user">
-          <div className="hud-user__id">
-            <span className="hud-user__avatar">{avatarInitial}</span>
-            <span className="hud-user__name">Initiate</span>
-          </div>
-          <button className="sa-btn-ghost" onClick={signOut}>
-            <LogOut size={15} aria-hidden="true" />
-            Sign Out
-          </button>
-        </div>
+        <button className="sa-btn-ghost" onClick={signOut}>
+          <LogOut size={15} aria-hidden="true" />
+          Sign Out
+        </button>
 
         <button
           className="sa-btn-ghost hud-burger"
