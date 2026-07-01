@@ -42,12 +42,19 @@ function toCard(row: {
   name: string | null;
   sheet: unknown;
   campaign_code: string | null;
+  campaigns: { name: string | null } | { name: string | null }[] | null;
 }): CharacterCard {
   const c = ((row.sheet as { c?: SheetCharacter })?.c ?? {}) as SheetCharacter;
   const name = (c.name || row.name || "Unnamed").toString();
   // Sheets store the long house name ("Dragon House"); the card shows "Dragon".
   const houseFull = (c.house || "").replace(/\s+House$/i, "").trim();
   const tone = c.houseTone || (houseFull ? HOUSE_TONE[houseFull] : "") || "gold";
+  // Supabase returns the joined campaign as an object (or array, depending on
+  // FK inference); fall back to the join code for legacy code-only groupings.
+  const joinedCampaign = Array.isArray(row.campaigns)
+    ? row.campaigns[0]
+    : row.campaigns;
+  const campaignName = joinedCampaign?.name?.trim() || row.campaign_code;
   return {
     id: row.id,
     name,
@@ -56,7 +63,7 @@ function toCard(row: {
     year: c.year?.toString().trim() || "",
     house: houseFull || "Unsorted",
     tone,
-    campaign: row.campaign_code,
+    campaign: campaignName,
   };
 }
 
@@ -66,7 +73,7 @@ export default async function CharactersPage() {
   // campaigns).
   const { data: characters } = await supabase
     .from("characters")
-    .select("id, name, sheet, campaign_code, updated_at")
+    .select("id, name, sheet, campaign_code, campaigns(name), updated_at")
     .order("updated_at", { ascending: false });
   const { data: campaigns } = await supabase
     .from("campaigns")
