@@ -180,28 +180,46 @@ export function GmView({ campaign, party: hostParty }: GmViewProps) {
   const openGrant = (pcId: string) => setGrant({ pcId, cat: "materials", matAmt: 50, matText: null, q: "", openId: null });
   const openGrantAll = () => setGrant({ pcId: "__all__", cat: "materials", matAmt: 50, matText: null, q: "", openId: null });
   const patchGrant = (patch: Partial<GrantState>) => setGrant((g) => g ? { ...g, ...patch } : g);
+
+  // Persist a materials grant for one party member: broadcasts a live "grant"
+  // prompt (instant update + toast if they're online) and calls the durable
+  // grant_materials RPC (so it survives a reload regardless).
+  const persistMaterialsGrant = (pc: GmPartyMember, n: number) => {
+    if (!pc.sheetId) return;
+    rollSync.requestRoll({ kind: "grant", target: pc.sheetId, amount: n });
+    createClient()
+      .rpc("grant_materials", { p_character: pc.sheetId, p_amount: n })
+      .then(({ data, error }) => {
+        if (error) { console.error("Materials grant failed to persist for " + pc.name, error.message); toast("Couldn't save materials for " + pc.name + " — try again."); return; }
+        if (typeof data === "number") setParty((s) => s.map((p) => p.id !== pc.id ? p : { ...p, materials: data }));
+      });
+  };
   const grantMaterials = () => {
     const g = grant; if (!g) return;
     const n = g.matAmt;
-    if (g.pcId === "__all__") { setParty((s) => s.map((p) => ({ ...p, materials: p.materials + n }))); toast("+" + n.toLocaleString() + " Materials granted to all " + party.length + " party members."); }
-    else {
+    if (g.pcId === "__all__") {
+      setParty((s) => s.map((p) => ({ ...p, materials: p.materials + n })));
+      toast("+" + n.toLocaleString() + " Materials granted to all " + party.length + " party members.");
+      party.forEach((pc) => persistMaterialsGrant(pc, n));
+    } else {
       const pc = party.find((p) => p.id === g.pcId); if (!pc) return;
       addMaterials(pc.id, n);
       toast("+" + n.toLocaleString() + " Materials to " + pc.name + " (" + (pc.materials + n).toLocaleString() + " total).");
-      if (pc.sheetId) {
-        rollSync.requestRoll({ kind: "grant", target: pc.sheetId, amount: n });
-        createClient()
-          .rpc("grant_materials", { p_character: pc.sheetId, p_amount: n })
-          .then(({ data, error }) => {
-            if (error) { console.error("Materials grant failed to persist", error.message); toast("Couldn't save materials for " + pc.name + " — try again."); return; }
-            if (typeof data === "number") setParty((s) => s.map((p) => p.id !== pc.id ? p : { ...p, materials: data }));
-          });
-      }
+      persistMaterialsGrant(pc, n);
     }
   };
-  const grantItem = (entry: { name: string }) => {
+
+  // Compendium item grants: broadcast a live "item" prompt carrying the
+  // compendium entry id + category. The target sheet already knows how to
+  // turn a compendium id into the right inventory record (the same onAdd it
+  // uses for its own Archive drawer), so it applies + persists itself when
+  // online — same live-first pattern as materials, without re-deriving the
+  // per-category shape (artifact/potion/plant/wand/glyph/item) a second time.
+  const grantItem = (entry: { id?: string; name: string }) => {
     const g = grant; if (!g) return;
-    const who = g.pcId === "__all__" ? "the whole party" : (party.find((p) => p.id === g.pcId) || { name: "" }).name;
+    const targets = g.pcId === "__all__" ? party : party.filter((p) => p.id === g.pcId);
+    const who = g.pcId === "__all__" ? "the whole party" : (targets[0] ? targets[0].name : "");
+    if (entry.id) targets.forEach((pc) => { if (pc.sheetId) rollSync.requestRoll({ kind: "item", target: pc.sheetId, cat: g.cat, entryId: entry.id }); });
     toast(entry.name + " passed to " + who + ".");
   };
 
@@ -670,7 +688,7 @@ function ResistModal({ resist, party, conds, onPatch, onRoll, onClose }: { resis
 
 /* ============================== GRANT DRAWER ============================= */
 function GrantDrawer({ grant, party, matChips, matStep, onPatch, onGrantMaterials, onGrantItem, onClose }: {
-  grant: GrantState; party: GmPartyMember[]; matChips: number[]; matStep: number; onPatch: (patch: Partial<GrantState>) => void; onGrantMaterials: () => void; onGrantItem: (e: { name: string; desc: string }) => void; onClose: () => void;
+  grant: GrantState; party: GmPartyMember[]; matChips: number[]; matStep: number; onPatch: (patch: Partial<GrantState>) => void; onGrantMaterials: () => void; onGrantItem: (e: { id?: string; name: string; desc: string }) => void; onClose: () => void;
 }) {
   const pc = grant.pcId === "__all__" ? { name: "The Whole Party", materials: party.reduce((a, p) => a + p.materials, 0) } : (party.find((p) => p.id === grant.pcId) || party[0]);
   const isMat = grant.cat === "materials";

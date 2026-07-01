@@ -92,6 +92,8 @@ interface GmPrompt {
   condition?: string;
   dc?: number | null;
   amount?: number;
+  cat?: string;
+  entryId?: string;
 }
 
 export interface CharacterSheetProps {
@@ -360,6 +362,10 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
     } else if (prompt.kind === "grant" && prompt.amount) {
       adjustMaterials(prompt.amount);
       toast("The Game Master granted you +" + prompt.amount.toLocaleString() + " materials");
+    } else if (prompt.kind === "item" && prompt.entryId) {
+      const e = D.compendium.find((x) => x.id === prompt.entryId);
+      onAdd(prompt.entryId);
+      toast("The Game Master granted you " + (e ? e.name : "an item"));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [me]);
