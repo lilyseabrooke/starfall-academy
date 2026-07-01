@@ -29,6 +29,7 @@ import { spellCrit, artifactBackfireDC, spellLevelKey } from "./data/roll-engine
 import { blank as blankBonus } from "./data/bonus";
 import { buildIndex, search as runSearch, type SearchResult } from "./data/search";
 import { useCompendium } from "./data/compendium";
+import { computeCompendiumGrant } from "./data/compendium-grant";
 
 import { useClassState } from "./state/useClassState";
 import { useMagicState } from "./state/useMagicState";
@@ -364,6 +365,9 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
       toast("The Game Master granted you +" + prompt.amount.toLocaleString() + " materials");
     } else if (prompt.kind === "item" && prompt.entryId) {
       const e = D.compendium.find((x) => x.id === prompt.entryId);
+      // onAdd is declared later in this component; by the time this callback
+      // actually fires (after a full render), the closure sees it fine.
+      // eslint-disable-next-line react-hooks/immutability
       onAdd(prompt.entryId);
       toast("The Game Master granted you " + (e ? e.name : "an item"));
     }
@@ -756,12 +760,12 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
     finishToast(e ? e.name : null);
     if (e && e.cat === "spell") addSpell({ id: "sp-comp-" + e.id, name: e.name, level: e.level, subjectKey: e.subjectKey || "", subject: e.subject || "", school: e.school || "", stat: e.stat || "", ap: e.ap || 0, dc: e.dc ?? null, ritual: !!e.ritual, volatile: false, days: 0, desc: e.desc });
     else if (e && e.cat === "move") magic.handlers.addMoveFromCompendium(e);
-    else if (e && e.cat === "artifact") setArtifacts((prev) => [...prev, { id: "art-comp-" + e.id, name: e.name, level: e.level, tone: e.tone, subject: e.subject || "—", intensity: e.intensity != null ? e.intensity : 3, attuned: false, condition: "stable", skills: [], dc: 0, desc: e.desc, move: { name: e.name + " — Boon", stat: "Insight", skill: "—", bonus: 0, dc: null, desc: e.desc } }]);
-    else if (e && e.cat === "potion") { const cost = parseInt(String(e.cost || "0").replace(/[^0-9]/g, ""), 10) || 0; setRecipes((prev) => [...prev, { id: "rec-comp-" + e.id, name: e.name, tone: e.tone, intensity: e.intensity != null ? e.intensity : 1, cost, desc: e.desc }]); }
-    else if (e && e.cat === "plant") setPlants((prev) => [...prev, { id: "plt-comp-" + e.id, name: e.name, tone: e.tone, value: e.value || 0, intensity: e.intensity || 1, used: false, removeOnUse: !!e.removeOnUse, requiresRoll: e.requiresRoll || "YES", desc: e.desc, ability: e.ability || e.desc }]);
-    else if (e && e.cat === "wand") { const bm = /([+-]?\d+)\s+(.+)/.exec(e.bonusLabel || ""); const val = bm ? parseInt(bm[1], 10) : 0; const lbl = bm ? bm[2] : "Bonus"; setWands((prev) => [...prev, { id: "wnd-comp-" + e.id, name: e.name, equipped: false, condition: 6, maxCondition: 6, desc: e.desc, effect: { kind: "bonus", label: lbl, type: "subject", target: lbl.toLowerCase(), targetLabel: lbl, value: val } }]); }
-    else if (e && e.cat === "glyph") setGlyphs((prev) => [...prev, { id: "gly-comp-" + e.id, name: e.name, tone: e.tone, cost: e.value || 0, intensity: e.intensity || 1, desc: e.desc }]);
-    else if (e && e.cat === "item") setItems((prev) => { const ex = prev.find((x) => x.name === e.name); if (ex) return prev.map((x) => (x.id === ex.id ? { ...x, qty: (x.qty || 1) + 1 } : x)); return [...prev, { id: "itm-comp-" + e.id, name: e.name, qty: 1, cost: e.cost == null ? undefined : Number(e.cost), singleUse: e.singleUse ?? false, check: e.check ?? null, tags: e.tags ?? [], desc: e.desc }]; });
+    else if (e && e.cat === "artifact") { const res = computeCompendiumGrant(e, artifacts); if (res?.field === "artifacts") setArtifacts(res.value); }
+    else if (e && e.cat === "potion") { const res = computeCompendiumGrant(e, recipes); if (res?.field === "recipes") setRecipes(res.value); }
+    else if (e && e.cat === "plant") { const res = computeCompendiumGrant(e, plants); if (res?.field === "plants") setPlants(res.value); }
+    else if (e && e.cat === "wand") { const res = computeCompendiumGrant(e, wands); if (res?.field === "wands") setWands(res.value); }
+    else if (e && e.cat === "glyph") { const res = computeCompendiumGrant(e, glyphs); if (res?.field === "glyphs") setGlyphs(res.value); }
+    else if (e && e.cat === "item") { const res = computeCompendiumGrant(e, items); if (res?.field === "items") setItems(res.value); }
     clearLastAddedSoon();
   };
 
