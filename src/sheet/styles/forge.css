@@ -285,8 +285,12 @@
 .sf-sheet .sf-staken__dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ent-accent, var(--gold-500)); flex: none; }
 .sf-sheet .sf-staken__nm { max-width: 22ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* ---- Spell list: expandable entries (mirrors the Compendium) ---------- */
+/* ---- Inventory loadout: uncategorised removable chips ----------------- */
+.sf-sheet .sf-ipick-taken { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: var(--space-1); }
+
+/* ---- Spell / inventory list: expandable entries (mirrors Compendium) --- */
 .sf-sheet .sf-spell-list { display: flex; flex-direction: column; gap: var(--space-3); }
+.sf-sheet .sf-entry__metacost { font-family: var(--font-mono); font-size: 11px; color: var(--text-gold); white-space: nowrap; }
 .sf-sheet .sf-spell-list .sf-entry.is-picked { border-color: var(--gold-500); box-shadow: var(--inset-hi), var(--shadow-sm), var(--glow-gold); }
 .sf-sheet .sf-spell-list .sf-entry.is-blocked:not(.is-open) { opacity: .55; }
 .sf-sheet .sf-spell-list .sf-entry.is-blocked:not(.is-open):hover { transform: none; box-shadow: var(--inset-hi), var(--shadow-sm); border-color: var(--border-subtle); }

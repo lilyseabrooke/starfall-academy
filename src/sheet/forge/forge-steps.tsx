@@ -8,7 +8,7 @@
 import * as React from "react";
 import { Badge, Button, Select } from "@/ds";
 import { Icon } from "../components/Icon";
-import { TONE_500, TONE_FG, levelTone } from "../data/shared";
+import { PLANT_ROLL_LABEL, TONE_500, TONE_FG, levelTone, parsePlantRoll } from "../data/shared";
 import type { CompendiumEntry, MagicSchool, Stat } from "../types";
 import type { ClassDef } from "../data/classes";
 import * as F from "./forge-state";
@@ -477,6 +477,19 @@ export function AdmissionAllocation({ D, draft, set }: { D: ForgeData; draft: Dr
 }
 
 /* ============================== INVENTORY ============================= */
+/** Compendium-style fact rows for an inventory entry. */
+const invFacts = (e: CompendiumEntry): Array<[string, string | number]> => {
+  const f: Array<[string, string | number]> = [];
+  if (e.subject) f.push(["Field", e.subject]);
+  if (e.bonusLabel) f.push(["Grants", e.bonusLabel]);
+  if (e.intensity != null) f.push(["Intensity", e.intensity]);
+  if (e.value != null) f.push(["Value", e.value]);
+  if (e.cost) f.push(["Cost", String(e.cost)]);
+  if (e.cat === "plant" && e.removeOnUse != null) f.push(["Single-use", e.removeOnUse ? "Yes" : "No"]);
+  if (e.cat === "plant" && e.requiresRoll) f.push(["On use", PLANT_ROLL_LABEL[parsePlantRoll(e.requiresRoll).mode]]);
+  return f;
+};
+
 function PickList({ D, cat, selected, onToggle, can, costOf, emptyHint }: {
   D: ForgeData;
   cat: string;
@@ -487,22 +500,99 @@ function PickList({ D, cat, selected, onToggle, can, costOf, emptyHint }: {
   emptyHint: string;
 }) {
   const items = D.compendium.filter((e) => e.cat === cat);
+  const [openIds, setOpenIds] = React.useState<Record<string, boolean>>({});
+  const toggleOpen = (id: string) => setOpenIds((m) => ({ ...m, [id]: !m[id] }));
+  const chosen = items.filter((e) => selected.includes(e.id));
+
+  if (items.length === 0) return <p className="sf-fhint">{emptyHint}</p>;
+
   return (
-    <div className="sf-pick">
-      {items.length === 0 ? <p className="sf-fhint">{emptyHint}</p> : items.map((e) => {
-        const on = selected.includes(e.id);
-        const blocked = !on && !can(e);
-        return (
-          <button key={e.id} type="button" disabled={blocked} onClick={() => onToggle(e.id)} className={"sf-pick__item" + (on ? " is-on" : "") + (blocked ? " is-blocked" : "")}>
-            <span className="sf-pick__check"><Icon name={on ? "check" : "plus"} /></span>
-            <span className="sf-pick__body">
-              <span className="sf-pick__name">{e.name}{costOf ? <span className="sf-pick__cost">{costOf(e)}</span> : null}</span>
-              <span className="sf-pick__desc">{e.desc}</span>
-            </span>
-          </button>
-        );
-      })}
-    </div>
+    <React.Fragment>
+      {chosen.length > 0 ? (
+        <div className="sf-ipick-taken">
+          {chosen.map((e) => {
+            const lt = levelTone(e.level);
+            return (
+              <button
+                key={e.id}
+                type="button"
+                className="sf-staken__chip"
+                style={{ "--ent-accent": lt ? TONE_500[lt] : "var(--ink-500)" } as React.CSSProperties}
+                onClick={() => onToggle(e.id)}
+                title={"Remove " + e.name}
+                aria-label={"Remove " + e.name}
+              >
+                <span className="sf-staken__dot" />
+                <span className="sf-staken__nm">{e.name}</span>
+                <Icon name="x" />
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+
+      <div className="sf-spell-list">
+        {items.map((e) => {
+          const on = selected.includes(e.id);
+          const blocked = !on && !can(e);
+          const isOpen = !!openIds[e.id];
+          const lt = levelTone(e.level);
+          const facts = invFacts(e);
+          const cost = costOf ? costOf(e) : null;
+          return (
+            <div
+              key={e.id}
+              className={"sf-entry" + (isOpen ? " is-open" : "") + (on ? " is-picked" : "") + (blocked ? " is-blocked" : "") + (lt ? "" : " is-neutral")}
+              style={{ "--ent-accent": lt ? TONE_500[lt] : "var(--ink-500)" } as React.CSSProperties}
+            >
+              <div className="sf-entry__head" onClick={() => toggleOpen(e.id)}>
+                <div className="sf-entry__headline">
+                  <span className="sf-entry__name">{e.name}</span>
+                  <div className="sf-entry__meta">
+                    <Badge tone={lt && lt !== "silver" ? lt : "neutral"} dot>{e.level}</Badge>
+                    {cost != null && cost !== "" ? <span className="sf-entry__metacost">{cost}</span> : null}
+                    {(e.meta || []).length ? <span className="sf-entry__metatxt">{(e.meta || []).join(" · ")}</span> : null}
+                  </div>
+                </div>
+                <div className="sf-entry__actions">
+                  <button
+                    className={"sf-entry__add" + (on ? " is-picked" : "")}
+                    disabled={blocked}
+                    onClick={(ev) => { ev.stopPropagation(); onToggle(e.id); }}
+                    title={on ? "Remove from loadout" : blocked ? "Unavailable — over your allowance" : "Add to loadout"}
+                    aria-label={on ? "Remove " + e.name + " from loadout" : "Add " + e.name + " to loadout"}
+                  >
+                    <Icon name={on ? "check" : "plus"} />
+                  </button>
+                  <span className="sf-entry__chev"><Icon name="chevron-down" /></span>
+                </div>
+              </div>
+              <div className="sf-entry__body" hidden={!isOpen}>
+                <div className="sf-entry__rule" />
+                {facts.length ? (
+                  <div className="sf-entry__facts">
+                    {facts.map(([k, v]) => <div key={k} className="sf-fact"><span className="sf-fact__k">{k}</span><span className="sf-fact__v">{v}</span></div>)}
+                  </div>
+                ) : null}
+                <p className="sf-entry__desc">{e.desc}</p>
+                {e.ability ? (
+                  <div className="sf-entry__ability">
+                    <span className="sf-entry__ability-lbl"><Icon name="sparkles" /> Ability</span>
+                    <p className="sf-entry__ability-text">{e.ability}</p>
+                  </div>
+                ) : null}
+                <div className="sf-entry__foot">
+                  <span className="sf-entry__cost" />
+                  <Button variant={on ? "secondary" : "primary"} size="sm" disabled={blocked} iconLeft={<Icon name={on ? "check" : "plus"} />} onClick={() => onToggle(e.id)}>
+                    {on ? "Remove from loadout" : blocked ? "Unavailable" : "Add to loadout"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </React.Fragment>
   );
 }
 
@@ -537,7 +627,7 @@ export function AdmissionInventory({ D, draft, set }: { D: ForgeData; draft: Dra
       {y.potions === 0 ? (
         <p className="sf-fhint sf-fhint--mut">Put points into <b>Alchemy</b> to start with potions (you&apos;ll know each recipe).</p>
       ) : (
-        <PickList D={D} cat="potion" selected={draft.potions} onToggle={(id) => toggleIn("potions", id, () => draft.potions.length < y.potions)} can={() => draft.potions.length < y.potions} costOf={(e) => e.level} emptyHint="No potions in the archive yet." />
+        <PickList D={D} cat="potion" selected={draft.potions} onToggle={(id) => toggleIn("potions", id, () => draft.potions.length < y.potions)} can={() => draft.potions.length < y.potions} emptyHint="No potions in the archive yet." />
       )}
 
       <SubHead icon="leaf" title="Plants" note={`Herbalism grants ${y.plantMat} mats · ${plantSpent} mats chosen`} />
@@ -551,7 +641,7 @@ export function AdmissionInventory({ D, draft, set }: { D: ForgeData; draft: Dra
       {y.glyphs === 0 ? (
         <p className="sf-fhint sf-fhint--mut">Put points into <b>Runology</b> to learn glyphs (two per rank).</p>
       ) : (
-        <PickList D={D} cat="glyph" selected={draft.glyphs} onToggle={(id) => toggleIn("glyphs", id, () => draft.glyphs.length < y.glyphs)} can={() => draft.glyphs.length < y.glyphs} costOf={(e) => e.meta && e.meta[1]} emptyHint="No glyphs in the archive yet." />
+        <PickList D={D} cat="glyph" selected={draft.glyphs} onToggle={(id) => toggleIn("glyphs", id, () => draft.glyphs.length < y.glyphs)} can={() => draft.glyphs.length < y.glyphs} emptyHint="No glyphs in the archive yet." />
       )}
 
       <SubHead icon="wand-2" title="Wands" note={`Wandcrafting grants ${y.craftMat} mats · ${craftSpent} mats chosen`} />
