@@ -173,24 +173,26 @@ export function RollToasts({ log, cap: capN, lifetime, graceMs, expandDefault, p
   return (
     <div className={"sf-toasts pos-" + position} aria-live="polite">
       {!reversed && clearBtn}
-      {toasts.map((t) => {
-        const expanded = t.hover || t.pinned || expandDefault;
-        return (
-          <div
-            key={t.roll.id}
-            className={"sf-rtoast out-" + headline(t.roll).key + (t.roll.crit ? " is-crit is-crit-" + t.roll.crit.kind : "") + (t.leaving ? " is-leaving" : "") + (t.pinned ? " is-pinned" : "")}
-            style={{ "--grace": cfg.current.graceMs + "ms" } as React.CSSProperties}
-            onMouseEnter={() => onEnter(t.roll.id)}
-            onMouseLeave={() => onLeave(t.roll.id)}
-            onClick={() => togglePin(t.roll.id)}
-          >
-            {t.pinned && <span className="sf-rtoast__pin"><Icon name="pin" /></span>}
-            <button className="sf-rtoast__x" aria-label="Dismiss" onClick={(e) => { e.stopPropagation(); remove(t.roll.id); }}><Icon name="x" /></button>
-            {t.roll.crit ? <CritBurst kind={t.roll.crit.kind} /> : t.roll.outcome === "inflection" ? <CritBurst kind="inflect" /> : null}
-            <RollEntry roll={t.roll} expanded={expanded} compact hint />
-          </div>
-        );
-      })}
+      <div className={"sf-toasts__list" + (reversed ? " is-reversed" : "")}>
+        {toasts.map((t) => {
+          const expanded = t.hover || t.pinned || expandDefault;
+          return (
+            <div
+              key={t.roll.id}
+              className={"sf-rtoast out-" + headline(t.roll).key + (t.roll.crit ? " is-crit is-crit-" + t.roll.crit.kind : "") + (t.leaving ? " is-leaving" : "") + (t.pinned ? " is-pinned" : "")}
+              style={{ "--grace": cfg.current.graceMs + "ms" } as React.CSSProperties}
+              onMouseEnter={() => onEnter(t.roll.id)}
+              onMouseLeave={() => onLeave(t.roll.id)}
+              onClick={() => togglePin(t.roll.id)}
+            >
+              {t.pinned && <span className="sf-rtoast__pin"><Icon name="pin" /></span>}
+              <button className="sf-rtoast__x" aria-label="Dismiss" onClick={(e) => { e.stopPropagation(); remove(t.roll.id); }}><Icon name="x" /></button>
+              {t.roll.crit ? <CritBurst kind={t.roll.crit.kind} /> : t.roll.outcome === "inflection" ? <CritBurst kind="inflect" /> : null}
+              <RollEntry roll={t.roll} expanded={expanded} compact hint />
+            </div>
+          );
+        })}
+      </div>
       {reversed && clearBtn}
     </div>
   );

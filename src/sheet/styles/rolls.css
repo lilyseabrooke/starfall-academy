@@ -92,8 +92,17 @@
 .sf-sheet .sf-toasts.pos-br { bottom: 84px; right: 24px; flex-direction: column-reverse; }
 .sf-sheet .sf-toasts.pos-bc { bottom: 84px; left: 50%; transform: translateX(-50%); flex-direction: column-reverse; }
 
+.sf-sheet .sf-toasts__list {
+  display: flex; flex-direction: column; gap: var(--space-3);
+  pointer-events: auto;
+  /* Capped so an expanded card can never grow the stack past the viewport
+     and push the Clear-all button off-screen; overflow scrolls instead. */
+  max-height: calc(100vh - 180px); overflow-y: auto; overflow-x: visible;
+}
+.sf-sheet .sf-toasts__list.is-reversed { flex-direction: column-reverse; }
+
 .sf-sheet .sf-toasts__clear {
-  align-self: flex-end; pointer-events: auto; cursor: pointer;
+  align-self: flex-end; flex-shrink: 0; pointer-events: auto; cursor: pointer;
   display: inline-flex; align-items: center; gap: 5px;
   padding: 5px 10px; border-radius: var(--radius-xs);
   background: color-mix(in oklab, var(--ink-900) 88%, transparent);
