@@ -9,6 +9,7 @@
    so rolls flow through one ledger. The iframe + postMessage bridge are gone.
    =========================================================================== */
 import * as React from "react";
+import { createClient } from "@/lib/supabase/client";
 
 import "@/ds/ds.css";
 import "./styles/app.css";
@@ -185,8 +186,16 @@ export function GmView({ campaign, party: hostParty }: GmViewProps) {
     else {
       const pc = party.find((p) => p.id === g.pcId); if (!pc) return;
       addMaterials(pc.id, n);
-      if (pc.sheetId) rollSync.requestRoll({ kind: "grant", target: pc.sheetId, amount: n });
       toast("+" + n.toLocaleString() + " Materials to " + pc.name + " (" + (pc.materials + n).toLocaleString() + " total).");
+      if (pc.sheetId) {
+        rollSync.requestRoll({ kind: "grant", target: pc.sheetId, amount: n });
+        createClient()
+          .rpc("grant_materials", { p_character: pc.sheetId, p_amount: n })
+          .then(({ data, error }) => {
+            if (error) { console.error("Materials grant failed to persist", error.message); toast("Couldn't save materials for " + pc.name + " — try again."); return; }
+            if (typeof data === "number") setParty((s) => s.map((p) => p.id !== pc.id ? p : { ...p, materials: data }));
+          });
+      }
     }
   };
   const grantItem = (entry: { name: string }) => {
