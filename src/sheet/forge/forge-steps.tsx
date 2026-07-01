@@ -679,6 +679,15 @@ export function AdmissionSpells({ D, draft, set }: { D: ForgeData; draft: Draft;
     .map((id) => allSpells.find((s) => s.id === id))
     .filter((e): e is CompendiumEntry => !!e)
     .sort((a, b) => forgeSpellRank(a.level) - forgeSpellRank(b.level) || a.name.localeCompare(b.name));
+  // Group the loadout by field so it reads like a spellbook, one line per field.
+  const chosenByField = (() => {
+    const m = new Map<string, CompendiumEntry[]>();
+    chosen.forEach((e) => {
+      const key = e.subject || "Other";
+      (m.get(key) || m.set(key, []).get(key)!).push(e);
+    });
+    return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  })();
 
   const toggle = (e: CompendiumEntry) => {
     const on = draft.spells.includes(e.id);
@@ -715,25 +724,32 @@ export function AdmissionSpells({ D, draft, set }: { D: ForgeData; draft: Draft;
             <span className="sf-staken__t">Your loadout</span>
             <span className="sf-staken__n">{chosen.length} spell{chosen.length === 1 ? "" : "s"}</span>
           </div>
-          <div className="sf-staken__chips">
-            {chosen.map((e) => {
-              const lt = levelTone(e.level);
-              return (
-                <button
-                  key={e.id}
-                  type="button"
-                  className="sf-staken__chip"
-                  style={{ "--ent-accent": lt ? TONE_500[lt] : "var(--ink-500)" } as React.CSSProperties}
-                  onClick={() => toggle(e)}
-                  title={"Remove " + e.name}
-                  aria-label={"Remove " + e.name + " from your loadout"}
-                >
-                  <span className="sf-staken__dot" />
-                  <span className="sf-staken__nm">{e.name}</span>
-                  <Icon name="x" />
-                </button>
-              );
-            })}
+          <div className="sf-staken__fields">
+            {chosenByField.map(([field, entries]) => (
+              <div key={field} className="sf-staken__group">
+                <span className="sf-staken__field">{field}</span>
+                <div className="sf-staken__chips">
+                  {entries.map((e) => {
+                    const lt = levelTone(e.level);
+                    return (
+                      <button
+                        key={e.id}
+                        type="button"
+                        className="sf-staken__chip"
+                        style={{ "--ent-accent": lt ? TONE_500[lt] : "var(--ink-500)" } as React.CSSProperties}
+                        onClick={() => toggle(e)}
+                        title={"Remove " + e.name}
+                        aria-label={"Remove " + e.name + " from your loadout"}
+                      >
+                        <span className="sf-staken__dot" />
+                        <span className="sf-staken__nm">{e.name}</span>
+                        <Icon name="x" />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       ) : null}

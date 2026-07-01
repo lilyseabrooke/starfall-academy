@@ -268,7 +268,10 @@
 .sf-sheet .sf-staken__head svg { width: 14px; height: 14px; color: var(--gold-300); flex: none; }
 .sf-sheet .sf-staken__t { font-family: var(--font-sans); font-size: 10px; text-transform: uppercase; letter-spacing: var(--tracking-widest); color: var(--text-gold); }
 .sf-sheet .sf-staken__n { margin-left: auto; font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); }
-.sf-sheet .sf-staken__chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.sf-sheet .sf-staken__fields { display: flex; flex-direction: column; gap: var(--space-2); }
+.sf-sheet .sf-staken__group { display: flex; align-items: flex-start; gap: var(--space-3); }
+.sf-sheet .sf-staken__field { flex: 0 0 8.5em; padding-top: 6px; font-family: var(--font-sans); font-size: 10px; text-transform: uppercase; letter-spacing: var(--tracking-wider); color: var(--text-gold); text-align: right; }
+.sf-sheet .sf-staken__chips { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .sf-sheet .sf-staken__chip {
   display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
   padding: 4px 8px 4px 8px; border-radius: var(--radius-pill);
@@ -344,6 +347,12 @@
   .sf-sheet .sf-admission__cancel { margin: 0; flex: none; padding: 8px 12px; }
   .sf-sheet .sf-admission__scroll { padding: var(--space-5) var(--space-5) var(--space-4); }
   .sf-sheet .sf-fstep-body { max-width: 100%; }
+}
+
+/* On narrow screens, stack each loadout field's label above its spells. */
+@media (max-width: 560px) {
+  .sf-sheet .sf-staken__group { flex-direction: column; gap: 4px; }
+  .sf-sheet .sf-staken__field { flex: none; padding-top: 0; text-align: left; }
 }
 
 /* very narrow: drop every rail label to icons, tighten content padding */
