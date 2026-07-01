@@ -124,7 +124,7 @@ function spell(row: Row): CompendiumEntry {
   const ritual = yes(row.RITUAL);
   const dc = num(row.DC);
   const meta = [subject];
-  if (stat) meta.push("Base " + stat);
+  if (dc != null) meta.push("DC " + dc);
   if (ritual) meta.push("Ritual");
   return {
     id: rid(row, "spell"), cat: "spell", name: (row.NAME || "").trim(),
