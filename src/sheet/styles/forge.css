@@ -224,6 +224,18 @@
 .sf-sheet .sf-isub__glyph svg { width: 15px; height: 15px; }
 .sf-sheet .sf-isub__t { font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; font-size: var(--text-md); color: var(--text-strong); }
 .sf-sheet .sf-isub__n { margin-left: auto; font-family: var(--font-mono); font-size: 12px; color: var(--text-gold); }
+
+/* Collapsible section: the SubHead becomes a full-width toggle button. */
+.sf-sheet .sf-isection { display: flex; flex-direction: column; }
+.sf-sheet .sf-isub--btn { width: 100%; margin-top: 0; padding: 0; background: none; border: none; cursor: pointer; text-align: left; }
+.sf-sheet .sf-isub--btn:hover .sf-isub__t { color: var(--gold-100); }
+.sf-sheet .sf-isub__chev { flex: none; margin-left: var(--space-2); display: grid; place-items: center; width: 22px; height: 22px; color: var(--gold-700); transition: transform var(--dur-base) var(--ease-standard), color var(--dur-base); }
+.sf-sheet .sf-isub__chev svg { width: 16px; height: 16px; }
+.sf-sheet .sf-isection.is-collapsed .sf-isub__chev { transform: rotate(-90deg); }
+.sf-sheet .sf-isection.is-open .sf-isub__chev { color: var(--gold-300); }
+.sf-sheet .sf-isub--btn:hover .sf-isub__chev { color: var(--gold-400); }
+.sf-sheet .sf-isection__body { display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-3); }
+
 .sf-sheet .sf-idiv { display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--rule-gold, var(--hairline)); }
 .sf-sheet .sf-idiv span:first-child { font-family: var(--font-sans); font-size: 11px; text-transform: uppercase; letter-spacing: var(--tracking-wider); color: var(--text-gold); }
 .sf-sheet .sf-idiv__pts { margin-left: auto; font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); }
@@ -286,7 +298,7 @@
 .sf-sheet .sf-staken__nm { max-width: 22ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ---- Inventory loadout: uncategorised removable chips ----------------- */
-.sf-sheet .sf-ipick-taken { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: var(--space-1); }
+.sf-sheet .sf-ipick-taken { display: flex; flex-wrap: wrap; gap: 6px; }
 
 /* ---- Spell / inventory list: expandable entries (mirrors Compendium) --- */
 .sf-sheet .sf-spell-list { display: flex; flex-direction: column; gap: var(--space-3); }
