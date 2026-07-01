@@ -29,7 +29,7 @@ import { spellCrit, artifactBackfireDC, spellLevelKey } from "./data/roll-engine
 import { blank as blankBonus } from "./data/bonus";
 import { buildIndex, search as runSearch, type SearchResult } from "./data/search";
 import { useCompendium } from "./data/compendium";
-import { computeCompendiumGrant } from "./data/compendium-grant";
+import { computeCompendiumGrant, computeAttunedArtifactGrant, computeLearningSpellGrant, computePotionSheafGrant, computePotionRecipeGrant, computeWandCraftGrant } from "./data/compendium-grant";
 
 import { useClassState } from "./state/useClassState";
 import { useMagicState } from "./state/useMagicState";
@@ -95,6 +95,8 @@ interface GmPrompt {
   amount?: number;
   cat?: string;
   entryId?: string;
+  /** For kind:"item" — which specialized handler to route to (default = onAdd). */
+  variant?: "attuned" | "learning" | "sheaf" | "recipe" | "craft";
 }
 
 export interface CharacterSheetProps {
@@ -365,10 +367,17 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
       toast("The Game Master granted you +" + prompt.amount.toLocaleString() + " materials");
     } else if (prompt.kind === "item" && prompt.entryId) {
       const e = D.compendium.find((x) => x.id === prompt.entryId);
-      // onAdd is declared later in this component; by the time this callback
-      // actually fires (after a full render), the closure sees it fine.
-      // eslint-disable-next-line react-hooks/immutability
-      onAdd(prompt.entryId);
+      // onAdd/onAddAttuned/etc. are declared later in this component; by the
+      // time this callback actually fires (after a full render), the closure
+      // sees them fine.
+      /* eslint-disable react-hooks/immutability */
+      if (prompt.variant === "attuned") onAddAttuned(prompt.entryId);
+      else if (prompt.variant === "learning") onAddLearning(prompt.entryId);
+      else if (prompt.variant === "sheaf") onAddPotionSheaf(prompt.entryId);
+      else if (prompt.variant === "recipe") onAddPotionRecipe(prompt.entryId);
+      else if (prompt.variant === "craft") onAddWandCraft(prompt.entryId);
+      else onAdd(prompt.entryId);
+      /* eslint-enable react-hooks/immutability */
       toast("The Game Master granted you " + (e ? e.name : "an item"));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -758,7 +767,7 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
     if (added.includes(cid) && e?.cat !== "plant" && e?.cat !== "item") return;
     if (e?.cat !== "plant" && e?.cat !== "item") setAdded((a) => [...a, cid]);
     finishToast(e ? e.name : null);
-    if (e && e.cat === "spell") addSpell({ id: "sp-comp-" + e.id, name: e.name, level: e.level, subjectKey: e.subjectKey || "", subject: e.subject || "", school: e.school || "", stat: e.stat || "", ap: e.ap || 0, dc: e.dc ?? null, ritual: !!e.ritual, volatile: false, days: 0, desc: e.desc });
+    if (e && e.cat === "spell") { const res = computeCompendiumGrant(e, spells); if (res?.field === "spells") magic.setState.setSpells(res.value); }
     else if (e && e.cat === "move") magic.handlers.addMoveFromCompendium(e);
     else if (e && e.cat === "artifact") { const res = computeCompendiumGrant(e, artifacts); if (res?.field === "artifacts") setArtifacts(res.value); }
     else if (e && e.cat === "potion") { const res = computeCompendiumGrant(e, recipes); if (res?.field === "recipes") setRecipes(res.value); }
@@ -775,59 +784,52 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
   const onAddAttuned = (cid: string) => {
     if (added.includes(cid)) return;
     const e = D.compendium.find((x) => x.id === cid);
-    if (!e || e.cat !== "artifact") return;
-    const art: Artifact = { id: "art-comp-" + e.id, name: e.name, level: e.level, tone: e.tone, subject: e.subject || "—", intensity: 0, attuned: true, condition: "stable", skills: [], dc: 0, desc: e.desc, move: { name: e.name + " — Boon", stat: "Insight", skill: "—", bonus: 0, dc: null, desc: e.desc } };
+    if (!e) return;
+    const res = computeAttunedArtifactGrant(e, artifacts, moves);
+    if (!res) return;
     setAdded((a) => [...a, cid]);
     finishToast(e.name);
-    setArtifacts((prev) => [...prev, art]);
-    magic.handlers.addArtMove(art);
+    setArtifacts(res.artifacts);
+    magic.setState.setMoves(res.moves);
     clearLastAddedSoon();
   };
 
-  const learnDaysFor = (level: string) => {
-    const l = (level || "").toLowerCase();
-    if (l.startsWith("basic")) return 1;
-    if (l.startsWith("standard")) return 2;
-    if (l.startsWith("advanced")) return 5;
-    return 10;
-  };
   const onAddLearning = (cid: string) => {
     if (added.includes(cid)) return;
     const e = D.compendium.find((x) => x.id === cid);
-    if (!e || e.cat !== "spell") return;
+    if (!e) return;
+    const res = computeLearningSpellGrant(e, spells);
+    if (!res) return;
     setAdded((a) => [...a, cid]);
     finishToast(e.name);
-    addSpell({ id: "sp-comp-" + e.id, name: e.name, level: e.level, subjectKey: e.subjectKey || "", subject: e.subject || "", school: e.school || "", stat: e.stat || "", ap: e.ap || 0, dc: e.dc ?? null, ritual: !!e.ritual, volatile: false, days: learnDaysFor(e.level), desc: e.desc });
+    magic.setState.setSpells(res.value);
     clearLastAddedSoon();
   };
 
   const onAddPotionSheaf = (cid: string) => {
     const e = D.compendium.find((x) => x.id === cid);
-    if (!e || e.cat !== "potion") return;
-    setPotions((prev) => {
-      if (prev.reduce((s, p) => s + p.qty, 0) >= INV.potionCap) return prev;
-      const ex = prev.find((p) => p.name === e.name);
-      if (ex) return prev.map((p) => (p.id === ex.id ? { ...p, qty: p.qty + 1 } : p));
-      return [...prev, { id: "pot-comp-" + e.id, name: e.name, tone: e.tone, intensity: e.intensity != null ? e.intensity : 1, qty: 1, desc: e.desc }];
-    });
+    if (!e) return;
+    const res = computePotionSheafGrant(e, potions, INV.potionCap);
+    if (!res) return;
+    setPotions(res.value);
     finishToast(e.name);
     clearLastAddedSoon();
   };
   const onAddPotionRecipe = (cid: string) => {
     const e = D.compendium.find((x) => x.id === cid);
-    if (!e || e.cat !== "potion") return;
-    if (recipes.find((r) => r.name === e.name)) return;
-    const cost = parseInt(String(e.cost || "0").replace(/[^0-9]/g, ""), 10) || 0;
-    setRecipes((prev) => [...prev, { id: "rec-comp-" + e.id, name: e.name, tone: e.tone, intensity: e.intensity != null ? e.intensity : 1, cost, desc: e.desc }]);
+    if (!e) return;
+    const res = computePotionRecipeGrant(e, recipes);
+    if (!res) return;
+    setRecipes(res.value);
     finishToast(e.name);
     clearLastAddedSoon();
   };
   const onAddWandCraft = (cid: string) => {
     const e = D.compendium.find((x) => x.id === cid);
-    if (!e || e.cat !== "wand") return;
-    const bm = /([+-]?\d+)\s+(.+)/.exec(e.bonusLabel || ""); const val = bm ? parseInt(bm[1], 10) : 0; const lbl = bm ? bm[2] : "Bonus";
-    const matMax = e.mat || 6;
-    setWands((prev) => [...prev, { id: "wnd-craft-" + e.id + "-" + Date.now(), name: e.name, equipped: false, condition: 0, maxCondition: matMax, crafting: true, desc: e.desc, effect: { kind: "bonus", label: lbl, type: "subject", target: lbl.toLowerCase(), targetLabel: lbl, value: val } }]);
+    if (!e) return;
+    const res = computeWandCraftGrant(e, wands);
+    if (!res) return;
+    setWands(res.value);
     finishToast(e.name);
     clearLastAddedSoon();
   };
