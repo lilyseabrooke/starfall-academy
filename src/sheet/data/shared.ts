@@ -47,6 +47,16 @@ export const TONE_FG: Record<string, string> = Object.fromEntries(toneEntries.ma
 export const TONE_500: Record<string, string> = Object.fromEntries(toneEntries.map(([k, v]) => [k, v.main]));
 export const TONE_MIX: Record<string, string> = Object.fromEntries(toneEntries.map(([k, v]) => [k, v.mix]));
 
+// Deep 700-weight variant of each house tone, used for subtle background tints (e.g. the identity hero card).
+export const TONE_700: Record<string, string> = {
+  gold: "var(--gold-700)",
+  plum: "var(--plum-700)",
+  forest: "var(--forest-700)",
+  teal: "var(--teal-700)",
+  crimson: "var(--crimson-700)",
+  silver: "var(--plum-700)",
+};
+
 /* ----------------------- Level → tone mapping ----------------------- */
 export const LEVEL_TONE_MAP: Record<string, Tone> = {
   basic: "forest",
