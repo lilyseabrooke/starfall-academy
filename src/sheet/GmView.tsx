@@ -23,12 +23,14 @@ import { useRollState, type RollRosterMember } from "./state/useRollState";
 import { useRollSync } from "./integration/useRollSync";
 import { useCompendium } from "./data/compendium";
 import { INV } from "./data/inventory";
+import { DAYS, BLOCKS } from "./data/time";
 
 import { Sidebar } from "./components/parts/Sidebar";
 import { RollDock } from "./components/rolls/RollDock";
 import { RollToasts } from "./components/rolls/RollToasts";
 import { Icon } from "./components/Icon";
 import { Compendium } from "./components/parts/Compendium";
+import { TimeBadge } from "./components/parts/TimeBadge";
 import type { GMPartyMember } from "@/app/(app)/characters/roster";
 import type { CompendiumEntry, Roll, SerializedSheet, Tone } from "./types";
 import {
@@ -43,13 +45,6 @@ import {
 const clampN = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
 const TONE3: Record<string, string> = { plum: "var(--plum-300)", forest: "var(--forest-300)", teal: "var(--teal-300)", crimson: "var(--crimson-300)", gold: "var(--gold-300)", silver: "var(--text-strong)" };
-const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-const BLOCKS = [
-  { label: "Morning", icon: "sunrise" },
-  { label: "Afternoon", icon: "sun" },
-  { label: "Evening", icon: "sunset" },
-  { label: "Night", icon: "moon" },
-];
 const NPC_ICONS = ["user-round", "skull", "cat", "scroll", "crown", "shield", "wand-2", "flask-conical", "eye", "ghost", "book-open", "key-round", "anchor", "feather", "flame", "snowflake", "zap", "star", "moon", "compass", "gem", "bird", "fish", "tree-pine", "mountain", "waves", "bug", "sword"];
 const initialsFor = (name: string) => (name || "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
@@ -403,14 +398,40 @@ export function GmView({ campaign, party: hostParty }: GmViewProps) {
   };
   const patchNote = (id: string, patch: Partial<GmNote>) => setNotes((s) => s.map((n) => n.id === id ? { ...n, ...patch } : n));
 
-  /* ------------------------------- Time --------------------------------- */
-  const advanceTime = () => setTime((tm) => {
+  /* ------------------------------- Time ----------------------------------
+     The campaign clock is shared by the whole table: broadcasts live (so an
+     online player's sheet updates its TimeBadge instantly) and persists to
+     campaigns.time_* (RLS already lets the GM write their own campaign row,
+     and lets any campaign member read it — no RPC needed), so it survives a
+     reload for GM and players alike instead of resetting to the seed. ---- */
+  const persistTime = (next: GmTime) => {
+    rollSync.requestRoll({ kind: "time", day: next.day, block: next.block, enabled: next.enabled });
+    createClient().from("campaigns").update({ time_day: next.day, time_block: next.block, time_enabled: next.enabled }).eq("id", campaign.id).then(({ error }) => {
+      if (error) { console.error("Time update failed to persist", error.message); toast("Couldn't save the time change — try again."); }
+    });
+  };
+  const updateTime: React.Dispatch<React.SetStateAction<GmTime>> = (updater) => {
+    setTime((tm) => {
+      const next = typeof updater === "function" ? (updater as (t: GmTime) => GmTime)(tm) : updater;
+      persistTime(next);
+      return next;
+    });
+  };
+  React.useEffect(() => {
+    let cancelled = false;
+    createClient().from("campaigns").select("time_day,time_block,time_enabled").eq("id", campaign.id).single().then(({ data }) => {
+      if (!cancelled && data) setTime({ day: data.time_day ?? 0, block: data.time_block ?? 0, enabled: !!data.time_enabled });
+    });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const advanceTime = () => updateTime((tm) => {
     if (!tm.enabled) return { ...tm, day: (tm.day + 1) % 7 };
     let b = tm.block + 1, d = tm.day;
     if (b > 3) { b = 0; d = (d + 1) % 7; }
     return { ...tm, block: b, day: d };
   });
-  const sleepTime = () => setTime((tm) => ({ ...tm, block: 0, day: (tm.day + 1) % 7 }));
+  const sleepTime = () => updateTime((tm) => ({ ...tm, block: 0, day: (tm.day + 1) % 7 }));
 
   /* --------------------------- Action scene ----------------------------- */
   const toggleInclude = (pcId: string) => setAction((s) => {
@@ -509,13 +530,7 @@ export function GmView({ campaign, party: hostParty }: GmViewProps) {
             <h1 className="sf-top__h1">{TAB_META[tab].title}</h1>
           </div>
           <div className="sf-top__spacer" />
-          <button className="gm-timebtn" onClick={() => setTimeModal(true)}>
-            <Icon name={time.enabled ? BLOCKS[time.block].icon : "calendar"} />
-            <span className="gm-timebtn__txt">
-              <span className="gm-timebtn__eyebrow">{time.enabled ? "Day · Time" : "Day"}</span>
-              <span className="gm-timebtn__val">{time.enabled ? DAYS[time.day] + " " + BLOCKS[time.block].label : DAYS[time.day]}</span>
-            </span>
-          </button>
+          <TimeBadge time={time} onClick={() => setTimeModal(true)} />
           <button className="gm-rollbtn" onClick={quickRoll} title="GM Roll"><Icon name="dices" /></button>
         </header>
 
@@ -556,7 +571,7 @@ export function GmView({ campaign, party: hostParty }: GmViewProps) {
         />
       )}
       {addNpc && <AddNpcModal addNpc={addNpc} onPatch={patchAddNpc} onConfirm={confirmAddNpc} onDelete={(id) => { deleteNpc(id); setAddNpc(null); }} onClose={() => setAddNpc(null)} />}
-      {timeModal && <TimeModal time={time} setTime={setTime} onAdvance={advanceTime} onSleep={sleepTime} onClose={() => setTimeModal(false)} />}
+      {timeModal && <TimeModal time={time} setTime={updateTime} onAdvance={advanceTime} onSleep={sleepTime} onClose={() => setTimeModal(false)} />}
 
       <div className={"sf-inv-toast" + (status ? " show" : "")} role="status">
         {status && <span><Icon name="check-circle" /> {status}</span>}

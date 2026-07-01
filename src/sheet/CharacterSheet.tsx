@@ -11,6 +11,7 @@
    =========================================================================== */
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 import "@/ds/ds.css";
 import "./styles/app.css";
@@ -30,6 +31,7 @@ import { blank as blankBonus } from "./data/bonus";
 import { buildIndex, search as runSearch, type SearchResult } from "./data/search";
 import { useCompendium } from "./data/compendium";
 import { computeCompendiumGrant, computeAttunedArtifactGrant, computeLearningSpellGrant, computePotionSheafGrant, computePotionRecipeGrant, computeWandCraftGrant } from "./data/compendium-grant";
+import type { GmTime } from "./data/gm-seed";
 
 import { useClassState } from "./state/useClassState";
 import { useMagicState } from "./state/useMagicState";
@@ -99,6 +101,10 @@ interface GmPrompt {
   variant?: "attuned" | "learning" | "sheaf" | "recipe" | "craft";
   /** For kind:"ap" — the new actionPoints value the GM's Action Scene set. */
   value?: number;
+  /** For kind:"time" — the campaign clock the GM set. */
+  day?: number;
+  block?: number;
+  enabled?: boolean;
 }
 
 export interface CharacterSheetProps {
@@ -353,11 +359,30 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
   /* ---- Shared roll sync + GM prompts ------------------------------------ */
   const forcedResistRef = React.useRef<{ conditionId: string } | null>(null);
   const insightModRef = React.useRef(0);
+
+  // The campaign clock — read-only here (the GM's Clock modal is what sets
+  // it). Loaded once on mount so a reload shows the current time even before
+  // the next live "time" broadcast; onPrompt keeps it live after that.
+  const [gmTime, setGmTime] = React.useState<GmTime>({ day: 0, block: 0, enabled: false });
+  React.useEffect(() => {
+    if (!campaignId) return;
+    let cancelled = false;
+    createClient().from("campaigns").select("time_day,time_block,time_enabled").eq("id", campaignId).single().then(({ data }) => {
+      if (!cancelled && data) setGmTime({ day: data.time_day ?? 0, block: data.time_block ?? 0, enabled: !!data.time_enabled });
+    });
+    return () => { cancelled = true; };
+  }, [campaignId]);
   React.useEffect(() => { insightModRef.current = effFacRank("Insight"); });
 
   const onPrompt = React.useCallback((raw: unknown) => {
     const prompt = raw as GmPrompt | null;
-    if (!prompt || prompt.target !== me) return;
+    if (!prompt) return;
+    if (prompt.kind === "time") {
+      // Campaign-wide — no target, everyone at the table sees the same clock.
+      setGmTime({ day: prompt.day ?? 0, block: prompt.block ?? 0, enabled: !!prompt.enabled });
+      return;
+    }
+    if (prompt.target !== me) return;
     if (prompt.kind === "resist" && prompt.condition) {
       forcedResistRef.current = { conditionId: prompt.condition };
       openForcedResist({ conditionId: prompt.condition, dc: prompt.dc ?? null });
@@ -1026,7 +1051,7 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
     <div className="sf-app" data-nav={nav}>
       <Sidebar active={nav} onNavigate={onNavigate} roster={ROSTER} activeChar={activeChar} onPickChar={pickChar} compCount={D.compendium.length} onAddCharacter={openForgeNew} onEditCharacter={openForgeEdit} collapsed={sidebarCollapsed} onToggleSidebar={toggleSidebar} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
       <main className="sf-main">
-        <TopBar title={titleMap[nav] || "Overview"} eyebrow={c.name + " · " + c.house} c={{ ...c, resolve: Math.max(0, 5 - conditions.filter((cd) => cd.value > 0).length), resolveMax: 5 }} onStep={stepVital} onRollAction={onRollAction} onToggleMobileMenu={() => setMobileMenuOpen((v) => !v)} hideVitals={nav === "map"} searchQuery={searchQuery} onSearchQueryChange={setSearchQuery} searchResults={searchResults} onSearchSelect={handleSearchSelect} onSearchRoll={handleSearchRoll} onSearchRepair={handleSearchRepair} onSearchUse={handleSearchUse} searchMenuOpen={searchMenuOpen} onSearchMenuOpen={() => setSearchMenuOpen(true)} onSearchMenuClose={() => setSearchMenuOpen(false)} onSearchMobileOpen={() => setSearchMenuOpen(true)} />
+        <TopBar title={titleMap[nav] || "Overview"} eyebrow={c.name + " · " + c.house} c={{ ...c, resolve: Math.max(0, 5 - conditions.filter((cd) => cd.value > 0).length), resolveMax: 5 }} onStep={stepVital} onRollAction={onRollAction} onToggleMobileMenu={() => setMobileMenuOpen((v) => !v)} hideVitals={nav === "map"} time={campaignId ? gmTime : undefined} searchQuery={searchQuery} onSearchQueryChange={setSearchQuery} searchResults={searchResults} onSearchSelect={handleSearchSelect} onSearchRoll={handleSearchRoll} onSearchRepair={handleSearchRepair} onSearchUse={handleSearchUse} searchMenuOpen={searchMenuOpen} onSearchMenuOpen={() => setSearchMenuOpen(true)} onSearchMenuClose={() => setSearchMenuOpen(false)} onSearchMobileOpen={() => setSearchMenuOpen(true)} />
 
         {nav === "overview" && (
           <div className="sf-canvas">

@@ -151,6 +151,22 @@
 .sf-sheet .sf-top__h1 { font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: var(--tracking-wide); font-size: var(--text-xl); color: var(--text-strong); margin: 0; }
 .sf-sheet .sf-top__spacer { flex: 1; }
 
+/* Campaign clock badge (GM: clickable, opens the Clock modal; player: same
+   look, read-only — TimeBadge picks the variant via whether onClick is set). */
+.sf-sheet .gm-timebtn {
+  display: flex; align-items: center; gap: var(--space-3);
+  padding: 8px 14px; border-radius: var(--radius-md, 6px);
+  background: var(--surface-card); border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-sm); cursor: pointer; transition: border-color var(--dur-fast);
+}
+.sf-sheet .gm-timebtn:hover { border-color: var(--border-strong); }
+.sf-sheet .gm-timebtn--readonly { cursor: default; }
+.sf-sheet .gm-timebtn--readonly:hover { border-color: var(--border-subtle); }
+.sf-sheet .gm-timebtn > svg { width: 17px; height: 17px; color: var(--gold-400); flex: none; }
+.sf-sheet .gm-timebtn__txt { display: flex; flex-direction: column; line-height: 1.2; text-align: left; }
+.sf-sheet .gm-timebtn__eyebrow { font-family: var(--font-sans); font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: var(--text-muted); }
+.sf-sheet .gm-timebtn__val { font-family: var(--font-display); font-weight: 700; font-size: 15px; color: var(--text-strong); letter-spacing: .04em; }
+
 /* Vital gauges in the top bar */
 .sf-sheet .sf-vitals { display: flex; align-items: stretch; gap: var(--space-3); }
 .sf-sheet .sf-vital {
