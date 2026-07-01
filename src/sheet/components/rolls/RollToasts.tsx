@@ -113,6 +113,12 @@ export function RollToasts({ log, cap: capN, lifetime, graceMs, expandDefault, p
       return;
     }
     const fresh = log.filter((r) => !seen.current.has(r.id));
+    // A batch of >1 new rolls in one update is a backlog replay (e.g. joining
+    // a campaign), not a live roll — record it as seen without popping toasts.
+    if (fresh.length > 1) {
+      fresh.forEach((r) => seen.current.add(r.id));
+      return;
+    }
     fresh.reverse().forEach((r) => {
       seen.current.add(r.id);
       add(r);
