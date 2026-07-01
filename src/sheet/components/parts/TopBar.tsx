@@ -90,32 +90,34 @@ export function TopBar({
       </div>
       <div className="sf-top__spacer" />
 
-      {time && <TimeBadge time={time} />}
+      <div className="sf-top__status">
+        {time && <TimeBadge time={time} />}
 
-      <div className="sf-vitals">
-        <div className="sf-vital is-ap">
-          <span className="sf-vital__label">Action<br />Points</span>
-          <div className="sf-stepper">
-            <button className="sf-step" onClick={() => onStep("actionPoints", -1)} disabled={c.actionPoints <= 0}>−</button>
-            <span className="sf-vital__num">{c.actionPoints}<small>/{c.actionPointsMax}</small></span>
-            <button className="sf-step" onClick={() => onStep("actionPoints", 1)} disabled={c.actionPoints >= c.actionPointsMax}>+</button>
+        <div className="sf-vitals">
+          <div className="sf-vital is-ap">
+            <span className="sf-vital__label">Action<br />Points</span>
+            <div className="sf-stepper">
+              <button className="sf-step" onClick={() => onStep("actionPoints", -1)} disabled={c.actionPoints <= 0}>−</button>
+              <span className="sf-vital__num">{c.actionPoints}<small>/{c.actionPointsMax}</small></span>
+              <button className="sf-step" onClick={() => onStep("actionPoints", 1)} disabled={c.actionPoints >= c.actionPointsMax}>+</button>
+            </div>
+            {onRollAction && (
+              <button className="sf-ap-roll-btn" onClick={onRollAction} title="Action roll — DC 10 Insight">
+                <Icon name="dices" />
+              </button>
+            )}
           </div>
-          {onRollAction && (
-            <button className="sf-ap-roll-btn" onClick={onRollAction} title="Action roll — DC 10 Insight">
-              <Icon name="dices" />
-            </button>
-          )}
-        </div>
-        <div className="sf-vital">
-          <span className="sf-vital__label">Resolve</span>
-          <Stars value={c.resolve} max={c.resolveMax} />
-        </div>
-        <div className="sf-vital is-trouble">
-          <span className="sf-vital__label">Trouble</span>
-          <div className="sf-stepper">
-            <button className="sf-step" onClick={() => onStep("trouble", -1)} disabled={c.trouble <= 0}>−</button>
-            <span className="sf-vital__num">{c.trouble}</span>
-            <button className="sf-step" onClick={() => onStep("trouble", 1)} disabled={c.trouble >= 10}>+</button>
+          <div className="sf-vital">
+            <span className="sf-vital__label">Resolve</span>
+            <Stars value={c.resolve} max={c.resolveMax} />
+          </div>
+          <div className="sf-vital is-trouble">
+            <span className="sf-vital__label">Trouble</span>
+            <div className="sf-stepper">
+              <button className="sf-step" onClick={() => onStep("trouble", -1)} disabled={c.trouble <= 0}>−</button>
+              <span className="sf-vital__num">{c.trouble}</span>
+              <button className="sf-step" onClick={() => onStep("trouble", 1)} disabled={c.trouble >= 10}>+</button>
+            </div>
           </div>
         </div>
       </div>
