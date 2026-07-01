@@ -1,0 +1,2795 @@
+@import url('https://fonts.googleapis.com/css?family=Uncial+Antiqua&display=swap');
+@import url('https://fonts.googleapis.com/css?family=Metamorphous&display=swap');
+@import url('https://fonts.googleapis.com/css?family=Yatra+One&display=swap');
+@import url('https://fonts.googleapis.com/css?family=Material+Icons&display=swap');
+:root {
+	--background-color-standard: rgba(100,90,70,.25);
+	--background-color-dark: rgba(35,25,15,.4);
+	--background-color-darker: rgba(25,15,5,.6);
+	--standard-border: 1.5px solid rgba(0,0,0,0.75);
+	--standard-border-thick: 2px solid rgba(0,0,0,0.75);
+	--standard-border-image: url("https://raw.githubusercontent.com/lilyseabrooke/Starfall-sheet/main/Parchment%20Border.png") 30 round;
+	--standard-fade-opacity: 0.3;
+	--standard-border-clean: 2px solid rgba(0,0,0,0.75);
+	--standard-border-radius: 5px;
+
+	--focus-color: rgb(103 57 62);
+	--creativity-color: rgb(61 89 87);
+	--logic-color: rgb(72 56 76);
+	--insight-color: rgb(123 111 53);
+	--body-color: rgb(89 89 89);
+	--charm-color: rgb(140 99 99);
+}
+
+.gridshow {
+	display: grid;
+}
+
+.gridhide {
+	display: none;
+}
+
+.rollericon button[type="action"]:before {
+	font-family: "dicefontd10";
+	text-transform: lowercase;
+    content: "k ";
+	font-size: 16px;
+	color: white;
+}
+.rollericon button[type="action"]:hover,
+.actionbuttonhover button[type="action"]:hover {
+    background-image: linear-gradient(to bottom, rgb(120, 120, 120), rgb(80, 80, 80));
+    border-color: rgb(40, 40, 40);
+    background-position: 0;
+}
+
+/*Configure the tab buttons*/
+.charsheet .sheet-character,
+.charsheet .sheet-magic,
+.charsheet .sheet-skills,
+.charsheet .sheet-inventory,
+.charsheet .sheet-journal,
+.charsheet .sheet-enrollment {
+    display: none;
+}
+
+/* show the selected tab */
+.charsheet .sheet-tabstoggle[value="character"] ~ div.sheet-character,
+.charsheet .sheet-tabstoggle[value="magic"] ~ div.sheet-magic,
+.charsheet .sheet-tabstoggle[value="skills"] ~ div.sheet-skills,
+.charsheet .sheet-tabstoggle[value="inventory"] ~ div.sheet-inventory,
+.charsheet .sheet-tabstoggle[value="journal"] ~ div.sheet-journal,
+.charsheet .sheet-tabstoggle[value="enrollment"] ~ div.sheet-enrollment {
+    display: block;
+}
+
+.tabber-tray {
+	display: grid;
+	font-family: "Yatra One";
+	grid-template-columns: repeat(4,206px);
+	grid-template-rows: 25px;
+}
+
+.tabber-tray button {
+	width: 80%;
+	height: 100%;
+	justify-self: center;
+}
+
+
+/*MAIN tab handling:*/
+
+/* Hidden initializer block — stores default attribute values Roll20 reads on sheet open */
+.sheet-initializers { display: none; }
+
+/*Create the grid on which all other elements will lie*/
+.sheetgrid {
+	display: grid;
+	position: relative;
+	z-index: 1;
+	width: 820px;
+	font-family: 'Yatra One';
+	background-image: url("https://raw.githubusercontent.com/lilyseabrooke/Starfall-sheet/main/Parchment%20Background%20(Light).jpg");
+	background-repeat: repeat;
+	border: var(--standard-border-clean);
+	border-radius: var(--standard-border-radius);
+	grid-template-columns: repeat(5,20%);
+	grid-template-rows: 100px min-content min-content min-content;
+	grid-template-areas: 	"top	top		top		top		top"
+							"bio	bio		bio		bio		bio"
+							"conds	conds	conds	conds	conds"
+							"stats	stats	stats	stats	stats";
+}
+
+/* Global button base — applies to every button on every sheet tab */
+.charsheet button[type="action"],
+.charsheet button[type="roll"],
+.charsheet .repcontrol button {
+	background-image: linear-gradient(to bottom, rgb(90, 90, 90), rgb(50, 50, 50));
+	border-color: rgb(40, 40, 40);
+	color: #EEEEEE;
+}
+.charsheet button[type="action"]:hover,
+.charsheet button[type="roll"]:hover,
+.charsheet .repcontrol button:hover {
+	background-image: linear-gradient(to bottom, rgb(120, 120, 120), rgb(80, 80, 80));
+	border-color: rgb(40, 40, 40);
+	background-position: 0;
+}
+
+.sheetgrid h3{
+  text-align: center;
+}
+
+/*I put this in trying something and now it breaks if I take it out, I love programming!*/
+.sheetgrid::before {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0); /* Change the color and opacity as needed */
+}
+
+/*sheetgrid-top serves as the header*/
+#sheetgrid-top {
+	margin-top: 20px;
+	font-family: 'Uncial Antiqua';
+	grid-area: top;
+	width: 600px;
+	display: grid;
+	grid-template-columns: 40% 20% 40%;
+	grid-template-rows: 1fr;
+	justify-self: center;
+	align-self: center;
+	align-items: center;
+}
+#sheetgrid-top img {
+	height: 120px;
+	width: 120px;
+	justify-self: center;
+}
+#sheetgrid-top-left {
+	justify-self: end;
+}
+#sheetgrid-top-right {
+	justify-self: start;
+}
+
+/*sheetgrid-bio holds the information at the top, name and house etc*/
+.sheetgrid-bio {
+	grid-area: bio;
+	font-family: 'Metamorphous';
+	margin-bottom: 20px;
+	display: grid;
+	border-bottom: 2px solid rgba(0,0,0, 0.5);
+	grid-template-columns: 5% 20% 20% 10% 20% 20% 5%;
+	grid-template-rows: 50% 50%;
+	grid-template-areas: 	".	nameLabel	pronounsLabel	apLabel	houseLabel	yearLabel	."
+							".	nameField	pronounsField	apfield	houseField	yearField	.";
+}
+
+
+
+.sheetgrid-bio input {
+	width: 150px;
+	background-color: var(--background-color-dark);
+	border: var(--standard-border);
+	border-radius: var(--standard-border-radius);
+	color: #EEEEEE;
+	align-self: start;
+	font-family: 'Yatra One';
+	font-size: 12pt;
+	text-shadow: 2px 2px 1px #222222;
+}
+.sheetgrid-bio h4 {
+	align-self: end;
+}
+
+/* Bio field grid-area placements — replaces inline style="" on each element */
+.sheetgrid-bio [name="attr_charname"]  { grid-area: nameField; }
+.sheetgrid-bio [name="attr_pronouns"]  { grid-area: pronounsField; }
+.sheetgrid-bio [name="attr_house"]     { grid-area: houseField; justify-self: end; text-align: right; }
+.sheetgrid-bio [name="attr_year"]      { grid-area: yearField;  justify-self: end; text-align: right; }
+.sheetgrid-bio .bio-label-name        { grid-area: nameLabel; }
+.sheetgrid-bio .bio-label-pronouns    { grid-area: pronounsLabel; }
+.sheetgrid-bio .bio-label-house       { grid-area: houseLabel; justify-self: end; }
+.sheetgrid-bio .bio-label-year        { grid-area: yearLabel;  justify-self: end; }
+
+.ap-label {
+	grid-area: apLabel;
+	width: 100px;
+	display: grid;
+	justify-self: center;
+	align-items: end;
+	align-self: end;
+}
+.ap-label h4 {
+	font-size: 14pt;
+	text-align: center;
+}
+
+.ap-container {
+	grid-area: apfield;
+	display: grid;
+	height: 105px;
+	width: 170px;
+	justify-self: center;
+	justify-content: center;
+	align-content: center;
+	align-self: start;
+	grid-template-rows: 80px 40px;
+	grid-template-columns: 50px 80px 50px;
+	grid-template-areas:
+							"minus	display	plus"
+							".		roll	.	";
+}
+.ap-container .ap-minus { grid-area: minus; }
+.ap-container .ap-plus  { grid-area: plus; }
+
+.ap-container button[type="action"] {
+	height: 20px;
+	width: 20px;
+	justify-self: center;
+	align-self: end;
+	margin: 5px;
+	border-radius: 10px;
+	margin-bottom: 8px;
+}
+
+.ap-container > .rollericon {
+	grid-area: roll;
+	justify-self: center;
+    align-self: center;
+}
+
+.ap-container > div.rollericon button[type="action"] {
+	height: 20px;
+	width: 40px;
+	border-radius: 10px;
+	position: relative;
+	z-index: 2;
+}
+.ap-container > div.rollericon button[type="action"]:hover {
+	background-position: 0;
+	color: #F2F2F2;
+}
+.ap-container > div.rollericon button[type="action"]:before {
+	font-size: 22px;
+	line-height: 0.85em;
+}
+
+.ap-container button[type="roll"] {
+	grid-area: roll;
+	height: 20px;
+	width: 40px;
+	justify-self: center;
+	align-self: center;
+	border-radius: 10px;
+	z-index: 2;
+}
+.ap-container button[type="roll"]:hover {
+	background-position: 0;
+	color: #F2F2F2;
+}
+
+.charsheet .ap-checker[value="0"] ~ .ap-minus, 
+.charsheet .ap-checker[value="6"] ~ .ap-plus {
+	display: none;
+}
+
+.ap-display {
+	border: 2px solid rgba(0,0,0, 0.5);
+	background-color: var(--background-color-dark);
+	margin-top: 20px;
+	border-radius: 50%;
+	width: 75px;
+	height: 75px;
+	display: grid;
+	justify-self: center;
+	align-items: center;
+	align-self: end;
+}
+
+.ap-display-cutter {
+	overflow-y: hidden;
+	grid-area: display;
+}
+
+.ap-display span {
+	justify-self: center;
+	text-align: center;
+	font-weight: bold;
+	font-size: 22pt;
+	color: #EEEEEE;
+	text-shadow: 2px 2px 1px #222222;
+	cursor: default;
+	padding-bottom: 10px;
+}
+
+/*sheetgrid-conds mostly just serves to hold the condition-container block*/
+/*i have tried to simplify this and it broke it so it stays*/
+#sheetgrid-conds {
+	grid-area: conds;
+}
+
+
+/*sheetgrid-stats holds the six different statblocks*/
+#sheetgrid-stats {
+	grid-area: stats;
+	display: grid;
+	grid-template-rows: auto repeat(6,120px);
+	width: 92%;
+	justify-self: center;
+	justify-content: center;
+	border: var(--standard-border-thick);
+	border-radius: var(--standard-border-radius);
+	background-color: var(--background-color-dark);
+}
+
+
+
+.statblock-holder {
+	display: flex;
+}
+
+.statblock-side {
+	border: var(--standard-border);
+	border-radius: var(--standard-border-radius);
+	background-color: var(--background-color-standard);
+	display: flex;
+	height: 70px;
+	align-self: center;
+	overflow: hidden;
+	padding-left: 5px;
+	padding-right: 5px;
+	position: relative;
+}
+.statblock-left {
+	left: 5px;
+}
+.statblock-right {
+	right: 5px;
+}
+.statblock-endpiece {
+	padding-left: 10px;
+	padding-right: 10px;
+}
+.statblock-skill {
+	display: grid;
+	grid-template-columns: 25px 75px 25px;
+	grid-template-rows: 50% 50%;
+	padding-left: 7px;
+	padding-right: 7px;
+}
+.statblock-skill button[type="roll"] {
+	grid-column: 1 / span 3;
+	grid-row: 2;
+}
+
+/* formatting to make the skills pretty */
+.statblock-skill span {
+	text-align: center;
+	font-weight: bold;
+	font-family: 'Metamorphous';
+	font-size: 16pt;
+	align-self: center;
+	justify-self: center;
+	color: #EEEEEE;
+	text-shadow: 2px 2px 0.5px #222222;
+}
+.statblock-skill > div.rollericon button[type="action"] {
+	width: 100%;
+	font-size: 1em;
+	justify-self: center;
+	border-radius: 6px;
+	height: 25px;
+}
+.statblock-skill > div.rollericon {
+	grid-column: 1 / span 3;
+}
+
+.statblock-holder .subject-bonus {
+	grid-template-columns: auto auto auto;
+	grid-gap: 2px;
+}
+.statblock-holder .subject-bonus span {
+	font-size: 13pt;
+}
+
+.statblock-skill button[type="action"] {
+	height: 20px;
+	width: 100%;
+	padding: 0px;
+	align-self: center;
+	justify-self: center;
+	border-radius: 4px;
+}
+
+button.subskill-decreaser {
+    margin-left: 4px;
+}
+
+.statblock {
+	display: grid;
+	grid-template-columns: 25px 100px 25px;
+	grid-template-rows: 45px 50px 45px;
+	border: var(--standard-border-thick);
+	border-radius: 25%;
+	grid-template-areas:
+		".			label	.	"
+		"button1	stat	button2	"
+		"roller		roller	roller	";
+	justify-self: center;
+	align-self: center;
+	padding-left: 5px;
+	padding-right: 5px;
+	z-index: 1;
+}
+/* Color the different stat spreads */
+.focusblock > .statblock,
+.focusblock > .statblock-side {
+	background-color: var(--focus-color);
+}
+.creativityblock > .statblock,
+.creativityblock > .statblock-side{
+	background-color: var(--creativity-color);
+}
+ .logicblock > .statblock,
+ .logicblock > .statblock-side {
+	background-color: var(--logic-color);
+}
+.insightblock > .statblock,
+.insightblock > .statblock-side {
+	background-color: var(--insight-color);
+}
+.bodyblock > .statblock,
+.bodyblock > .statblock-side {
+	background-color: var(--body-color);
+}
+.charmblock > .statblock,
+.charmblock > .statblock-side {
+	background-color: var(--charm-color);
+}
+/* Style the statblock */
+.statblock button {
+	height: 100%;
+}
+
+.statblock input {
+	height: 100%;
+}
+
+.statblock .statdecreaser {
+	align-self: center;
+	justify-self: start;
+	grid-area: button1;
+}
+.statblock .statincreaser {
+	align-self: center;
+	justify-self: end;
+	grid-area: button2;
+}
+
+.statblock-stat-bonus span:first-child {
+	justify-self: end;
+	text-align: right;
+}
+.statblock-stat-bonus span:nth-child(2),
+.statblock-stat-bonus span:last-child {
+	color: #4d7a2a;
+}
+.statblock-stat-bonus span:last-child {
+	justify-self: start;
+	text-align: left;
+}
+
+.statblock-stat {
+	grid-area: stat;
+	justify-self: center;
+	align-self: center;
+	box-sizing: border-box;
+}
+
+.statblock-stat-bonus {
+	grid-area: stat;
+	justify-self: center;
+	align-self: center;
+	box-sizing: border-box;
+	display: grid;
+	grid-template-rows: 100%;
+	grid-template-columns: 30% 25% 30%;
+	justify-content: center;
+}
+
+.charsheet .stat-bonus-checker[value="0"] ~ div.statblock-stat-bonus {
+	display: none;
+}
+.charsheet .stat-bonus-checker[value]:not([value="0"]) ~ div.statblock-stat {
+    display: none;
+}
+.charsheet .stat-bonus-checker[value]:not([value="0"]) ~ div.statblock-stat-bonus {
+    display: grid;
+}
+.charsheet .stat-bonus-checker[value="0"] ~ div.statblock-stat {
+	display: block;
+}
+
+.statblock-stat span, 
+.statblock-stat-bonus span {
+	text-align: center;
+	justify-self: center;
+	width: 100%;
+	display: block;
+	font-size: 21pt;
+	font-family: 'Metamorphous';
+	font-weight: bold;
+	box-sizing: border-box;
+	border: 0px;
+	background-color: transparent;
+	color: #EEEEEE;
+	text-shadow: 1px		1px		0	#222222,
+					-1px	-1px 	0 	#222222,
+					1px		-1px	0 	#222222,
+					-1px	1px		0	#222222,
+					3px 	3px 	1px	#222222;
+	cursor: default;
+}
+.statblock-stat-bonus span {
+	margin-left: 3px;
+	margin-right: 3px;
+	font-size: 16pt;
+}
+
+.statblock button[type="action"] {
+	height: 40px;
+	width: 30px;
+	padding: 0;
+	border-radius: 4px;
+}
+
+.statblock h3 {
+	font-size: 22pt;
+	color: #EEEEEE;
+	grid-area: label;
+	justify-self: center;
+	align-self: center;
+	text-shadow: 3px 3px 1px #222222;
+}
+
+.statblock-roller {
+	grid-area: roller;
+	justify-self: center;
+	align-self: center;
+}
+
+.statblock-roller > div.rollericon button[type="action"] {
+	width: 100px;
+	height: 25px;
+	border-radius: 6px;
+}
+.statblock-roller > div.rollericon button[type="action"]:before {
+	font-size: 20px;
+}
+
+.statblock-roller button[type=roll] {
+	width: 100px;
+}
+.improvement-switcher {
+    justify-self: end;
+    height: 20px;
+    margin-right: 45px;
+    margin-bottom: -20px;
+    margin-top: 5px;
+    background-color: var(--background-color-standard);
+    padding: 6px;
+    border: 1px solid black;
+    border-radius: 4px;
+}
+
+#sheetgrid-stats .improvement-switcher input[type="checkbox"],
+.magicgrid-categories > .improvement-switcher input[type="checkbox"] {
+	height: 20px;
+    width: 30px;
+    overflow: hidden;
+}
+
+.magicgrid-categories > div.improvement-switcher {
+	grid-column: 1 / span 4;
+    margin-top: -10px;
+    margin-bottom: 0;
+}
+
+/*the condition-container holds the five condition boxes and the resolve tracker*/
+/*why is it an ID specifier and then class expansions? your guess is as good as mine.*/
+
+#condition-container {
+display: grid;
+grid-template-columns: repeat(5,20%);
+grid-template-rows: 50px 150px;
+position: relative;
+top: -10px;
+}
+
+.condition-container button {
+	height: 30px;
+	margin-left: 0px;
+	margin-right: 0px;
+}
+.condition-container input {
+	height: 30px;
+	margin-left: 0px;
+	margin-right: 0px;
+}
+
+/*condition-subcontainer are the little boxes that show the 5 conditions*/
+
+.condition-subcontainer-holder {
+	display: grid;
+	grid-template-rows: 70px min-content 30px;
+	align-content: end;
+	padding-bottom: 5px;
+}
+
+.condition-resist-button-cutter {
+	overflow: hidden;
+	justify-self: center;
+	width: 125px;
+	display: grid;
+	justify-items: center;
+}
+.condition-resist-button-cutter > div.rollericon button[type="action"] {
+    width: 120px;
+    border-radius: 6px;
+    box-sizing: border-box;
+    position: relative;
+    top: -5px;
+    font-size: 1.3em;
+    height: 30px;
+}
+.condition-resist-button-cutter > div.rollericon button[type="action"]:before {
+    font-size: 1.35em;
+}
+
+.condition-resolve-star-cutter {
+	overflow: hidden;
+	justify-self: center;
+	width: 100px;
+}
+.condition-resolve-star-cutter img {
+	position: relative;
+	bottom: -20px;
+}
+
+.condition-subcontainer-holder button[type="roll"] {
+	width: 120px;
+	position: relative;
+	top: -5px;
+}
+.ui-dialog .condition-subcontainer-holder button[type="roll"] {
+	font-size: 1.2em;
+}
+.condition-subcontainer-holder button[type="roll"]:hover {
+	background-position: 0;
+	color: #F2F2F2;
+}
+
+.condition-subcontainer-holder button[type="roll"], button[type="roll"]::before, button[type="roll"]::after {
+	box-sizing: border-box;
+}
+
+.condition-subcontainer {
+	display: grid;
+	grid-template-columns: 40px 50px 40px;
+	grid-template-rows: 30px 30px;
+	grid-column-gap: 0px;
+	padding-top: 10px;
+	border: var(--standard-border);
+	border-radius: var(--standard-border-radius);
+	background-color: var(--background-color-standard);
+	grid-template-areas:
+		"button1 input button2"
+		"text text text";
+	place-self: center;
+}
+.condition-subcontainer button {
+	height: 20px;
+    width: 10px;
+    border-radius: 5px;
+    justify-self: center;
+    align-self: center;
+}
+
+.condition-subcontainer span {
+	text-align: center;
+	font-size: 16pt;
+	font-weight: bold;
+	width: 100%;
+	height: 100%;
+	display: block;
+	font-family: "Metamorphous";
+	color: #EEEEEE;
+	text-shadow: 2px 2px 1px #222222;
+	cursor: default;
+}
+
+/* Condition box grid-area placements — replaces inline style="" on each element */
+.condition-subcontainer h3 { grid-area: text; }
+.condition-subcontainer span[name] { grid-area: input; }
+.fearminus, .despairminus, .woundminus, .lossminus, .doubtminus { grid-area: button1; }
+.fearplus,  .despairplus,  .woundplus,  .lossplus,  .doubtplus  { grid-area: button2; }
+
+/* Trouble tracker grid-column placements */
+.trouble-display   { grid-column: 2; }
+.troubleincreaser  { grid-column: 3; }
+
+.charsheet .fear-checker[value="0"] ~ button.fearminus,
+.charsheet .fear-checker[value="3"] ~ button.fearplus,
+.charsheet .despair-checker[value="0"] ~ button.despairminus,
+.charsheet .despair-checker[value="3"] ~ button.despairplus,
+.charsheet .wound-checker[value="0"] ~ button.woundminus,
+.charsheet .wound-checker[value="3"] ~ button.woundplus,
+.charsheet .loss-checker[value="0"] ~ button.lossminus,
+.charsheet .loss-checker[value="3"] ~ button.lossplus,
+.charsheet .doubt-checker[value="0"] ~ button.doubtminus,
+.charsheet .doubt-checker[value="3"] ~ button.doubtplus {
+	display: none;
+}
+
+#condition-container-text {
+	grid-area: text;
+	justify-self: stretch;
+	align-self: center;
+}
+#condition-container-button1 {
+	grid-area: button1;
+	justify-self: center;	
+	align-self: center;
+}
+#condition-container-button2 {
+	grid-area: button2;
+	justify-self: start;
+	align-self: center;
+}
+#condition-container-input {
+	grid-area: input;
+	justify-self: stretch;
+	align-self: center;
+}
+
+/*condition-resolve holds the resolve tracker*/
+
+.condition-resolve {
+	margin-top: 10px;
+	place-self: center;
+}
+.condition-resolve img {
+	height: 100px;
+	grid-area: star;
+}
+
+/*resolve-reader is the little box underneath the resolve tracker that shows the number*/
+
+.resolve-reader {
+	justify-self: center;
+	align-self: start;
+	padding: 5px;
+	font-size: 20px;
+	font-weight: bold;
+	text-align: center;
+	color: #444444;
+	background-color: var(--background-color-standard);
+	border: var(--standard-border);
+	border-radius: var(--standard-border-radius);
+	align-self: start;
+}
+
+.resolve-reader h3 {
+	align-self: end;
+	margin-bottom: 0px;
+	cursor: default;
+}
+
+/*make that span dramatic, baby*/
+
+.resolve-reader span {
+	cursor: default;
+}
+
+/*CLASS tab handling*/
+
+.classgrid {
+	display: grid;
+	position: relative;
+	width: 820px;
+	font-family: 'Yatra One';
+	background-image: url("https://raw.githubusercontent.com/lilyseabrooke/Starfall-sheet/main/Parchment%20Background%20(Light).jpg");
+	background-repeat: repeat;
+	padding-bottom: 30px;
+	border: var(--standard-border-thick);
+	border-radius: var(--standard-border-radius);
+	grid-template-rows: 100px min-content min-content auto;
+	grid-template-areas: 	"top"
+							"pointbase"
+							"classes"
+							"classmoves";
+}
+
+.classgrid-pointbase {
+	/* Contains the rankpointtracker and the classchooser side by side */
+	display: flex;
+	grid-area: pointbase;
+	justify-self: center;
+}
+
+.classgrid-rankpointtracker {
+	display: grid;
+	justify-self: center;
+	align-self: center;
+	justify-content: center;
+	justify-items: center;
+	align-content: center;
+	align-items: center;
+	padding: 5px;
+}
+
+.classgrid-rankpointtracker h2 {
+	width: 130px;
+	text-align: center;
+}
+
+.classgrid-rankpointtracker input[type="number"] {
+	padding: 0px;
+	display: block;
+	font-size: 34px;
+	font-weight: bold;
+	text-align: center;
+	color: #444444;
+	background-color: var(--background-color-standard);
+	border: var(--standard-border);
+	border-radius: var(--standard-border-radius);
+}
+.classgrid-rankpointtracker input::-webkit-inner-spin-button {
+	-webkit-appearance: none;
+}
+/* .ui-dialog .classgrid-rankpointtracker input[type=number] { */
+	/* width: 200px; */
+/* } */
+
+/* classchooser gives a tickbox to activate each potential class option, */
+/* activating display for a class rank box on choice */
+
+.classgrid-classchooser {
+	margin-top: 30px;
+	justify-self: center;
+	display: grid;
+	border: inherit;
+	border-image: inherit;
+	padding-bottom: 5px;
+	background-color: var(--background-color-standard);
+	grid-template-columns: repeat(4, 120px);
+	grid-template-rows: repeat(3, 90px);
+	border: var(--standard-border);
+	border-radius: var(--standard-border-radius);
+
+}
+
+.classgrid-classchoice {
+	margin: 2% 2% 2% 2%;
+	justify-self: center;
+	align-self: center;
+	display: grid;
+	grid-template-rows: 50% 50%;
+}
+.classgrid-classchoice span {
+	font-size: 12pt;
+	font-weight: bold;
+	text-align: center;
+	align-self: end;
+}
+.charsheet input[type="checkbox"] {
+	appearance: none;
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	align-self: start;
+	height: 30px;
+	width: 50px;
+	justify-self: center;
+	background-color: var(--background-color-dark);
+	border: 1px solid rgba(50,50,50,0.4);
+	position: relative;
+}
+.charsheet input[type="checkbox"]:checked {
+	background-color: var(--background-color-standard);
+}
+.charsheet input[type="checkbox"]:focus {
+	outline: none;
+}
+.charsheet input[type=checkbox]:checked:before {
+  /* Set the content to the checkmark symbol */
+  content: 'X';
+  /* Position the checkmark in the center of the checkbox */
+  position: absolute;
+  top: 55%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 30pt;
+  font-family: 'Uncial Antiqua';
+  /* Set the checkmark color to white */
+  color: #333333;
+}
+
+
+
+
+
+
+/*classdisplay is the table that shows the class rank/abilities/etc*/
+/*they are all stored on a classlist and activated by input siblings*/
+
+.classgrid-classlist {
+	display: grid;
+	grid-area: classes;
+	align-items: start;
+	justify-items: center;
+	align-self: start;
+	justify-self: center;
+	grid-template-columns: minmax(650px, 1fr);
+	grid-template-rows: max-content;
+	margin-top: 20px;
+}
+
+.classgrid-classdisplay {
+	display: grid;
+	justify-self: center;
+	align-items: center;
+	grid-template-columns: minmax(650px, 1fr);
+	grid-template-rows: 150px max-content;
+	background-color: var(--background-color-standard);
+	border: var(--standard-border);
+	border-radius: var(--standard-border-radius);
+	margin-bottom: 20px;
+}
+
+.classgrid-classcondensed {
+	display: grid;
+	justify-self: center;
+	grid-template-columns: 35% 35% 30%;
+	width: 75%;
+	height: 50px;
+	align-items: center;
+	justify-items: center;
+	background-color: var(--background-color-standard);
+	border: var(--standard-border);
+	border-radius: var(--standard-border-radius);
+	margin-bottom: 10px;
+}
+.classgrid-classcondensed span {
+	font-size: 16pt;
+	font-weight: bold;
+}
+.classgrid-classcondensed button[type="action"] {
+	height: 30px;
+	width: 80%;
+	padding: 0px;
+}
+
+.classgrid-class-header {
+	display: grid;
+	justify-self: center;
+	align-items: center;
+	grid-template-columns: 175px 150px 175px;
+	grid-template-rows: 50px 100px;
+	grid-template-areas:	".			classname 	collapser	"
+							"downrank	classrank 	rankup		";
+}
+.classgrid-class-header button[type="action"] {
+	height: 30px;
+	grid-area: collapser;
+	align-self: end;
+	justify-self: end;
+}
+.classgrid-class-header button[type="action"]:hover,
+.classgrid-classcondensed button[type="action"]:hover {
+	background-image: linear-gradient(to bottom, rgb(120, 120, 120), rgb(80, 80, 80));
+	border-color: rgb(40, 40, 40);
+}
+.charsheet .class1-picked-checker[value="unselected"] ~ div.classgrid-class-header {
+	grid-template-columns: 500px;
+}
+.charsheet .class1-picked-checker[value="unselected"] ~ div.classgrid-class-header div.classgrid-classchoice {
+	width: 500px;
+}
+.charsheet .class1-picked-checker[value="unselected"] ~ div.classgrid-class-header select {
+	width: 300px;
+	height: 70px;
+	font-size: 22px;
+	justify-self: center;
+}
+
+.classgrid-class-header .class-rank-checker[value="0"] ~ button.classdownrankbutton,
+.classgrid-class-header .class-rank-checker[value="10"] ~ button.classuprankbutton,
+.magicgrid-subject .subskill-level-checker[value="0"] ~ button.subskill-decreaser,
+.magicgrid-subject .subskill-level-checker[value="20"] ~ button.subskill-increaser,
+.statblock .stat-value-checker[value="0"] ~ button.statdecreaser,
+.statblock .stat-value-checker[value="20"] ~ button.statincreaser {
+	display: none;
+}
+
+.classgrid-classname {
+	grid-area: classname;
+	align-self: end;
+	width: 350px;
+	justify-self: center;
+}
+.classgrid-classname h3 {
+	font-size: 26pt;
+	justify-self: center;
+	text-align: center;
+}
+
+#classgrid-classrank {
+	grid-area: classrank;
+	justify-self: center;
+	align-items: center;
+	justify-items: center;
+}
+#classgrid-classrank span {
+	font-size: 20pt;
+	font-weight: bold;
+	text-align: center;
+}
+#classgrid-classrank input::-webkit-inner-spin-button {
+	-webkit-appearance: none;
+}
+
+/*rankup button*/
+#classgrid-rankup {
+	grid-area: rankup;
+	justify-self: start;
+	justify-items: start;
+	width: 60px;
+	height: 30px;
+	margin-left: 10px;
+}
+#classgrid-rankup button {
+	width: 60px;
+	height: 30px;
+	font-size: 14pt;
+	box-sizing: border-box;
+}
+#classgrid-rankup button:hover {
+	color: #E1E1E1;
+}
+/*downrank button*/
+#classgrid-downrank {
+	grid-area: downrank;
+	justify-self: end;
+	justify-items: end;
+	width: 60px;
+	height: 30px;
+	margin-right: 10px;
+}
+#classgrid-downrank button {
+	width: 60px;
+	height: 30px;
+	font-size: 14pt;
+	box-sizing: border-box;
+}
+#classgrid-downrank button:hover {
+	color: #E1E1E1;
+}
+
+.charsheet .rank-pick-checker[value="right"] ~ div.classgrid-levelrank-rankoption-right,
+.charsheet .rank-pick-checker[value="left"] ~ div.classgrid-levelrank-rankoption-left {
+	background-color: var(--background-color-standard);
+	border: 1px solid #22222288;
+}
+.charsheet .rank-pick-checker[value="left"] ~ div.classgrid-levelrank-rankoption-right,
+.charsheet .rank-pick-checker[value="right"] ~ div.classgrid-levelrank-rankoption-left {
+	opacity: var(--standard-fade-opacity);
+}
+
+
+
+
+/*level rank table*/
+
+.classgrid-levelranker {
+	display: grid;
+	justify-self: center;
+	grid-template-columns: auto;
+	grid-template-rows: repeat(10, max-content);
+	background-color: var(--background-color-standard);
+	border: var(--standard-border);
+	border-radius: var(--standard-border-radius);
+	margin-bottom: 20px;
+}
+
+.classgrid-levelrank {
+	display: grid;
+	justify-self: center;
+	grid-template-columns: minmax(275px, 1fr) 50px minmax(275px, 1fr);
+	grid-template-rows: max-content;
+}
+
+
+/*display controllers: shut off class full display if unticked*/
+.charsheet .pupil-display:is([value="0"]) ~ div.pupilclass, .charsheet .pupil-display:is([value="0"]) ~ div.pupilcondensed,
+.charsheet .socialite-display:is([value="0"]) ~ div.socialiteclass, .charsheet .socialite-display:is([value="0"]) ~ div.socialitecondensed,
+.charsheet .rascal-display:is([value="0"]) ~ div.rascalclass, .charsheet .rascal-display:is([value="0"]) ~ div.rascalcondensed,
+.charsheet .heir-display:is([value="0"]) ~ div.heirclass, .charsheet .heir-display:is([value="0"]) ~ div.heircondensed,
+.charsheet .renegade-display:is([value="0"]) ~ div.renegadeclass, .charsheet .renegade-display:is([value="0"]) ~ div.renegadecondensed,
+.charsheet .naturalist-display:is([value="0"]) ~ div.naturalistclass, .charsheet .naturalist-display:is([value="0"]) ~ div.naturalistcondensed,
+.charsheet .alchemist-display:is([value="0"]) ~ div.alchemistclass, .charsheet .alchemist-display:is([value="0"]) ~ div.alchemistcondensed,
+.charsheet .professor-display:is([value="0"]) ~ div.professorclass, .charsheet .professor-display:is([value="0"]) ~ div.professorcondensed,
+.charsheet .enforcer-display:is([value="0"]) ~ div.enforcerclass, .charsheet .enforcer-display:is([value="0"]) ~ div.enforcercondensed,
+.charsheet .artificer-display:is([value="0"]) ~ div.artificerclass, .charsheet .artificer-display:is([value="0"]) ~ div.artificercondensed,
+.charsheet .wandjock-display:is([value="0"]) ~ div.wandjockclass, .charsheet .wandjock-display:is([value="0"]) ~ div.wandjockcondensed,
+.charsheet .mastermind-display:is([value="0"]) ~ div.mastermindclass, .charsheet .mastermind-display:is([value="0"]) ~ div.mastermindcondensed {
+  display: none;
+}
+
+/*display controllers: shut off class condensed display if expanded*/
+.charsheet .pupil-condensed:is([value="0"]) ~ div.pupilcondensed,
+.charsheet .socialite-condensed:is([value="0"]) ~ div.socialitecondensed,
+.charsheet .rascal-condensed:is([value="0"]) ~ div.rascalcondensed,
+.charsheet .heir-condensed:is([value="0"]) ~ div.heircondensed,
+.charsheet .renegade-condensed:is([value="0"]) ~ div.renegadecondensed,
+.charsheet .naturalist-condensed:is([value="0"]) ~ div.naturalistcondensed,
+.charsheet .alchemist-condensed:is([value="0"]) ~ div.alchemistcondensed,
+.charsheet .professor-condensed:is([value="0"]) ~ div.professorcondensed,
+.charsheet .enforcer-condensed:is([value="0"]) ~ div.enforcercondensed,
+.charsheet .artificer-condensed:is([value="0"]) ~ div.artificercondensed,
+.charsheet .wandjock-condensed:is([value="0"]) ~ div.wandjockcondensed,
+.charsheet .mastermind-condensed:is([value="0"]) ~ div.mastermindcondensed {
+  display: none;
+}
+
+/*display controllers: shut off class expanded display if condensed*/
+.charsheet .pupil-condensed:not([value="0"]) ~ div.pupilclass,
+.charsheet .socialite-condensed:not([value="0"]) ~ div.socialiteclass,
+.charsheet .rascal-condensed:not([value="0"]) ~ div.rascalclass,
+.charsheet .heir-condensed:not([value="0"]) ~ div.heirclass,
+.charsheet .renegade-condensed:not([value="0"]) ~ div.renegadeclass,
+.charsheet .naturalist-condensed:not([value="0"]) ~ div.naturalistclass,
+.charsheet .alchemist-condensed:not([value="0"]) ~ div.alchemistclass,
+.charsheet .professor-condensed:not([value="0"]) ~ div.professorclass,
+.charsheet .enforcer-condensed:not([value="0"]) ~ div.enforcerclass,
+.charsheet .artificer-condensed:not([value="0"]) ~ div.artificerclass,
+.charsheet .wandjock-condensed:not([value="0"]) ~ div.wandjockclass,
+.charsheet .mastermind-condensed:not([value="0"]) ~ div.mastermindclass {
+  display: none;
+}
+
+
+
+/* Class ranks are faded when not reached */
+.charsheet .rank-checker[value="0"] ~ div.classgrid-levelranker > .classgrid-levelrank:not(:nth-child(-n+0)),
+.charsheet .rank-checker[value="1"] ~ div.classgrid-levelranker > .classgrid-levelrank:not(:nth-child(-n+1)),
+.charsheet .rank-checker[value="2"] ~ div.classgrid-levelranker > .classgrid-levelrank:not(:nth-child(-n+2)),
+.charsheet .rank-checker[value="3"] ~ div.classgrid-levelranker > .classgrid-levelrank:not(:nth-child(-n+3)),
+.charsheet .rank-checker[value="4"] ~ div.classgrid-levelranker > .classgrid-levelrank:not(:nth-child(-n+4)),
+.charsheet .rank-checker[value="5"] ~ div.classgrid-levelranker > .classgrid-levelrank:not(:nth-child(-n+5)),
+.charsheet .rank-checker[value="6"] ~ div.classgrid-levelranker > .classgrid-levelrank:not(:nth-child(-n+6)),
+.charsheet .rank-checker[value="7"] ~ div.classgrid-levelranker > .classgrid-levelrank:not(:nth-child(-n+7)),
+.charsheet .rank-checker[value="8"] ~ div.classgrid-levelranker > .classgrid-levelrank:not(:nth-child(-n+8)),
+.charsheet .rank-checker[value="9"] ~ div.classgrid-levelranker > .classgrid-levelrank:not(:nth-child(-n+9)),
+.charsheet .rank-checker[value="10"] ~ div.classgrid-levelranker > .classgrid-levelrank:not(:nth-child(-n+10)) {
+	opacity: var(--standard-fade-opacity);
+}
+.charsheet .rank-checker[value="0"] ~ div.classgrid-levelranker > .classgrid-levelrank:not(:nth-child(-n+0)) .classgrid-levelrank-rankoption,
+.charsheet .rank-checker[value="1"] ~ div.classgrid-levelranker > .classgrid-levelrank:not(:nth-child(-n+1)) .classgrid-levelrank-rankoption,
+.charsheet .rank-checker[value="2"] ~ div.classgrid-levelranker > .classgrid-levelrank:not(:nth-child(-n+2)) .classgrid-levelrank-rankoption,
+.charsheet .rank-checker[value="3"] ~ div.classgrid-levelranker > .classgrid-levelrank:not(:nth-child(-n+3)) .classgrid-levelrank-rankoption,
+.charsheet .rank-checker[value="4"] ~ div.classgrid-levelranker > .classgrid-levelrank:not(:nth-child(-n+4)) .classgrid-levelrank-rankoption,
+.charsheet .rank-checker[value="5"] ~ div.classgrid-levelranker > .classgrid-levelrank:not(:nth-child(-n+5)) .classgrid-levelrank-rankoption,
+.charsheet .rank-checker[value="6"] ~ div.classgrid-levelranker > .classgrid-levelrank:not(:nth-child(-n+6)) .classgrid-levelrank-rankoption,
+.charsheet .rank-checker[value="7"] ~ div.classgrid-levelranker > .classgrid-levelrank:not(:nth-child(-n+7)) .classgrid-levelrank-rankoption,
+.charsheet .rank-checker[value="8"] ~ div.classgrid-levelranker > .classgrid-levelrank:not(:nth-child(-n+8)) .classgrid-levelrank-rankoption,
+.charsheet .rank-checker[value="9"] ~ div.classgrid-levelranker > .classgrid-levelrank:not(:nth-child(-n+9)) .classgrid-levelrank-rankoption,
+.charsheet .rank-checker[value="10"] ~ div.classgrid-levelranker > .classgrid-levelrank:not(:nth-child(-n+10)) .classgrid-levelrank-rankoption {
+	opacity: 1;
+	background-color: #00000000;
+	border: none;
+}
+.charsheet .rank-checker[value="0"] ~ div.classgrid-levelranker > .classgrid-levelrank:not(:nth-child(-n+0)):hover,
+.charsheet .rank-checker[value="1"] ~ div.classgrid-levelranker > .classgrid-levelrank:not(:nth-child(-n+1)):hover,
+.charsheet .rank-checker[value="2"] ~ div.classgrid-levelranker > .classgrid-levelrank:not(:nth-child(-n+2)):hover,
+.charsheet .rank-checker[value="3"] ~ div.classgrid-levelranker > .classgrid-levelrank:not(:nth-child(-n+3)):hover,
+.charsheet .rank-checker[value="4"] ~ div.classgrid-levelranker > .classgrid-levelrank:not(:nth-child(-n+4)):hover,
+.charsheet .rank-checker[value="5"] ~ div.classgrid-levelranker > .classgrid-levelrank:not(:nth-child(-n+5)):hover,
+.charsheet .rank-checker[value="6"] ~ div.classgrid-levelranker > .classgrid-levelrank:not(:nth-child(-n+6)):hover,
+.charsheet .rank-checker[value="7"] ~ div.classgrid-levelranker > .classgrid-levelrank:not(:nth-child(-n+7)):hover,
+.charsheet .rank-checker[value="8"] ~ div.classgrid-levelranker > .classgrid-levelrank:not(:nth-child(-n+8)):hover,
+.charsheet .rank-checker[value="9"] ~ div.classgrid-levelranker > .classgrid-levelrank:not(:nth-child(-n+9)):hover,
+.charsheet .rank-checker[value="10"] ~ div.classgrid-levelranker > .classgrid-levelrank:not(:nth-child(-n+10)):hover {
+	opacity: 1;
+}
+
+.classgrid-levelrank-box {
+			border: 1px solid rgba(40, 40, 40, .25);
+			display: grid;
+			place-items: center;
+}
+.classgrid-levelrank-box h4 {
+			font-size: 26px;
+}
+
+.classgrid-levelrank-rankoption {
+			border: 1px solid rgba(40, 40, 40, .25);
+			width: 275px;
+			position: relative;
+			display: inline-block;
+			padding: 5px;
+}
+.classgrid-levelrank-rankoption span {
+			font-size: 8pt;
+}
+.classgrid-levelrank-rankoption-left {
+			text-align: end;
+}
+.classgrid-levelrank-rankoption-right {
+			
+}
+.classgrid-levelrank-rankoption input[type="radio"] {
+	position: absolute;
+	z-index: 2;
+	appearance: none;
+	webkit-appearance: none;
+	moz-appearance: none;
+	height: 100%;
+	width: 100%;
+	background: none;
+	background-color: #00000000;
+	border: none;
+	border-radius: 0;
+}
+.classgrid-levelrank-rankoption input[type="radio"]:focus {
+	outline: none;
+}
+
+.sheetgrid .magicgrid-spellslist {
+	grid-column: 1 / span 5;
+	width: 92%;
+	/* background-color: var(--background-color-dark); */
+	border: var(--standard-border-thick);
+	margin-top: 15px;
+	padding: 0px;
+	padding-top: 20px;
+}
+.sheetgrid .spell-expanded-top {
+	grid-template-columns: 40% 20% 40%;
+	margin-bottom: 5px;
+}
+
+
+/* .sheetgrid .spell-condensed { */
+		/* grid-template-columns: 23% 35% 22% 4% 8% 8%; */
+/* } */
+
+
+
+
+
+
+
+
+
+
+
+/*MAGIC sheet starts here!!*/
+
+.magicgrid {
+	
+	display: grid;
+	position: relative;
+	width: 820px;
+	font-family: 'Yatra One';
+	background-image: url("https://raw.githubusercontent.com/lilyseabrooke/Starfall-sheet/main/Parchment%20Background%20(Light).jpg");
+	background-repeat: repeat;
+	padding-bottom: 30px;
+	border: var(--standard-border-thick);
+	border-radius: var(--standard-border-radius);
+	grid-template-rows: 100px auto auto;
+	grid-template-areas: 	"top"
+							"magiccategories"
+							"magicsubjects"
+							"spells";
+							
+}
+
+/*magicgrid-categories holds the four categories, each of which is a big button*/
+/*that opens magicgrid-subjects below*/
+/*each magicgrid-category has the category name and six span elements for the levels*/
+/*of the subjects, giving an at-a-glance view of the category*/
+
+.magicgrid-categories {
+	
+	margin-top: 30px;
+	grid-area: magiccategories;
+	justify-self: center;
+	justify-content: center;
+	display: grid;
+	width: 95%;
+	grid-template-columns: repeat(4, 180px);
+	grid-template-rows: auto 180px;
+	grid-gap: 10px;
+	padding: 2%;
+	margin-bottom: 15px;
+}
+.magicgrid-categories button[type="action"] {
+	appearance: none;
+	background: none;
+	border-color: transparent;
+	width: 100%;
+	height: 100%;
+	z-index: 2;
+}
+.magicgrid-categories button[type="action"]:hover {
+	background: rgba(255, 255, 255, 0.08);
+	border-color: transparent;
+}
+
+.borderless-button button[type="action"] {
+	border: none;
+	outline: none;
+}
+
+.magicgrid-category {
+	
+	justify-self: center;
+	align-self: center;
+	display: grid;
+	border: var(--standard-border-thick);
+	border-radius: var(--standard-border-radius);
+	grid-template-rows: 120px 60px;	
+	background-color: var(--background-color-dark);
+}
+.magicgrid-category h2 {
+	align-self: end;
+	margin-bottom: 10px;
+	font-size: 22pt;
+	text-shadow:	1px		1px		0	#222222,
+					-1px	-1px 	0 	#222222,
+					1px		-1px	0 	#222222,
+					-1px	1px		0	#222222,
+					4px		4px		2px	#222222;
+	/* GOLD: 	color: #b78727; */
+	/* PURPLE: 	color: #7851a9; */
+	/* RED: 	color: #8b1212; */
+	/* GREEN:	color: #4d7a2a; */
+}
+
+.magicgrid-category-ranks {
+	
+	justify-self: center;
+	align-self: start;
+	display: grid;
+	grid-template-columns: repeat(6, 1fr);
+	width: 90%;
+}
+.magicgrid-category-ranks span {
+	text-align: center;
+	font-weight: bold;
+	font-family: 'Metamorphous';
+	font-size: 11pt;
+	margin-top: 10px;
+	color: #EEEEEE;
+	text-shadow: 	/* -1px 1px 0	#222222,
+					1px -1px 0	#222222, */
+					1px 1px 0	#222222,
+					3px 3px 1px #222222;
+
+}
+
+
+
+.magicgrid-subjectgrid {
+	
+	justify-self: center;
+	align-self: center;
+	display: grid;
+	justify-content: center;
+	border: var(--standard-border-thick);
+	border-radius: var(--standard-border-radius);
+	grid-template-columns: auto auto auto;
+	grid-template-rows: auto auto;
+	grid-gap: 10px;
+	background-color: var(--background-color-standard);
+	width: 90%;
+	padding: 10px;
+	padding-top: 20px;
+	padding-bottom: 20px;
+
+}
+
+.magicgrid-subject {
+	
+	justify-self: center;
+	align-self: center;
+	display: grid;
+	border: var(--standard-border);
+	border-radius: var(--standard-border-radius);
+	grid-template-columns: 50px 100px 50px;
+	grid-template-rows: 40px 50px 55px;
+	background-color: var(--background-color-dark);
+	grid-template-areas:	".		title	.		"
+							"minus	value	plus	"
+							".		roller	.		";
+}
+.magicgrid-subject > h3 {
+	width: 200px;
+	text-align: center;
+	font-weight: bold;
+	font-size: 16pt;
+	align-self: end;
+	justify-self: center;
+	color: #EEEEEE;
+	text-shadow: 3px 3px 1px #222222;
+	grid-area: title;
+}
+.magicgrid-subject > span {
+	grid-area: value;
+}
+.magicgrid-subject span {
+	text-align: center;
+	font-weight: bold;
+	font-family: 'Metamorphous';
+	font-size: 20pt;
+	align-self: center;
+	justify-self: center;
+	color: #EEEEEE;
+	text-shadow:	1px		1px		0	#222222,
+			-1px	-1px 	0 	#222222,
+			1px		-1px	0 	#222222,
+			-1px	1px		0	#222222,
+			3px		3px		1px	#222222;
+}
+
+.magicgrid-subject > div.rollericon {
+	grid-column: 1 / span 3;
+	display: flex;
+	justify-content: center;
+	grid-row: 3;
+}
+.magicgrid-subject > div.rollericon button[type="action"] {
+	width: 90%;
+	justify-self: center;
+	border-radius: 6px;
+	height: 60%;
+	font-size: 17px;
+}
+.magicgrid-subject > div.rollericon button[type="action"]:before {
+	font-size: 20px;
+}
+
+.magicgrid-subject .subject-bonus {
+	grid-area: value;
+}
+.magicgrid-subject .subskill-increaser {
+	grid-area: plus;
+}
+.magicgrid-subject .subskill-decreaser {
+	grid-area: minus;
+}
+.magicgrid-subject > button[type=roll] {
+	width: 150px;
+	justify-self: center;
+	height: 40px;
+	align-self: start;
+	grid-area: roller;
+}
+.magicgrid-subject button[type=roll]:hover {
+	background-position: 0;
+	background-image: linear-gradient(to bottom, rgb(120, 120, 120), rgb(80, 80, 80));
+	border-color: rgb(40, 40, 40);
+}
+.ui-dialog .charsheet button[type=roll]:before {
+	font-family: "dicefontd10";
+	content: "k ";
+	font-size: 16pt;
+	color: #EEEEEE;
+}
+.magicgrid-subject button[type="action"] {
+	height: 30px;
+	width: 30px;
+	padding: 0px;
+	align-self: center;
+	justify-self: center;
+}
+
+.subject-bonus {
+	display: grid;
+	grid-template-columns: 25px 25px 25px;
+	justify-self: center;
+}
+
+/* Bonus indicator colors for sub-skill and subject bonus displays */
+.bonus-light { color: #b6d1a1; }
+.bonus-dark  { color: #4d7a2a; }
+
+
+.charsheet .subject-show-checker[value]:not([value="creation"]) ~ div.subject-creation,
+.charsheet .subject-show-checker[value]:not([value="natural"]) ~ div.subject-natural,
+.charsheet .subject-show-checker[value]:not([value="spectral"]) ~ div.subject-spectral,
+.charsheet .subject-show-checker[value]:not([value="wisdom"]) ~ div.subject-wisdom {
+	display: none;
+}
+
+.charsheet .subject-show-checker[value="creation"] ~ button.creation-button > div.magicgrid-category,
+.charsheet .subject-show-checker[value="natural"] ~ button.natural-button > div.magicgrid-category,
+.charsheet .subject-show-checker[value="spectral"] ~ button.spectral-button > div.magicgrid-category,
+.charsheet .subject-show-checker[value="wisdom"] ~ button.wisdom-button > div.magicgrid-category {
+	background-color: var(--background-color-darker);
+}
+
+/* Magic category header colors */
+.creation-button h2 { color: #4d7a2a; }
+.natural-button  h2 { color: #8b1212; }
+.spectral-button h2 { color: #7851a9; }
+.wisdom-button   h2 { color: #b78727; }
+
+/* Font-size overrides for long subject names */
+.magicgrid-subject h3[data-subject="arcane-history"]  { font-size: 15pt; }
+.magicgrid-subject h3[data-subject="crystallomancy"]  { font-size: 14pt; }
+.magicgrid-subject h3[data-subject="counterhexology"] { font-size: 13pt; }
+
+.subject-bonus-show-checker[value="0"] ~ div.subject-bonus,
+.subject-bonus-show-checker[value]:not([value="0"]) ~ span.subject-nobonus {
+	display: none;
+}
+
+
+
+.charsheet .skill-show-checker[value]:not([value="focus"]) ~ div.focus-skills,
+.charsheet .skill-show-checker[value]:not([value="creativity"]) ~ div.creativity-skills,
+.charsheet .skill-show-checker[value]:not([value="logic"]) ~ div.logic-skills,
+.charsheet .skill-show-checker[value]:not([value="insight"]) ~ div.insight-skills,
+.charsheet .skill-show-checker[value]:not([value="body"]) ~ div.body-skills,
+.charsheet .skill-show-checker[value]:not([value="charm"]) ~ div.charm-skills {
+	display: none;
+}
+
+.charsheet .skill-show-checker[value="focus"] ~ button.focus-button > div.magicgrid-category,
+.charsheet .skill-show-checker[value="creativity"] ~ button.creativity-button > div.magicgrid-category,
+.charsheet .skill-show-checker[value="logic"] ~ button.logic-button > div.magicgrid-category,
+.charsheet .skill-show-checker[value="insight"] ~ button.insight-button > div.magicgrid-category,
+.charsheet .skill-show-checker[value="body"] ~ button.body-button > div.magicgrid-category,
+.charsheet .skill-show-checker[value="charm"] ~ button.charm-button > div.magicgrid-category {
+	background-color: var(--background-color-darker);
+}
+
+
+.skill-categories {
+	grid-area: skillCategories;
+	grid-template-columns: min-content min-content min-content;
+	grid-template-rows: min-content min-content;
+}
+
+.skill-categories > button div.magicgrid-category {
+	grid-template-rows: 80px 60px;
+}
+
+.skill-categories > button h2 {
+	color: #EEEEEE;
+}
+
+/* Spells listing starts here */
+
+
+.magicgrid-spellslist {
+	
+	grid-area: spells;
+	display: grid;
+	width: 75%;
+	margin: 20px;
+	justify-self: center;
+	border: var(--standard-border-thick);
+	border-radius: var(--standard-border-radius);
+	background-color: var(--background-color-standard);
+	padding: 20px;
+	/* grid-gap: 20px; */
+	padding-bottom: 30px;
+	justify-content: center;
+	grid-template-rows: 40px minmax(200px, min-content) auto;
+	
+}
+
+.magicgrid > .magicgrid-spellslist {
+	width: 90%;
+	padding: 10px;
+}
+
+.magicgrid-spellslist div.repitem {
+	border: 2px solid #222222;
+	border-radius: 4px;
+	/* width: 570px; */
+	padding: 10px;
+	margin-bottom: 5px;
+}
+
+.moveslister div.repitem {
+	border-radius: 6px;
+	width: 570px;
+	padding: 15px;
+}
+
+.ritualtagbreaker {
+	display: flex;
+	grid-column: span 3;
+	grid-row: span 2;
+	justify-content: space-between;
+}
+
+.spelldesc-label-block {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+.spelldesc-label-block input[type="number"] {
+	height: 30px;
+}
+
+.ritualtagbreaker input[type="checkbox"] {
+	justify-self: start;
+	text-shadow: none;
+	background-color: var(--background-color-standard);
+	border: var(--standard-border);
+	border-radius: var(--standard-border-radius);
+}
+
+.spell-expanded input,
+.spell-expanded textarea {
+	text-shadow: 	2px 2px 1px #222222;
+					/* -1px 1px 0px #222222, */
+					/* 1px -1px 0px #222222, */
+					/* -1px -1px 0px #222222; */
+}
+
+.spell-expanded-header {
+	display: grid;
+	grid-template-columns: 80% 20%;
+	margin-bottom: 10px;
+}
+
+.spell-expanded-top {
+	display: grid;
+	grid-template-columns: 35% 40% 25%;
+}
+.spell-expanded-top select {
+	width: 90%;
+}
+.spell-expanded-top input[type="number"],
+.spell-expanded-top input[type="text"] {
+	height: 28px;
+}
+.spell-expanded-header button[type="action"],
+.spell-condensed button[type="action"] {
+	height: 22px;
+	align-self: center;
+	justify-self: center;
+}
+.spell-expanded-header button[type="action"]:hover,
+.spell-condensed button[type="action"]:hover {
+	background-image: linear-gradient(to bottom, rgb(120, 120, 120), rgb(80, 80, 80));
+	border-color: rgb(40, 40, 40);
+}
+.spell-expanded-top span {
+	height: 25px;
+}
+.spell-expanded-bottom {
+	display: grid;
+	grid-template-rows: auto 70px auto auto;
+	justify-items: center;
+}
+.spell-expanded-bottom textarea {
+	/* width: 550px; */
+}
+div.spell-expanded > div.spell-expanded-bottom button[type="roll"] {
+	margin-top: 5px;
+}
+.spell-expanded input::-webkit-inner-spin-button {
+	appearance: none;
+}
+
+.spell-condensed {
+	display: grid;
+	grid-template-columns: 80% 20%;
+}
+.spell-condensed span {
+	/* width: 90%; */
+	font-size: 15px;
+	background-color: var(--background-color-standard);
+	border: 1px solid #22222288;
+	border-radius: 2px;
+	text-transform: uppercase;
+	cursor: default;
+	word-wrap: break-word;
+	display: flex;
+	align-items: center;
+	padding: 2px 5px;
+	margin: 0px 2px;
+}
+
+.spell-condensed-fields {
+	display: flex;
+	justify-content: space-between;
+}
+
+.condensed-field-flex-sizer {
+	flex: 1 1 0;
+	max-width: 40%;
+}
+
+.condensed-field-name-sizer {
+	flex: 1 1 100%;
+	min-width: 0;
+	max-width: 40%;
+}
+
+.condensed-field-name-sizer span {
+	display: -webkit-box;
+	-webkit-line-clamp: 3;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	min-height: 25px;
+	line-height: 1.6;
+}
+
+
+/* expander/condenser for spells */
+
+.spell-condensed-checker[value="condensed"] ~ div.spell-expanded,
+.spell-condensed-checker[value="expanded"] ~ div.spell-condensed {
+	display: none;
+}
+
+/* EXPANDED */
+/* 	name 			level 			field 			*/
+/* 	base stat		class rank		other bonuses 	*/
+/* 	description		description		description 	*/
+/* 	description		description		description 	*/
+/* 	roll			roll			roll 			*/
+
+/* CONDENSED */
+/* name		field		roll */
+
+.spells-container {
+	
+	display: grid;
+	justify-self: center;
+	/* border: 2px solid #22222242; */
+	/* border-radius: 4px; */
+	grid-gap: 20px;
+	padding: 20px;
+	grid-template-columns: minmax(600px, 6fr) minmax(90px, 1fr);
+	justify-items: center;
+	justify-content: center;
+	
+}
+
+.spell-importer {
+	display: flex;
+    justify-self: center;
+    width: 90%;
+}
+
+.spell-importer textarea {
+	resize: none;
+    height: 50%;
+    background-color: var(--background-color-standard);
+    border: 1px solid #222222;
+    color: #EEEEEE;
+    box-sizing: border-box;
+    margin-left: 20px;
+    overflow: hidden;
+}
+
+
+/* Skills tab starts here! */
+
+.skillgrid {
+	
+	display: grid;
+	position: relative;
+	font-family: 'Yatra One';
+	background-image: url("https://raw.githubusercontent.com/lilyseabrooke/Starfall-sheet/main/Parchment%20Background%20(Light).jpg");
+	background-repeat: repeat;
+	padding-bottom: 30px;
+	border: var(--standard-border-thick);
+	border-radius: var(--standard-border-radius);
+	grid-template-columns: minmax(700px, 1fr);
+	grid-template-rows: 100px 1000px;
+	grid-template-areas: 	"top"
+							"skillCategories";
+							
+}
+
+/* skillgrid-list holds all the skills under a given stat, */
+/* each of which is represented with a statblock from the */
+/* magicgrid-subject object */
+
+/* skillgrid-category holds them all in a labeled container */
+
+.skillgrid-category {
+	
+	justify-self: center;
+	align-self: center;
+	display: grid;
+	justify-content: center;
+	border: var(--standard-border);
+	border-radius: var(--standard-border-radius);
+	background-color: var(--background-color-standard);
+	width: 90%;
+	padding: 20px;
+	margin-top: 40px;
+}
+.skillgrid-category h2 {
+	text-align: center;
+	justify-self: center;
+	align-self: center;
+	font-size: 28pt;
+	font-weight: bold;
+	color: #EEEEEE;
+	text-shadow: 	1px 1px 0 	#222222,
+					-1px 1px 0 	#222222,
+					1px -1px 0 	#222222,
+					-1px -1px 0 #222222,
+					4px 4px 1px #222222;
+	margin-bottom: 20px;
+
+}
+
+.skillgrid-list {
+	
+	justify-self: center;
+	align-self: center;
+	display: grid;
+	justify-content: center;
+	border: var(--standard-border);
+	border-radius: var(--standard-border-radius);
+	grid-template-columns: 220px 220px 220px;
+	background-color: var(--background-color-dark);
+	padding: 10px;
+	margin-bottom: 20px;
+}
+
+.skillgrid-field {
+	
+	justify-self: center;
+	align-self: start;
+	align-items: center;
+	justify-items: center;
+	display: grid;
+	justify-content: center;
+	border: var(--standard-border);
+	border-radius: var(--standard-border-radius);
+	grid-template-rows: 50px 90px 90px 90px 90px;
+	background-color: var(--background-color-dark);
+	padding: 10px;
+	margin-bottom: 20px;
+}
+
+.skillgrid-field h2 {
+	text-align: center;
+	justify-self: center;
+	align-self: center;
+	font-size: 26pt;
+	font-weight: bold;
+	color: #EEEEEE;
+	text-shadow: 	1px 1px 0 	#222222,
+					-1px 1px 0 	#222222,
+					1px -1px 0 	#222222,
+					-1px -1px 0 #222222,
+					4px 4px 1px #222222;
+
+}
+
+
+.skillgrid-subject {
+	
+	justify-self: center;
+	align-self: center;
+	display: grid;
+	border: 1px solid #222222;
+	border-radius: 4px;
+	margin-top: 10px;
+	grid-template-columns: 50px 100px 50px;
+	grid-template-rows: 40px 40px;
+	background-color: transparent;
+	grid-template-areas:	"minus	value	plus	"
+							".		roller	.		"
+							".		title	.		";
+}
+.skillgrid-subject h3 {
+	width: 200px;
+	text-align: center;
+	font-weight: bold;
+	font-size: 15pt;
+	align-self: end;
+	justify-self: center;
+	color: #EEEEEE;
+	text-shadow: 3px 3px 1px #222222;
+}
+.skillgrid-subject span {
+	text-align: center;
+	font-weight: bold;
+	font-family: 'Metamorphous';
+	font-size: 18pt;
+	align-self: center;
+	justify-self: center;
+	color: #EEEEEE;
+	text-shadow: 3px 3px 1px #222222;
+}
+.ui-dialog .skillgrid-subject button[type="roll"] {
+	width: 180px;
+	font-size: 1em;
+	justify-self: center;
+	background-image: linear-gradient(to bottom, rgb(90, 90, 90), rgb(50, 50, 50));
+	border-color: rgb(40, 40, 40);
+	color: #EEEEEE;
+	height: 25px;
+}
+
+.darkskill {
+	background-color: var(--background-color-dark);
+}
+
+.skillgrid-subject button[type=roll]:hover {
+	background-position: 0;
+	background-image: linear-gradient(to bottom, rgb(120, 120, 120), rgb(80, 80, 80));
+	border-color: rgb(40, 40, 40);
+}
+.skillgrid-subject button[type="action"] {
+	height: 20px;
+	width: 30px;
+	padding: 0px;
+	align-self: center;
+	justify-self: center;
+}
+
+
+
+.inventorygrid {
+	
+	display: grid;
+	position: relative;
+	width: 820px;
+	font-family: 'Yatra One';
+	background-image: url("https://raw.githubusercontent.com/lilyseabrooke/Starfall-sheet/main/Parchment%20Background%20(Light).jpg");
+	background-repeat: repeat;
+	padding-top: 0px;
+	border: var(--standard-border-thick);
+	border-radius: var(--standard-border-radius);
+	grid-template-columns: 50% 50%;
+	grid-template-rows: 100px 140px auto auto auto;
+	grid-template-areas:
+						"top		top			"
+						"mats		mats		"
+						"bonus 		artifacts	"
+						"wands 		potions		"
+						"glyphs		plants		"
+						"items		items		"
+}
+
+.inventorygrid-wands {
+	
+	grid-area: wands;
+	margin-top: 30px;
+	padding: 20px;
+	display: grid;
+	grid-template-columns: 500px 200px;
+	justify-self: center;
+	
+}
+
+.inventorygrid-wand {
+	
+	display: grid;
+	grid-area: wands;
+	border: var(--standard-border);
+	border-radius: var(--standard-border-radius);
+	background-color: var(--background-color-standard);
+	padding: 5px;
+	grid-gap: 20px;
+	padding-bottom: 30px;
+	margin-top: 20px;
+	
+}
+
+.inventorygrid-mats {
+	
+	display: grid;
+	grid-column: 1 / span 2;
+	grid-template-rows: 50px 60px;
+	justify-content: center;
+	align-content: center;
+	
+}
+
+.inventorygrid-mats input[type="number"] {
+	height: 50px;
+	padding: 0;
+	margin-bottom: 10px;
+	font-size: 16pt;
+	color: #333333;
+	font-weight: bold;
+	text-align: center;
+	background-color: var(--background-color-standard);
+	border: var(--standard-border);
+	border-radius: var(--standard-border-radius);
+}
+.inventorygrid-mats input::-webkit-inner-spin-button {
+	-webkit-appearance: none;
+}
+.ui-dialog .inventorygrid-mats input[type="number"] {
+	width: 150px;
+	font-size: 40px;
+	justify-self: center;
+	align-self: start;
+}
+.inventorygrid-mats h3 {
+	justify-self: center;
+	text-align: center;
+	align-self: end;
+	margin-bottom: 5px;
+	font-size: 25px;
+	
+}
+
+.inventorygrid-wand-line {
+	
+	display: grid;
+	grid-template-rows: 50px 90px;
+	width: 80%;
+	justify-content: center;
+	justify-self: center;
+	align-self: center;
+	grid-gap: 2px;
+	background-color: var(--background-color-standard);
+	border: var(--standard-border);
+	border-radius: var(--standard-border-radius);
+	border-radius: 4px;
+	padding: 5px;
+	
+}
+.inventorygrid-wand-line span {
+	font-weight: bold;
+}
+.inventorygrid-wand-line1 {
+	grid-template-columns: 120px 240px 80px;
+	grid-gap: 2px;
+	width: 100%;
+	align-self: end;
+	margin-bottom: 5px;
+}
+.inventorygrid-wand-line2 {
+	display: grid;
+	grid-template-rows: 25px 25px 25px;
+	grid-gap: 4px;
+	width: 100%;
+}
+.inventorygrid-wand-line-textfield {
+	display: grid;
+	grid-template-rows: 20px 25px;
+}
+.inventorygrid-wand-line-textfield input {
+	width: 85%;
+	justify-self: start;
+}
+.inventorygrid-wand-line-selector {
+	display: grid;
+	grid-template-columns: 120px 240px 80px;
+}
+.inventorygrid-wand-line-selector select {
+	width: 100%;
+	justify-self: start;
+	background-color: #EEEEEE;
+	align-self: center;
+	margin: 0;
+	
+}
+.ui-dialog .charsheet .inventorygrid-wand-line-selector input[type="number"] {
+	width: 80%;
+	justify-self: end;
+	align-self: center;
+	font-family: 'Metamorphous';
+}
+.inventorygrid-wand-line-selector span {
+	justify-self: start;
+	align-self: center;
+}
+
+
+
+/* Section heading shared between CLASS and MAGIC tabs */
+.section-heading {
+	justify-self: center;
+	text-align: center;
+	font-family: 'Uncial Antiqua';
+	font-size: 30pt;
+	margin-top: 10px;
+	margin-bottom: 20px;
+}
+
+/* SLEIGHT OF HAND button text is long — reduce font size */
+.statblock-skill > div.rollericon button.roll-sleight-of-hand { font-size: 10.5px; }
+
+/* Inventory top header spans full width */
+.inventorygrid #sheetgrid-top { grid-column: 1 / span 2; }
+
+/* Inventory section panel grid-area placements */
+.inventorygrid-potions.inv-bonus     { grid-area: bonus; }
+.inventorygrid-potions.inv-wands     { grid-area: wands; }
+.inventorygrid-potions.inv-potions   { grid-area: potions; }
+.inventorygrid-potions.inv-artifacts { grid-area: artifacts; }
+.inventorygrid-potions.inv-glyphs    { grid-area: glyphs; }
+.inventorygrid-potions.inv-plants    { grid-area: plants; }
+.inventorygrid-potions.inv-items     { grid-area: items; grid-column: span 2; }
+
+.inventorygrid-potions {
+
+	display: grid;
+	margin: 20px;
+	width: 90%;
+	justify-self: center;
+	align-content: start;
+	border: var(--standard-border);
+	border-radius: var(--standard-border-radius);
+	background-color: var(--background-color-standard);
+	padding: 10px;
+	/* grid-gap: 20px; */
+	padding-bottom: 30px;
+	grid-template-rows: 20px auto;
+	
+}
+
+.inventorygrid-potions > h2 {
+	justify-self: center;
+    text-align: center;
+    font-family: 'Uncial Antiqua';
+    font-size: 30pt;
+    margin-bottom: 20px;
+    position: relative;
+    top: -45px;
+}
+
+.bonuses-tracker {
+	grid-template-rows: minmax(200px, min-content);
+}
+
+.charsheet .bonus-type-checker[value]:not([value="stat"]) ~ select.bonuses-stat,
+.charsheet .bonus-type-checker[value]:not([value="subject"]) ~ select.bonuses-subject,
+.charsheet .bonus-type-checker[value]:not([value="skill"]) ~ select.bonuses-skill {
+	display: none;
+}
+
+.stat-bonus-header {
+	display: grid;
+	grid-template-columns: 30% 58% 12%;
+	grid-template-rows: 20px 40px;
+	justify-content: center;
+	justify-items: center;
+}
+.stat-bonus-header select {
+	width: 95%;
+	margin-bottom: 2px;
+}
+.stat-bonus-header input[type="number"] {
+	height: 28px;
+}
+
+.stat-bonus-describers {
+	display: grid;
+	grid-template-columns: 80% 20%;
+	grid-template-rows: 20px 30px;
+	justify-content: center;
+	justify-items: center;
+}
+
+.bonus-tracker div.repcontainer div.repitem {
+	display: grid;
+	padding: 10px;
+	grid-template-rows: 60px 60px;
+	grid-gap: 0px;
+}
+.repcontainer > div.repitem > div.stat-bonus-describers textarea {
+	width: 100%;
+}
+.potions-container {
+	
+	display: grid;
+	justify-self: center;
+	padding-bottom: 30px;
+	grid-template-columns: 90%;
+	justify-items: center;
+	justify-content: center;
+	align-self: start;
+	width: 100%;
+	
+}
+.magicgrid-spellslist > div.potions-container {
+	width: 500px;
+}
+
+.potions-container > div.repcontainer {
+	/* width: 95%; */
+	display: flex;
+	justify-content: center;
+	flex-direction: column;
+}
+
+
+.inventorygrid div.repitem {
+	width: 100%;
+	justify-self: center;
+	align-self: center;
+	background-color: var(--background-color-standard);
+	border: var(--standard-border);
+	border-radius: var(--standard-border-radius);
+	border-radius: 8px;
+	padding: 10px;
+	margin-top: 20px;
+	display: grid;
+	/* grid-template-rows: auto auto 30px; */
+	grid-gap: 10px;
+}
+
+.inventorygrid input[type="checkbox"] {
+	background-color: var(--background-color-standard);
+	border: 1px solid #222222;
+	border-radius: 4px;
+}
+
+.potion-header {
+	display: grid;
+	grid-template-columns: 75% 25%;
+	grid-template-rows: 20px 30px;
+}
+.potion-header span {
+	font-family: 'Metamorphous';
+	font-weight: bold;
+}
+
+.potion-description {
+	display: grid;
+	grid-template-rows: 20px 80px;
+}
+
+
+
+.potion-header input[type="radio"] {
+	appearance: none;
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	/* align-self: start; */
+	height: 30px;
+	width: 50px;
+	justify-self: center;
+	background-color: var(--background-color-standard);
+	border: 1px solid #222222;
+	position: relative;
+}
+.potion-header input[type="radio"]:checked {
+	background-color: var(--background-color-standard);
+}
+.potion-header input[type="radio"]:focus {
+	outline: none;
+}
+.potion-header input[type="radio"]:checked:before {
+  /* Set the content to the checkmark symbol */
+  content: 'X';
+  /* Position the checkmark in the center of the checkbox */
+  position: absolute;
+  top: 55%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 30pt;
+  font-family: 'Uncial Antiqua';
+  /* Set the checkmark color to white */
+  color: #333333;
+}
+
+
+.glyph-header {
+	grid-template-columns: 50% 20% 30%;
+}
+.glyph-description {
+	grid-template-columns: auto auto;
+    grid-template-rows: 50px;
+    align-items: center;
+	grid-gap: 10px;
+}
+
+.repcontainer > div.repitem > div.glyph-description textarea {
+	width: 220px;
+}
+
+
+.glyph-stack {
+	display: grid;
+	grid-template-columns: 45% 25% 26%;
+	grid-template-rows: auto auto auto;
+	margin: 5px;
+	margin-bottom: 45px;
+	grid-gap: 5px;
+}
+.glyph-stack span {
+	background-color: var(--background-color-standard);
+	border: 1px solid #222222;
+	border-radius: 4px;
+	font-weight: bold;
+	font-size: 1.2em;
+	padding: 5px;
+	width: 90%;
+	text-transform: uppercase;
+}
+.glyph-stack h3 {
+	align-self: center;
+}
+.glyph-stack button[type="action"],
+.glyph-adder button[type="action"] {
+	height: 30px;
+	align-self: end;
+	justify-self: end;
+	width: 97%;
+	padding: 2px 3px;
+	border-radius: 4px;
+	font-size: 1.3em;
+}
+.glyph-stack button[type="roll"] {
+	width: 100%;
+	grid-column: 2 / span 2;
+	padding: 0;
+}
+.glyph-adder button[type="action"]:hover,
+.glyph-stack button[type="action"]:hover,
+.glyph-stack button[type="roll"]:hover {
+	background-image: linear-gradient(to bottom, rgb(120, 120, 120), rgb(80, 80, 80));
+    border-color: rgb(40, 40, 40);
+    background-position: 0;
+}
+
+.glyphstackchecker[value="GLYPHS"] ~ .glyph-stack {
+	display: none;
+}
+
+
+.potions-container .repcontainer input[type="text"],
+.potions-container .repcontainer input[type="number"] {
+	width: 90%;
+	background-color: var(--background-color-standard);
+	border: 1px solid #222222;
+	color: #EEEEEE;
+	font-weight: bold;
+	height: 30px;
+}
+
+.potions-container .repcontainer input[type="number"]::-webkit-inner-spin-button {
+	-webkit-appearance: none;
+}
+
+.potions-container > div.repcontainer textarea {
+	resize: none;
+	height: 100%;
+	/* width: 320px; */
+	background-color: var(--background-color-standard);
+	border: 1px solid #222222;
+	color: #EEEEEE;
+}
+.potions-container > div.repcontainer textarea {
+	box-sizing: border-box;
+}
+.potions-container > div.repcontainer button[type="roll"] {
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.inventorygrid-potions button[type="roll"] {
+	width: 100%;
+}
+
+
+.potion-header button[type="action"] {
+	width: 120px;
+	height: 30px;
+	border-radius: 6px;
+	margin-left: 10px;
+	margin-right: 10px;
+	text-transform: uppercase;
+}
+
+
+.potions-container > div.repcontrol {
+	/* padding-top: 30px; */
+	grid-row: 1;
+	display: flex;
+	align-self: center;
+}
+.potions-container > div.repcontrol button {
+	width: 50px;
+	margin-left: 10px;
+	margin-right: 10px;
+	text-transform: uppercase;
+}
+.ui-dialog .charsheet .potions-container .repcontrol_edit {
+	float: left;
+}
+
+
+
+/* roll template */
+
+
+
+/* Smaller margins - remove these if you want the huge default left margin */
+.sheet-rolltemplate-custom {
+  margin-left: -37px;
+  margin-top: 10px;
+}
+.withoutavatars .sheet-rolltemplate-custom {
+  margin-left: -7px;
+}
+
+.sheet-rolltemplate-custom .sheet-container {
+	border: 2px solid #b78727;
+	border-radius: 4px;
+	/* background: url("https://raw.githubusercontent.com/lilyseabrooke/Starfall-sheet/main/Parchment%20Background.jpg") repeat top left; */
+    /* background-size: 50% 100%; */
+}
+
+/* Header formatting - title and subtitle */
+.sheet-rolltemplate-custom .sheet-header {
+	background-color: #b78727;
+	text-align: center;
+	color: #EEEEEE;
+	padding: 5px;
+	height: auto;
+	line-height: 1.1em;
+	/* border-bottom: 2px solid #222222; */
+  	font-family: 'Uncial Antiqua';
+	text-transform: uppercase;
+	font-size: 16pt;
+	text-shadow: 2px 2px 1px #222222;
+}
+.sheet-rolltemplate-custom .sheet-subtitle {
+  font-size:.9em;
+}
+
+/* Allprops part */
+.sheet-rolltemplate-custom .sheet-content {
+	display: grid;
+	font-family: 'Yatra One';
+	background: #3e392f;
+	grid-template-columns: 1fr 1fr;
+	line-height:1.4em;
+	color: #EEEEEE;
+	justify-content: center;
+	justify-items: center;
+	align-items: center;
+	padding-top: 10px;
+	padding-bottom: 10px;
+}
+
+.sheet-rolltemplate-custom .sheet-content > div {
+	padding: 5px;
+}
+
+/* Left column */
+.sheet-rolltemplate-custom .sheet-content .sheet-key {
+	font-weight: bold;
+	text-align: center;
+	padding: 10px;
+}
+
+
+.sheet-rolltemplate-custom .sheet-value .inlinerollresult {
+	text-align: center;
+	justify-self: center;
+	margin: 10px;
+	display: block;
+	height: 50px;
+	min-width: 50px;
+	border: 2px solid #222222;
+	border-radius: 4px;
+	font-size: 20pt;
+	padding: 10px;
+	line-height: 1.9em;
+	font-family: 'Metamorphous';
+	text-shadow: 2px 2px 1px #222222;
+	background-color: #7851a9;
+}
+.sheet-force-inline-box {
+	text-align: center;
+	justify-self: center;
+	margin: 20px;
+	display: block;
+	height: 50px;
+	width: 50px;
+	border: 2px solid #222222;
+	border-radius: 4px;
+	font-size: 20pt;
+	padding: 10px;
+	line-height: 1.9em;
+	font-family: 'Metamorphous';
+	text-shadow: 2px 2px 1px #222222;
+	background-color: #7851a9;
+}
+
+.sheet-rolltemplate-custom .inlinerollresult.fullcrit {
+	outline: 3px solid #4d7a2a;
+}
+.sheet-rolltemplate-custom .inlinerollresult.fullfail {
+	outline: 3px solid #8b1212;
+}
+.sheet-rolltemplate-custom .inlinerollresult.importantroll {
+	outline: 3px solid #b78727;
+}
+
+/* Description field */
+.sheet-rolltemplate-custom .sheet-content > .sheet-description {
+	grid-column: span 2;
+	padding: 5px;
+	padding-top: 10px;
+	text-align: left;
+	border-top: 2px solid transparent;
+	border-image: linear-gradient(to right, #b7872700, #b7872788 50%, #b7872700) 1;
+	max-height: 4.5em; /* Allows for approximately 3 lines of text */
+    overflow: hidden;
+    position: relative;
+    line-height: 1.5em; /* Adjust according to your font size */
+    transition: max-height 0.3s ease;
+	
+	display: flex;
+	flex-direction: column;
+	grid-gap: 1em;
+}
+
+.sheet-rolltemplate-custom .sheet-content > .sheet-description .inlinerollresult {
+	background-color: transparent;
+	border: none;
+	font-size: 1em;
+}
+
+.sheet-rolltemplate-custom .sheet-content > .sheet-description:hover {
+	max-height: none;
+}
+.sheet-rolltemplate-custom .sheet-content > .sheet-description::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 50%; /* The fading part */
+    background: linear-gradient(to bottom, rgba(62, 57, 47, 0) 0%, rgba(62, 57, 47, 1) 100%);
+    pointer-events: none;
+}
+.sheet-rolltemplate-custom .sheet-content > .sheet-description:hover::after {
+    background: none;
+}
+
+/* Roll template modifier classes */
+.sheet-description--bold   { font-size: 1.5em; font-weight: bold; }
+.sheet-value--capitalize   { text-transform: capitalize; }
+
+/* Randomize button — positioned in class grid footer */
+.randomizer-button {
+	position: absolute;
+	bottom: -131.3%;
+	right: 50px;
+	border-radius: 6px;
+}
+
+
+
+/* Adjust visibility of modular rollers */
+
+.classrankroller-checker[value="none"] ~ button.classrankroller,
+.classrankroller-checker[value]:not([value="none"]) ~ button.noclassrankroller,
+.classrankroller-checker[value]:not([value="none"]) ~ button.noabilitynoclassrankroller,
+.classrankroller-checker[value="none"] ~ button.noabilityclassrankroller,
+.classrankroller-checker[value="none"] ~ span.cmoveclassrankshower,
+.classrankroller-checker[value]:not([value="none"]) ~ div.cmoveclassrankhider,
+.abilityroller-checker[value="stat"] ~ button.classrankroller,
+.abilityroller-checker[value="stat"] ~ button.noclassrankroller,
+.abilityroller-checker[value]:not([value="stat"]) ~ button.noabilityclassrankroller, 
+.abilityroller-checker[value]:not([value="stat"]) ~ button.noabilitynoclassrankroller,
+.abilityroller-checker[value="stat"] ~ span.cmoveabilityshower, 
+.abilityroller-checker[value]:not([value="stat"]) ~ span.cmovestatshower {
+	display: none;
+}
+
+.spelldayschecker[value="0"] ~ button.hideonspelllearned:disabled,
+.spelldayschecker[value]:not([value="0"]) ~ button.showonspelllearned:enabled {
+	display: none;
+}
+
+
+.attunementhider[value="1"] ~ .hiddenonattunement {
+	display: none;
+}
+.attunementhider[value="0"] ~ .shownonattunement {
+	display: none;
+}
+.stableconditionhider[value="stable"] ~ .stableartifacthidden {
+	display: none;
+}
+
+
+.wanddamagechecker[value="0"] ~ div.wanddamagehidden {
+	display: none;
+}
+
+
+
+
+.sheet-rolltemplate-custom .sheet-wandrepair-grid {
+	display: grid;
+	grid-template-columns: 45% 10% 45%;
+	grid-column: 1 / span 2;
+	align-items: center;
+    justify-items: center;
+}
+.sheet-rolltemplate-custom .sheet-wandrepair-grid .sheet-value span {
+	height: 20px;
+	font-size: 18px;
+	padding-top: 5px;
+	padding-bottom: 5px;
+	line-height: 1em;
+}
+.sheet-rolltemplate-custom .sheet-wandrepair-grid .sheet-key {
+	font-size: 16px;
+	padding-top: 5px;
+	padding-bottom: 0px;
+}
+
+
+
+.linkedartifact[value="none"] ~ input.shownonlinkedartifact,
+.linkedartifact[value="none"] ~ button.shownonlinkedartifact {
+	display: none;
+}
+.linkedartifact[value]:not([value="none"]) ~ button.hiddenonlinkedartifact {
+	display: none;
+}
+
+.linkedartifactcondition[value]:not([value="stable"]) ~ input.shownonartifactstable,
+.linkedartifactcondition[value]:not([value="damaged"]) ~ input.shownonartifactdamaged,
+.linkedartifactcondition[value]:not([value="broken"]) ~ input.shownonartifactbroken,
+.linkedartifactcondition[value]:not([value="stable"]) ~ span.shownonartifactstable,
+.linkedartifactcondition[value]:not([value="damaged"]) ~ span.shownonartifactdamaged,
+.linkedartifactcondition[value]:not([value="broken"]) ~ span.shownonartifactbroken,
+.linkedartifactcondition[value]:not([value="broken"]) ~ button.shownonartifactbroken,
+.linkedartifactcondition[value="broken"] ~ button.hiddenonartifactbroken {
+	display: none;
+}
+
+.rollericon > button[type="action"].shownonartifactbroken,
+.rollericon > button[type="action"].hideonspelllearned {
+	background-image: linear-gradient(to bottom, rgb(95 95 95), rgb(95 95 95));
+	border-color: rgb(0 0 0);
+}
+.rollericon > button[type="action"].shownonartifactbroken:hover,
+.rollericon > button[type="action"].hideonspelllearned:hover {
+	background-image: linear-gradient(to bottom, rgb(95 95 95), rgb(95 95 95));
+	border-color: rgb(0 0 0);
+	cursor: default;
+}
+
+.trouble-tracker {
+	display: grid;
+	grid-template-columns: 25px 140px 25px;
+	justify-self: center;
+	align-self: start;
+	font-size: 20px;
+	font-weight: bold;
+	text-align: center;
+	color: #444444;
+	align-items: center;
+	grid-gap: 5px;
+}
+.trouble-display {
+	background-color: var(--background-color-standard);
+	border: var(--standard-border);
+	border-radius: var(--standard-border-radius);
+	padding: 5px;
+	display: grid;
+	grid-template-columns: 80% 20%;
+	justify-items: center;
+}
+.trouble-tracker button {
+	width: 10px;
+	height: 20px;
+	border-radius: 6px;
+	z-index: 6;
+}
+
+.troubledecreaser {
+	display: none;
+}
+
+.trouble-checker[value="10"] ~ button.troubleincreaser {
+	display: none;
+}
+.trouble-checker:not([value="0"]) ~ button.troubledecreaser {
+	display: block;
+}
+
+.showonplantused {
+	display: none;
+}
+.plantusedchecker[value="1"] ~ button.hideonplantused,
+.plantusedchecker[value="1"] ~ input.hideonplantused {
+	display: none;
+}
+.plantusedchecker[value="1"] ~ button.showonplantused,
+.plantusedchecker[value="1"] ~ input.showonplantused {
+	display: block;
+}
+.plantusedchecker ~ button[type="action"].showonplantused {
+	background-image: linear-gradient(to bottom, rgb(95 95 95), rgb(95 95 95));
+	border-color: rgb(0 0 0);
+}
+.plantusedchecker ~ button[type="action"].showonplantused:hover {
+	background-image: linear-gradient(to bottom, rgb(95 95 95), rgb(95 95 95));
+	border-color: rgb(0 0 0);
+	cursor: default;
+}
+
+
+
+.spellap {
+	display: none;
+}
+.spellapchecker[value="hex"] ~ input.spellap,
+.spellapchecker[value="hex"] ~ span.spellap {
+	display: block;
+}
+
+
+
+
+
+.potions-list {
+	display: grid;
+	grid-template-columns: auto auto auto;
+	align-items: center;
+	align-content: center;
+	justify-items: center;
+	width: 95%;
+	grid-gap: 10px;
+}
+
+.potion-block {
+	display: flex;
+	flex-direction: column;
+	padding: 5px;
+	align-items: center;
+	align-content: center;
+	justify-items: center;
+	width: 200px;
+	height: 200px;
+	border: var(--standard-border);
+	border-radius: var(--standard-border-radius);
+	background-color: var(--background-color-standard);
+}
+
+.potion-block input,
+.potion-block textarea {
+	resize: none;
+    height: 100%;
+    background-color: var(--background-color-standard);
+    border: 1px solid #222222;
+    color: #EEEEEE;
+	width: 90%;
+}
+
+.potion-block input::-webkit-outer-spin-button,
+.potion-block input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}

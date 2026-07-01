@@ -1,0 +1,204 @@
+/* ===========================================================================
+   Starfall Academy — Animated loading screen
+   Keyframes for the crest "breathe", gilded sheen sweep, halo pulse,
+   progress bar, rising sparks, eyebrow shimmer, and rotating decree.
+   Built from the Claude Design handoff (Loading.dc.html) on the shared
+   design system — see src/styles/design-system.css for the tokens used.
+   =========================================================================== */
+
+@keyframes sa-sheen {
+  0%        { clip-path: polygon(-40% 0, -12% 0, -12% 100%, -40% 100%); }
+  55%, 100% { clip-path: polygon(112% 0, 140% 0, 140% 100%, 112% 100%); }
+}
+@keyframes sa-breathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.035); }
+}
+@keyframes sa-halo {
+  0%, 100% { opacity: 0.35; transform: translate(-50%, -50%) scale(1); }
+  50%      { opacity: 0.7;  transform: translate(-50%, -50%) scale(1.12); }
+}
+@keyframes sa-bar {
+  0%   { left: -38%; }
+  100% { left: 100%; }
+}
+@keyframes sa-spark {
+  0%   { opacity: 0;   transform: translateY(8px) scale(0.6); }
+  25%  { opacity: 0.9; }
+  60%  { opacity: 0.5; }
+  100% { opacity: 0;   transform: translateY(-46px) scale(1); }
+}
+@keyframes sa-eyebrow {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; }
+}
+@keyframes sa-decree {
+  0%        { opacity: 0; transform: translateY(6px); }
+  12%       { opacity: 1; transform: translateY(0); }
+  88%       { opacity: 1; transform: translateY(0); }
+  100%      { opacity: 0; transform: translateY(-6px); }
+}
+
+.sa-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--grad-vignette);
+  font-family: var(--font-sans);
+}
+
+/* Overlay variant: fades itself out when the host marks it done. */
+.sa-loading--overlay {
+  transition: opacity 0.5s var(--ease-out);
+}
+.sa-loading--hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sa-loading__sparks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.sa-loading__spark {
+  position: absolute;
+  bottom: 42%;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--gold-300);
+  box-shadow: 0 0 6px var(--gold-400);
+  opacity: 0;
+  animation: sa-spark var(--spark-dur) var(--ease-out) infinite;
+}
+
+.sa-loading__crest {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: sa-breathe 4.8s var(--ease-in-out) infinite;
+}
+.sa-loading__halo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 360px;
+  height: 360px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in oklab, var(--gold-500) 30%, transparent) 0%,
+    transparent 62%
+  );
+  filter: blur(8px);
+  animation: sa-halo 4.8s var(--ease-in-out) infinite;
+}
+.sa-loading__crest-frame {
+  position: relative;
+  width: 300px;
+  height: 236px;
+}
+.sa-loading__crest-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+/* Base gold tint of the crest line art. */
+.sa-loading__crest-img--base {
+  filter: brightness(0) saturate(100%) invert(64%) sepia(48%) saturate(520%)
+    hue-rotate(2deg) brightness(86%) contrast(92%);
+}
+/* Brighter copy, masked to a sliver that sweeps across as a gilded sheen. */
+.sa-loading__crest-img--sheen {
+  filter: brightness(0) saturate(100%) invert(86%) sepia(40%) saturate(540%)
+    hue-rotate(4deg) brightness(118%) contrast(86%);
+  clip-path: polygon(-40% 0, -12% 0, -12% 100%, -40% 100%);
+  animation: sa-sheen 2.8s var(--ease-in-out) infinite;
+}
+
+.sa-loading__text {
+  text-align: center;
+  margin-top: 38px;
+}
+.sa-loading__eyebrow {
+  font-family: var(--font-sans);
+  font-weight: var(--weight-medium);
+  font-size: 12px;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: var(--text-gold);
+  animation: sa-eyebrow 2.6s var(--ease-in-out) infinite;
+}
+.sa-loading__decree-slot {
+  position: relative;
+  height: 26px;
+  margin-top: 14px;
+  width: 420px;
+  max-width: 84vw;
+}
+.sa-loading__decree {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 16px;
+  color: var(--text-body);
+  text-wrap: balance;
+  animation: sa-decree 3.4s var(--ease-in-out) both;
+}
+
+.sa-loading__track {
+  margin-top: 30px;
+  position: relative;
+  width: 220px;
+  height: 2px;
+  background: color-mix(in oklab, var(--gold-500) 16%, transparent);
+  overflow: hidden;
+  border-radius: 2px;
+}
+.sa-loading__fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: var(--rule-gold);
+  transition: width 0.4s var(--ease-out);
+}
+.sa-loading__fill--indeterminate {
+  width: 38%;
+  animation: sa-bar 1.5s var(--ease-in-out) infinite;
+}
+.sa-loading__pct {
+  margin-top: 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+
+/* Respect reduced-motion: keep the scene, drop the looping animation. */
+@media (prefers-reduced-motion: reduce) {
+  .sa-loading__spark,
+  .sa-loading__crest,
+  .sa-loading__halo,
+  .sa-loading__crest-img--sheen,
+  .sa-loading__eyebrow,
+  .sa-loading__decree,
+  .sa-loading__fill--indeterminate {
+    animation: none;
+  }
+  .sa-loading__crest-img--sheen { display: none; }
+}
