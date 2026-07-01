@@ -47,7 +47,6 @@ export interface SidebarProps {
   activeChar: string;
   onPickChar: (id: string) => void;
   compCount: number;
-  onAddCharacter: () => void;
   onEditCharacter: () => void;
   collapsed?: boolean;
   onToggleSidebar: () => void;
@@ -66,7 +65,7 @@ const NAV = [
 
 export function Sidebar({
   active, onNavigate, roster, activeChar, onPickChar, compCount,
-  onAddCharacter, onEditCharacter, collapsed, onToggleSidebar, mobileOpen, onMobileClose, gm,
+  onEditCharacter, collapsed, onToggleSidebar, mobileOpen, onMobileClose, gm,
 }: SidebarProps) {
   const router = useRouter();
   const goBack = () => router.push(consumeReturnTarget() || "/characters");
@@ -146,9 +145,6 @@ export function Sidebar({
               </span>
             </button>
           ))}
-          <button className="sf-roster__add" onClick={onAddCharacter} title={collapsed ? "Add a character" : undefined}>
-            <Icon name="user-plus" /><span className="sf-side__label">Add a character</span>
-          </button>
         </div>
       </div>
 

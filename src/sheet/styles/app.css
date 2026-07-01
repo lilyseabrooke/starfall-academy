@@ -76,7 +76,6 @@
 .sf-sheet .sf-side.is-collapsed .sf-brand__wm, .sf-sheet .sf-side.is-collapsed .sf-switch-head, .sf-sheet .sf-side.is-collapsed .sf-roster__meta, .sf-sheet .sf-side.is-collapsed .sf-nav__label, .sf-sheet .sf-side.is-collapsed .sf-side__label, .sf-sheet .sf-side.is-collapsed .sf-nav__count, .sf-sheet .sf-side.is-collapsed .sf-back-btn { display: none; }
 .sf-sheet .sf-side.is-collapsed .sf-brand { justify-content: center; }
 .sf-sheet .sf-side.is-collapsed .sf-roster__item { justify-content: center; padding-left: 0; padding-right: 0; }
-.sf-sheet .sf-side.is-collapsed .sf-roster__add { justify-content: center; padding-left: 0; padding-right: 0; }
 .sf-sheet .sf-side.is-collapsed .sf-nav__item { justify-content: center; padding-left: 0; padding-right: 0; }
 .sf-sheet .sf-app.sidebar-collapsed .sf-dock { left: 68px; }
 .sf-sheet .sf-brand { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-1) var(--space-2); }
@@ -119,16 +118,6 @@
 .sf-sheet .sf-roster__meta { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
 .sf-sheet .sf-roster__name { font-family: var(--font-sans); font-weight: 500; font-size: var(--text-sm); color: var(--text-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sf-sheet .sf-roster__house { font-family: var(--font-sans); font-size: 11px; color: var(--text-muted); }
-.sf-sheet .sf-roster__add {
-  display: flex; align-items: center; gap: var(--space-2); width: 100%;
-  padding: 7px var(--space-2); border-radius: var(--radius-sm); margin-top: 2px;
-  background: none; border: 1px dashed var(--border-subtle); cursor: pointer;
-  font-family: var(--font-sans); font-size: var(--text-xs); color: var(--text-muted);
-  letter-spacing: var(--tracking-wide); transition: color var(--dur-base), border-color var(--dur-base);
-}
-.sf-sheet .sf-roster__add:hover { color: var(--text-gold); border-color: var(--border-default); }
-.sf-sheet .sf-roster__add svg { width: 14px; height: 14px; }
-
 .sf-sheet .sf-nav { display: flex; flex-direction: column; gap: 2px; flex: 0 0 auto; }
 .sf-sheet .sf-nav__label { padding: 0 var(--space-2) var(--space-1); }
 .sf-sheet .sf-nav__item {
@@ -1307,7 +1296,6 @@
   .sf-sheet .sf-side.is-mobile-open .sf-brand         { justify-content: flex-start !important; }
   .sf-sheet .sf-side.is-mobile-open .sf-nav__item     { justify-content: flex-start !important; padding: var(--space-3) !important; }
   .sf-sheet .sf-side.is-mobile-open .sf-roster__item  { justify-content: flex-start !important; padding: 7px var(--space-2) !important; }
-  .sf-sheet .sf-side.is-mobile-open .sf-roster__add   { justify-content: flex-start !important; padding: 7px var(--space-2) !important; }
   .sf-sheet .sf-app.sidebar-collapsed .sf-dock { left: 0; }
 
   /* Canvas: tighter padding, single-column grids */
