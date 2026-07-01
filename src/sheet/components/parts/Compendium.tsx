@@ -5,42 +5,11 @@ import { Badge, Banner, Button, IconButton, Select } from "@/ds";
 import { Icon } from "../Icon";
 import { DualRange, type RangeValue } from "./DualRange";
 import { PLANT_ROLL_LABEL, TONE_500, levelTone, parsePlantRoll } from "../../data/shared";
+import {
+  COMP_FILTERS, COMP_SORT_FIELDS, compLevelRank, field,
+  type FilterValue, type Filters,
+} from "../../data/entry-query";
 import type { CompendiumCat, CompendiumEntry, Tone } from "../../types";
-
-const COMP_LEVEL_ORDER: Record<string, number> = { basic: 0, standard: 1, advanced: 2, legendary: 3, hex: 4, twisted: 4 };
-const compLevelRank = (v: string | null | undefined) => {
-  if (!v) return 99;
-  const f = String(v).trim().toLowerCase().split(/\s+/)[0];
-  return COMP_LEVEL_ORDER[f] != null ? COMP_LEVEL_ORDER[f] : 50;
-};
-
-const COMP_SORT_FIELDS: Record<string, Array<[string, string, string]>> = {
-  spell: [["name", "Name", "text"], ["subject", "Subject", "text"], ["stat", "Stat", "text"], ["level", "Level", "level"], ["dc", "DC", "num"]],
-  move: [["name", "Name", "text"], ["level", "Tier", "text"]],
-  artifact: [["name", "Name", "text"], ["subject", "Subject", "text"], ["level", "Level", "level"], ["intensity", "Intensity", "num"]],
-  potion: [["name", "Name", "text"], ["cost", "Cost", "num"], ["intensity", "Intensity", "num"]],
-  wand: [["name", "Name", "text"]],
-  glyph: [["name", "Name", "text"], ["value", "Cost", "num"], ["intensity", "Intensity", "num"]],
-  item: [["name", "Name", "text"]],
-  plant: [["name", "Name", "text"], ["value", "Value", "num"], ["intensity", "Intensity", "num"]],
-};
-
-type FilterCfg =
-  | { kind: "select"; key: string; label: string }
-  | { kind: "level"; levels: string[] }
-  | { kind: "range"; key: string; label: string }
-  | { kind: "radio"; key: string; label: string };
-
-const COMP_FILTERS: Record<string, FilterCfg[]> = {
-  spell: [{ kind: "select", key: "subject", label: "Subject" }, { kind: "select", key: "stat", label: "Stat" }, { kind: "level", levels: ["Basic", "Standard", "Advanced", "Legendary", "Hex"] }, { kind: "range", key: "dc", label: "DC" }, { kind: "radio", key: "ritual", label: "Ritual" }],
-  artifact: [{ kind: "select", key: "subject", label: "Subject" }, { kind: "level", levels: ["Basic", "Standard", "Advanced", "Legendary", "Twisted"] }, { kind: "range", key: "intensity", label: "Intensity" }],
-  potion: [{ kind: "range", key: "cost", label: "Cost" }, { kind: "range", key: "intensity", label: "Intensity" }],
-  glyph: [{ kind: "range", key: "value", label: "Cost" }, { kind: "range", key: "intensity", label: "Intensity" }],
-  plant: [{ kind: "range", key: "value", label: "Value" }, { kind: "range", key: "intensity", label: "Intensity" }, { kind: "radio", key: "removeOnUse", label: "Single-use" }],
-  move: [],
-  wand: [],
-  item: [],
-};
 
 const learnDaysFor = (level: string | undefined) => {
   const l = (level || "").toLowerCase();
@@ -49,10 +18,6 @@ const learnDaysFor = (level: string | undefined) => {
   if (l.startsWith("advanced")) return 5;
   return 10;
 };
-
-type FilterValue = string | RangeValue;
-type Filters = Record<string, FilterValue>;
-const field = (e: CompendiumEntry, k: string) => (e as unknown as Record<string, unknown>)[k];
 
 export interface CompendiumProps {
   open: boolean;

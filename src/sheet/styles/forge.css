@@ -224,6 +224,18 @@
 .sf-sheet .sf-isub__glyph svg { width: 15px; height: 15px; }
 .sf-sheet .sf-isub__t { font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; font-size: var(--text-md); color: var(--text-strong); }
 .sf-sheet .sf-isub__n { margin-left: auto; font-family: var(--font-mono); font-size: 12px; color: var(--text-gold); }
+
+/* Collapsible section: the SubHead becomes a full-width toggle button. */
+.sf-sheet .sf-isection { display: flex; flex-direction: column; }
+.sf-sheet .sf-isub--btn { width: 100%; margin-top: 0; padding: 0; background: none; border: none; cursor: pointer; text-align: left; }
+.sf-sheet .sf-isub--btn:hover .sf-isub__t { color: var(--gold-100); }
+.sf-sheet .sf-isub__chev { flex: none; margin-left: var(--space-2); display: grid; place-items: center; width: 22px; height: 22px; color: var(--gold-700); transition: transform var(--dur-base) var(--ease-standard), color var(--dur-base); }
+.sf-sheet .sf-isub__chev svg { width: 16px; height: 16px; }
+.sf-sheet .sf-isection.is-collapsed .sf-isub__chev { transform: rotate(-90deg); }
+.sf-sheet .sf-isection.is-open .sf-isub__chev { color: var(--gold-300); }
+.sf-sheet .sf-isub--btn:hover .sf-isub__chev { color: var(--gold-400); }
+.sf-sheet .sf-isection__body { display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-3); }
+
 .sf-sheet .sf-idiv { display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--rule-gold, var(--hairline)); }
 .sf-sheet .sf-idiv span:first-child { font-family: var(--font-sans); font-size: 11px; text-transform: uppercase; letter-spacing: var(--tracking-wider); color: var(--text-gold); }
 .sf-sheet .sf-idiv__pts { margin-left: auto; font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); }
@@ -257,6 +269,46 @@
 .sf-sheet .sf-squota__n { font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-strong); }
 .sf-sheet .sf-squota__n small { font-size: var(--text-sm); color: var(--text-faint); font-weight: 400; }
 .sf-sheet .sf-squota__l { font-family: var(--font-sans); font-size: 10px; text-transform: uppercase; letter-spacing: var(--tracking-wider); color: var(--text-muted); }
+
+/* ---- Your loadout: quick reference of taken spells -------------------- */
+.sf-sheet .sf-staken {
+  display: flex; flex-direction: column; gap: var(--space-2);
+  padding: var(--space-3) var(--space-4); border-radius: var(--radius-md);
+  background: var(--brand-subtle); border: 1px solid var(--border-subtle);
+}
+.sf-sheet .sf-staken__head { display: flex; align-items: center; gap: var(--space-2); }
+.sf-sheet .sf-staken__head svg { width: 14px; height: 14px; color: var(--gold-300); flex: none; }
+.sf-sheet .sf-staken__t { font-family: var(--font-sans); font-size: 10px; text-transform: uppercase; letter-spacing: var(--tracking-widest); color: var(--text-gold); }
+.sf-sheet .sf-staken__n { margin-left: auto; font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); }
+.sf-sheet .sf-staken__fields { display: flex; flex-direction: column; gap: var(--space-2); }
+.sf-sheet .sf-staken__group { display: flex; align-items: flex-start; gap: var(--space-3); }
+.sf-sheet .sf-staken__field { flex: 0 0 8.5em; padding-top: 6px; font-family: var(--font-sans); font-size: 10px; text-transform: uppercase; letter-spacing: var(--tracking-wider); color: var(--text-gold); text-align: right; }
+.sf-sheet .sf-staken__chips { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.sf-sheet .sf-staken__chip {
+  display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+  padding: 4px 8px 4px 8px; border-radius: var(--radius-pill);
+  background: var(--ink-900); border: 1px solid var(--border-subtle);
+  font-family: var(--font-sans); font-size: 12px; color: var(--text-body);
+  transition: border-color var(--dur-fast), color var(--dur-fast), background var(--dur-fast);
+}
+.sf-sheet .sf-staken__chip:hover { border-color: var(--crimson-500); color: var(--gold-100); }
+.sf-sheet .sf-staken__chip svg { width: 12px; height: 12px; color: var(--text-faint); flex: none; }
+.sf-sheet .sf-staken__chip:hover svg { color: var(--crimson-500); }
+.sf-sheet .sf-staken__dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ent-accent, var(--gold-500)); flex: none; }
+.sf-sheet .sf-staken__nm { max-width: 22ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---- Inventory loadout: uncategorised removable chips ----------------- */
+.sf-sheet .sf-ipick-taken { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* ---- Spell / inventory list: expandable entries (mirrors Compendium) --- */
+.sf-sheet .sf-spell-list { display: flex; flex-direction: column; gap: var(--space-3); }
+.sf-sheet .sf-entry__metacost { font-family: var(--font-mono); font-size: 11px; color: var(--text-gold); white-space: nowrap; }
+.sf-sheet .sf-spell-list .sf-entry.is-picked { border-color: var(--gold-500); box-shadow: var(--inset-hi), var(--shadow-sm), var(--glow-gold); }
+.sf-sheet .sf-spell-list .sf-entry.is-blocked:not(.is-open) { opacity: .55; }
+.sf-sheet .sf-spell-list .sf-entry.is-blocked:not(.is-open):hover { transform: none; box-shadow: var(--inset-hi), var(--shadow-sm); border-color: var(--border-subtle); }
+/* Selected add button reads as "in loadout" (green), but stays clickable to remove. */
+.sf-sheet .sf-entry__add.is-picked { background: color-mix(in oklab, var(--forest-500) 30%, transparent); border-color: var(--forest-300); color: var(--forest-300); cursor: pointer; }
+.sf-sheet .sf-entry__add.is-picked:hover { filter: brightness(1.08); box-shadow: none; }
 
 /* -------------------------------- Review ------------------------------- */
 .sf-sheet .sf-rev { display: flex; flex-direction: column; gap: 2px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); overflow: hidden; }
@@ -311,6 +363,12 @@
   .sf-sheet .sf-admission__cancel { margin: 0; flex: none; padding: 8px 12px; }
   .sf-sheet .sf-admission__scroll { padding: var(--space-5) var(--space-5) var(--space-4); }
   .sf-sheet .sf-fstep-body { max-width: 100%; }
+}
+
+/* On narrow screens, stack each loadout field's label above its spells. */
+@media (max-width: 560px) {
+  .sf-sheet .sf-staken__group { flex-direction: column; gap: 4px; }
+  .sf-sheet .sf-staken__field { flex: none; padding-top: 0; text-align: left; }
 }
 
 /* very narrow: drop every rail label to icons, tighten content padding */

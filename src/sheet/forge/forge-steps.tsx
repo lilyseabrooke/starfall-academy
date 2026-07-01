@@ -6,9 +6,11 @@
    Classes, Allocation (the codex + astrolabes), Inventory, Spells.
    =========================================================================== */
 import * as React from "react";
-import { Badge, Select } from "@/ds";
+import { Badge, Button } from "@/ds";
 import { Icon } from "../components/Icon";
-import { TONE_500, TONE_FG, levelTone } from "../data/shared";
+import { PLANT_ROLL_LABEL, TONE_500, TONE_FG, levelTone, parsePlantRoll } from "../data/shared";
+import { compLevelRank } from "../data/entry-query";
+import { useEntryQuery } from "../components/parts/EntryQuery";
 import type { CompendiumEntry, MagicSchool, Stat } from "../types";
 import type { ClassDef } from "../data/classes";
 import * as F from "./forge-state";
@@ -477,6 +479,27 @@ export function AdmissionAllocation({ D, draft, set }: { D: ForgeData; draft: Dr
 }
 
 /* ============================== INVENTORY ============================= */
+const INV_NOUN: Record<string, { one: string; many: string }> = {
+  potion: { one: "potion", many: "potions" },
+  plant: { one: "plant", many: "plants" },
+  glyph: { one: "glyph", many: "glyphs" },
+  wand: { one: "wand", many: "wands" },
+  artifact: { one: "artifact", many: "artifacts" },
+};
+
+/** Compendium-style fact rows for an inventory entry. */
+const invFacts = (e: CompendiumEntry): Array<[string, string | number]> => {
+  const f: Array<[string, string | number]> = [];
+  if (e.subject) f.push(["Field", e.subject]);
+  if (e.bonusLabel) f.push(["Grants", e.bonusLabel]);
+  if (e.intensity != null) f.push(["Intensity", e.intensity]);
+  if (e.value != null) f.push(["Value", e.value]);
+  if (e.cost) f.push(["Cost", String(e.cost)]);
+  if (e.cat === "plant" && e.removeOnUse != null) f.push(["Single-use", e.removeOnUse ? "Yes" : "No"]);
+  if (e.cat === "plant" && e.requiresRoll) f.push(["On use", PLANT_ROLL_LABEL[parsePlantRoll(e.requiresRoll).mode]]);
+  return f;
+};
+
 function PickList({ D, cat, selected, onToggle, can, costOf, emptyHint }: {
   D: ForgeData;
   cat: string;
@@ -487,21 +510,131 @@ function PickList({ D, cat, selected, onToggle, can, costOf, emptyHint }: {
   emptyHint: string;
 }) {
   const items = D.compendium.filter((e) => e.cat === cat);
+  const [openIds, setOpenIds] = React.useState<Record<string, boolean>>({});
+  const toggleOpen = (id: string) => setOpenIds((m) => ({ ...m, [id]: !m[id] }));
+  const chosen = items.filter((e) => selected.includes(e.id));
+
+  const noun = INV_NOUN[cat] || { one: "entry", many: "entries" };
+  const { visible, toolbar, q, facetCount, clearAll } = useEntryQuery(cat, items, {
+    noun: noun.one, nounPlural: noun.many, label: "Refine " + noun.many,
+    searchPlaceholder: "Search " + noun.many + "…",
+  });
+
+  if (items.length === 0) return <p className="sf-fhint">{emptyHint}</p>;
+
   return (
-    <div className="sf-pick">
-      {items.length === 0 ? <p className="sf-fhint">{emptyHint}</p> : items.map((e) => {
-        const on = selected.includes(e.id);
-        const blocked = !on && !can(e);
-        return (
-          <button key={e.id} type="button" disabled={blocked} onClick={() => onToggle(e.id)} className={"sf-pick__item" + (on ? " is-on" : "") + (blocked ? " is-blocked" : "")}>
-            <span className="sf-pick__check"><Icon name={on ? "check" : "plus"} /></span>
-            <span className="sf-pick__body">
-              <span className="sf-pick__name">{e.name}{costOf ? <span className="sf-pick__cost">{costOf(e)}</span> : null}</span>
-              <span className="sf-pick__desc">{e.desc}</span>
-            </span>
-          </button>
-        );
-      })}
+    <React.Fragment>
+      {chosen.length > 0 ? (
+        <div className="sf-ipick-taken">
+          {chosen.map((e) => {
+            const lt = levelTone(e.level);
+            return (
+              <button
+                key={e.id}
+                type="button"
+                className="sf-staken__chip"
+                style={{ "--ent-accent": lt ? TONE_500[lt] : "var(--ink-500)" } as React.CSSProperties}
+                onClick={() => onToggle(e.id)}
+                title={"Remove " + e.name}
+                aria-label={"Remove " + e.name}
+              >
+                <span className="sf-staken__dot" />
+                <span className="sf-staken__nm">{e.name}</span>
+                <Icon name="x" />
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+
+      {toolbar}
+
+      {visible.length === 0 ? (
+        <div className="sf-comp-empty">
+          <Icon name="search-x" />
+          <p>Nothing matches — try adjusting your search or filters.</p>
+          {facetCount || q ? <button className="sf-filter-reset" onClick={clearAll}>Clear filters</button> : null}
+        </div>
+      ) : (
+      <div className="sf-spell-list">
+        {visible.map((e) => {
+          const on = selected.includes(e.id);
+          const blocked = !on && !can(e);
+          const isOpen = !!openIds[e.id];
+          const lt = levelTone(e.level);
+          const facts = invFacts(e);
+          const cost = costOf ? costOf(e) : null;
+          return (
+            <div
+              key={e.id}
+              className={"sf-entry" + (isOpen ? " is-open" : "") + (on ? " is-picked" : "") + (blocked ? " is-blocked" : "") + (lt ? "" : " is-neutral")}
+              style={{ "--ent-accent": lt ? TONE_500[lt] : "var(--ink-500)" } as React.CSSProperties}
+            >
+              <div className="sf-entry__head" onClick={() => toggleOpen(e.id)}>
+                <div className="sf-entry__headline">
+                  <span className="sf-entry__name">{e.name}</span>
+                  <div className="sf-entry__meta">
+                    <Badge tone={lt && lt !== "silver" ? lt : "neutral"} dot>{e.level}</Badge>
+                    {cost != null && cost !== "" ? <span className="sf-entry__metacost">{cost}</span> : null}
+                    {(e.meta || []).length ? <span className="sf-entry__metatxt">{(e.meta || []).join(" · ")}</span> : null}
+                  </div>
+                </div>
+                <div className="sf-entry__actions">
+                  <button
+                    className={"sf-entry__add" + (on ? " is-picked" : "")}
+                    disabled={blocked}
+                    onClick={(ev) => { ev.stopPropagation(); onToggle(e.id); }}
+                    title={on ? "Remove from loadout" : blocked ? "Unavailable — over your allowance" : "Add to loadout"}
+                    aria-label={on ? "Remove " + e.name + " from loadout" : "Add " + e.name + " to loadout"}
+                  >
+                    <Icon name={on ? "check" : "plus"} />
+                  </button>
+                  <span className="sf-entry__chev"><Icon name="chevron-down" /></span>
+                </div>
+              </div>
+              <div className="sf-entry__body" hidden={!isOpen}>
+                <div className="sf-entry__rule" />
+                {facts.length ? (
+                  <div className="sf-entry__facts">
+                    {facts.map(([k, v]) => <div key={k} className="sf-fact"><span className="sf-fact__k">{k}</span><span className="sf-fact__v">{v}</span></div>)}
+                  </div>
+                ) : null}
+                <p className="sf-entry__desc">{e.desc}</p>
+                {e.ability ? (
+                  <div className="sf-entry__ability">
+                    <span className="sf-entry__ability-lbl"><Icon name="sparkles" /> Ability</span>
+                    <p className="sf-entry__ability-text">{e.ability}</p>
+                  </div>
+                ) : null}
+                <div className="sf-entry__foot">
+                  <span className="sf-entry__cost" />
+                  <Button variant={on ? "secondary" : "primary"} size="sm" disabled={blocked} iconLeft={<Icon name={on ? "check" : "plus"} />} onClick={() => onToggle(e.id)}>
+                    {on ? "Remove from loadout" : blocked ? "Unavailable" : "Add to loadout"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      )}
+    </React.Fragment>
+  );
+}
+
+/** A collapsible inventory section: a header (icon, title, running note) that
+ *  toggles its body. The note stays visible when collapsed as a quick summary. */
+function InventorySection({ icon, title, note, children }: { icon: string; title: string; note: React.ReactNode; children: React.ReactNode }) {
+  const [open, setOpen] = React.useState(true);
+  return (
+    <div className={"sf-isection" + (open ? " is-open" : " is-collapsed")}>
+      <button type="button" className="sf-isub sf-isub--btn" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+        <span className="sf-isub__glyph"><Icon name={icon} /></span>
+        <span className="sf-isub__t">{title}</span>
+        <span className="sf-isub__n">{note}</span>
+        <span className="sf-isub__chev"><Icon name="chevron-down" /></span>
+      </button>
+      {open ? <div className="sf-isection__body">{children}</div> : null}
     </div>
   );
 }
@@ -522,10 +655,6 @@ export function AdmissionInventory({ D, draft, set }: { D: ForgeData; draft: Dra
   const craftSpent = draft.craftWands.reduce((s, id) => s + compMat(id), 0);
   const plantSpent = (draft.plants || []).reduce((s, id) => s + compVal(id), 0);
 
-  const SubHead = ({ icon, title, note }: { icon: string; title: string; note: string }) => (
-    <div className="sf-isub"><span className="sf-isub__glyph"><Icon name={icon} /></span><span className="sf-isub__t">{title}</span><span className="sf-isub__n">{note}</span></div>
-  );
-
   return (
     <div className="sf-fstep-body">
       <div className="sf-fhead">
@@ -533,43 +662,49 @@ export function AdmissionInventory({ D, draft, set }: { D: ForgeData; draft: Dra
         <p className="sf-fhint">Take {D.creation.startingMaterials} Materials as your starting balance. Depending on your Ability spread, you may be able to take extra potions, plants, glyphs, or wands.</p>
       </div>
 
-      <SubHead icon="flask-conical" title="Potions" note={`Alchemy grants ${y.potions} · ${draft.potions.length} chosen`} />
-      {y.potions === 0 ? (
-        <p className="sf-fhint sf-fhint--mut">Put points into <b>Alchemy</b> to start with potions (you&apos;ll know each recipe).</p>
-      ) : (
-        <PickList D={D} cat="potion" selected={draft.potions} onToggle={(id) => toggleIn("potions", id, () => draft.potions.length < y.potions)} can={() => draft.potions.length < y.potions} costOf={(e) => e.level} emptyHint="No potions in the archive yet." />
-      )}
+      <InventorySection icon="flask-conical" title="Potions" note={`Alchemy grants ${y.potions} · ${draft.potions.length} chosen`}>
+        {y.potions === 0 ? (
+          <p className="sf-fhint sf-fhint--mut">Put points into <b>Alchemy</b> to start with potions (you&apos;ll know each recipe).</p>
+        ) : (
+          <PickList D={D} cat="potion" selected={draft.potions} onToggle={(id) => toggleIn("potions", id, () => draft.potions.length < y.potions)} can={() => draft.potions.length < y.potions} emptyHint="No potions in the archive yet." />
+        )}
+      </InventorySection>
 
-      <SubHead icon="leaf" title="Plants" note={`Herbalism grants ${y.plantMat} mats · ${plantSpent} mats chosen`} />
-      {y.plantMat === 0 ? (
-        <p className="sf-fhint sf-fhint--mut">Put points into <b>Herbalism</b> to start with plants (50 mats of plant per rank).</p>
-      ) : (
-        <PickList D={D} cat="plant" selected={draft.plants || []} onToggle={(id) => toggleIn("plants", id, () => !(draft.plants || []).includes(id) && plantSpent + compVal(id) <= y.plantMat)} can={(e) => (draft.plants || []).includes(e.id) || plantSpent + (e.value || 0) <= y.plantMat} costOf={(e) => (e.value || 0) + " mats"} emptyHint="No plants in the archive yet." />
-      )}
+      <InventorySection icon="leaf" title="Plants" note={`Herbalism grants ${y.plantMat} mats · ${plantSpent} mats chosen`}>
+        {y.plantMat === 0 ? (
+          <p className="sf-fhint sf-fhint--mut">Put points into <b>Herbalism</b> to start with plants (50 mats of plant per rank).</p>
+        ) : (
+          <PickList D={D} cat="plant" selected={draft.plants || []} onToggle={(id) => toggleIn("plants", id, () => !(draft.plants || []).includes(id) && plantSpent + compVal(id) <= y.plantMat)} can={(e) => (draft.plants || []).includes(e.id) || plantSpent + (e.value || 0) <= y.plantMat} costOf={(e) => (e.value || 0) + " mats"} emptyHint="No plants in the archive yet." />
+        )}
+      </InventorySection>
 
-      <SubHead icon="pen-tool" title="Glyphs" note={`Runology grants ${y.glyphs} · ${draft.glyphs.length} chosen`} />
-      {y.glyphs === 0 ? (
-        <p className="sf-fhint sf-fhint--mut">Put points into <b>Runology</b> to learn glyphs (two per rank).</p>
-      ) : (
-        <PickList D={D} cat="glyph" selected={draft.glyphs} onToggle={(id) => toggleIn("glyphs", id, () => draft.glyphs.length < y.glyphs)} can={() => draft.glyphs.length < y.glyphs} costOf={(e) => e.meta && e.meta[1]} emptyHint="No glyphs in the archive yet." />
-      )}
+      <InventorySection icon="pen-tool" title="Glyphs" note={`Runology grants ${y.glyphs} · ${draft.glyphs.length} chosen`}>
+        {y.glyphs === 0 ? (
+          <p className="sf-fhint sf-fhint--mut">Put points into <b>Runology</b> to learn glyphs (two per rank).</p>
+        ) : (
+          <PickList D={D} cat="glyph" selected={draft.glyphs} onToggle={(id) => toggleIn("glyphs", id, () => draft.glyphs.length < y.glyphs)} can={() => draft.glyphs.length < y.glyphs} emptyHint="No glyphs in the archive yet." />
+        )}
+      </InventorySection>
 
-      <SubHead icon="wand-2" title="Wands" note={`Wandcrafting grants ${y.craftMat} mats · ${craftSpent} mats chosen`} />
-      {y.craftMat === 0 ? (
-        <p className="sf-fhint sf-fhint--mut">Put points into <b>Wandcrafting</b> to take more wands (200 mats of wand per rank).</p>
-      ) : (
-        <PickList D={D} cat="wand" selected={draft.craftWands} onToggle={(id) => toggleIn("craftWands", id, () => craftSpent + compMat(id) <= y.craftMat)} can={(e) => craftSpent + (e.mat || 0) <= y.craftMat} costOf={(e) => (e.mat || 0) + " mat"} emptyHint="No wands in the archive yet." />
-      )}
+      <InventorySection icon="wand-2" title="Wands" note={`Wandcrafting grants ${y.craftMat} mats · ${craftSpent} mats chosen`}>
+        {y.craftMat === 0 ? (
+          <p className="sf-fhint sf-fhint--mut">Put points into <b>Wandcrafting</b> to take more wands (200 mats of wand per rank).</p>
+        ) : (
+          <PickList D={D} cat="wand" selected={draft.craftWands} onToggle={(id) => toggleIn("craftWands", id, () => craftSpent + compMat(id) <= y.craftMat)} can={(e) => craftSpent + (e.mat || 0) <= y.craftMat} costOf={(e) => (e.mat || 0) + " mat"} emptyHint="No wands in the archive yet." />
+        )}
+      </InventorySection>
 
       {custom ? (
         <React.Fragment>
           <div className="sf-idiv"><span>Custom-build purchases</span><span className="sf-idiv__pts">{remaining} pts left</span></div>
 
-          <SubHead icon="wand-sparkles" title="Buy wands" note="1 pt / 400 mat" />
-          <PickList D={D} cat="wand" selected={draft.extraWands} onToggle={(id) => toggleIn("extraWands", id, () => remaining >= Math.ceil(compMat(id) / D.creation.custom.wandPer))} can={(e) => remaining >= Math.ceil((e.mat || 0) / D.creation.custom.wandPer)} costOf={(e) => Math.ceil((e.mat || 0) / D.creation.custom.wandPer) + " pt"} emptyHint="No wands in the archive yet." />
+          <InventorySection icon="wand-sparkles" title="Buy wands" note="1 pt / 400 mat">
+            <PickList D={D} cat="wand" selected={draft.extraWands} onToggle={(id) => toggleIn("extraWands", id, () => remaining >= Math.ceil(compMat(id) / D.creation.custom.wandPer))} can={(e) => remaining >= Math.ceil((e.mat || 0) / D.creation.custom.wandPer)} costOf={(e) => Math.ceil((e.mat || 0) / D.creation.custom.wandPer) + " pt"} emptyHint="No wands in the archive yet." />
+          </InventorySection>
 
-          <SubHead icon="gem" title="Buy artifacts" note="1 pt / 400 mat · auto-attuned" />
-          <PickList D={D} cat="artifact" selected={draft.artifacts} onToggle={(id) => toggleIn("artifacts", id, () => remaining >= Math.ceil(compMat(id) / D.creation.custom.artifactPer))} can={(e) => remaining >= Math.ceil((e.mat || 0) / D.creation.custom.artifactPer)} costOf={(e) => Math.ceil((e.mat || 0) / D.creation.custom.artifactPer) + " pt"} emptyHint="No artifacts in the archive yet." />
+          <InventorySection icon="gem" title="Buy artifacts" note="1 pt / 400 mat · auto-attuned">
+            <PickList D={D} cat="artifact" selected={draft.artifacts} onToggle={(id) => toggleIn("artifacts", id, () => remaining >= Math.ceil(compMat(id) / D.creation.custom.artifactPer))} can={(e) => remaining >= Math.ceil((e.mat || 0) / D.creation.custom.artifactPer)} costOf={(e) => Math.ceil((e.mat || 0) / D.creation.custom.artifactPer) + " pt"} emptyHint="No artifacts in the archive yet." />
+          </InventorySection>
         </React.Fragment>
       ) : null}
     </div>
@@ -577,89 +712,44 @@ export function AdmissionInventory({ D, draft, set }: { D: ForgeData; draft: Dra
 }
 
 /* ================================ SPELLS ============================== */
-const FORGE_SPELL_SORT: Array<[string, string, string]> = [
-  ["name", "Name", "text"],
-  ["subject", "Subject", "text"],
-  ["stat", "Stat", "text"],
-  ["level", "Level", "level"],
-  ["dc", "DC", "num"],
-];
-const FORGE_SPELL_LEVEL_ORDER: Record<string, number> = { basic: 0, standard: 1, advanced: 2, legendary: 3, hex: 4 };
-const forgeSpellRank = (v: unknown) => {
-  if (!v) return 99;
-  const f = String(v).trim().toLowerCase().split(/\s+/)[0];
-  return FORGE_SPELL_LEVEL_ORDER[f] != null ? FORGE_SPELL_LEVEL_ORDER[f] : 50;
+/** Compendium-style fact rows for a spell — the readable at-a-glance stats. */
+const spellFacts = (e: CompendiumEntry): Array<[string, string | number]> => {
+  const f: Array<[string, string | number]> = [];
+  if (e.subject) f.push(["Field", e.subject]);
+  if (e.stat) f.push(["Base", e.stat]);
+  if (e.ap != null) f.push(["AP", e.ap]);
+  if (e.dc != null) f.push(["DC", e.dc]);
+  if (e.ritual) f.push(["Ritual", "Yes"]);
+  return f;
 };
-const sfield = (e: CompendiumEntry, k: string) => (e as unknown as Record<string, unknown>)[k];
 
 export function AdmissionSpells({ D, draft, set }: { D: ForgeData; draft: Draft; set: SetFn }) {
   const quota = F.yearById(D, draft.yearId).spells as Record<string, number>;
   const tally = F.spellTally(draft, D);
   const allSpells = D.compendium.filter((e) => e.cat === "spell");
 
-  const [q, setQ] = React.useState("");
-  const [sort, setSort] = React.useState<{ field: string; dir: "asc" | "desc" }>({ field: "level", dir: "asc" });
-  const [filters, setFilters] = React.useState({ subject: "any", stat: "any", level: "any", ritual: "any" });
-  const [sortOpen, setSortOpen] = React.useState(false);
-  const [filterOpen, setFilterOpen] = React.useState(false);
-  const sortRef = React.useRef<HTMLDivElement>(null);
-  const filterRef = React.useRef<HTMLDivElement>(null);
+  const [openIds, setOpenIds] = React.useState<Record<string, boolean>>({});
+  const toggleOpen = (id: string) => setOpenIds((m) => ({ ...m, [id]: !m[id] }));
 
-  React.useEffect(() => {
-    if (!sortOpen && !filterOpen) return;
-    const fn = (e: MouseEvent) => {
-      if (sortRef.current && !sortRef.current.contains(e.target as Node)) setSortOpen(false);
-      if (filterRef.current && !filterRef.current.contains(e.target as Node)) setFilterOpen(false);
-    };
-    document.addEventListener("mousedown", fn);
-    return () => document.removeEventListener("mousedown", fn);
-  }, [sortOpen, filterOpen]);
-
-  const uniq = (arr: (string | undefined)[]) => [...new Set(arr.filter((v): v is string => v != null && v !== ""))].sort();
-  const subjectOpts = uniq(allSpells.map((s) => s.subject));
-  const statOpts = uniq(allSpells.map((s) => s.stat));
-
-  const setF = (k: string, v: string) => setFilters((p) => ({ ...p, [k]: v }));
-  const resetFilters = () => setFilters({ subject: "any", stat: "any", level: "any", ritual: "any" });
-  const facetCount = [filters.subject !== "any", filters.stat !== "any", filters.level !== "any", filters.ritual !== "any"].filter(Boolean).length;
-
-  let visible = allSpells.filter((sp) => {
-    if (filters.subject !== "any" && sp.subject !== filters.subject) return false;
-    if (filters.stat !== "any" && sp.stat !== filters.stat) return false;
-    if (filters.level !== "any" && sp.level !== filters.level) return false;
-    if (filters.ritual !== "any") {
-      const want = filters.ritual === "yes";
-      if (!!sp.ritual !== want) return false;
-    }
-    if (q) {
-      const hay = (sp.name + " " + sp.subject + " " + sp.stat + " " + (sp.desc || "")).toLowerCase();
-      if (!hay.includes(q.toLowerCase())) return false;
-    }
-    return true;
+  const { visible, toolbar, q, facetCount, clearAll } = useEntryQuery("spell", allSpells, {
+    noun: "spell", nounPlural: "spells", label: "Refine spells",
+    searchPlaceholder: "Search spells…", defaultSort: { field: "level", dir: "asc" },
   });
 
-  const sign = sort.dir === "asc" ? 1 : -1;
-  const sortType = (FORGE_SPELL_SORT.find((f) => f[0] === sort.field) || [])[2] || "text";
-  visible = visible.slice().sort((a, b) => {
-    let r: number;
-    if (sortType === "num") {
-      const av = parseFloat(String(sfield(a, sort.field)));
-      const bv = parseFloat(String(sfield(b, sort.field)));
-      const am = isNaN(av) || sfield(a, sort.field) == null;
-      const bm = isNaN(bv) || sfield(b, sort.field) == null;
-      if (am || bm) r = am && bm ? 0 : am ? 1 : -1;
-      else r = av - bv;
-    } else if (sortType === "level") {
-      r = forgeSpellRank(sfield(a, sort.field)) - forgeSpellRank(sfield(b, sort.field));
-    } else {
-      r = String(sfield(a, sort.field) || "").toLowerCase().localeCompare(String(sfield(b, sort.field) || "").toLowerCase());
-    }
-    if (r === 0) r = String(a.name).toLowerCase().localeCompare(String(b.name).toLowerCase());
-    return r * sign;
-  });
-
-  const pickSort = (field: string) => setSort((s) => (s.field === field ? { field, dir: s.dir === "asc" ? "desc" : "asc" } : { field, dir: "asc" }));
-  const sortLabel = (FORGE_SPELL_SORT.find((f) => f[0] === sort.field) || FORGE_SPELL_SORT[0])[1];
+  // Quick reference of what's been taken so far — level-ordered, removable.
+  const chosen = draft.spells
+    .map((id) => allSpells.find((s) => s.id === id))
+    .filter((e): e is CompendiumEntry => !!e)
+    .sort((a, b) => compLevelRank(a.level) - compLevelRank(b.level) || a.name.localeCompare(b.name));
+  // Group the loadout by field so it reads like a spellbook, one line per field.
+  const chosenByField = (() => {
+    const m = new Map<string, CompendiumEntry[]>();
+    chosen.forEach((e) => {
+      const key = e.subject || "Other";
+      (m.get(key) || m.set(key, []).get(key)!).push(e);
+    });
+    return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  })();
 
   const toggle = (e: CompendiumEntry) => {
     const on = draft.spells.includes(e.id);
@@ -689,75 +779,108 @@ export function AdmissionSpells({ D, draft, set }: { D: ForgeData; draft: Draft;
         ))}
       </div>
 
-      <div className="sf-comp-toolbar sf-spell-toolbar">
-        <span className="sf-comp-count">{visible.length === allSpells.length ? allSpells.length + " spells" : visible.length + " of " + allSpells.length}</span>
-
-        <div className="sf-spell-search">
-          <Icon name="search" />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search spells…" />
-          {q ? <button className="sf-search-clear" onClick={() => setQ("")} aria-label="Clear search"><Icon name="x" /></button> : null}
-        </div>
-
-        <div className="sf-comp-controls">
-          <div className="sf-pop" ref={filterRef}>
-            <button className={"sf-tool-btn" + (filterOpen ? " is-open" : "")} onClick={() => { setFilterOpen((v) => !v); setSortOpen(false); }} aria-label="Filter spells">
-              <Icon name="sliders-horizontal" /><span>Filter</span>{facetCount ? <span className="sf-tool-dot" /> : null}
-            </button>
-            <div className={"sf-menu sf-filter-menu" + (filterOpen ? " show" : "")} role="dialog" aria-label="Filter options">
-              <div className="sf-menu__head">Refine spells</div>
-              <div className="sf-filter-group">
-                <label>Subject</label>
-                <Select options={[{ value: "any", label: "Any" }].concat(subjectOpts.map((s) => ({ value: s, label: s })))} value={filters.subject} onChange={(e) => setF("subject", e.target.value)} />
-              </div>
-              <div className="sf-filter-group">
-                <label>Stat</label>
-                <Select options={[{ value: "any", label: "Any" }].concat(statOpts.map((s) => ({ value: s, label: s })))} value={filters.stat} onChange={(e) => setF("stat", e.target.value)} />
-              </div>
-              <div className="sf-filter-group">
-                <label>Level</label>
-                <Select options={[{ value: "any", label: "Any" }, ...["Basic", "Standard", "Advanced", "Legendary", "Hex"].map((l) => ({ value: l, label: l }))]} value={filters.level} onChange={(e) => setF("level", e.target.value)} />
-              </div>
-              <div className="sf-filter-group">
-                <label>Ritual</label>
-                <Select options={[{ value: "any", label: "Any" }, { value: "yes", label: "Yes" }, { value: "no", label: "No" }]} value={filters.ritual} onChange={(e) => setF("ritual", e.target.value)} />
-              </div>
-              {facetCount > 0 && <button className="sf-filter-reset" onClick={resetFilters}>Reset filters</button>}
-            </div>
+      {chosen.length > 0 ? (
+        <div className="sf-staken">
+          <div className="sf-staken__head">
+            <Icon name="sparkles" />
+            <span className="sf-staken__t">Your loadout</span>
+            <span className="sf-staken__n">{chosen.length} spell{chosen.length === 1 ? "" : "s"}</span>
           </div>
-
-          <div className="sf-pop" ref={sortRef}>
-            <button className={"sf-tool-btn" + (sortOpen ? " is-open" : "")} onClick={() => { setSortOpen((v) => !v); setFilterOpen(false); }} aria-label="Sort spells">
-              <Icon name="arrow-up-down" /><span>{sortLabel}</span>
-            </button>
-            <div className={"sf-menu sf-sort-menu" + (sortOpen ? " show" : "")} role="dialog" aria-label="Sort options">
-              <div className="sf-menu__head">Order by</div>
-              {FORGE_SPELL_SORT.map(([key, label]) => (
-                <button key={key} className={"sf-sort-opt" + (sort.field === key ? " is-active" : "")} onClick={() => { pickSort(key); setSortOpen(false); }}>
-                  <span>{label}</span>
-                  {sort.field === key && <Icon name={sort.dir === "asc" ? "arrow-up" : "arrow-down"} />}
-                </button>
-              ))}
-            </div>
+          <div className="sf-staken__fields">
+            {chosenByField.map(([field, entries]) => (
+              <div key={field} className="sf-staken__group">
+                <span className="sf-staken__field">{field}</span>
+                <div className="sf-staken__chips">
+                  {entries.map((e) => {
+                    const lt = levelTone(e.level);
+                    return (
+                      <button
+                        key={e.id}
+                        type="button"
+                        className="sf-staken__chip"
+                        style={{ "--ent-accent": lt ? TONE_500[lt] : "var(--ink-500)" } as React.CSSProperties}
+                        onClick={() => toggle(e)}
+                        title={"Remove " + e.name}
+                        aria-label={"Remove " + e.name + " from your loadout"}
+                      >
+                        <span className="sf-staken__dot" />
+                        <span className="sf-staken__nm">{e.name}</span>
+                        <Icon name="x" />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-      </div>
+      ) : null}
+
+      {toolbar}
 
       {visible.length === 0 ? (
-        <p className="sf-fhint sf-fhint--mut">No spells match — try adjusting your filters.</p>
+        <div className="sf-comp-empty">
+          <Icon name="search-x" />
+          <p>No spells match — try adjusting your search or filters.</p>
+          {facetCount || q ? <button className="sf-filter-reset" onClick={clearAll}>Clear filters</button> : null}
+        </div>
       ) : (
-        <div className="sf-pick">
+        <div className="sf-spell-list">
           {visible.map((e) => {
             const on = draft.spells.includes(e.id);
             const full = !on && (tally[e.level] || 0) >= (quota[e.level] || 0);
+            const isOpen = !!openIds[e.id];
             const lt = levelTone(e.level);
+            const facts = spellFacts(e);
             return (
-              <button key={e.id} type="button" disabled={full} onClick={() => toggle(e)} className={"sf-pick__item" + (on ? " is-on" : "") + (full ? " is-blocked" : "")}>
-                <span className="sf-pick__check"><Icon name={on ? "check" : "plus"} /></span>
-                <span className="sf-pick__body">
-                  <span className="sf-pick__name">{e.name}<span className="sf-pick__cost"><Badge tone={lt && lt !== "silver" ? lt : "neutral"} dot>{e.level}</Badge></span></span>
-                  <span className="sf-pick__desc">{e.meta ? e.meta.join(" · ") + " — " : ""}{e.desc}</span>
-                </span>
-              </button>
+              <div
+                key={e.id}
+                className={"sf-entry" + (isOpen ? " is-open" : "") + (on ? " is-picked" : "") + (full ? " is-blocked" : "") + (lt ? "" : " is-neutral")}
+                style={{ "--ent-accent": lt ? TONE_500[lt] : "var(--ink-500)" } as React.CSSProperties}
+              >
+                <div className="sf-entry__head" onClick={() => toggleOpen(e.id)}>
+                  <div className="sf-entry__headline">
+                    <span className="sf-entry__name">{e.name}</span>
+                    <div className="sf-entry__meta">
+                      <Badge tone={lt && lt !== "silver" ? lt : "neutral"} dot>{e.level}</Badge>
+                      {(e.meta || []).length ? <span className="sf-entry__metatxt">{(e.meta || []).join(" · ")}</span> : null}
+                    </div>
+                  </div>
+                  <div className="sf-entry__actions">
+                    <button
+                      className={"sf-entry__add" + (on ? " is-picked" : "")}
+                      disabled={full}
+                      onClick={(ev) => { ev.stopPropagation(); toggle(e); }}
+                      title={on ? "Remove from loadout" : full ? "You've taken every " + e.level + " spell for your year" : "Add to loadout"}
+                      aria-label={on ? "Remove " + e.name + " from loadout" : "Add " + e.name + " to loadout"}
+                    >
+                      <Icon name={on ? "check" : "plus"} />
+                    </button>
+                    <span className="sf-entry__chev"><Icon name="chevron-down" /></span>
+                  </div>
+                </div>
+                <div className="sf-entry__body" hidden={!isOpen}>
+                  <div className="sf-entry__rule" />
+                  {facts.length ? (
+                    <div className="sf-entry__facts">
+                      {facts.map(([k, v]) => <div key={k} className="sf-fact"><span className="sf-fact__k">{k}</span><span className="sf-fact__v">{v}</span></div>)}
+                    </div>
+                  ) : null}
+                  <p className="sf-entry__desc">{e.desc}</p>
+                  {e.higherLevel ? (
+                    <div className="sf-entry__ability">
+                      <span className="sf-entry__ability-lbl"><Icon name="trending-up" /> Higher-level behavior</span>
+                      <p className="sf-entry__ability-text">{e.higherLevel}</p>
+                    </div>
+                  ) : null}
+                  <div className="sf-entry__foot">
+                    <span className="sf-entry__cost" />
+                    <Button variant={on ? "secondary" : "primary"} size="sm" iconLeft={<Icon name={on ? "check" : "plus"} />} disabled={full} onClick={() => toggle(e)}>
+                      {on ? "Remove from loadout" : full ? "Year is full" : "Add to loadout"}
+                    </Button>
+                  </div>
+                </div>
+              </div>
             );
           })}
         </div>
