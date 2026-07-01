@@ -129,39 +129,6 @@
   box-shadow: var(--glow-gold);
 }
 
-.hud-user {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.hud-user__id {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-right: 6px;
-}
-
-.hud-user__avatar {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: var(--grad-gold);
-  display: grid;
-  place-items: center;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 13px;
-  color: var(--ink-950);
-  box-shadow: var(--inset-hi);
-}
-
-.hud-user__name {
-  font-family: var(--font-serif);
-  font-size: 13px;
-  color: var(--text-strong);
-}
-
 .hud-burger {
   display: none;
   width: 42px;

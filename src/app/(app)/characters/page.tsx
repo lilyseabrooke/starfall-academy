@@ -80,10 +80,6 @@ export default async function CharactersPage() {
     .select("id, name, code, updated_at")
     .order("updated_at", { ascending: false });
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   const characterCards = (characters ?? []).map(toCard);
   const campaignCards: CampaignCard[] = (campaigns ?? []).map((cm) => {
     const name = (cm.name || "Untitled campaign").toString();
@@ -99,7 +95,6 @@ export default async function CharactersPage() {
     <CharactersView
       characters={characterCards}
       campaigns={campaignCards}
-      userEmail={user?.email ?? null}
     />
   );
 }
