@@ -11,6 +11,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { markJumpOrigin } from "./nav-return";
 
 import "@/ds/ds.css";
 import "./styles/app.css";
@@ -516,7 +517,7 @@ export function GmView({ campaign, party: hostParty }: GmViewProps) {
       { id: "notes", label: "Notes", icon: "scroll-text", count: notes.length, active: tab === "notes", onClick: () => setTab("notes") },
       { id: "action", label: "Action", icon: "swords", count: "", active: tab === "action", onClick: () => setTab("action") },
     ],
-    party: party.map((p) => ({ id: p.id, name: p.name, initials: p.initials, tone: String(p.tone), house: p.house.replace(" House", ""), onOpen: () => { if (p.sheetId) router.push("/characters/" + p.sheetId); else toast("No sheet linked for " + p.name + "."); } })),
+    party: party.map((p) => ({ id: p.id, name: p.name, initials: p.initials, tone: String(p.tone), house: p.house.replace(" House", ""), onOpen: () => { if (p.sheetId) { markJumpOrigin("/gm/" + campaign.id); router.push("/characters/" + p.sheetId); } else toast("No sheet linked for " + p.name + "."); } })),
   };
 
   return (

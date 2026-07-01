@@ -12,6 +12,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { markJumpOrigin } from "./nav-return";
 
 import "@/ds/ds.css";
 import "./styles/app.css";
@@ -144,7 +145,7 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
 
   const pickChar = (cid: string) => {
     if (!cid || cid === activeChar) return;
-    if (me) router.push(`/characters/${cid}`);
+    if (me) { markJumpOrigin(`/characters/${me}`); router.push(`/characters/${cid}`); }
     else setActiveChar(cid);
   };
 

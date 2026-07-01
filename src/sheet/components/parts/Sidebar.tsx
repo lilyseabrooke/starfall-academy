@@ -1,8 +1,10 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { Crest } from "@/ds";
 import { Icon } from "../Icon";
+import { consumeReturnTarget } from "../../nav-return";
 
 export interface SidebarRosterMember {
   id: string;
@@ -66,10 +68,14 @@ export function Sidebar({
   active, onNavigate, roster, activeChar, onPickChar, compCount,
   onAddCharacter, onEditCharacter, collapsed, onToggleSidebar, mobileOpen, onMobileClose, gm,
 }: SidebarProps) {
+  const router = useRouter();
+  const goBack = () => router.push(consumeReturnTarget() || "/characters");
+
   if (gm) {
     return (
       <aside className={"sf-side sf-side--gm" + (collapsed ? " is-collapsed" : "") + (mobileOpen ? " is-mobile-open" : "")}>
         <div className="sf-brand">
+          <button className="sf-back-btn" onClick={goBack} aria-label="Back"><Icon name="arrow-left" /></button>
           <Crest form="simple" size={38} />
           <div className="sf-brand__wm">
             <span className="sf-brand__name">Starfall</span>
@@ -116,6 +122,7 @@ export function Sidebar({
   return (
     <aside className={"sf-side" + (collapsed ? " is-collapsed" : "") + (mobileOpen ? " is-mobile-open" : "")}>
       <div className="sf-brand">
+        <button className="sf-back-btn" onClick={goBack} aria-label="Back"><Icon name="arrow-left" /></button>
         <Crest form="simple" size={38} />
         <div className="sf-brand__wm">
           <span className="sf-brand__name">Starfall</span>
