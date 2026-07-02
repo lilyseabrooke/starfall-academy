@@ -27,9 +27,13 @@ export type CharacterRow = {
   sheet: unknown;
 };
 
+// Strip quoted nicknames/titles (e.g. Aspen 'Rogue' Whitley) before taking initials.
+const QUOTED_SEGMENT = /['"`‘’“”][^'"`‘’“”]*['"`‘’“”]/g;
+
 function initialsOf(name: string): string {
   return (
     name
+      .replace(QUOTED_SEGMENT, " ")
       .trim()
       .split(/\s+/)
       .slice(0, 2)
