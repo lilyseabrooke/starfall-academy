@@ -48,7 +48,15 @@
       <span>Filters</span>
       <span class="filter-dot"></span>
     </button>
-    <div id="filter-menu" class="filter-menu" role="dialog" aria-label="Filter options"></div>
+    <div id="filter-menu" class="filter-menu" role="dialog" aria-label="Filter options">
+      <div id="filter-menu-body"></div>
+      <!-- Folded in here (and the standalone Sort button hidden) on very
+           narrow screens, so Sort + Filters collapse into one button. -->
+      <div class="filter-menu__sort" id="filter-menu-sort">
+        <div class="filter-menu__sort-head">Sort By</div>
+        <div class="filter-menu__sort-opts" id="filter-menu-sort-opts"></div>
+      </div>
+    </div>
   </div>
 </header>
 

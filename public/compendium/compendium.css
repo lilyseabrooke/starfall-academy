@@ -73,6 +73,11 @@ button{ font-family:inherit; color:inherit; cursor:pointer; background:none; bor
   display:flex; align-items:stretch; flex-wrap:nowrap; gap:2px;
   overflow-x:auto; overflow-y:hidden;
   scrollbar-width:none;
+  /* Edges fade out when there's more to scroll that way — widths are set
+     from JS (updateCatsFade) based on actual scroll position. */
+  --fade-l:0px; --fade-r:0px;
+  -webkit-mask-image:linear-gradient(to right, transparent, black var(--fade-l), black calc(100% - var(--fade-r)), transparent);
+  mask-image:linear-gradient(to right, transparent, black var(--fade-l), black calc(100% - var(--fade-r)), transparent);
 }
 .cats::-webkit-scrollbar{ display:none; }
 
@@ -135,18 +140,29 @@ body.no-icons .cat svg{ display:none; }
 .sort-opt__dir svg{ width:16px; height:16px; }
 
 /* ---- Search + filter button -------------------------------------------- */
+/* Collapsed to just the icon until focused (or holding a query), so it
+   doesn't permanently crowd the categories out of the bar. */
 .search{
   display:flex; align-items:center; gap:var(--space-2);
-  height:var(--control-md); padding:0 var(--space-3);
+  flex:none; height:var(--control-md); width:var(--control-md); padding:0;
+  justify-content:center; overflow:hidden;
   background:var(--ink-950); border:1px solid var(--border-default); border-radius:var(--radius-sm);
-  color:var(--text-muted);
-  transition:border-color var(--dur-base), box-shadow var(--dur-base);
+  color:var(--text-muted); cursor:text;
+  transition:width var(--dur-base) var(--ease-standard), padding var(--dur-base) var(--ease-standard),
+    border-color var(--dur-base), box-shadow var(--dur-base);
+}
+.search:focus-within,
+.search.has-value{
+  width:min(240px, 46vw); padding:0 var(--space-3); justify-content:flex-start;
 }
 .search:focus-within{ border-color:var(--gold-600); box-shadow:var(--glow-gold); }
-.search svg{ width:16px; height:16px; }
-.search input{ background:none; border:none; outline:none; width:210px; max-width:38vw;
+.search svg{ width:16px; height:16px; flex:none; }
+.search input{ background:none; border:none; outline:none; width:100%; flex:1; min-width:0;
   color:var(--text-body); font-family:var(--font-sans); font-size:var(--text-sm);
-  letter-spacing:.04em; text-transform:uppercase; }
+  letter-spacing:.04em; text-transform:uppercase; opacity:0;
+  transition:opacity var(--dur-base) var(--ease-standard); }
+.search:focus-within input,
+.search.has-value input{ opacity:1; }
 .search input::placeholder{ color:var(--text-faint); text-transform:none; letter-spacing:.02em; font-style:italic;
   font-family:var(--font-serif); }
 
@@ -185,10 +201,22 @@ body.no-icons .cat svg{ display:none; }
 .filter-menu::-webkit-scrollbar-thumb{ background:color-mix(in oklab, var(--gold-600) 36%, transparent);
   border-radius:var(--radius-pill); border:2px solid transparent; background-clip:padding-box; }
 .filter-menu.show{ opacity:1; transform:translateY(0); pointer-events:auto; }
+#filter-menu-body{ display:flex; flex-direction:column; gap:var(--space-4); }
 .filter-menu__head{ font-family:var(--font-sans); font-size:10px; letter-spacing:var(--tracking-widest);
   text-transform:uppercase; color:var(--text-gold); padding-bottom:var(--space-2);
   border-bottom:1px solid var(--hairline); }
 .filter-group{ display:flex; flex-direction:column; gap:7px; }
+
+/* Sort By, folded into the bottom of the Filters menu — shown only once the
+   Sort button itself is hidden (very narrow screens; see Responsive below). */
+.filter-menu__sort{
+  display:none; flex-direction:column; gap:2px;
+  padding-top:var(--space-3);
+  border-top:1px solid var(--hairline);
+}
+.filter-menu__sort-head{ font-family:var(--font-sans); font-size:10px; letter-spacing:var(--tracking-widest);
+  text-transform:uppercase; color:var(--text-gold); padding-bottom:var(--space-1); }
+.filter-menu__sort-opts{ display:flex; flex-direction:column; gap:2px; }
 .filter-group > label{ font-family:var(--font-sans); font-size:10px; letter-spacing:var(--tracking-wide);
   text-transform:uppercase; color:var(--text-muted); }
 .filter-group__range{ display:flex; align-items:center; gap:8px; }
@@ -513,10 +541,9 @@ body.flat-levels .badge[class*="badge--"]{ color:var(--gold-300); background:var
    ========================================================================= */
 @media (max-width:680px){
   /* The single toolbar row stays one row at every width — categories scroll
-     horizontally rather than wrapping — so the other controls just shrink. */
+     horizontally rather than wrapping, and the search box only takes real
+     width once focused — so the other controls just shrink a little. */
   .topbar{ height:56px; padding:0 var(--space-4); gap:var(--space-2); }
-  .search{ flex:0 1 120px; padding:0 var(--space-2); }
-  .search input{ width:100%; }
   .filter-btn{ padding:0 var(--space-3); }
   .filter-btn span:not(.filter-dot){ display:none; }
   .filter-menu{ width:min(340px, calc(100vw - 24px)); }
@@ -531,8 +558,14 @@ body.flat-levels .badge[class*="badge--"]{ color:var(--gold-300); background:var
   .facts{ grid-template-columns:1fr; }
 }
 
+/* Very small screens: fold Sort into the Filters button (as a "Sort By"
+   section at the bottom of that menu) rather than keep two buttons. */
+@media (max-width:480px){
+  .sort{ display:none; }
+  .filter-menu__sort{ display:flex; }
+}
+
 @media (max-width:420px){
-  .search{ flex-basis:88px; }
   .toast{ left:12px; right:12px; transform:translateY(16px); width:auto; }
   .toast.show{ transform:translateY(0); }
   .fact{ flex-direction:column; gap:2px; }

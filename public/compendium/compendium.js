@@ -62,9 +62,12 @@ function levelTone(level){
 /* ---- DOM refs ------------------------------------------------------------ */
 const catsEl   = document.getElementById("cats");
 const list     = document.getElementById("list");
+const searchWrap = document.querySelector(".search");
 const searchBar= document.getElementById("search-bar");
 const filterBtn= document.getElementById("filter-button");
 const filterMenu = document.getElementById("filter-menu");
+const filterMenuBody = document.getElementById("filter-menu-body");
+const filterMenuSortOpts = document.getElementById("filter-menu-sort-opts");
 const sortBtn  = document.getElementById("sort-button");
 const sortMenu = document.getElementById("sort-menu");
 const sortCurrent = document.getElementById("sort-current");
@@ -116,6 +119,24 @@ function setTopbarH(){
 window.addEventListener("resize", setTopbarH);
 window.addEventListener("load", setTopbarH);
 
+/* ---- Collapsible search: icon-only until focused or holding a query ------ */
+function syncSearchExpanded(){
+  searchWrap.classList.toggle("has-value", !!searchBar.value.trim());
+}
+searchBar.addEventListener("input", syncSearchExpanded);
+searchWrap.addEventListener("click", () => searchBar.focus());
+
+/* ---- Category-tab scroll fade: hint there's more to scroll each side ----- */
+function updateCatsFade(){
+  const max = catsEl.scrollWidth - catsEl.clientWidth;
+  const atStart = catsEl.scrollLeft <= 2;
+  const atEnd = catsEl.scrollLeft >= max - 2;
+  catsEl.style.setProperty("--fade-l", (max > 4 && !atStart) ? "28px" : "0px");
+  catsEl.style.setProperty("--fade-r", (max > 4 && !atEnd) ? "28px" : "0px");
+}
+catsEl.addEventListener("scroll", updateCatsFade, { passive: true });
+window.addEventListener("resize", updateCatsFade);
+
 function selectCategory(name){
   if (name === currentCategory && currentData.length) return;
   currentCategory = name;
@@ -125,6 +146,7 @@ function selectCategory(name){
   filterMenu.classList.remove("show");
   filterBtn.classList.remove("is-active");
   searchBar.value = "";
+  syncSearchExpanded();
   window.scrollTo({ top: 0, behavior: "smooth" });
   loadSheet(name);
 }
@@ -301,7 +323,7 @@ const SKILLS   = ["Any","Agility","Analyze","Art","Athletics","Comprehend","Conc
 const STATS    = ["Any","Focus","Creativity","Logic","Insight","Body","Charm"];
 
 function renderFilters(category){
-  filterMenu.innerHTML = `<div class="filter-menu__head">Refine ${category}</div>`;
+  filterMenuBody.innerHTML = `<div class="filter-menu__head">Refine ${category}</div>`;
   const c = category.toUpperCase();
   if (c === "SPELLS"){
     appendCategorySelect("SUBJECT", SUBJECTS); appendCategorySelect("STAT", STATS);
@@ -328,7 +350,7 @@ function appendCategorySelect(title, options){
   const div = document.createElement("div");
   div.className = "filter-group";
   div.innerHTML = `<label>${title}</label><select id="filter-${lo}"></select>`;
-  filterMenu.appendChild(div);
+  filterMenuBody.appendChild(div);
   const sel = div.querySelector("select");
   options.forEach(s => { const o = document.createElement("option"); o.value = s.toUpperCase(); o.textContent = s.toUpperCase(); sel.appendChild(o); });
   new TomSelect(`#filter-${lo}`, { create:false, dropdownParent:"body" });
@@ -339,7 +361,7 @@ function appendLevels(hexName){
   div.innerHTML = `<label>Level</label><select id="filter-level">
     <option>ANY</option><option>BASIC</option><option>STANDARD</option>
     <option>ADVANCED</option><option>LEGENDARY</option><option>${hexName}</option></select>`;
-  filterMenu.appendChild(div);
+  filterMenuBody.appendChild(div);
   new TomSelect("#filter-level", { create:false, searchField:[], controlInput:null, dropdownParent:"body", onItemAdd(){ this.close(); this.blur(); } });
 }
 function fieldMax(field){
@@ -372,7 +394,7 @@ function appendRange(title){
       <input type="range" class="dual__thumb dual__thumb--min" min="0" max="${max}" step="${step}" value="0" aria-label="${title} minimum">
       <input type="range" class="dual__thumb dual__thumb--max" min="0" max="${max}" step="${step}" value="${max}" aria-label="${title} maximum">
     </div>`;
-  filterMenu.appendChild(div);
+  filterMenuBody.appendChild(div);
   wireDual(div, lo, max);
 }
 function wireDual(group, lo, max){
@@ -416,13 +438,13 @@ function appendRadios(title, options = ["YES","NO"]){
   options.forEach(opt => { const v = opt.toUpperCase(); html += `<label class="filter-radio"><input type="radio" name="filter-${lo}" value="${v}">${v}</label>`; });
   html += `</div>`;
   div.innerHTML = html;
-  filterMenu.appendChild(div);
+  filterMenuBody.appendChild(div);
 }
 function appendResetButton(){
   const div = document.createElement("div");
   div.className = "filter-group";
   div.innerHTML = `<button class="reset-filters" id="reset-filters-button">Clear filters</button>`;
-  filterMenu.appendChild(div);
+  filterMenuBody.appendChild(div);
   div.querySelector("#reset-filters-button").addEventListener("click", resetFilters);
 }
 function resetFilters(){
@@ -511,16 +533,20 @@ function renderSortOptions(category){
     if (match){ init = match; dir = saved.dir === "desc" ? "desc" : "asc"; }
   }
   sortState = { field: init[0], label: init[1], dir, type: init[2] };
-  sortMenu.innerHTML = `<div class="sort-menu__head">Order by</div>` +
-    fields.map(([key,label,type]) =>
-      `<button class="sort-opt" data-field="${key}" data-label="${label}" data-type="${type}">
-         <span>${label}</span><span class="sort-opt__dir"></span>
-       </button>`).join("");
+  const optsHtml = fields.map(([key,label,type]) =>
+    `<button class="sort-opt" data-field="${key}" data-label="${label}" data-type="${type}">
+       <span>${label}</span><span class="sort-opt__dir"></span>
+     </button>`).join("");
+  // Rendered twice: the standalone Sort dropdown, and (hidden until very
+  // narrow screens fold Sort into the Filters button) a matching section at
+  // the bottom of the filter menu.
+  sortMenu.innerHTML = `<div class="sort-menu__head">Order by</div>` + optsHtml;
+  filterMenuSortOpts.innerHTML = optsHtml;
   updateSortUI();
 }
 
 function updateSortUI(){
-  sortMenu.querySelectorAll(".sort-opt").forEach(opt => {
+  document.querySelectorAll("#sort-menu .sort-opt, #filter-menu-sort-opts .sort-opt").forEach(opt => {
     const active = opt.dataset.field === sortState.field;
     opt.classList.toggle("is-active", active);
     opt.querySelector(".sort-opt__dir").innerHTML =
@@ -555,7 +581,7 @@ sortBtn.addEventListener("click", e => {
   const open = sortMenu.classList.toggle("show");
   sortBtn.classList.toggle("is-active", open);
 });
-sortMenu.addEventListener("click", e => {
+function onSortOptClick(e){
   const opt = e.target.closest(".sort-opt");
   if (!opt) return;
   if (sortState.field === opt.dataset.field){
@@ -570,7 +596,9 @@ sortMenu.addEventListener("click", e => {
   try { localStorage.setItem("starfallCompendiumSort", JSON.stringify(sortByCategory)); } catch(err){}
   updateSortUI();
   applyFilters();
-});
+}
+sortMenu.addEventListener("click", onSortOptClick);
+filterMenuSortOpts.addEventListener("click", onSortOptClick);
 document.addEventListener("click", e => {
   if (!sortMenu.contains(e.target) && !sortBtn.contains(e.target)){
     sortMenu.classList.remove("show");
@@ -785,6 +813,8 @@ buildTweaksPanel();
 applyTweaks();
 refreshIcons();
 setTopbarH();
+updateCatsFade();
+window.addEventListener("load", updateCatsFade);
 
 const saved = localStorage.getItem("starfallCompendiumLastCategory");
 currentCategory = (saved && sheets[saved]) ? saved : "Spells";
