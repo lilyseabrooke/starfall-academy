@@ -49,7 +49,8 @@ export async function POST(request: Request) {
     }
     // 23505 = unique_violation (code already taken) — try a fresh code.
     if (error && error.code !== "23505") {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      console.error("POST /api/campaigns", error);
+      return NextResponse.json({ error: "could not create campaign" }, { status: 400 });
     }
   }
 
