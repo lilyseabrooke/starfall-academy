@@ -106,6 +106,9 @@ interface GmPrompt {
   day?: number;
   block?: number;
   enabled?: boolean;
+  /** For kind:"condition" — which character's conditions changed (this sheet's id, not a GM target). */
+  character?: string;
+  conds?: Record<string, number>;
 }
 
 export interface CharacterSheetProps {
@@ -417,6 +420,19 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
 
   const rollSync = useRollSync({ campaignId: campaignId ?? null, characterId: id ?? null, onRemoteRoll: injectRemote, onPrompt });
   React.useEffect(() => { shareRef.current = rollSync.shareRoll; }, [rollSync.shareRoll]);
+
+  // Broadcast a "condition" prompt whenever this sheet's conditions change —
+  // self-directed steps (stepCond) or a forced-resist failure (handleResist)
+  // alike — so the GM's Party Board can update Resolve live. This is a live
+  // nudge only; the debounced persistence effect above already durably saves
+  // conditions, so a GM board that loads fresh always sees the right value.
+  React.useEffect(() => {
+    if (!hydratedRef.current || !campaignId || !id) return;
+    const conds: Record<string, number> = {};
+    for (const cd of conditions) conds[cd.id] = cd.value || 0;
+    rollSync.requestRoll({ kind: "condition", character: id, conds });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conditions]);
 
   const handleResist = (args: { condition: Condition; dc: number | null; mod: number }) => {
     const made = onResist(args);
