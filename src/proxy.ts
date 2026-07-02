@@ -33,7 +33,7 @@ export async function proxy(request: NextRequest) {
   // Redirect unauthenticated users away from protected routes
   if (!user && request.nextUrl.pathname.startsWith("/dashboard")) {
     const url = request.nextUrl.clone();
-    url.pathname = "/login";
+    url.pathname = "/";
     return NextResponse.redirect(url);
   }
 

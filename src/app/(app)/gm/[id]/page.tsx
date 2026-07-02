@@ -18,7 +18,7 @@ export default async function GMToolsPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  if (!user) redirect("/");
 
   // RLS lets any campaign member (players included) read this row, so GM
   // ownership has to be checked explicitly here rather than assumed from the

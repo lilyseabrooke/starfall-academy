@@ -126,6 +126,7 @@ const HudTopBar = forwardRef<
   async function signOut() {
     const supabase = createClient();
     await supabase.auth.signOut();
+    router.push("/");
     router.refresh();
   }
 
