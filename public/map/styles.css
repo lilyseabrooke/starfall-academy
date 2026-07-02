@@ -47,7 +47,7 @@ button{ font-family:inherit; color:inherit; cursor:pointer; background:none; bor
 /* ---- Top bar (matches the Family Ledger topbar) -------------------------- */
 .topbar{
   display:flex; align-items:center; gap:var(--space-5);
-  height:64px; padding:0 var(--space-5) 0 var(--space-4);
+  height:64px; padding:0 var(--space-5);
   border-bottom:1px solid var(--border-subtle);
   background:color-mix(in oklab, var(--ink-900) 82%, transparent);
   backdrop-filter:blur(10px);
