@@ -141,10 +141,11 @@
 }
 
 .sf-sheet .opt-star { width: 26px; height: 26px; flex: none; display: grid; place-items: center; background: none; border: none; cursor: pointer; color: var(--text-faint); transition: color var(--dur-fast), transform var(--dur-fast); }
-.sf-sheet .opt-star svg { width: 16px; height: 16px; fill: none; }
+.sf-sheet .opt-star svg { width: 16px; height: 16px; fill: none; filter: drop-shadow(0 0 0px var(--gold-400)); transition: filter 320ms ease; }
 .sf-sheet .opt-star:hover { color: var(--text-gold); transform: scale(1.12); }
 .sf-sheet .opt-star.on { color: var(--gold-300); }
 .sf-sheet .opt-star.on svg { fill: currentColor; }
+.sf-sheet .opt-star.glow svg { filter: drop-shadow(0 0 3px var(--gold-400)); }
 
 /* ====================================================================== */
 /* OPTION I — ASTROLABE                                                   */
