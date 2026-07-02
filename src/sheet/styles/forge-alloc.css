@@ -145,6 +145,7 @@
 .sf-sheet .opt-star:hover { color: var(--text-gold); transform: scale(1.12); }
 .sf-sheet .opt-star.on { color: var(--gold-300); }
 .sf-sheet .opt-star.on svg { fill: currentColor; }
+.sf-sheet .opt-star.glow { border-radius: 50%; box-shadow: 0 0 0 1px color-mix(in oklab, var(--gold-400) 55%, transparent), 0 0 8px 1px color-mix(in oklab, var(--gold-400) 45%, transparent); }
 
 /* ====================================================================== */
 /* OPTION I — ASTROLABE                                                   */

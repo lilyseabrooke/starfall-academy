@@ -174,9 +174,9 @@ export const SEED: SeedData = {
       herbalismPlantMat: 50,
     },
     startingWands: [
-      { id: "sylene", name: "Sylene's Crystal", kind: "stat", value: 2, count: 1, grant: "+2 to one Stat", desc: "A faceted prism that sharpens a single innate talent until it sings." },
-      { id: "champion", name: "Champion's Wand", kind: "ability", value: 2, count: 3, grant: "+2 to three Abilities", desc: "A duellist's favorite — broadly capable, generous to the well-rounded." },
-      { id: "whispered", name: "Whispered Secrets", kind: "ability", value: 4, count: 1, grant: "+4 to one Ability", desc: "Blackened yew that hums with half-heard answers; pours itself into one art." },
+      { id: "sylene", name: "Sylene's Crystal", kind: "stat", value: 2, count: 1, grant: "+2 to one Stat", desc: "A delicate, ornate steel wand with a single inlaid gem at the tip that crystallizes your magic power to sharpen your core instincts. Increases one Stat by 2." },
+      { id: "champion", name: "Champion's Wand", kind: "ability", value: 2, count: 3, grant: "+2 to three Abilities", desc: "A classic styled birch wand woven with griffin mane hair, with a balanced enchantment to improve your abilities. Increases three Abilities by 2." },
+      { id: "whispered", name: "Whispered Secrets", kind: "ability", value: 4, count: 1, grant: "+4 to one Ability", desc: "An untrimmed yew wand brushed with hellclaw sap and smoked over an enchanted flame, resonating with your core ability to strengthen you further. Increases one Ability by 4." },
     ],
   },
 

@@ -99,8 +99,8 @@ const Pips = ({ value, limit, base, accent }: { value: number; limit: number; ba
     </span>
   );
 };
-const StarBtn = ({ on, onClick }: { on: boolean; onClick: () => void }) => (
-  <button type="button" className={"opt-star" + (on ? " on" : "")} onClick={onClick} title={on ? "Major field" : "Mark as a major field"}><Icon name="star" /></button>
+const StarBtn = ({ on, glow, onClick }: { on: boolean; glow: boolean; onClick: () => void }) => (
+  <button type="button" className={"opt-star" + (on ? " on" : "") + (glow ? " glow" : "")} onClick={onClick} title={on ? "Major field" : "Mark as a major field"}><Icon name="star" /></button>
 );
 const Donut = ({ value, limit, accent, icon }: { value: number; limit: number; accent: string; icon: string }) => {
   const r = 40, c = 2 * Math.PI * r, frac = Math.min(value, limit) / limit;
@@ -361,7 +361,7 @@ export function AdmissionAllocation({ D, draft, set }: { D: ForgeData; draft: Dr
     <div className="sf-fstep-body sf-alloc">
       <div className="sf-fhead">
         <h3>Stats &amp; Abilities</h3>
-        <p className="sf-fhint">Put your points into base Stats that empower different Abilities, and then rank in individual Abilities: your magic Subjects and your practical Skills. Choose one major Subject to take a +3 cap, or two major Subjects to take a +1 cap.</p>
+        <p className="sf-fhint">Put your points into base Stats that empower different Abilities, and then rank in individual Abilities: your magic Subjects and your practical Skills. Use the star button to choose one major Subject to take a +3 cap, or two major Subjects to take a +1 cap.</p>
       </div>
 
       <div className="codex">
@@ -423,7 +423,7 @@ export function AdmissionAllocation({ D, draft, set }: { D: ForgeData; draft: Dr
                       </div>
                     </div>
                     <div className="codex-row__right">
-                      {it.star ? <StarBtn on={A.isMajor(it.key)} onClick={() => A.toggleMajor(it.key)} /> : null}
+                      {it.star ? <StarBtn on={A.isMajor(it.key)} glow={draft.major.length === 0} onClick={() => A.toggleMajor(it.key)} /> : null}
                       <AllocStepper value={v} canDec={v > 0} canInc={A.canInc(it.map, it.key)} onDec={() => A.dec(it.map, it.key)} onInc={() => A.inc(it.map, it.key)} />
                     </div>
                   </div>
