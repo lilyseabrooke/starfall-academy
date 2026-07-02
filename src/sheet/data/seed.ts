@@ -564,24 +564,5 @@ export const SEED: SeedData = {
     dice: [10, 1],
   },
 
-  ledgerSeed: [
-    { whoId: "arianna", label: "Perception", kind: "skill", stat: "Insight", mod: 9, dc: 14, dice: [7, 4], detail: null },
-    { whoId: "trinity", label: "Silver Tongue", kind: "move", stat: "Charm", mod: 19, dice: [10, 6],
-      detail: "Once per scene, when you address someone of higher standing, add your Socialite rank to a Win Over roll.",
-      success: "They grant your small request and think well of you for asking.",
-      fail: "They mark you as someone who reaches above their station." },
-    { actor: "Warden Mourncrow", gm: true, label: "Pin the Truant", kind: "move", stat: "Focus", mod: 18, dc: 24, dice: [1, 5],
-      detail: "The Warden's gaze finds you across any crowd. While he holds it, you cannot slip away unseen — only outface him.",
-      fail: "His attention snags elsewhere. Go — quickly.",
-      hl: (deg, s) => (s
-        ? `You are marked for ${deg} round${deg > 1 ? "s" : ""}; slipping away unseen is off the table.`
-        : `His attention snags elsewhere. Go — quickly.`) },
-    { whoId: "suri", label: "Whispering Step", kind: "spell", stat: "Body", mod: 15, dc: 18, dice: [9, 7],
-      meta: ["Teleportation", "Base Body"],
-      detail: "Step from one shadow into another within sight. Arrive in silence — the only sound is the one you left behind.",
-      hl: (deg, s) => (s
-        ? `Step to any shadow you can see, up to ${deg * 3} metres away — the only sound is the one you left behind.`
-        : `You arrive ${deg} pace${deg > 1 ? "s" : ""} wrong, and loudly.`) },
-    { whoId: "claire", label: "Resist Fear", kind: "resist", stat: "Logic", mod: 13, dc: 15, sit: 4, sitReason: "Phoenix-Feather Charm", dice: [8, 9], detail: null },
-  ],
+  ledgerSeed: [],
 };
