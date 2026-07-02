@@ -78,7 +78,7 @@ type Campaign = { id: string; name: string | null; code: string | null };
 
 interface ResistState { pcId: string; cond: string; dc: number; dcText: string | null; rolled: number | null }
 interface GrantState { pcId: string; matAmt: number; matText: string | null }
-interface ArchiveGrantState { pcId: string }
+interface CompendiumGrantState { pcId: string }
 interface AddNpcState { editId: string | null; name: string; title: string; resolve: number; strong: number; weak: number; icon: string; confirmDelete: boolean }
 interface ActionState { active: boolean; included: string[]; selected: string[]; ap: Record<string, number>; changeApId: string | null }
 
@@ -102,10 +102,10 @@ export function GmView({ campaign, party: hostParty }: GmViewProps) {
 
   const [resist, setResist] = React.useState<ResistState | null>(null);
   const [grant, setGrant] = React.useState<GrantState | null>(null);
-  const [archiveGrant, setArchiveGrant] = React.useState<ArchiveGrantState | null>(null);
-  const [archiveCat, setArchiveCat] = React.useState("spell");
-  const [archiveTarget, setArchiveTarget] = React.useState<SerializedSheet | null>(null);
-  const [archiveLastAdded, setArchiveLastAdded] = React.useState<string | null>(null);
+  const [compendiumGrant, setCompendiumGrant] = React.useState<CompendiumGrantState | null>(null);
+  const [compendiumCat, setCompendiumCat] = React.useState("spell");
+  const [compendiumTarget, setCompendiumTarget] = React.useState<SerializedSheet | null>(null);
+  const [compendiumLastAdded, setCompendiumLastAdded] = React.useState<string | null>(null);
   const [addNpc, setAddNpc] = React.useState<AddNpcState | null>(null);
   const [time, setTime] = React.useState<GmTime>(() => ({ ...GM_SEED.time }));
   const [timeModal, setTimeModal] = React.useState(false);
@@ -226,8 +226,8 @@ export function GmView({ campaign, party: hostParty }: GmViewProps) {
     }
   };
 
-  /* ------------------------------- Archive -------------------------------
-     The GM's Archive drawer is the SAME Compendium component/live data the
+  /* ------------------------------ Compendium ------------------------------
+     The GM's Compendium drawer is the SAME Compendium component/live data the
      player's own sheet uses (real Google-Sheets-backed entries, styling,
      search/filter/sort, and every specialized action — attuned vs. unattuned
      artifacts, potion sheaf vs. recipe, spell learning vs. fully-learned,
@@ -238,29 +238,29 @@ export function GmView({ campaign, party: hostParty }: GmViewProps) {
   const comp = useCompendium();
   const compendiumData = React.useMemo(() => ({ compendiumCats: SEED.compendiumCats, compendium: comp.compendium }), [comp.compendium]);
 
-  const openArchive = (pcId: string) => setArchiveGrant({ pcId });
-  const closeArchive = () => { setArchiveGrant(null); setArchiveTarget(null); };
+  const openCompendium = (pcId: string) => setCompendiumGrant({ pcId });
+  const closeCompendium = () => { setCompendiumGrant(null); setCompendiumTarget(null); };
 
-  const archiveLastAddedTimer = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const flashArchiveAdded = (name: string) => { setArchiveLastAdded(name); clearTimeout(archiveLastAddedTimer.current); archiveLastAddedTimer.current = setTimeout(() => setArchiveLastAdded(null), 2600); };
+  const compendiumLastAddedTimer = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const flashCompendiumAdded = (name: string) => { setCompendiumLastAdded(name); clearTimeout(compendiumLastAddedTimer.current); compendiumLastAddedTimer.current = setTimeout(() => setCompendiumLastAdded(null), 2600); };
 
   // Fetch the selected single target's sheet so the drawer's caps/checkmarks
   // (attunement slots, potion sheaf space, cultivation space, already-added
-  // entries) reflect that player exactly like their own Archive would. For
+  // entries) reflect that player exactly like their own Compendium would. For
   // "__all__" there's no single recipient to reflect, so the UI bypasses caps
   // — but the actual write for each party member still respects THEIR OWN
   // current caps (computePotionSheafGrant etc. check the freshly-read array).
   React.useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (!archiveGrant || archiveGrant.pcId === "__all__") { setArchiveTarget(null); return; }
-    const pc = party.find((p) => p.id === archiveGrant.pcId);
-    if (!pc?.sheetId) { setArchiveTarget(null); return; }
+    if (!compendiumGrant || compendiumGrant.pcId === "__all__") { setCompendiumTarget(null); return; }
+    const pc = party.find((p) => p.id === compendiumGrant.pcId);
+    if (!pc?.sheetId) { setCompendiumTarget(null); return; }
     let cancelled = false;
     createClient().from("characters").select("sheet").eq("id", pc.sheetId).single().then(({ data }) => {
-      if (!cancelled) setArchiveTarget((data?.sheet as SerializedSheet) || null);
+      if (!cancelled) setCompendiumTarget((data?.sheet as SerializedSheet) || null);
     });
     return () => { cancelled = true; };
-  }, [archiveGrant, party]);
+  }, [compendiumGrant, party]);
 
   const subjectRank = (schools: SerializedSheet["schools"] | undefined, key: string): number => {
     for (const sc of schools || []) { const f = (sc.subjects || []).find((s) => s.key === key); if (f) return f.rank || 0; }
@@ -277,8 +277,8 @@ export function GmView({ campaign, party: hostParty }: GmViewProps) {
     strip(sheet.magic?.spells, "sp-comp-");
     return ids;
   };
-  const archiveCaps = React.useMemo(() => {
-    const sheet = archiveGrant && archiveGrant.pcId !== "__all__" ? archiveTarget : null;
+  const compendiumCaps = React.useMemo(() => {
+    const sheet = compendiumGrant && compendiumGrant.pcId !== "__all__" ? compendiumTarget : null;
     if (!sheet) return { attuneFull: false, potionSheafCount: 0, potionCap: Infinity, cultivationCap: 0, plantSum: 0, potionRecipes: [] as { name: string }[], addedIds: [] as string[] };
     const attunedCount = (sheet.inventory?.artifacts || []).filter((a) => a.attuned).length;
     const attuneCap = INV.attuneCap(subjectRank(sheet.schools, "artificy"));
@@ -293,10 +293,10 @@ export function GmView({ campaign, party: hostParty }: GmViewProps) {
       potionRecipes: sheet.inventory?.recipes || [],
       addedIds: derivedAddedIds(sheet),
     };
-  }, [archiveGrant, archiveTarget]);
+  }, [compendiumGrant, compendiumTarget]);
 
-  const archiveTargets = () => archiveGrant ? (archiveGrant.pcId === "__all__" ? party : party.filter((p) => p.id === archiveGrant.pcId)) : [];
-  const archiveWho = () => !archiveGrant ? "" : archiveGrant.pcId === "__all__" ? "the whole party" : (archiveTargets()[0] ? archiveTargets()[0].name : "");
+  const compendiumTargets = () => compendiumGrant ? (compendiumGrant.pcId === "__all__" ? party : party.filter((p) => p.id === compendiumGrant.pcId)) : [];
+  const compendiumWho = () => !compendiumGrant ? "" : compendiumGrant.pcId === "__all__" ? "the whole party" : (compendiumTargets()[0] ? compendiumTargets()[0].name : "");
 
   const mergeSheetField = (sheet: SerializedSheet, field: string, value: unknown[]): SerializedSheet =>
     (field === "spells" || field === "moves")
@@ -316,7 +316,7 @@ export function GmView({ campaign, party: hostParty }: GmViewProps) {
       if (!res) return; // capped, already held, or not applicable — skip this target
       supabase.rpc("grant_sheet_field", { p_character: pc.sheetId, p_field: res.field, p_value: res.value }).then(({ error: rpcError }) => {
         if (rpcError) { console.error("Grant failed to persist for " + pc.name, rpcError.message); toast("Couldn't save grant for " + pc.name + " — try again."); return; }
-        if (archiveGrant && archiveGrant.pcId === pc.id) setArchiveTarget((prev) => prev ? mergeSheetField(prev, res.field, res.value) : prev);
+        if (compendiumGrant && compendiumGrant.pcId === pc.id) setCompendiumTarget((prev) => prev ? mergeSheetField(prev, res.field, res.value) : prev);
       });
     });
   };
@@ -331,7 +331,7 @@ export function GmView({ campaign, party: hostParty }: GmViewProps) {
       if (!res) return;
       supabase.rpc("grant_attuned_artifact", { p_character: pc.sheetId, p_artifacts: res.artifacts, p_moves: res.moves }).then(({ error: rpcError }) => {
         if (rpcError) { console.error("Attune grant failed to persist for " + pc.name, rpcError.message); toast("Couldn't save grant for " + pc.name + " — try again."); return; }
-        if (archiveGrant && archiveGrant.pcId === pc.id) setArchiveTarget((prev) => prev ? { ...prev, inventory: { ...prev.inventory, artifacts: res.artifacts }, magic: { ...prev.magic, moves: res.moves } } as SerializedSheet : prev);
+        if (compendiumGrant && compendiumGrant.pcId === pc.id) setCompendiumTarget((prev) => prev ? { ...prev, inventory: { ...prev.inventory, artifacts: res.artifacts }, magic: { ...prev.magic, moves: res.moves } } as SerializedSheet : prev);
       });
     });
   };
@@ -345,40 +345,40 @@ export function GmView({ campaign, party: hostParty }: GmViewProps) {
   };
 
   const broadcastAndToast = (entry: CompendiumEntry, variant?: "attuned" | "learning" | "sheaf" | "recipe" | "craft") => {
-    archiveTargets().forEach((pc) => { if (pc.sheetId) rollSync.requestRoll({ kind: "item", target: pc.sheetId, cat: entry.cat, entryId: entry.id, variant }); });
-    flashArchiveAdded(entry.name);
-    toast(entry.name + " passed to " + archiveWho() + ".");
+    compendiumTargets().forEach((pc) => { if (pc.sheetId) rollSync.requestRoll({ kind: "item", target: pc.sheetId, cat: entry.cat, entryId: entry.id, variant }); });
+    flashCompendiumAdded(entry.name);
+    toast(entry.name + " passed to " + compendiumWho() + ".");
   };
 
   const gmOnAdd = (cid: string) => {
     const e = comp.compendium.find((x) => x.id === cid); if (!e) return;
     const field = INVENTORY_FIELD_BY_CAT[e.cat]; if (!field) return;
-    archiveTargets().forEach((pc) => persistFieldGrant(pc, readInventory(field), (current) => computeCompendiumGrant(e, current)));
+    compendiumTargets().forEach((pc) => persistFieldGrant(pc, readInventory(field), (current) => computeCompendiumGrant(e, current)));
     broadcastAndToast(e);
   };
   const gmOnAddAttuned = (cid: string) => {
     const e = comp.compendium.find((x) => x.id === cid); if (!e) return;
-    archiveTargets().forEach((pc) => persistAttunedGrant(pc, e));
+    compendiumTargets().forEach((pc) => persistAttunedGrant(pc, e));
     broadcastAndToast(e, "attuned");
   };
   const gmOnAddLearning = (cid: string) => {
     const e = comp.compendium.find((x) => x.id === cid); if (!e) return;
-    archiveTargets().forEach((pc) => persistFieldGrant(pc, readInventory("spells"), (current) => computeLearningSpellGrant(e, current)));
+    compendiumTargets().forEach((pc) => persistFieldGrant(pc, readInventory("spells"), (current) => computeLearningSpellGrant(e, current)));
     broadcastAndToast(e, "learning");
   };
   const gmOnAddPotionSheaf = (cid: string) => {
     const e = comp.compendium.find((x) => x.id === cid); if (!e) return;
-    archiveTargets().forEach((pc) => persistFieldGrant(pc, readInventory("potions"), (current) => computePotionSheafGrant(e, current, INV.potionCap)));
+    compendiumTargets().forEach((pc) => persistFieldGrant(pc, readInventory("potions"), (current) => computePotionSheafGrant(e, current, INV.potionCap)));
     broadcastAndToast(e, "sheaf");
   };
   const gmOnAddPotionRecipe = (cid: string) => {
     const e = comp.compendium.find((x) => x.id === cid); if (!e) return;
-    archiveTargets().forEach((pc) => persistFieldGrant(pc, readInventory("recipes"), (current) => computePotionRecipeGrant(e, current)));
+    compendiumTargets().forEach((pc) => persistFieldGrant(pc, readInventory("recipes"), (current) => computePotionRecipeGrant(e, current)));
     broadcastAndToast(e, "recipe");
   };
   const gmOnAddWandCraft = (cid: string) => {
     const e = comp.compendium.find((x) => x.id === cid); if (!e) return;
-    archiveTargets().forEach((pc) => persistFieldGrant(pc, readInventory("wands"), (current) => computeWandCraftGrant(e, current)));
+    compendiumTargets().forEach((pc) => persistFieldGrant(pc, readInventory("wands"), (current) => computeWandCraftGrant(e, current)));
     broadcastAndToast(e, "craft");
   };
 
@@ -552,7 +552,7 @@ export function GmView({ campaign, party: hostParty }: GmViewProps) {
         </header>
 
         <div className="sf-canvas gm-canvas">
-          {tab === "party" && <PartyTab party={party} onResist={openResist} onGrant={openGrant} onGrantAll={openGrantAll} onArchive={openArchive} onArchiveAll={() => setArchiveGrant({ pcId: "__all__" })} />}
+          {tab === "party" && <PartyTab party={party} onResist={openResist} onGrant={openGrant} onGrantAll={openGrantAll} onCompendium={openCompendium} onCompendiumAll={() => setCompendiumGrant({ pcId: "__all__" })} />}
           {tab === "npcs" && <NpcsTab npcs={npcs} conds={GM_SEED.CONDS} onAdd={openAddNpc} onEdit={openEditNpc} onRoll={rollNpc} onBumpCond={bumpCondNpc} />}
           {tab === "notes" && <NotesTab notes={notes} activeId={activeNoteId} setActiveId={setActiveNoteId} tagFilter={tagFilter} setTagFilter={setTagFilter} onCreate={createNote} onPatch={patchNote} confirmId={confirmDeleteNoteId} setConfirmId={setConfirmDeleteNoteId} onDelete={deleteNote} />}
           {tab === "action" && <ActionTab party={party} action={action} onToggleInclude={toggleInclude} onToggleSelect={toggleSelect} onBegin={beginAction} onEnd={endAction} onThreat={threatMove} onTargeted={targetedThreat} onOpening={opening} onChangeAp={changeAp} onTarget={targetPlayer} setChangeApId={(id) => setAction((s) => ({ ...s, changeApId: s.changeApId === id ? null : id }))} />}
@@ -564,27 +564,27 @@ export function GmView({ campaign, party: hostParty }: GmViewProps) {
 
       {resist && <ResistModal resist={resist} party={party} conds={GM_SEED.CONDS} onPatch={patchResist} onRoll={promptResist} onClose={() => setResist(null)} />}
       {grant && <GrantDrawer grant={grant} party={party} matChips={GM_SEED.matChips} matStep={GM_SEED.matStep} onPatch={patchGrant} onGrantMaterials={grantMaterials} onClose={() => setGrant(null)} />}
-      {archiveGrant && (
+      {compendiumGrant && (
         <Compendium
           open
-          onClose={closeArchive}
+          onClose={closeCompendium}
           data={compendiumData}
-          addedIds={archiveCaps.addedIds}
+          addedIds={compendiumCaps.addedIds}
           onAdd={gmOnAdd}
           onAddAttuned={gmOnAddAttuned}
           onAddLearning={gmOnAddLearning}
           onAddPotionSheaf={gmOnAddPotionSheaf}
           onAddPotionRecipe={gmOnAddPotionRecipe}
           onAddWandCraft={gmOnAddWandCraft}
-          potionSheafCount={archiveCaps.potionSheafCount}
-          potionCap={archiveCaps.potionCap}
-          potionRecipes={archiveCaps.potionRecipes}
-          lastAdded={archiveLastAdded}
-          cultivationCap={archiveCaps.cultivationCap}
-          plantSum={archiveCaps.plantSum}
-          attuneFull={archiveCaps.attuneFull}
-          cat={archiveCat}
-          setCat={setArchiveCat}
+          potionSheafCount={compendiumCaps.potionSheafCount}
+          potionCap={compendiumCaps.potionCap}
+          potionRecipes={compendiumCaps.potionRecipes}
+          lastAdded={compendiumLastAdded}
+          cultivationCap={compendiumCaps.cultivationCap}
+          plantSum={compendiumCaps.plantSum}
+          attuneFull={compendiumCaps.attuneFull}
+          cat={compendiumCat}
+          setCat={setCompendiumCat}
         />
       )}
       {addNpc && <AddNpcModal addNpc={addNpc} onPatch={patchAddNpc} onConfirm={confirmAddNpc} onDelete={(id) => { deleteNpc(id); setAddNpc(null); }} onClose={() => setAddNpc(null)} />}
@@ -599,7 +599,7 @@ export function GmView({ campaign, party: hostParty }: GmViewProps) {
 }
 
 /* ============================== PARTY TAB ================================= */
-function PartyTab({ party, onResist, onGrant, onGrantAll, onArchive, onArchiveAll }: { party: GmPartyMember[]; onResist: (id: string) => void; onGrant: (id: string) => void; onGrantAll: () => void; onArchive: (id: string) => void; onArchiveAll: () => void }) {
+function PartyTab({ party, onResist, onGrant, onGrantAll, onCompendium, onCompendiumAll }: { party: GmPartyMember[]; onResist: (id: string) => void; onGrant: (id: string) => void; onGrantAll: () => void; onCompendium: (id: string) => void; onCompendiumAll: () => void }) {
   return (
     <div>
       <div className="gm-sec-head">
@@ -634,7 +634,7 @@ function PartyTab({ party, onResist, onGrant, onGrantAll, onArchive, onArchiveAl
             <div className="gm-pc__btns">
               <button className="gm-btn" onClick={() => onResist(pc.id)}><Icon name="shield-alert" style={{ color: "var(--crimson-300)" }} />Resist</button>
               <button className="gm-btn" onClick={() => onGrant(pc.id)}><Icon name="gift" style={{ color: "var(--gold-300)" }} />Grant</button>
-              <button className="gm-btn" onClick={() => onArchive(pc.id)}><Icon name="library-big" style={{ color: "var(--plum-300)" }} />Archive</button>
+              <button className="gm-btn" onClick={() => onCompendium(pc.id)}><Icon name="library-big" style={{ color: "var(--plum-300)" }} />Compendium</button>
             </div>
           </article>
         ))}
@@ -648,10 +648,10 @@ function PartyTab({ party, onResist, onGrant, onGrantAll, onArchive, onArchiveAl
       </div>
       <div className="gm-grantall">
         <div className="gm-grantall__txt">
-          <span className="gm-grantall__title">Grant from the Archive to the whole party</span>
+          <span className="gm-grantall__title">Grant from the Compendium to the whole party</span>
           <span className="gm-grantall__sub">Each member receives the same entry</span>
         </div>
-        <button className="gm-btn-gold" onClick={onArchiveAll}><Icon name="library-big" />Archive for All</button>
+        <button className="gm-btn-gold" onClick={onCompendiumAll}><Icon name="library-big" />Compendium for All</button>
       </div>
     </div>
   );
