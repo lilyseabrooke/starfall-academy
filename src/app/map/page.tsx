@@ -14,7 +14,7 @@ export default async function MapPage() {
 
   return (
     <div className="embed-root">
-      <HudTopBar active="Map" signedIn={!!user} />
+      <HudTopBar active="Map" signedIn={!!user} title="Campus Map" />
       <iframe
         className="embed-frame"
         src="/map/index.html"

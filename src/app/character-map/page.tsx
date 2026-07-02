@@ -14,7 +14,7 @@ export default async function CharacterMapPage() {
 
   return (
     <div className="embed-root">
-      <HudTopBar active="Character Ledger" signedIn={!!user} />
+      <HudTopBar active="Character Ledger" signedIn={!!user} title="Family Tree" />
       <iframe
         className="embed-frame"
         src="/character-map/index.html"

@@ -14,7 +14,7 @@ export default async function CompendiumPage() {
 
   return (
     <div className="embed-root">
-      <HudTopBar active="Compendium" signedIn={!!user} />
+      <HudTopBar active="Compendium" signedIn={!!user} title="Compendium" />
       <iframe
         className="embed-frame"
         src="/compendium/index.html"

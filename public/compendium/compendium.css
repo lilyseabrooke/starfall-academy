@@ -52,9 +52,13 @@ button{ font-family:inherit; color:inherit; cursor:pointer; background:none; bor
 /* =========================================================================
    Top bar — matches the Campus Map topbar exactly
    ========================================================================= */
+/* Single toolbar row: search, categories, sort, filters. Categories scroll
+   horizontally instead of wrapping, so this never grows past one row —
+   there is exactly one bar of chrome here (the site's persistent top bar
+   lives outside this iframe, above it). */
 .topbar{
   position:sticky; top:0; z-index:20;
-  display:flex; align-items:center; gap:var(--space-5);
+  display:flex; align-items:center; gap:var(--space-4);
   height:64px; padding:0 var(--space-6) 0 var(--space-5);
   border-bottom:1px solid var(--border-subtle);
   background:color-mix(in oklab, var(--ink-900) 82%, transparent);
@@ -62,34 +66,15 @@ button{ font-family:inherit; color:inherit; cursor:pointer; background:none; bor
   box-shadow:0 1px 0 color-mix(in oklab, var(--gold-500) 10%, transparent), var(--shadow-md);
   overflow:visible;
 }
-.topbar__crest{ width:38px; height:46px; object-fit:contain; flex:none; filter:drop-shadow(0 2px 5px rgba(0,0,0,.55)); }
-.topbar__titles{ display:flex; flex-direction:column; line-height:1.12; }
-.topbar__kicker{ font-family:var(--font-sans); font-size:10px; letter-spacing:var(--tracking-widest);
-  text-transform:uppercase; color:var(--text-gold); }
-.topbar__title{ font-family:var(--font-display); font-weight:700; font-size:17px;
-  letter-spacing:var(--tracking-wide); text-transform:uppercase; color:var(--text-strong); }
-.topbar__spacer{ flex:1; }
 .topbar__filter{ position:relative; flex:none; }
 
-/* =========================================================================
-   Toolbar — category tabs only (sticky beneath the top bar)
-   ========================================================================= */
-.toolbar{
-  position:sticky; top:var(--topbar-h, 64px); z-index:15;
-  background:color-mix(in oklab, var(--ink-950) 78%, transparent);
-  backdrop-filter:blur(10px);
-  border-bottom:1px solid var(--hairline);
-}
 .cats{
-  flex:1; min-width:0;
-  display:flex; align-items:stretch; flex-wrap:wrap; gap:2px;
-  padding:var(--space-2) 0 0;
+  flex:1; min-width:0; align-self:stretch;
+  display:flex; align-items:stretch; flex-wrap:nowrap; gap:2px;
+  overflow-x:auto; overflow-y:hidden;
+  scrollbar-width:none;
 }
-.toolbar__inner{
-  max-width:var(--width-content); margin:0 auto;
-  display:flex; align-items:stretch; gap:var(--space-4);
-  padding:0 var(--space-6);
-}
+.cats::-webkit-scrollbar{ display:none; }
 
 /* ---- Category tabs (gold underline, DS Tabs aesthetic) ------------------ */
 .cat{
@@ -527,18 +512,15 @@ body.flat-levels .badge[class*="badge--"]{ color:var(--gold-300); background:var
    Responsive
    ========================================================================= */
 @media (max-width:680px){
-  .topbar{ flex-wrap:wrap; height:auto; min-height:58px; gap:var(--space-3) var(--space-4);
-    padding:9px var(--space-4); align-items:center; }
-  .topbar__crest{ width:32px; height:38px; }
-  .topbar__kicker{ display:none; }
-  .topbar__title{ font-size:15px; letter-spacing:.06em; }
-  .topbar__spacer{ order:2; }
-  .topbar__filter{ order:3; }
-  .search{ order:5; flex:1 0 100%; height:var(--control-md); }
-  .search input{ width:100%; max-width:none; flex:1; }
+  /* The single toolbar row stays one row at every width — categories scroll
+     horizontally rather than wrapping — so the other controls just shrink. */
+  .topbar{ height:56px; padding:0 var(--space-4); gap:var(--space-2); }
+  .search{ flex:0 1 120px; padding:0 var(--space-2); }
+  .search input{ width:100%; }
+  .filter-btn{ padding:0 var(--space-3); }
+  .filter-btn span:not(.filter-dot){ display:none; }
   .filter-menu{ width:min(340px, calc(100vw - 24px)); }
 
-  .toolbar__inner{ padding:0 var(--space-4); gap:var(--space-2); }
   .shell{ padding:var(--space-5) var(--space-4) 0; }
   .cat{ padding:10px 11px 13px; font-size:12px; }
   .sort-btn{ padding:0 10px; }
@@ -550,7 +532,7 @@ body.flat-levels .badge[class*="badge--"]{ color:var(--gold-300); background:var
 }
 
 @media (max-width:420px){
-  .topbar__title{ font-size:13.5px; }
+  .search{ flex-basis:88px; }
   .toast{ left:12px; right:12px; transform:translateY(16px); width:auto; }
   .toast.show{ transform:translateY(0); }
   .fact{ flex-direction:column; gap:2px; }

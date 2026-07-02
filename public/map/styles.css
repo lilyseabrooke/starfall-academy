@@ -66,12 +66,11 @@ button{ font-family:inherit; color:inherit; cursor:pointer; background:none; bor
   letter-spacing:var(--tracking-wide); text-transform:uppercase; color:var(--text-strong);
 }
 .topbar__spacer{ flex:1; }
-/* Breadcrumb — sits just right of the title, divided by a gold hairline */
+/* Breadcrumb — this bar's leading element (the site's persistent top bar
+   with the page title lives outside this iframe), so no leading divider. */
 .crumbs{ display:flex; align-items:center; gap:10px; font-family:var(--font-sans);
   font-size:12px; letter-spacing:.08em; color:var(--text-muted); text-transform:uppercase;
-  padding-left:20px; margin-left:4px; border-left:1px solid var(--border-default);
   align-self:stretch; }
-.crumbs:empty{ border-left:none; }
 .crumbs__link{ color:var(--text-muted); letter-spacing:.08em; text-transform:uppercase;
   transition:color var(--dur-base); }
 .crumbs__link:hover{ color:var(--text-gold); }

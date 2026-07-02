@@ -23,14 +23,25 @@
 <!-- Centered line-crest watermark behind everything (the Map's stage treatment) -->
 <div class="bg-crest" aria-hidden="true"></div>
 
-<!-- Slim toolbar: the site's persistent top bar lives on the host page above
-     this iframe, so this row only carries the compendium's own controls. -->
+<!-- Single slim toolbar: the site's persistent top bar lives on the host page
+     above this iframe, so this is the only chrome row the compendium needs —
+     search, categories (scrolls horizontally instead of wrapping), sort, and
+     filters all share one row so the app never stacks multiple bars. -->
 <header class="topbar">
   <div class="search">
     <i data-lucide="search"></i>
     <input type="text" id="search-bar" placeholder="Search the archive…" autocomplete="off" />
   </div>
-  <span class="topbar__spacer"></span>
+  <nav class="cats" id="cats" aria-label="Compendium categories"></nav>
+  <div class="sort">
+    <button type="button" class="sort-btn" id="sort-button" aria-label="Sort entries">
+      <i data-lucide="arrow-up-down"></i>
+      <span class="sort-btn__label">Sort</span>
+      <span class="sort-btn__sep">·</span>
+      <span class="sort-current" id="sort-current">Name</span>
+    </button>
+    <div class="sort-menu" id="sort-menu" role="dialog" aria-label="Sort options"></div>
+  </div>
   <div class="topbar__filter">
     <button type="button" class="filter-btn" id="filter-button" aria-label="Filters">
       <i data-lucide="sliders-horizontal"></i>
@@ -40,22 +51,6 @@
     <div id="filter-menu" class="filter-menu" role="dialog" aria-label="Filter options"></div>
   </div>
 </header>
-
-<!-- ===================== TOOLBAR ===================== -->
-<div class="toolbar" id="toolbar">
-  <div class="toolbar__inner">
-    <nav class="cats" id="cats" aria-label="Compendium categories"></nav>
-    <div class="sort">
-      <button type="button" class="sort-btn" id="sort-button" aria-label="Sort entries">
-        <i data-lucide="arrow-up-down"></i>
-        <span class="sort-btn__label">Sort</span>
-        <span class="sort-btn__sep">·</span>
-        <span class="sort-current" id="sort-current">Name</span>
-      </button>
-      <div class="sort-menu" id="sort-menu" role="dialog" aria-label="Sort options"></div>
-    </div>
-  </div>
-</div>
 
 <!-- ===================== LIST ===================== -->
 <main class="shell">

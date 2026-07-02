@@ -70,7 +70,12 @@ export default function Landing({
 
   return (
     <div className="lp-root">
-      <HudTopBar ref={hud} signedIn={signedIn} showMyCharacters={false} />
+      <HudTopBar
+        ref={hud}
+        signedIn={signedIn}
+        showMyCharacters={false}
+        showBack={false}
+      />
 
       {/* ===================== HERO ===================== */}
       <main className="lp-main">

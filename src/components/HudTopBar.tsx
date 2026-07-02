@@ -59,8 +59,13 @@ const HudTopBar = forwardRef<
     active?: HudActiveLink;
     signedIn: boolean;
     showMyCharacters?: boolean;
+    title?: string;
+    showBack?: boolean;
   }
->(function HudTopBar({ active, signedIn, showMyCharacters = true }, ref) {
+>(function HudTopBar(
+  { active, signedIn, showMyCharacters = true, title = "The Portal", showBack = true },
+  ref
+) {
   const router = useRouter();
 
   const navLinks = showMyCharacters
@@ -128,6 +133,11 @@ const HudTopBar = forwardRef<
     <>
       {/* ===================== SHARED HUD TOP BAR ===================== */}
       <header className="hud">
+        {showBack && (
+          <Link className="hud-back" href="/" aria-label="Back to the landing page">
+            <ArrowLeft size={15} aria-hidden="true" />
+          </Link>
+        )}
         <img
           className="hud-crest"
           src="/coming-soon/assets/crest-simple.png"
@@ -135,7 +145,7 @@ const HudTopBar = forwardRef<
         />
         <div className="hud-titles">
           <span className="hud-eyebrow">Starfall Academy</span>
-          <span className="hud-title">The Portal</span>
+          <span className="hud-title">{title}</span>
         </div>
 
         <nav className="hud-nav">
