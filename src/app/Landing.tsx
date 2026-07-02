@@ -20,6 +20,10 @@ type IconType = typeof BookOpen;
 type NavLink = { name: string; icon: IconType; href: string };
 type Destination = NavLink & { blurb: string };
 
+// TODO: replace with the real Gamebook page once it's built.
+const GAMEBOOK_URL =
+  "https://docs.google.com/document/d/1QkXZovkaw1SzvZOmOxjfb_1DwX79_PmoU-LWwiSPLUc/edit?usp=sharing";
+
 const DESTINATIONS: Destination[] = [
   {
     name: "Compendium",
@@ -31,7 +35,7 @@ const DESTINATIONS: Destination[] = [
   {
     name: "Gamebook",
     icon: ScrollText,
-    href: "#",
+    href: GAMEBOOK_URL,
     blurb: "The rules, the world, and how to run a game of your own.",
   },
   {
@@ -133,6 +137,9 @@ export default function Landing({
                   key={dest.name}
                   className="sa-card-dest"
                   href={dest.href}
+                  {...(dest.href.startsWith("http")
+                    ? { target: "_blank", rel: "noopener noreferrer" }
+                    : {})}
                 >
                   <span className="sa-card-icon">
                     <Icon size={21} aria-hidden="true" />
