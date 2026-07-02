@@ -62,7 +62,8 @@ export async function PATCH(
   if (Object.keys(update).length > 0) {
     const { error } = await supabase.from("characters").update(update).eq("id", id);
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      console.error("PATCH /api/characters/[id]", error);
+      return NextResponse.json({ error: "could not save character" }, { status: 400 });
     }
   } else if (!("campaign_code" in body)) {
     return NextResponse.json({ error: "nothing to update" }, { status: 400 });
@@ -88,7 +89,8 @@ export async function DELETE(
 
   const { error } = await supabase.from("characters").delete().eq("id", id);
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    console.error("DELETE /api/characters/[id]", error);
+    return NextResponse.json({ error: "could not delete character" }, { status: 400 });
   }
   return NextResponse.json({ ok: true });
 }
