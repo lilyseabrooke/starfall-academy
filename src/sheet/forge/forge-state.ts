@@ -408,7 +408,7 @@ export function buildCharacter(draft: Draft, D: ForgeData): CharacterVitals & { 
     title: draft.title.trim() || "Arcanist" + (majorName ? " · " + majorName : ""),
     bio: draft.bio.trim(),
     major: [...draft.major],
-    actionPoints: 4, actionPointsMax: 6,
+    actionPoints: 0, actionPointsMax: 6,
     resolve: 3, resolveMax: 5,
     trouble: 0,
     materials: D.creation.startingMaterials,
