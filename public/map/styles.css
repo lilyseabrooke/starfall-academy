@@ -1,0 +1,584 @@
+/* ===========================================================================
+   Starfall Atlas — styles
+   Built on the Starfall Academy design tokens (loaded from _ds/ in index.html,
+   the same resource directory the Family Ledger uses). This sheet only adds the
+   map-specific surfaces; every colour, font, radius, shadow and easing comes
+   from the design-system token files.
+   =========================================================================== */
+
+/* Map-local additions the DS doesn't carry, plus aliases so existing
+   declarations keep resolving to the canonical token names. */
+:root{
+  /* "The Grounds" meadow green — the one house tint not in the DS palette */
+  --meadow-300:#9cc49a; --meadow-500:#5f8f63; --meadow-700:#33502f;
+  /* aliases → canonical DS tokens */
+  --ease-std:var(--ease-standard);
+  --font-ui:var(--font-sans);
+}
+
+/* House → colour map (each region carries data-house) */
+[data-house="forest"]  { --hc-300:var(--forest-300); --hc-500:var(--forest-500); --hc-700:var(--forest-700); }
+[data-house="crimson"] { --hc-300:var(--crimson-300);--hc-500:var(--crimson-500);--hc-700:var(--crimson-700); }
+[data-house="plum"]    { --hc-300:var(--plum-300);   --hc-500:var(--plum-500);   --hc-700:var(--plum-700); }
+[data-house="teal"]    { --hc-300:var(--teal-300);   --hc-500:var(--teal-500);   --hc-700:var(--teal-700); }
+[data-house="meadow"]  { --hc-300:var(--meadow-300); --hc-500:var(--meadow-500); --hc-700:var(--meadow-700); }
+[data-house="gold"]    { --hc-300:var(--gold-300);   --hc-500:var(--gold-500);   --hc-700:var(--gold-700); }
+
+/* ---- Reset / base -------------------------------------------------------- */
+*{ box-sizing:border-box; margin:0; padding:0; }
+html,body{ height:100%; }
+body{
+  font-family:var(--font-sans); color:var(--text-body);
+  background:var(--ink-950); overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+button{ font-family:inherit; color:inherit; cursor:pointer; background:none; border:none; }
+.mono{ font-family:var(--font-mono); }
+
+/* =========================================================================
+   App frame
+   ========================================================================= */
+.atlas{
+  position:fixed; inset:0;
+  display:grid; grid-template-rows:auto 1fr;
+  background:var(--grad-vignette);
+}
+
+/* ---- Top bar (matches the Family Ledger topbar) -------------------------- */
+.topbar{
+  display:flex; align-items:center; gap:var(--space-5);
+  height:64px; padding:0 var(--space-5);
+  border-bottom:1px solid var(--border-subtle);
+  background:color-mix(in oklab, var(--ink-900) 82%, transparent);
+  backdrop-filter:blur(10px);
+  box-shadow:0 1px 0 color-mix(in oklab, var(--gold-500) 10%, transparent), var(--shadow-md);
+  position:relative; z-index:6;
+}
+.topbar__crest{ width:36px; height:36px; flex:none;
+  filter:drop-shadow(0 2px 5px rgba(0,0,0,.55)); opacity:1; }
+.topbar__titles{ display:flex; flex-direction:column; line-height:1.1; }
+.topbar__kicker{
+  font-family:var(--font-sans); font-size:10px; letter-spacing:var(--tracking-widest);
+  text-transform:uppercase; color:var(--text-gold);
+}
+.topbar__title{
+  font-family:var(--font-display); font-weight:700; font-size:16px;
+  letter-spacing:var(--tracking-wide); text-transform:uppercase; color:var(--text-strong);
+}
+.topbar__spacer{ flex:1; }
+/* Breadcrumb — this bar's leading element (the site's persistent top bar
+   with the page title lives outside this iframe), so no leading divider. */
+.crumbs{ display:flex; align-items:center; gap:10px; font-family:var(--font-sans);
+  font-size:12px; letter-spacing:.08em; color:var(--text-muted); text-transform:uppercase;
+  align-self:stretch; }
+.crumbs__link{ color:var(--text-muted); letter-spacing:.08em; text-transform:uppercase;
+  transition:color var(--dur-base); }
+.crumbs__link:hover{ color:var(--text-gold); }
+.crumbs__sep{ color:var(--gold-700); }
+.crumbs__here{ color:var(--text-strong); }
+/* coordinate readout */
+.readout{ display:flex; gap:18px; align-items:center;
+  font-family:var(--font-mono); font-size:11px; color:var(--text-faint);
+  letter-spacing:.04em; }
+.readout b{ color:var(--gold-400); font-weight:500; }
+/* FIT pill (mirrors the Ledger's topbar action) */
+.fit-btn[hidden]{ display:none; }
+.fit-btn{ display:inline-flex; align-items:center; gap:var(--space-2);
+  height:40px; padding:0 var(--space-4);
+  background:var(--ink-850); color:var(--text-body);
+  border:1px solid var(--border-default); border-radius:var(--radius-sm);
+  font-family:var(--font-sans); font-size:var(--text-sm); letter-spacing:.06em;
+  text-transform:uppercase;
+  transition:border-color var(--dur-base), color var(--dur-base), box-shadow var(--dur-base); }
+.fit-btn:hover{ border-color:var(--gold-600); color:var(--gold-200); box-shadow:var(--glow-gold); }
+.fit-btn i{ display:inline-flex; }
+.fit-btn svg{ width:15px; height:15px; }
+
+/* =========================================================================
+   Stage (holds both the world view and the submap view)
+   ========================================================================= */
+.stage{ position:relative; overflow:hidden; }
+
+/* Faint line-crest watermark behind everything — the Ledger's stage treatment */
+.stage::before{
+  content:""; position:absolute; inset:0; pointer-events:none; z-index:0;
+  background:
+    radial-gradient(58% 52% at 50% 42%, color-mix(in oklab, var(--gold-500) 5%, transparent), transparent 70%),
+    url("assets/crest-lines.png") no-repeat center 46% / min(640px, 52vw);
+  filter:saturate(0.2);
+  opacity:.5; mix-blend-mode:screen;
+}
+
+/* The two swappable views */
+.view{ position:absolute; inset:0; z-index:1;
+  transition:opacity .42s var(--ease-out), transform .42s var(--ease-out);
+  display:flex; align-items:center; justify-content:center; }
+.view[hidden]{ display:none; }
+.view--leave{ opacity:0; transform:scale(.985); pointer-events:none; }
+.view--enter{ animation:viewIn .5s var(--ease-out) both; }
+@keyframes viewIn{ from{ opacity:0; transform:scale(1.02); } to{ opacity:1; transform:none; } }
+
+/* Pan/zoom transform wrapper */
+.canvas{ position:absolute; inset:0; }
+.panner{ position:absolute; top:50%; left:50%; transform-origin:center;
+  will-change:transform; }
+.world-svg{ display:block; overflow:visible; }
+.dragging{ cursor:grabbing !important; }
+.canvas{ cursor:grab; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; touch-action:none; }
+.world-svg text{ -webkit-user-select:none; user-select:none; }
+
+/* =========================================================================
+   Region blocks (shared by world map + submaps)
+   ========================================================================= */
+.region{ cursor:pointer; outline:none; }
+.region__shape{
+  fill:color-mix(in oklab,var(--hc-500) 52%,var(--ink-900));
+  stroke:color-mix(in oklab,var(--gold-400) 50%,transparent); stroke-width:2;
+  stroke-linejoin:round;
+  filter:drop-shadow(0 7px 12px rgba(0,0,0,.5));
+  transition:fill .3s var(--ease-std), stroke .3s var(--ease-std), filter .3s var(--ease-std);
+}
+.region__sheen{ fill:url(#sheen); mix-blend-mode:soft-light; opacity:.55;
+  pointer-events:none; transition:opacity .3s var(--ease-std); }
+.region:hover .region__shape,
+.region.is-active .region__shape{
+  fill:color-mix(in oklab,var(--hc-500) 92%,var(--ink-900));
+  stroke:var(--gold-200); stroke-width:2.5;
+  filter:drop-shadow(0 0 26px color-mix(in oklab,var(--hc-300) 48%,transparent))
+         drop-shadow(0 8px 14px rgba(0,0,0,.5));
+}
+.region:hover .region__sheen,.region.is-active .region__sheen{ opacity:.75; }
+.region__hatch{ fill:url(#hatch); opacity:0; transition:opacity .3s; pointer-events:none; }
+.region:hover .region__hatch{ opacity:.5; }
+
+/* Region label printed on the block */
+.region__label{ pointer-events:none; text-anchor:middle; }
+.region__name{
+  font-family:var(--font-serif); font-weight:700;
+  fill:var(--parchment-50); letter-spacing:.06em; text-transform:uppercase;
+  paint-order:stroke; stroke:rgba(8,9,13,.55); stroke-width:4px;
+}
+.region__house{
+  font-family:var(--font-mono); fill:var(--gold-300); letter-spacing:.12em;
+  text-transform:uppercase; paint-order:stroke; stroke:rgba(8,9,13,.5); stroke-width:3px;
+}
+.region__tick{ fill:none; stroke:var(--gold-400); stroke-width:1.5; opacity:0;
+  transition:opacity .3s; }
+.region:hover .region__tick,.region.is-active .region__tick{ opacity:.9; }
+
+/* Citadel core gets the gilded gradient + a star marker */
+.region--citadel .region__shape{
+  fill:color-mix(in oklab,var(--gold-600) 52%,var(--ink-900));
+  stroke:var(--gold-200); stroke-width:2.5;
+  filter:drop-shadow(0 8px 16px rgba(0,0,0,.55));
+}
+.region--citadel .region__sheen{ opacity:.72; }
+.region--citadel:hover .region__shape,
+.region--citadel.is-active .region__shape{
+  fill:var(--gold-500);
+  filter:drop-shadow(0 0 30px color-mix(in oklab,var(--gold-300) 58%,transparent))
+         drop-shadow(0 8px 16px rgba(0,0,0,.5));
+}
+.region--citadel .region__name{ fill:var(--parchment-50); paint-order:stroke; stroke:rgba(8,9,13,.7); stroke-width:4px; }
+.region--citadel .region__house{ fill:var(--gold-800); stroke:none; }
+
+/* =========================================================================
+   Floating chrome — legend, compass, zoom, hint, readout panel
+   ========================================================================= */
+.float{ position:absolute; z-index:5; }
+
+/* Legend / index — Ledger panel treatment */
+.legend{ top:24px; left:24px; width:256px;
+  display:flex; flex-direction:column; max-height:calc(100% - 48px);
+  background:color-mix(in oklab, var(--ink-850) 92%, transparent);
+  border:1px solid var(--border-default); border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-lg), var(--inset-hi); backdrop-filter:blur(8px); overflow:hidden; }
+.legend__head{ padding:var(--space-4) var(--space-4) var(--space-3); flex:none; }
+.legend__eyebrow{ font-family:var(--font-sans); font-size:10px; letter-spacing:var(--tracking-widest);
+  text-transform:uppercase; color:var(--text-gold); }
+.legend__title{ font-family:var(--font-display); font-weight:700; font-size:15px;
+  letter-spacing:var(--tracking-wide); text-transform:uppercase; color:var(--text-strong); margin-top:4px; }
+.legend__list{ padding:0 var(--space-2) var(--space-2); display:flex; flex-direction:column; gap:1px;
+  min-height:0; max-height:calc(100vh - 200px); overflow-y:auto;
+  scrollbar-width:thin; scrollbar-color:color-mix(in oklab, var(--gold-600) 40%, transparent) transparent; }
+.legend__list::-webkit-scrollbar{ width:8px; }
+.legend__list::-webkit-scrollbar-thumb{ background:color-mix(in oklab, var(--gold-600) 36%, transparent);
+  border-radius:var(--radius-pill); border:2px solid transparent; background-clip:padding-box; }
+.legend__item{ display:flex; align-items:center; gap:11px; width:100%;
+  padding:8px 10px; border-radius:var(--radius-sm); text-align:left;
+  transition:background var(--dur-base); }
+.legend__item:hover,.legend__item.is-active{ background:var(--ink-700); }
+.legend__swatch{ width:10px; height:10px; flex:none; border-radius:50%;
+  background:var(--hc-500); box-shadow:0 0 6px var(--hc-300); }
+.legend__swatch--gold{ background:var(--grad-gold); box-shadow:0 0 6px var(--gold-400); }
+.legend__labels{ display:flex; flex-direction:column; line-height:1.18; min-width:0; }
+.legend__name{ font-family:var(--font-serif); font-size:14px; color:var(--text-strong); letter-spacing:.01em;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.legend__item:hover .legend__name,.legend__item.is-active .legend__name{ color:var(--gold-200); }
+.legend__sub{ font-family:var(--font-sans); font-size:11px; color:var(--text-muted);
+  letter-spacing:.02em; }
+.legend__sector{ margin-left:auto; font-family:var(--font-mono); font-size:10px;
+  color:var(--text-faint); letter-spacing:.04em; flex:none; }
+.legend__hint{ padding:0 var(--space-4) var(--space-4); flex:none; font-family:var(--font-serif);
+  font-style:italic; font-size:11.5px; color:var(--text-faint); }
+
+/* Citadel-mode chrome: back button + title (top-left, replaces the legend) */
+.citadel-bar{ top:24px; left:24px; display:flex; align-items:center; gap:14px; }
+.citadel-back{ display:inline-flex; align-items:center; gap:8px; height:40px; padding:0 16px;
+  background:color-mix(in oklab, var(--ink-850) 92%, transparent);
+  border:1px solid var(--border-default); border-radius:var(--radius-sm);
+  color:var(--text-body); font-family:var(--font-sans); font-size:12px;
+  letter-spacing:.08em; text-transform:uppercase; backdrop-filter:blur(8px);
+  box-shadow:var(--shadow-md); transition:border-color var(--dur-base),color var(--dur-base),box-shadow var(--dur-base); }
+.citadel-back:hover{ color:var(--gold-200); border-color:var(--gold-600); box-shadow:var(--glow-gold); }
+.citadel-bar__titles{ display:flex; flex-direction:column; line-height:1.08; }
+.citadel-bar__eyebrow{ font-family:var(--font-sans); font-size:9.5px; letter-spacing:var(--tracking-widest);
+  text-transform:uppercase; color:var(--text-gold); }
+.citadel-bar__title{ font-family:var(--font-display); font-weight:700; font-size:16px;
+  letter-spacing:var(--tracking-wide); text-transform:uppercase; color:var(--text-strong); }
+
+/* Citadel-map index panel: legend with the back button + title in its header */
+.legend--citadel{ display:flex; flex-direction:column; max-height:calc(100% - 48px); }
+.legend--citadel[hidden]{ display:none; }
+.legend__head--citadel{ display:flex; flex-direction:column; gap:12px; }
+.legend__titles{ display:flex; flex-direction:column; line-height:1.08; }
+.citadel-back{ align-self:flex-start; display:inline-flex; align-items:center; gap:8px; height:34px; padding:0 14px;
+  background:var(--ink-850); border:1px solid var(--border-default); border-radius:var(--radius-sm);
+  color:var(--text-muted); font-family:var(--font-sans); font-size:11px;
+  letter-spacing:var(--tracking-wide); text-transform:uppercase;
+  transition:border-color var(--dur-base),color var(--dur-base),box-shadow var(--dur-base); }
+.citadel-back:hover{ color:var(--gold-200); border-color:var(--gold-600); box-shadow:var(--glow-gold); }
+.legend--citadel .legend__list{ overflow-y:auto; min-height:0;
+  scrollbar-width:thin; scrollbar-color:color-mix(in oklab, var(--gold-600) 40%, transparent) transparent; }
+.legend--citadel .legend__list::-webkit-scrollbar{ width:8px; }
+.legend--citadel .legend__list::-webkit-scrollbar-thumb{ background:color-mix(in oklab, var(--gold-600) 36%, transparent);
+  border-radius:var(--radius-pill); border:2px solid transparent; background-clip:padding-box; }
+.legend__item--loc .legend__name{ color:var(--gold-200); }
+
+/* Compact one-line rows for the Citadel index */
+.legend--citadel .legend__list{ padding:var(--space-1) var(--space-2) var(--space-2); }
+.legend__item--compact{ gap:9px; padding:5px 9px; }
+.legend__item--compact .legend__name{ flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.legend__item--compact .legend__swatch{ width:9px; height:9px; }
+.legend__subhead{ margin:8px 9px 3px; padding-top:8px; border-top:1px solid var(--border-subtle);
+  font-family:var(--font-sans); font-size:9.5px; letter-spacing:var(--tracking-widest);
+  text-transform:uppercase; color:var(--text-gold); }
+
+/* Compass rose */
+.compass{ top:24px; right:24px; width:96px; height:96px; opacity:.92;
+  filter:drop-shadow(0 6px 14px rgba(0,0,0,.5)); }
+.compass text{ font-family:var(--font-serif); font-weight:700; }
+
+/* Zoom controls — Ledger style */
+.zoom{ right:24px; bottom:24px; display:flex; flex-direction:column;
+  padding:var(--space-1); gap:var(--space-1);
+  border:1px solid var(--border-default); border-radius:var(--radius-md);
+  background:color-mix(in oklab, var(--ink-850) 92%, transparent);
+  box-shadow:var(--shadow-lg); backdrop-filter:blur(8px); }
+.zoom-btn{ width:38px; height:38px; display:grid; place-items:center;
+  color:var(--text-body); border-radius:var(--radius-sm);
+  transition:background var(--dur-base), color var(--dur-base); }
+.zoom-btn:hover{ background:var(--ink-700); color:var(--gold-300); }
+.zoom-btn i{ display:inline-flex; }
+.zoom-btn svg{ width:18px; height:18px; }
+
+/* drag hint */
+.hint{ left:50%; bottom:22px; transform:translateX(-50%);
+  font-family:var(--font-sans); font-size:11px; letter-spacing:.14em;
+  color:var(--text-faint); text-transform:uppercase; text-align:center;
+  pointer-events:none; transition:opacity .4s; }
+.hint b{ color:var(--gold-500); font-weight:500; }
+
+/* =========================================================================
+   Submap view — detail panel + mini interlocking districts
+   ========================================================================= */
+.submap{ position:absolute; inset:0; display:grid;
+  grid-template-columns:360px 1fr; grid-template-rows:100%; }
+
+/* Left dossier panel — modelled on the Ledger record card */
+.dossier{ position:relative; z-index:2;
+  border-right:1px solid var(--border-default);
+  border-top:2px solid var(--hc-500);
+  background:color-mix(in oklab, var(--ink-850) 96%, transparent);
+  box-shadow:18px 0 50px rgba(0,0,0,.4), var(--inset-hi);
+  padding:var(--space-5) var(--space-6); display:flex; flex-direction:column; gap:var(--space-5); overflow-y:auto; min-height:0; }
+.dossier::-webkit-scrollbar{ width:9px; }
+.dossier::-webkit-scrollbar-track{ background:transparent; }
+.dossier::-webkit-scrollbar-thumb{ background:color-mix(in oklab, var(--gold-600) 36%, transparent);
+  border-radius:var(--radius-pill); border:2px solid transparent; background-clip:padding-box; }
+.dossier::-webkit-scrollbar-thumb:hover{ background:color-mix(in oklab, var(--gold-500) 55%, transparent); background-clip:padding-box; }
+.dossier{ scrollbar-width:thin; scrollbar-color:color-mix(in oklab, var(--gold-600) 40%, transparent) transparent; }
+.dossier__back{ display:inline-flex; align-items:center; gap:9px; align-self:flex-start;
+  font-family:var(--font-sans); font-size:11px; letter-spacing:var(--tracking-wide); text-transform:uppercase; color:var(--text-muted);
+  padding:8px 14px; border:1px solid var(--border-default); border-radius:var(--radius-sm);
+  transition:border-color var(--dur-base),color var(--dur-base),box-shadow var(--dur-base); }
+.dossier__back:hover{ color:var(--gold-200); border-color:var(--gold-600); box-shadow:var(--glow-gold); }
+.dossier__sector{ display:inline-flex; align-items:center; gap:7px;
+  font-family:var(--font-sans); font-size:10px; letter-spacing:var(--tracking-widest);
+  color:var(--text-gold); text-transform:uppercase; }
+.dossier__sector::before{ content:""; width:8px; height:8px; border-radius:50%;
+  background:var(--hc-500); box-shadow:0 0 6px var(--hc-300); flex:none; }
+.dossier__name{ font-family:var(--font-display); font-weight:700; font-size:var(--text-2xl); line-height:1.04;
+  letter-spacing:var(--tracking-wide); text-transform:uppercase; color:var(--text-strong); margin-top:6px; }
+.dossier__house{ display:inline-flex; align-items:center; gap:8px; margin-top:10px;
+  font-family:var(--font-sans); font-size:12px; letter-spacing:.04em; color:var(--hc-300); }
+.dossier__house .dot{ width:9px; height:9px; border-radius:50%; background:var(--hc-500);
+  box-shadow:0 0 10px var(--hc-300); }
+.dossier__rule{ height:1px; background:var(--rule-gold); opacity:.7; }
+.dossier__blurb{ font-family:var(--font-serif); font-size:var(--text-md); line-height:var(--leading-relaxed);
+  color:var(--text-body); text-wrap:pretty; }
+.dossier__facts{ display:flex; flex-direction:column; gap:0; }
+.fact{ display:flex; justify-content:space-between; gap:14px; padding:10px 0;
+  border-bottom:1px solid var(--hairline); font-family:var(--font-serif); font-size:var(--text-sm); }
+.fact:first-child{ border-top:1px solid var(--hairline); }
+.fact__k{ font-family:var(--font-sans); font-size:10px; letter-spacing:var(--tracking-wide);
+  text-transform:uppercase; color:var(--text-gold); }
+.fact__v{ color:var(--text-strong); text-align:right; }
+.dossier__districtsHead{ font-family:var(--font-sans); font-size:10px; letter-spacing:var(--tracking-widest);
+  text-transform:uppercase; color:var(--text-gold); }
+.dossier__districtList{ display:flex; flex-direction:column; gap:2px; }
+/* clickable, hoverable zone list (Citadel district + region dossiers) */
+.dossier__zoneList{ display:flex; flex-direction:column; gap:1px; }
+.zoneRow{ display:flex; align-items:center; gap:10px; width:100%; text-align:left;
+  padding:9px 11px; border-radius:var(--radius-sm); border:1px solid transparent;
+  transition:background var(--dur-base), border-color var(--dur-base); }
+.zoneRow:hover, .zoneRow.is-active{ background:var(--ink-700); border-color:var(--border-subtle); }
+.zoneRow__name{ flex:1; min-width:0; font-family:var(--font-serif); font-size:14px;
+  color:var(--text-strong); transition:color var(--dur-base); }
+.zoneRow:hover .zoneRow__name{ color:var(--gold-200); }
+.zoneRow__chev{ flex:none; font-family:var(--font-mono); font-size:13px; color:var(--gold-700);
+  transition:color var(--dur-base), transform var(--dur-base); }
+.zoneRow:hover .zoneRow__chev{ color:var(--gold-300); transform:translateX(2px); }
+.distRow{ display:flex; align-items:baseline; gap:10px; padding:8px 10px; border-radius:var(--radius-sm);
+  text-align:left; width:100%; transition:background var(--dur-base); }
+.distRow:hover,.distRow.is-active{ background:var(--ink-700); }
+.distRow__tag{ font-family:var(--font-mono); font-size:10px; color:var(--text-faint);
+  letter-spacing:.04em; flex:none; width:42px; }
+.distRow:hover .distRow__tag,.distRow.is-active .distRow__tag{ color:var(--gold-400); }
+.distRow__name{ font-family:var(--font-serif); font-size:14px; color:var(--text-strong); }
+.distRow__blurb{ font-family:var(--font-sans); font-size:11px; color:var(--text-muted); margin-left:auto; text-align:right;
+  max-width:148px; }
+/* Many-district lists (the Citadel) stack the note under the name for readability */
+.dossier__districtList--full .distRow{ display:grid; grid-template-columns:auto 1fr; column-gap:10px; row-gap:2px; align-items:baseline; }
+.dossier__districtList--full .distRow__tag{ grid-row:1 / span 2; align-self:center; }
+.dossier__districtList--full .distRow__name{ grid-column:2; }
+.dossier__districtList--full .distRow__blurb{ grid-column:2; margin-left:0; text-align:left; max-width:none;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; line-height:1.35; }
+.distRow--special .distRow__tag{ color:var(--gold-300); }
+.distRow--special .distRow__name{ color:var(--gold-200); }
+.dossier__decree{ margin-top:auto; padding-top:var(--space-5); text-align:center;
+  font-family:var(--font-sans); font-weight:600; font-size:12px;
+  letter-spacing:var(--tracking-widest); text-transform:uppercase;
+  /* engraved/embossed plaque: text tinted just off the canvas, with a dark
+     inset shadow above and a faint light edge below so it reads as carved-in */
+  color:color-mix(in oklab, var(--gold-700) 42%, var(--ink-700));
+  text-shadow:0 -1px 0 rgba(0,0,0,.55), 0 1px 0 color-mix(in oklab, var(--gold-500) 16%, transparent);
+  user-select:none; }
+
+/* Right: submap canvas */
+.submap__field{ position:relative; min-height:0; }
+.subdistrict__shape{
+  fill:color-mix(in oklab,var(--cell, var(--hc-500)) 48%,var(--ink-900));
+  stroke:color-mix(in oklab,var(--gold-400) 42%,transparent); stroke-width:2; stroke-linejoin:round;
+  filter:drop-shadow(0 5px 10px rgba(0,0,0,.45));
+  transition:fill .25s,stroke .25s,filter .25s; }
+.subdistrict__sheen{ fill:url(#sheen); mix-blend-mode:soft-light; opacity:.42; pointer-events:none; transition:opacity .25s; }
+.subdistrict{ cursor:pointer; }
+.subdistrict:hover .subdistrict__shape,.subdistrict.is-active .subdistrict__shape{
+  fill:color-mix(in oklab,var(--cell, var(--hc-500)) 74%,var(--ink-900));
+  stroke:var(--gold-200);
+  filter:drop-shadow(0 0 16px color-mix(in oklab,var(--cell, var(--hc-300)) 40%,transparent)) drop-shadow(0 6px 12px rgba(0,0,0,.45)); }
+.subdistrict:hover .subdistrict__sheen,.subdistrict.is-active .subdistrict__sheen{ opacity:.6; }
+
+/* Sub-area tiles (level-4 Voronoi inside a district field) — per-tile lightness
+   via --mix so the same district colour reads as distinct sub-areas. */
+.subarea .subdistrict__shape{ fill:color-mix(in oklab,var(--cell, var(--hc-500)) var(--mix,52%),var(--ink-900)); }
+.subarea:hover .subdistrict__shape,.subarea.is-active .subdistrict__shape{
+  fill:color-mix(in oklab,var(--cell, var(--hc-500)) calc(var(--mix,52%) + 24%),var(--ink-900)); }
+/* faint district boundary behind the sub-areas */
+.districtfield__outline{ fill:none; stroke:color-mix(in oklab,var(--gold-400) 30%,transparent);
+  stroke-width:2; stroke-dasharray:3 9; stroke-linecap:round; opacity:.7; }
+/* shift the district field clear of the Map Studio panel while sub-editing */
+.submap__field{ transition:padding-right .3s var(--ease-out); }
+.submap.is-subediting .submap__field{ padding-right:320px; }
+
+/* Level-4 zone view: keep the district field but fade all but the selected zone */
+.subdistrict-labels{ pointer-events:none; }
+.submap.is-zoneview .subarea,
+.submap.is-zoneview .subdistrict__label{ transition:opacity .35s var(--ease-out); }
+.submap.is-zoneview .subarea:not(.is-zonesel){ opacity:.4; }
+.submap.is-zoneview .subarea:not(.is-zonesel):hover{ opacity:.6; }
+.submap.is-zoneview .subdistrict__label:not(.is-zonesel){ opacity:.78; }
+.submap.is-zoneview .subarea.is-zonesel .subdistrict__shape{
+  stroke:var(--gold-100); stroke-width:3;
+  filter:drop-shadow(0 0 22px color-mix(in oklab,var(--cell, var(--gold-300)) 50%,transparent)); }
+.submap.is-zoneview .districtfield__outline{ opacity:.3; }
+
+/* dossier hint + zone record tweaks */
+.dossier__hint{ font-family:var(--font-serif); font-style:italic; font-size:12.5px; color:var(--text-faint); }
+.dossier__name--zone{ font-size:var(--text-xl); }
+.dossier__blurb--empty{ color:var(--text-faint); font-style:italic; }
+.subdistrict__label{ pointer-events:none; text-anchor:middle; }
+.subdistrict__name{ font-family:var(--font-serif); font-weight:700; fill:var(--parchment-50);
+  letter-spacing:.04em; text-transform:uppercase; paint-order:stroke;
+  stroke:rgba(8,9,13,.55); stroke-width:3.5px; }
+.subdistrict__tag{ font-family:var(--font-mono); fill:var(--gold-300); letter-spacing:.1em;
+  paint-order:stroke; stroke:rgba(8,9,13,.5); stroke-width:2.5px; }
+
+/* Special locations float ON TOP of the district tiles, gilded like the Citadel */
+.location{ cursor:pointer; filter:drop-shadow(0 9px 18px rgba(0,0,0,.62)); }
+.location__plate{ fill:var(--gold-500); stroke:var(--gold-200); stroke-width:2;
+  transition:fill .25s, stroke .25s; }
+.location__sheen{ fill:url(#sheen); mix-blend-mode:soft-light; opacity:.7; pointer-events:none; }
+.location:hover .location__plate,.location.is-active .location__plate{ fill:var(--gold-400); stroke:var(--gold-100); }
+.location__label{ pointer-events:none; text-anchor:middle; }
+.location__name{ font-family:var(--font-display); font-weight:700; fill:var(--ink-950);
+  letter-spacing:.04em; text-transform:uppercase; }
+
+/* crest watermark behind a field — Ledger modal treatment */
+.watermark{ position:absolute; inset:0; display:grid; place-items:center;
+  pointer-events:none; z-index:0; opacity:.05; }
+.watermark img{ width:min(58%,540px); height:auto; filter:saturate(0.2); }
+
+/* Mobile Citadel back button — hidden on desktop, shown only on mobile */
+.mobile-back{ display:none; }
+
+/* Mobile: dock the dossier as a bottom sheet, map fills the top half */
+@media (max-width:760px){
+  /* Clip the atlas so topbar overflow can't widen the viewport */
+  .atlas{ overflow:hidden; }
+  /* Collapse to a single full-height row so the stage fills the viewport.
+     display:none on the topbar removes it from grid flow entirely, which
+     with the original auto+1fr rows would auto-place the stage into the
+     auto row and collapse it to 0. A single 1fr row avoids that. */
+  .atlas{ grid-template-rows: 1fr; }
+  .topbar{ display:none; }
+  /* Collapse topbar: hide breadcrumb, keep crest + title + fit btn */
+  .crumbs{ display:none; }
+  /* Mobile Citadel back button */
+  .mobile-back{
+    display:inline-flex; align-items:center; gap:8px;
+    top:24px; left:24px;
+    height:40px; padding:0 16px;
+    background:color-mix(in oklab, var(--ink-850) 92%, transparent);
+    border:1px solid var(--border-default); border-radius:var(--radius-sm);
+    color:var(--text-body); font-family:var(--font-sans); font-size:13px;
+    letter-spacing:.08em; text-transform:uppercase; backdrop-filter:blur(8px);
+    box-shadow:var(--shadow-md);
+  }
+  .mobile-back[hidden]{ display:none; }
+  .topbar{ gap:var(--space-3); padding:0 var(--space-3); }
+
+  .submap{ display:block; overflow:hidden; }
+  .submap__field{
+    position:absolute; top:0; left:0; right:0; bottom:48%;
+    overflow:hidden;
+  }
+  .dossier{
+    position:absolute; bottom:0; left:0; right:0; height:48%;
+    border-right:none; border-top:2px solid var(--hc-500);
+    border-radius:14px 14px 0 0;
+    box-shadow:0 -14px 34px rgba(0,0,0,.5), var(--inset-hi);
+    padding:var(--space-4) var(--space-5);
+    width:auto; max-width:100%; box-sizing:border-box; overflow-x:hidden;
+  }
+  /* short drag-handle cue at the top of the sheet */
+  .dossier::after{
+    content:""; position:fixed; left:50%; transform:translateX(-50%);
+    margin-top:-6px; width:40px; height:4px; border-radius:var(--radius-pill);
+    background:color-mix(in oklab, var(--gold-500) 40%, transparent); pointer-events:none;
+  }
+  .dossier__name{ font-size:var(--text-xl); }
+  .legend{ display:none; }
+  .submap.is-subediting .submap__field{ padding-right:0; }
+}
+
+/* =========================================================================
+   Tweaks panel — Citadel shield controls (host-toggled)
+   ========================================================================= */
+.tweaks{ position:fixed; right:24px; bottom:84px; z-index:40; width:288px;
+  background:color-mix(in oklab, var(--ink-850) 96%, transparent);
+  border:1px solid var(--border-default); border-radius:var(--radius-md);
+  box-shadow:var(--shadow-xl), var(--inset-hi); backdrop-filter:blur(10px);
+  font-family:var(--font-sans); overflow:hidden; opacity:1; }
+.tweaks:not([hidden]){ animation:tweaksIn .32s var(--ease-out); }
+@keyframes tweaksIn{ from{ transform:translateY(10px); } to{ transform:none; } }
+.tweaks__head{ display:flex; align-items:center; gap:10px; padding:13px 15px;
+  border-bottom:1px solid var(--border-subtle);
+  background:linear-gradient(180deg,rgba(185,157,83,.10),transparent); }
+.tweaks__titles{ display:flex; flex-direction:column; line-height:1.1; }
+.tweaks__eyebrow{ font-size:9px; letter-spacing:.32em; text-transform:uppercase;
+  color:var(--text-gold); font-weight:500; }
+.tweaks__title{ font-family:var(--font-serif); font-weight:700; font-size:15px;
+  letter-spacing:.08em; text-transform:uppercase; color:var(--text-strong); margin-top:2px; }
+.tweaks__close{ margin-left:auto; width:26px; height:26px; flex:none; border-radius:4px;
+  display:grid; place-items:center; color:var(--text-muted); font-size:13px;
+  border:1px solid var(--border-subtle); transition:color .15s,border-color .15s,background .15s; }
+.tweaks__close:hover{ color:var(--gold-300); border-color:var(--border-strong); background:rgba(185,157,83,.1); }
+.tweaks__body{ padding:12px 15px 14px; display:flex; flex-direction:column; gap:16px;
+  max-height:min(60vh,460px); overflow-y:auto;
+  scrollbar-width:thin; scrollbar-color:color-mix(in oklab, var(--gold-600) 40%, transparent) transparent; }
+.tweaks__body::-webkit-scrollbar{ width:8px; }
+.tweaks__body::-webkit-scrollbar-thumb{ background:color-mix(in oklab, var(--gold-600) 36%, transparent);
+  border-radius:var(--radius-pill); border:2px solid transparent; background-clip:padding-box; }
+.tweaks__section{ display:flex; flex-direction:column; gap:11px; }
+.tweaks__section + .tweaks__section{ padding-top:14px; border-top:1px solid var(--border-subtle); }
+.tweaks__legend{ font-family:var(--font-sans); font-size:9.5px; letter-spacing:var(--tracking-widest);
+  text-transform:uppercase; color:var(--text-gold); }
+.tweaks__rows{ display:flex; flex-direction:column; gap:12px; }
+.tweaks__select{ width:100%; height:34px; padding:0 10px;
+  background:var(--ink-850); color:var(--text-strong);
+  border:1px solid var(--border-default); border-radius:var(--radius-sm);
+  font-family:var(--font-serif); font-size:13px; cursor:pointer; }
+.tweaks__select:focus{ outline:none; border-color:var(--gold-600); box-shadow:var(--glow-gold); }
+.tweaks__row{ display:grid; grid-template-columns:1fr auto; align-items:center;
+  column-gap:10px; row-gap:8px; }
+/* sub-area editor */
+.tweaks__hint2{ font-family:var(--font-serif); font-style:italic; font-size:11.5px; color:var(--text-faint); }
+.tweaks__subname{ font-family:var(--font-serif); font-size:13.5px; color:var(--text-strong); }
+.tweaks__chips{ display:flex; gap:6px; flex-wrap:wrap; }
+.tweaks__chip{ width:32px; height:30px; display:grid; place-items:center;
+  background:var(--ink-850); border:1px solid var(--border-default); border-radius:var(--radius-sm);
+  font-family:var(--font-mono); font-size:12px; color:var(--text-body);
+  transition:border-color var(--dur-base),color var(--dur-base),background var(--dur-base); }
+.tweaks__chip:hover{ border-color:var(--gold-600); color:var(--gold-200); }
+.tweaks__chip.is-sel{ background:var(--grad-gold); color:var(--ink-950); border-color:var(--gold-300); }
+.tweaks__chip.is-off{ opacity:.4; text-decoration:line-through; }
+.tweaks__chip.is-off.is-sel{ opacity:.8; }
+.tweaks__check{ display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-body); cursor:pointer; }
+.tweaks__check input{ width:15px; height:15px; accent-color:var(--gold-500); cursor:pointer; }
+/* generic-type assignment */
+.tweaks__genwrap{ display:flex; flex-direction:column; gap:7px; }
+.tweaks__sublabel{ font-family:var(--font-sans); font-size:10px; letter-spacing:var(--tracking-wide);
+  text-transform:uppercase; color:var(--text-muted); }
+.tweaks__genbtns{ display:flex; gap:6px; }
+.tweaks__gen{ flex:1; height:30px; padding:0 4px;
+  background:var(--ink-850); border:1px solid var(--border-default); border-radius:var(--radius-sm);
+  font-family:var(--font-sans); font-size:11px; color:var(--text-body); letter-spacing:.02em;
+  transition:border-color var(--dur-base),color var(--dur-base),background var(--dur-base); }
+.tweaks__gen:hover{ border-color:var(--gold-600); color:var(--gold-200); }
+.tweaks__gen.is-active{ background:var(--grad-gold); color:var(--ink-950); border-color:var(--gold-300); font-weight:500; }
+.tweaks__label{ font-size:12px; color:var(--text-body); letter-spacing:.02em; }
+.tweaks__val{ font-size:11px; color:var(--gold-300); min-width:24px; text-align:right; }
+.tweaks__slider{ grid-column:1 / -1; -webkit-appearance:none; appearance:none;
+  width:100%; height:3px; border-radius:2px; cursor:pointer;
+  background:linear-gradient(90deg,var(--gold-600),var(--gold-400)); }
+.tweaks__slider::-webkit-slider-thumb{ -webkit-appearance:none; appearance:none;
+  width:15px; height:15px; border-radius:50%;
+  background:var(--grad-gold); border:1px solid var(--gold-200);
+  box-shadow:0 1px 4px rgba(0,0,0,.5); cursor:grab; }
+.tweaks__slider::-moz-range-thumb{ width:15px; height:15px; border-radius:50%; border:1px solid var(--gold-200);
+  background:var(--gold-400); box-shadow:0 1px 4px rgba(0,0,0,.5); cursor:grab; }
+.tweaks__reset{ width:100%; margin:2px 0 0;
+  padding:8px 0; border:1px solid var(--border-subtle); border-radius:4px;
+  font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--text-muted);
+  transition:color .15s,border-color .15s,background .15s; }
+.tweaks__reset:hover{ color:var(--gold-300); border-color:var(--border-strong); background:rgba(185,157,83,.08); }
+
+/* selected-district marker while editing positions */
+.subdistrict.is-sel .subdistrict__shape{ stroke:var(--gold-100); stroke-width:3.5;
+  stroke-dasharray:7 5; filter:drop-shadow(0 0 18px color-mix(in oklab,var(--gold-300) 55%,transparent)); }
+.location.is-sel .location__plate{ stroke:var(--gold-100); stroke-width:3.5; stroke-dasharray:7 5; }
+/* selected-region marker while editing campus positions */
+.region.is-sel .region__shape{ stroke:var(--gold-100); stroke-width:4;
+  stroke-dasharray:9 6; filter:drop-shadow(0 0 24px color-mix(in oklab,var(--gold-300) 50%,transparent)); }

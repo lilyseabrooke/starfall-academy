@@ -298,7 +298,10 @@
 .sf-sheet .sf-col { display: flex; flex-direction: column; gap: var(--space-5); min-width: 0; }
 
 /* ---- Stats ------------------------------------------------------------ */
-.sf-sheet .sf-stats { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); align-items: start; }
+/* auto-fit tracks the *actual* width of the stats column (not the viewport),
+   so it stays 2-up as soon as there's room again after the sidebar column
+   stacks below, instead of collapsing at a fixed breakpoint. */
+.sf-sheet .sf-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--space-4); align-items: start; }
 .sf-sheet .sf-fac {
   display: flex; flex-direction: column;
   background: var(--surface-card); border: 1px solid var(--border-subtle);
@@ -953,7 +956,6 @@
 
 @media (max-width: 1180px) {
   .sf-sheet .sf-grid { grid-template-columns: 1fr; }
-  .sf-sheet .sf-stats { grid-template-columns: 1fr; }
 }
 
 /* ============================= BACKFIRE ================================ */
@@ -1304,7 +1306,6 @@
   /* Canvas: tighter padding, single-column grids */
   .sf-sheet .sf-canvas { padding: var(--space-4) var(--space-3); gap: var(--space-4); }
   .sf-sheet .sf-grid { grid-template-columns: 1fr; }
-  .sf-sheet .sf-stats { grid-template-columns: 1fr; }
   .sf-sheet .sf-schools { grid-template-columns: 1fr; }
   .sf-sheet .sf-spells { grid-template-columns: 1fr; }
 

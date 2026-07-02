@@ -7,31 +7,23 @@ import {
   ArrowLeft,
   ArrowRight,
   ArrowRightLeft,
-  BookMarked,
-  BookOpen,
   Check,
   Compass,
   Copy,
   Crown,
   Feather,
   KeyRound,
-  LogOut,
-  Map,
-  Menu,
-  MessageCircle,
   Pencil,
   Plus,
-  ScrollText,
   Settings2,
   Sparkles,
   Swords,
   Trash2,
   UserMinus,
-  UsersRound,
   WandSparkles,
   X,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import HudTopBar from "@/components/HudTopBar";
 import "@/styles/landing.css";
 import "@/styles/characters.css";
 
@@ -52,20 +44,6 @@ export type CampaignCard = {
   monogram: string;
   code: string;
 };
-
-type IconType = typeof BookOpen;
-type NavLink = { name: string; icon: IconType; href: string; active?: boolean };
-
-const NAV_LINKS: NavLink[] = [
-  { name: "Compendium", icon: BookOpen, href: "#" },
-  { name: "Gamebook", icon: ScrollText, href: "#" },
-  { name: "Map", icon: Map, href: "#" },
-  { name: "Character Ledger", icon: BookMarked, href: "#" },
-  { name: "My Characters", icon: UsersRound, href: "/characters", active: true },
-];
-
-// TODO: replace with the real Discord invite link.
-const DISCORD_INVITE_URL = "https://discord.gg/your-invite-here";
 
 const KNOWN_TONES = new Set(["gold", "crimson", "teal", "plum", "forest"]);
 
@@ -89,8 +67,6 @@ export default function CharactersView({
 }) {
   const router = useRouter();
 
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [showDiscord, setShowDiscord] = useState(false);
   // The card whose manage popup is open, plus its inner view.
   const [manage, setManage] = useState<ManageTarget | null>(null);
   const [manageView, setManageView] = useState<"menu" | "join" | "rename">(
@@ -112,12 +88,6 @@ export default function CharactersView({
     manage?.kind === "campaign"
       ? campaigns.find((c) => c.id === manage.id) ?? null
       : null;
-
-  async function signOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.refresh();
-  }
 
   function openManage(target: ManageTarget, name?: string) {
     setManage(target);
@@ -210,96 +180,7 @@ export default function CharactersView({
 
   return (
     <div className="lp-root">
-      {/* ===================== SHARED HUD TOP BAR ===================== */}
-      <header className="hud">
-        <img
-          className="hud-crest"
-          src="/coming-soon/assets/crest-simple.png"
-          alt="Starfall Academy crest"
-        />
-        <div className="hud-titles">
-          <span className="hud-eyebrow">Starfall Academy</span>
-          <span className="hud-title">The Portal</span>
-        </div>
-
-        <nav className="hud-nav">
-          {NAV_LINKS.map((link) => {
-            const Icon = link.icon;
-            return (
-              <Link
-                key={link.name}
-                className="sa-link-hud"
-                href={link.href}
-                style={link.active ? { color: "var(--text-gold)" } : undefined}
-              >
-                <Icon size={15} aria-hidden="true" />
-                {link.name}
-              </Link>
-            );
-          })}
-        </nav>
-
-        <span className="hud-spacer" />
-
-        <button
-          className="sa-btn-ghost hud-discord"
-          onClick={() => {
-            setShowDiscord(true);
-            setMenuOpen(false);
-          }}
-        >
-          <MessageCircle size={15} aria-hidden="true" />
-          Discord
-        </button>
-
-        <button className="sa-btn-ghost" onClick={signOut}>
-          <LogOut size={15} aria-hidden="true" />
-          Sign Out
-        </button>
-
-        <button
-          className="sa-btn-ghost hud-burger"
-          onClick={() => setMenuOpen((o) => !o)}
-          aria-label="Menu"
-          aria-expanded={menuOpen}
-        >
-          {menuOpen ? (
-            <X size={19} aria-hidden="true" />
-          ) : (
-            <Menu size={19} aria-hidden="true" />
-          )}
-        </button>
-      </header>
-
-      {/* Mobile / tablet nav drawer */}
-      {menuOpen && (
-        <nav className="hud-menu">
-          {NAV_LINKS.map((link) => {
-            const Icon = link.icon;
-            return (
-              <Link
-                key={link.name}
-                className="hud-menu__link"
-                href={link.href}
-                onClick={() => setMenuOpen(false)}
-              >
-                <Icon size={18} aria-hidden="true" />
-                {link.name}
-              </Link>
-            );
-          })}
-          <button
-            className="hud-menu__discord"
-            onClick={() => {
-              setShowDiscord(true);
-              setMenuOpen(false);
-            }}
-          >
-            <MessageCircle size={18} aria-hidden="true" />
-            Join the Discord
-          </button>
-        </nav>
-      )}
+      <HudTopBar active="My Characters" signedIn />
 
       {/* ===================== PAGE BODY ===================== */}
       <main className="cp-main">
@@ -890,54 +771,6 @@ export default function CharactersView({
                 {busy ? "Creating…" : "CREATE"}
               </button>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* ===================== DISCORD INVITE MODAL ===================== */}
-      {showDiscord && (
-        <div
-          className="lp-modal-overlay"
-          onClick={() => setShowDiscord(false)}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Join the Discord"
-        >
-          <div className="lp-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="lp-modal__watermark" aria-hidden="true" />
-            <button
-              className="lp-modal__close"
-              onClick={() => setShowDiscord(false)}
-              aria-label="Close"
-            >
-              <X size={15} aria-hidden="true" />
-            </button>
-
-            <div className="lp-modal__inner">
-              <span className="lp-modal__sealed lp-modal__sealed--discord">
-                <MessageCircle size={26} aria-hidden="true" />
-              </span>
-              <span className="lp-modal__eyebrow lp-modal__eyebrow--discord">
-                The Great Hall
-              </span>
-              <h2 className="lp-modal__title lp-modal__title--sent">
-                Join the Discord
-              </h2>
-              <p className="lp-modal__copy lp-modal__copy--sent">
-                Find a group to play with, see the latest out of the world, and
-                join the Starfall experience in our Discord server.
-              </p>
-              <a
-                className="sa-btn-primary"
-                href={DISCORD_INVITE_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setShowDiscord(false)}
-              >
-                <MessageCircle size={17} aria-hidden="true" />
-                Join the Server
-              </a>
-            </div>
           </div>
         </div>
       )}

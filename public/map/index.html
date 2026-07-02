@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Starfall Campus Map</title>
+<link rel="icon" type="image/png" href="assets/crest-simple.png" />
+
+<!-- Starfall Academy design tokens (shared with the rest of the app) -->
+<link rel="stylesheet" href="/_ds/starfall-academy-design-system-61fef24c-b8ee-469f-860f-a6fd95fb2a6e/tokens/fonts.css" />
+<link rel="stylesheet" href="/_ds/starfall-academy-design-system-61fef24c-b8ee-469f-860f-a6fd95fb2a6e/tokens/colors.css" />
+<link rel="stylesheet" href="/_ds/starfall-academy-design-system-61fef24c-b8ee-469f-860f-a6fd95fb2a6e/tokens/typography.css" />
+<link rel="stylesheet" href="/_ds/starfall-academy-design-system-61fef24c-b8ee-469f-860f-a6fd95fb2a6e/tokens/spacing.css" />
+<link rel="stylesheet" href="/_ds/starfall-academy-design-system-61fef24c-b8ee-469f-860f-a6fd95fb2a6e/tokens/effects.css" />
+<link rel="stylesheet" href="/_ds/starfall-academy-design-system-61fef24c-b8ee-469f-860f-a6fd95fb2a6e/tokens/base.css" />
+<link rel="stylesheet" href="/_ds/starfall-academy-design-system-61fef24c-b8ee-469f-860f-a6fd95fb2a6e/styles.css" />
+
+<!-- App styling -->
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<!-- Global SVG defs: hatch + top-lit sheen, shared by world map & submaps -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <pattern id="hatch" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <line x1="0" y1="0" x2="0" y2="9" stroke="rgba(244,236,210,.5)" stroke-width="1" />
+    </pattern>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="rgba(255,255,255,0.55)" />
+      <stop offset="0.42" stop-color="rgba(255,255,255,0.05)" />
+      <stop offset="1" stop-color="rgba(0,0,0,0.30)" />
+    </linearGradient>
+  </defs>
+</svg>
+
+<div class="atlas" id="atlas">
+
+  <!-- Slim toolbar: the site's persistent top bar lives on the host page above
+       this iframe, so this row only carries the map's own controls. -->
+  <header class="topbar">
+    <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
+
+    <span class="topbar__spacer"></span>
+
+    <button type="button" class="fit-btn" id="fit-btn">
+      <i data-lucide="maximize"></i><span>Fit</span>
+    </button>
+  </header>
+
+  <!-- ===================== STAGE ===================== -->
+  <div class="stage" id="stage">
+
+    <!-- ---------- WORLD VIEW ---------- -->
+    <section class="view" id="view-world" data-screen-label="World map">
+      <div class="canvas" id="canvas">
+        <div class="panner" id="panner">
+          <svg class="world-svg" id="world-svg" width="1600" height="1200" viewBox="0 0 1600 1200"
+               xmlns="http://www.w3.org/2000/svg" aria-label="World map">
+            <g id="world-regions"></g>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Citadel-map index panel (shown only on the Citadel map) -->
+      <aside class="float legend legend--citadel" id="citadel-legend" hidden>
+        <div class="legend__head legend__head--citadel">
+          <button type="button" class="citadel-back" id="citadel-back">‹ CAMPUS</button>
+          <div class="legend__titles">
+            <span class="legend__eyebrow">HEART OF THE ACADEMY</span>
+            <span class="legend__title">Starfall Citadel</span>
+          </div>
+        </div>
+        <div class="legend__list" id="citadel-legend-list"></div>
+      </aside>
+
+      <!-- Legend / index -->
+      <aside class="float legend" id="legend">
+        <div class="legend__head">
+          <div class="legend__eyebrow">ARCANE CAMPUS</div>
+          <div class="legend__title">STARFALL ACADEMY</div>
+        </div>
+        <div class="legend__list" id="legend-list"></div>
+        <div class="legend__hint">Select a region to explore.</div>
+      </aside>
+
+      <!-- Mobile-only back button shown when in Citadel map -->
+      <button type="button" class="float mobile-back" id="mobile-citadel-back" hidden>‹ Campus</button>
+
+      <!-- Compass rose -->
+      <svg class="float compass" viewBox="0 0 100 100" aria-hidden="true">
+        <circle cx="50" cy="50" r="46" fill="none" stroke="var(--border-default)" stroke-width="1"/>
+        <circle cx="50" cy="50" r="38" fill="none" stroke="var(--border-subtle)" stroke-width="1"/>
+        <g stroke="var(--gold-600)" stroke-width="1">
+          <line x1="50" y1="12" x2="50" y2="20"/><line x1="50" y1="80" x2="50" y2="88"/>
+          <line x1="12" y1="50" x2="20" y2="50"/><line x1="80" y1="50" x2="88" y2="50"/>
+        </g>
+        <!-- four-point star -->
+        <polygon points="50,16 56,50 50,84 44,50" fill="var(--gold-500)"/>
+        <polygon points="16,50 50,44 84,50 50,56" fill="var(--gold-700)"/>
+        <polygon points="50,16 54,46 50,50 46,46" fill="var(--gold-300)"/>
+        <circle cx="50" cy="50" r="3" fill="var(--gold-300)"/>
+        <text x="50" y="9" text-anchor="middle" font-size="9" fill="var(--gold-300)">N</text>
+        <text x="50" y="97" text-anchor="middle" font-size="7" fill="var(--gold-700)">S</text>
+        <text x="6" y="53" text-anchor="middle" font-size="7" fill="var(--gold-700)">W</text>
+        <text x="94" y="53" text-anchor="middle" font-size="7" fill="var(--gold-700)">E</text>
+      </svg>
+
+      <!-- Zoom controls -->
+      <div class="float zoom" role="group" aria-label="Zoom">
+        <button type="button" class="zoom-btn" id="zoom-in" aria-label="Zoom in"><i data-lucide="plus"></i></button>
+        <button type="button" class="zoom-btn" id="zoom-out" aria-label="Zoom out"><i data-lucide="minus"></i></button>
+        <button type="button" class="zoom-btn" id="zoom-reset" aria-label="Fit to view"><i data-lucide="maximize"></i></button>
+      </div>
+
+      <div class="float hint" id="hint"><b>Drag</b> to pan · <b>Scroll</b> to zoom · <b>Click</b> a region to enter</div>
+    </section>
+
+    <!-- ---------- SUBMAP VIEW ---------- -->
+    <section class="view" id="view-submap" hidden data-screen-label="Region submap">
+      <div class="submap" id="submap">
+        <!-- dossier + field injected by app.js -->
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script src="https://unpkg.com/lucide@0.471.0/dist/umd/lucide.min.js"></script>
+<script src="atlas-geom.js"></script>
+<script src="atlas-citadel-data.js"></script>
+<script src="regions.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -251,11 +251,59 @@ have no player sheet and still roll GM-side.
 - Presence ("who's at the table") and live **map locations** weren't in this
   slice. Party-nav links opening a member's sheet from the GM rail still toast.
 
+## Landing-page destinations — Compendium, Campus Map, Character Ledger
+
+The four landing-page destination links (`/`, `/characters`) pointed nowhere.
+Three of the four systems already existed as standalone Claude Design handoffs
+in sibling repos (`starfall-compendium`, `starfall-map`, `starfall-family-tree`)
+sharing this repo's exact design-system bundle. They're landed here the same
+way the character sheet was: **vendored static bundles under `public/`, hosted
+by a thin Next.js route, mounted in a full-bleed `<iframe>`.** (Gamebook has no
+handoff yet — its nav link stays a placeholder.)
+
+- **`public/compendium/`** — the reference browser (spells, potions, artifacts,
+  etc.), unchanged vanilla DOM + PapaParse pulling the same live Google Sheets
+  CSVs the character sheet's `compendium-db.js` uses.
+- **`public/map/`** — a second, standalone copy of the campus atlas already
+  vendored at `public/character-sheet/map/` for the sheet's Map tab. Kept
+  separate (rather than shared) so this route's chrome changes can't regress
+  the sheet's embedded map; the `party.js` whereabouts bridge is dropped here
+  since there's no host character sheet to sync with.
+- **`public/character-map/`** — the family tree (`starfall-family-tree`), a
+  React 18 + Babel-standalone app in the same style as the character sheet
+  prototype.
+
+`src/app/{compendium,map,character-map}/page.tsx` are public (not under the
+`(app)` auth group — the landing page's destination cards work signed out)
+server components that read the session and render `<HudTopBar>` above the
+iframe.
+
+### Shared top bar
+The "hud" bar (crest, site nav, Discord, sign-in/out) was previously copy-
+pasted between `Landing.tsx` and `CharactersView.tsx`. It's now
+`src/components/HudTopBar.tsx`, a single client component (nav links, mobile
+drawer, the magic-link sign-in modal, and the Discord modal) used by both of
+those pages and all three new destination routes, so "the persistent top bar"
+is now literally one component everywhere. `Landing`'s hero CTAs open the
+sign-in modal via a `HudTopBarHandle` ref (`openSignIn()`), since that trigger
+lives outside the bar itself.
+
+Per-app chrome, not duplicated: each vendored bundle's own internal top bar
+(crest + title) was **removed** — that's now the host page's `HudTopBar` — but
+each kept its own functional controls as a slim toolbar row directly under the
+hud: Compendium's search + filters, the Map's breadcrumbs + fit button, the
+Ledger's search + family filter. DS token/asset links in each vendored
+`index.html` point at this repo's existing `/_ds/starfall-academy-design-
+system-…/` bundle instead of a duplicated copy; crest PNGs are still
+duplicated locally per bundle (matches the existing `character-sheet/assets/`
+convention).
+
 ## Known limitations
 
 - The prototype loads React / Babel / Lucide from unpkg at runtime (fine in the
   user's browser; a later port replaces this with bundled deps). Needs network
-  in local dev.
+  in local dev. Same applies to the Compendium (PapaParse/TomSelect from CDN,
+  live data from Google Sheets) and the Character Ledger (React/Babel).
 
 ## Pre-existing, unrelated
 

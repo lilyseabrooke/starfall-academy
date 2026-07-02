@@ -106,6 +106,9 @@ interface GmPrompt {
   day?: number;
   block?: number;
   enabled?: boolean;
+  /** For kind:"condition" — which character's conditions changed (this sheet's id, not a GM target). */
+  character?: string;
+  conds?: Record<string, number>;
 }
 
 export interface CharacterSheetProps {
@@ -187,7 +190,6 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
   // ---- Compendium / manual-add UI ----
   const [compCat, setCompCat] = React.useState("spell");
   const [drawer, setDrawer] = React.useState(false);
-  const [added, setAdded] = React.useState<string[]>([]);
   const [lastAdded, setLastAdded] = React.useState<string | null>(null);
   const [manualKind, setManualKind] = React.useState<string | null>(null);
   const [editRecipe, setEditRecipe] = React.useState<Recipe | null>(null);
@@ -238,6 +240,15 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
   const { rp, classState } = classes.state;
   const { grantRp, chooseOpt, rankUp, refundRank } = classes.handlers;
   const { bonuses, spells, moves } = magic.state;
+  // Spells and potion recipes stay single-add per compendium entry; every other
+  // category can be taken multiple times. Derived live from the sheet so removing
+  // a spell/recipe immediately re-unlocks it in the Compendium.
+  const addedIds = React.useMemo(() => {
+    const ids: string[] = [];
+    spells.forEach((s) => { if (s.id.startsWith("sp-comp-")) ids.push(s.id.slice("sp-comp-".length)); });
+    recipes.forEach((r) => { if (r.id.startsWith("rec-comp-")) ids.push(r.id.slice("rec-comp-".length)); });
+    return ids;
+  }, [spells, recipes]);
   const { toggleBonus, toggleBonusConditional, setBonusCondNote, addSpell, updateSpell, removeSpell, setSpellDays,
     addBonus, updateBonus, removeBonus, addMove, updateMove, removeMove } = magic.handlers;
   const { subjectByKey, schoolToneOf, subjectBonusFor, bonusFor, condBonusesFor, spellMod, moveMod,
@@ -376,48 +387,78 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
   }, [campaignId]);
   React.useEffect(() => { insightModRef.current = effFacRank("Insight"); });
 
+  // `onPrompt`'s identity must stay stable across renders (it's a dependency
+  // of useRollSync's subscription effect below — recreating it would tear
+  // down and resubscribe the realtime channel on every render). But its body
+  // calls onAdd/onAddAttuned/etc., which are plain functions redefined each
+  // render that close over the current items/artifacts/compendium state. A
+  // useCallback pinned by a stable dep (`me`) would freeze on those from
+  // whichever render created it — typically the very first, pre-hydration
+  // render — so a live grant would silently compute against stale/seed
+  // inventory instead of the real one. Route through a ref that's rebound
+  // every render instead, so the stable callback always delegates to the
+  // latest closures.
+  const promptImplRef = React.useRef<(prompt: GmPrompt) => void>(() => {});
+  React.useEffect(() => {
+    promptImplRef.current = (prompt: GmPrompt) => {
+      if (prompt.kind === "time") {
+        // Campaign-wide — no target, everyone at the table sees the same clock.
+        setGmTime({ day: prompt.day ?? 0, block: prompt.block ?? 0, enabled: !!prompt.enabled });
+        return;
+      }
+      if (prompt.target !== me) return;
+      if (prompt.kind === "resist" && prompt.condition) {
+        forcedResistRef.current = { conditionId: prompt.condition };
+        openForcedResist({ conditionId: prompt.condition, dc: prompt.dc ?? null });
+      } else if (prompt.kind === "action") {
+        const dc = prompt.dc != null ? prompt.dc : 10;
+        const r = pushRoll({ who: meWho(), kind: "action", label: "Action Roll", stat: "Insight", mod: insightModRef.current, dc, meta: ["Action Roll", "DC " + dc + " Insight"] });
+        setC((prev) => ({ ...prev, actionPoints: r.pass ? Math.min(Math.max(0, r.degrees || 0), prev.actionPointsMax) : 0 }));
+      } else if (prompt.kind === "ap" && prompt.value != null) {
+        setC((prev) => ({ ...prev, actionPoints: Math.min(Math.max(0, prompt.value as number), prev.actionPointsMax) }));
+        toast("The Game Master set your Action Points to " + prompt.value + ".");
+      } else if (prompt.kind === "grant" && prompt.amount) {
+        adjustMaterials(prompt.amount);
+        toast("The Game Master granted you +" + prompt.amount.toLocaleString() + " materials");
+      } else if (prompt.kind === "item" && prompt.entryId) {
+        const e = D.compendium.find((x) => x.id === prompt.entryId);
+        // onAdd/onAddAttuned/etc. are declared later in this component; this
+        // whole block is rebound into promptImplRef every render (see above),
+        // so it always calls that render's fresh versions.
+        /* eslint-disable react-hooks/immutability */
+        if (prompt.variant === "attuned") onAddAttuned(prompt.entryId);
+        else if (prompt.variant === "learning") onAddLearning(prompt.entryId);
+        else if (prompt.variant === "sheaf") onAddPotionSheaf(prompt.entryId);
+        else if (prompt.variant === "recipe") onAddPotionRecipe(prompt.entryId);
+        else if (prompt.variant === "craft") onAddWandCraft(prompt.entryId);
+        else onAdd(prompt.entryId);
+        /* eslint-enable react-hooks/immutability */
+        toast("The Game Master granted you " + (e ? e.name : "an item"));
+      }
+    };
+  });
+
   const onPrompt = React.useCallback((raw: unknown) => {
     const prompt = raw as GmPrompt | null;
     if (!prompt) return;
-    if (prompt.kind === "time") {
-      // Campaign-wide — no target, everyone at the table sees the same clock.
-      setGmTime({ day: prompt.day ?? 0, block: prompt.block ?? 0, enabled: !!prompt.enabled });
-      return;
-    }
-    if (prompt.target !== me) return;
-    if (prompt.kind === "resist" && prompt.condition) {
-      forcedResistRef.current = { conditionId: prompt.condition };
-      openForcedResist({ conditionId: prompt.condition, dc: prompt.dc ?? null });
-    } else if (prompt.kind === "action") {
-      const dc = prompt.dc != null ? prompt.dc : 10;
-      const r = pushRoll({ who: meWho(), kind: "action", label: "Action Roll", stat: "Insight", mod: insightModRef.current, dc, meta: ["Action Roll", "DC " + dc + " Insight"] });
-      setC((prev) => ({ ...prev, actionPoints: r.pass ? Math.min(Math.max(0, r.degrees || 0), prev.actionPointsMax) : 0 }));
-    } else if (prompt.kind === "ap" && prompt.value != null) {
-      setC((prev) => ({ ...prev, actionPoints: Math.min(Math.max(0, prompt.value as number), prev.actionPointsMax) }));
-      toast("The Game Master set your Action Points to " + prompt.value + ".");
-    } else if (prompt.kind === "grant" && prompt.amount) {
-      adjustMaterials(prompt.amount);
-      toast("The Game Master granted you +" + prompt.amount.toLocaleString() + " materials");
-    } else if (prompt.kind === "item" && prompt.entryId) {
-      const e = D.compendium.find((x) => x.id === prompt.entryId);
-      // onAdd/onAddAttuned/etc. are declared later in this component; by the
-      // time this callback actually fires (after a full render), the closure
-      // sees them fine.
-      /* eslint-disable react-hooks/immutability */
-      if (prompt.variant === "attuned") onAddAttuned(prompt.entryId);
-      else if (prompt.variant === "learning") onAddLearning(prompt.entryId);
-      else if (prompt.variant === "sheaf") onAddPotionSheaf(prompt.entryId);
-      else if (prompt.variant === "recipe") onAddPotionRecipe(prompt.entryId);
-      else if (prompt.variant === "craft") onAddWandCraft(prompt.entryId);
-      else onAdd(prompt.entryId);
-      /* eslint-enable react-hooks/immutability */
-      toast("The Game Master granted you " + (e ? e.name : "an item"));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [me]);
+    promptImplRef.current(prompt);
+  }, []);
 
   const rollSync = useRollSync({ campaignId: campaignId ?? null, characterId: id ?? null, onRemoteRoll: injectRemote, onPrompt });
   React.useEffect(() => { shareRef.current = rollSync.shareRoll; }, [rollSync.shareRoll]);
+
+  // Broadcast a "condition" prompt whenever this sheet's conditions change —
+  // self-directed steps (stepCond) or a forced-resist failure (handleResist)
+  // alike — so the GM's Party Board can update Resolve live. This is a live
+  // nudge only; the debounced persistence effect above already durably saves
+  // conditions, so a GM board that loads fresh always sees the right value.
+  React.useEffect(() => {
+    if (!hydratedRef.current || !campaignId || !id) return;
+    const conds: Record<string, number> = {};
+    for (const cd of conditions) conds[cd.id] = cd.value || 0;
+    rollSync.requestRoll({ kind: "condition", character: id, conds });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conditions]);
 
   const handleResist = (args: { condition: Condition; dc: number | null; mod: number }) => {
     const made = onResist(args);
@@ -800,8 +841,7 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
   const finishToast = (name: string | null) => { setLastAdded(name); };
   const onAdd = (cid: string) => {
     const e = D.compendium.find((x) => x.id === cid);
-    if (added.includes(cid) && e?.cat !== "plant" && e?.cat !== "item") return;
-    if (e?.cat !== "plant" && e?.cat !== "item") setAdded((a) => [...a, cid]);
+    if (e?.cat === "spell" && addedIds.includes(cid)) return;
     finishToast(e ? e.name : null);
     if (e && e.cat === "spell") { const res = computeCompendiumGrant(e, spells); if (res?.field === "spells") magic.setState.setSpells(res.value); }
     else if (e && e.cat === "move") magic.handlers.addMoveFromCompendium(e);
@@ -818,12 +858,10 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
   const clearLastAddedSoon = () => { clearTimeout(lastAddedTimer.current); lastAddedTimer.current = setTimeout(() => setLastAdded(null), 2600); };
 
   const onAddAttuned = (cid: string) => {
-    if (added.includes(cid)) return;
     const e = D.compendium.find((x) => x.id === cid);
     if (!e) return;
     const res = computeAttunedArtifactGrant(e, artifacts, moves);
     if (!res) return;
-    setAdded((a) => [...a, cid]);
     finishToast(e.name);
     setArtifacts(res.artifacts);
     magic.setState.setMoves(res.moves);
@@ -831,12 +869,11 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
   };
 
   const onAddLearning = (cid: string) => {
-    if (added.includes(cid)) return;
+    if (addedIds.includes(cid)) return;
     const e = D.compendium.find((x) => x.id === cid);
     if (!e) return;
     const res = computeLearningSpellGrant(e, spells);
     if (!res) return;
-    setAdded((a) => [...a, cid]);
     finishToast(e.name);
     magic.setState.setSpells(res.value);
     clearLastAddedSoon();
@@ -1135,7 +1172,7 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
         )}
       </main>
 
-      <Compendium open={drawer} onClose={closeDrawer} data={{ compendiumCats: SEED.compendiumCats, compendium: D.compendium }} addedIds={added} onAdd={onAdd} onAddAttuned={onAddAttuned} onAddLearning={onAddLearning} onAddPotionSheaf={onAddPotionSheaf} onAddPotionRecipe={onAddPotionRecipe} onAddWandCraft={onAddWandCraft} potionSheafCount={heldCount} potionCap={INV.potionCap} potionRecipes={recipes} lastAdded={lastAdded} cat={compCat} setCat={setCompCat} width={t.archiveWidth as number} attuneFull={attunedCount >= caps.attuneCap} cultivationCap={caps.plantCap} plantSum={plantSum} />
+      <Compendium open={drawer} onClose={closeDrawer} data={{ compendiumCats: SEED.compendiumCats, compendium: D.compendium }} addedIds={addedIds} onAdd={onAdd} onAddAttuned={onAddAttuned} onAddLearning={onAddLearning} onAddPotionSheaf={onAddPotionSheaf} onAddPotionRecipe={onAddPotionRecipe} onAddWandCraft={onAddWandCraft} potionSheafCount={heldCount} potionCap={INV.potionCap} potionRecipes={recipes} lastAdded={lastAdded} cat={compCat} setCat={setCompCat} width={t.archiveWidth as number} attuneFull={attunedCount >= caps.attuneCap} cultivationCap={caps.plantCap} plantSum={plantSum} />
       <ManualMove
         open={manualMoveOpen}
         onClose={() => { setManualMoveOpen(false); setEditMove(null); }}

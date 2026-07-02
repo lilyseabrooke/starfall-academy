@@ -134,7 +134,21 @@ export function GmView({ campaign, party: hostParty }: GmViewProps) {
   const { log, dock } = roll.state;
   const { pushRoll, setDock, injectRemote } = roll.handlers;
 
-  const rollSync = useRollSync({ campaignId: campaign.id, characterId: null, onRemoteRoll: injectRemote });
+  // Live Resolve on the Party Board: a player's sheet broadcasts a "condition"
+  // prompt whenever their conditions change (own sheet or a forced Resist), so
+  // the board updates instantly instead of only on next page load.
+  const onConditionPrompt = React.useCallback((raw: unknown) => {
+    const prompt = raw as { kind?: string; character?: string; conds?: Record<string, number> } | null;
+    if (!prompt || prompt.kind !== "condition" || !prompt.character || !prompt.conds) return;
+    setParty((s) => s.map((p) => {
+      if (p.sheetId !== prompt.character) return p;
+      const conds = { fear: 0, despair: 0, wound: 0, loss: 0, doubt: 0, ...prompt.conds };
+      const resolve = Math.max(0, 5 - Object.values(conds).reduce((sum, v) => sum + (Number(v) || 0), 0));
+      return { ...p, conds, resolve };
+    }));
+  }, []);
+
+  const rollSync = useRollSync({ campaignId: campaign.id, characterId: null, onRemoteRoll: injectRemote, onPrompt: onConditionPrompt });
   React.useEffect(() => { shareRef.current = rollSync.shareRoll; }, [rollSync.shareRoll]);
 
   // Action scene: read incoming Action Rolls into the AP tracker.
