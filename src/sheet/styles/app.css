@@ -761,6 +761,8 @@
 .sf-sheet .sf-spell__edit svg { width: 13px; height: 13px; }
 .sf-sheet .sf-spell:hover .sf-spell__edit { opacity: 1; }
 .sf-sheet .sf-spell__edit:hover { color: var(--gold-300); border-color: color-mix(in oklab, var(--gold-500) 45%, transparent); }
+.sf-sheet .sf-move:hover .sf-spell__edit { opacity: 1; }
+.sf-sheet .sf-move:hover .sf-spell__remove { opacity: 1; }
 
 .sf-sheet .sf-itm__edit {
   width: 22px; height: 22px; flex: none; border-radius: var(--radius-xs); display: grid; place-items: center;
