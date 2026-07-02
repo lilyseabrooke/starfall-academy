@@ -494,25 +494,6 @@ export default function CharactersView({
                     <>
                       <button
                         className="sa-manage-opt"
-                        disabled={busy}
-                        onClick={() =>
-                          setCharacterCampaign(managedCharacter.id, makeCode())
-                        }
-                      >
-                        <span className="sa-manage-opt__icon sa-manage-opt__icon--gold">
-                          <Sparkles size={18} aria-hidden="true" />
-                        </span>
-                        <span className="sa-manage-opt__text">
-                          <span className="sa-manage-opt__title">
-                            Forge a New Campaign
-                          </span>
-                          <span className="sa-manage-opt__sub">
-                            Start a fresh game and share the code.
-                          </span>
-                        </span>
-                      </button>
-                      <button
-                        className="sa-manage-opt"
                         onClick={() => {
                           setManageView("join");
                           setJoinCode("");
@@ -527,6 +508,25 @@ export default function CharactersView({
                           </span>
                           <span className="sa-manage-opt__sub">
                             Drop into an existing game with its code.
+                          </span>
+                        </span>
+                      </button>
+                      <button
+                        className="sa-manage-opt"
+                        disabled={busy}
+                        onClick={() =>
+                          setCharacterCampaign(managedCharacter.id, makeCode())
+                        }
+                      >
+                        <span className="sa-manage-opt__icon sa-manage-opt__icon--gold">
+                          <Sparkles size={18} aria-hidden="true" />
+                        </span>
+                        <span className="sa-manage-opt__text">
+                          <span className="sa-manage-opt__title">
+                            Forge a New Campaign
+                          </span>
+                          <span className="sa-manage-opt__sub">
+                            Start a fresh game and share the code.
                           </span>
                         </span>
                       </button>
