@@ -26,7 +26,7 @@ import "./styles/forge-alloc.css";
 import { SEED } from "./data/seed";
 import { CLASSES } from "./data/classes";
 import { INV } from "./data/inventory";
-import { parsePlantRoll, hlbIsNA, hlbResolveText } from "./data/shared";
+import { parsePlantRoll, hlbIsNA, hlbResolveText, setAbilityData } from "./data/shared";
 import { spellCrit, artifactBackfireDC, spellLevelKey } from "./data/roll-engine";
 import { blank as blankBonus } from "./data/bonus";
 import { buildIndex, search as runSearch, type SearchResult } from "./data/search";
@@ -196,6 +196,7 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
   const [editPlant, setEditPlant] = React.useState<Plant | null>(null);
   const [editGlyph, setEditGlyph] = React.useState<Glyph | null>(null);
   const [editSpell, setEditSpell] = React.useState<Spell | null>(null);
+  const [editMove, setEditMove] = React.useState<Move | null>(null);
   const [manualOpen, setManualOpen] = React.useState(false);
   const [manualMoveOpen, setManualMoveOpen] = React.useState(false);
   const [bonusEdit, setBonusEdit] = React.useState<{ open: boolean; mode: "add" | "edit"; bonus: Bonus | null }>({ open: false, mode: "add", bonus: null });
@@ -238,7 +239,7 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
   const { grantRp, chooseOpt, rankUp, refundRank } = classes.handlers;
   const { bonuses, spells, moves } = magic.state;
   const { toggleBonus, toggleBonusConditional, setBonusCondNote, addSpell, updateSpell, removeSpell, setSpellDays,
-    addBonus, updateBonus, removeBonus, addMove } = magic.handlers;
+    addBonus, updateBonus, removeBonus, addMove, updateMove, removeMove } = magic.handlers;
   const { subjectByKey, schoolToneOf, subjectBonusFor, bonusFor, condBonusesFor, spellMod, moveMod,
     statBonusFor, rollBonusFor, resolveVal, dosShiftFor } = magic.helpers;
   const { log, dock, pending, resistRoll, artifactResistRoll } = roll.state;
@@ -617,6 +618,9 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
       }, target);
     },
   };
+
+  // ---- Ability resolver data feed (stat/skill lookup for class-linked moves) ----
+  React.useEffect(() => { setAbilityData(stats, schools); }, [stats, schools]);
 
   // ---- Plant ↔ Overview link sync ----
   React.useEffect(() => { magic.handlers.syncPlantLinks(plants); }, [plants]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1081,7 +1085,7 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
                 </div>
               </div>
               <div className="sf-col">
-                <MovesRail moves={moves} onRoll={onRollMove} modFor={moveMod} onAddManually={() => setManualMoveOpen(true)} />
+                <MovesRail moves={moves} onRoll={onRollMove} modFor={moveMod} onAddManually={() => setManualMoveOpen(true)} onEdit={(m) => { setEditMove(m); setManualMoveOpen(true); }} onRemove={(m) => removeMove(m.id)} />
                 <BonusLedger bonuses={bonuses} resolveValue={resolveVal} onToggle={toggleBonus} onToggleConditional={toggleBonusConditional} onCondNote={setBonusCondNote} onAdd={openAddBonus} onEdit={openEditBonus} />
               </div>
             </div>
@@ -1132,7 +1136,15 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
       </main>
 
       <Compendium open={drawer} onClose={closeDrawer} data={{ compendiumCats: SEED.compendiumCats, compendium: D.compendium }} addedIds={added} onAdd={onAdd} onAddAttuned={onAddAttuned} onAddLearning={onAddLearning} onAddPotionSheaf={onAddPotionSheaf} onAddPotionRecipe={onAddPotionRecipe} onAddWandCraft={onAddWandCraft} potionSheafCount={heldCount} potionCap={INV.potionCap} potionRecipes={recipes} lastAdded={lastAdded} cat={compCat} setCat={setCompCat} width={t.archiveWidth as number} attuneFull={attunedCount >= caps.attuneCap} cultivationCap={caps.plantCap} plantSum={plantSum} />
-      <ManualMove open={manualMoveOpen} onClose={() => setManualMoveOpen(false)} onSave={addMove} schools={SEED.magicSchools} stats={stats} classesList={CL.classes.map((cl) => ({ id: cl.id, name: cl.name, rank: classRank(cl.id) }))} />
+      <ManualMove
+        open={manualMoveOpen}
+        onClose={() => { setManualMoveOpen(false); setEditMove(null); }}
+        onSave={(m) => { if (editMove) updateMove(m); else addMove(m); }}
+        schools={SEED.magicSchools}
+        stats={stats}
+        classesList={CL.classes.map((cl) => ({ id: cl.id, name: cl.name, rank: classRank(cl.id) }))}
+        editMove={editMove}
+      />
       <ManualSpell open={manualOpen} onClose={() => { setManualOpen(false); setEditSpell(null); }} onSave={(sp) => { if (editSpell) updateSpell(sp); else addSpell(sp); }} schools={SEED.magicSchools} editSpell={editSpell} />
       <ManualModal open={!!manualKind} kind={manualKind} subjects={allSubjects} skills={stats.flatMap((st) => st.skills)} stats={stats} schools={schools} compendiumSpells={D.compendium.filter((e) => e.cat === "spell")} attuneFull={attunedCount >= caps.attuneCap} sheafFull={heldCount >= caps.potionCap} editSubject={manualKind === "recipe" ? editRecipe : manualKind === "artifact" ? editArtifact : manualKind === "wand" ? editWand : manualKind === "plant" ? editPlant : manualKind === "glyph" ? editGlyph : null} cultivationCap={caps.plantCap} cultivationUsed={plantSum} onSave={saveManual} onClose={() => { setManualKind(null); setEditRecipe(null); setEditArtifact(null); setEditWand(null); setEditPlant(null); setEditGlyph(null); }} />
       <GiveModal open={!!givePayload} payload={givePayload as GivePayload | null} roster={ROSTER} activeChar={activeChar} onConfirm={onGiveConfirm} onClose={() => setGivePayload(null)} />
