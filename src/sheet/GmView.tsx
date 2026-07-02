@@ -632,9 +632,11 @@ function PartyTab({ party, onResist, onGrant, onGrantAll, onCompendium, onCompen
               </div>
             </div>
             <div className="gm-pc__btns">
-              <button className="gm-btn" onClick={() => onResist(pc.id)}><Icon name="shield-alert" style={{ color: "var(--crimson-300)" }} />Resist</button>
-              <button className="gm-btn" onClick={() => onGrant(pc.id)}><Icon name="gift" style={{ color: "var(--gold-300)" }} />Grant</button>
-              <button className="gm-btn" onClick={() => onCompendium(pc.id)}><Icon name="library-big" style={{ color: "var(--plum-300)" }} />Compendium</button>
+              <div className="gm-pc__btnrow">
+                <button className="gm-btn" onClick={() => onResist(pc.id)}><Icon name="shield-alert" style={{ color: "var(--crimson-300)" }} />Resist</button>
+                <button className="gm-btn" onClick={() => onGrant(pc.id)}><Icon name="gift" style={{ color: "var(--gold-300)" }} />Grant</button>
+              </div>
+              <button className="gm-btn gm-btn-block" onClick={() => onCompendium(pc.id)}><Icon name="library-big" style={{ color: "var(--plum-300)" }} />Compendium</button>
             </div>
           </article>
         ))}
