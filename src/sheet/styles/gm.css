@@ -20,8 +20,8 @@
    read-only on the player's own sheet, which doesn't load this stylesheet. */
 .sf-sheet .gm-top__campaign { color: var(--gold-400); }
 .sf-sheet .gm-rollbtn {
-  display: inline-flex; align-items: center; justify-content: center; align-self: stretch;
-  aspect-ratio: 1; border-radius: var(--radius-md, 6px); background: var(--grad-gold);
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 42px; height: 42px; border-radius: var(--radius-md, 6px); background: var(--grad-gold);
   color: var(--ink-950); border: none; cursor: pointer; box-shadow: var(--shadow-sm);
   transition: box-shadow var(--dur-fast);
 }
@@ -74,8 +74,10 @@
 .sf-sheet .gm-stat__div { width: 1px; height: 30px; background: var(--hairline); margin: 0 14px; }
 .sf-sheet .gm-mat { display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-display); font-weight: 700; font-size: 16px; color: var(--gold-200); line-height: 1; }
 .sf-sheet .gm-mat svg { width: 12px; height: 12px; color: var(--gold-300); }
-.sf-sheet .gm-pc__btns { display: flex; gap: 6px; padding: 0 12px 10px; }
+.sf-sheet .gm-pc__btns { display: flex; flex-direction: column; gap: 6px; padding: 0 12px 10px; }
+.sf-sheet .gm-pc__btnrow { display: flex; gap: 6px; }
 .sf-sheet .gm-pc__btns .gm-btn { flex: 1; padding: 5px 8px; font-size: 11px; }
+.sf-sheet .gm-pc__btns .gm-btn-block { width: 100%; padding: 5px 8px; font-size: 11px; }
 .sf-sheet .gm-grantall { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--hairline); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .sf-sheet .gm-grantall__txt { display: flex; flex-direction: column; gap: 2px; }
 .sf-sheet .gm-grantall__title { font-family: var(--font-sans); font-size: 12px; font-weight: 500; color: var(--text-body); }
