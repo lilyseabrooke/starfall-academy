@@ -8,7 +8,7 @@ import type { Move } from "../../types";
 export type MoveRollHandler = (m: Move, e: React.MouseEvent, optIdx: number) => void;
 export type MoveModFor = (m: Move, optIdx: number) => number;
 
-function MoveCard({ m, onRoll, modFor, open, onToggle }: { m: Move; onRoll: MoveRollHandler; modFor: MoveModFor; open: boolean; onToggle: () => void }) {
+function MoveCard({ m, onRoll, modFor, open, onToggle, onEdit, onRemove }: { m: Move; onRoll: MoveRollHandler; modFor: MoveModFor; open: boolean; onToggle: () => void; onEdit?: (m: Move) => void; onRemove?: (m: Move) => void }) {
   const broken = m.artifactCondition === "broken";
   const damaged = m.artifactCondition === "damaged";
   const opts = m.rollOptions && m.rollOptions.length ? m.rollOptions : null;
@@ -17,6 +17,8 @@ function MoveCard({ m, onRoll, modFor, open, onToggle }: { m: Move; onRoll: Move
   const cur = opts ? opts[i] : { stat: m.stat, skill: m.skill, label: m.skill, kind: "skill" as const };
   const abilLabel = cur.kind === "subject" ? cur.label : cur.skill || cur.label;
   const showAbil = abilLabel && abilLabel !== "—";
+  const editable = !m.fromArtifact && !m.fromWand && !m.fromPlant;
+  const removable = editable && !m.fromClass;
   return (
     <div className={"sf-move" + (open ? " is-open" : " is-collapsed") + (m.fromArtifact ? " is-linked" : "") + (m.fromClass ? " is-classmove" : "") + (broken ? " is-broken" : "")}>
       <div className="sf-move__head" onClick={onToggle} role="button" tabIndex={0} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onToggle && onToggle()}>
@@ -27,6 +29,8 @@ function MoveCard({ m, onRoll, modFor, open, onToggle }: { m: Move; onRoll: Move
         {broken ? null : (
           <button className="sf-roll-btn" onClick={(e) => { e.stopPropagation(); onRoll(m, e, i); }}><Icon name="dices" /> Roll</button>
         )}
+        {editable && onEdit && <button className="sf-spell__edit" title="Edit move" onClick={(e) => { e.stopPropagation(); onEdit(m); }}><Icon name="pencil" /></button>}
+        {removable && onRemove && <button className="sf-spell__remove" title="Remove move" onClick={(e) => { e.stopPropagation(); onRemove(m); }}><Icon name="x" /></button>}
         <span className="sf-spell__chev"><Icon name={open ? "chevron-up" : "chevron-down"} /></span>
       </div>
 
@@ -75,9 +79,11 @@ export interface MovesRailProps {
   onRoll: MoveRollHandler;
   modFor: MoveModFor;
   onAddManually: () => void;
+  onEdit?: (m: Move) => void;
+  onRemove?: (m: Move) => void;
 }
 
-export function MovesRail({ moves, onRoll, modFor, onAddManually }: MovesRailProps) {
+export function MovesRail({ moves, onRoll, modFor, onAddManually, onEdit, onRemove }: MovesRailProps) {
   const [openIds, setOpenIds] = React.useState<Set<string>>(() => new Set());
   const allOpen = moves.length > 0 && openIds.size === moves.length;
   const toggleAll = () => {
@@ -106,7 +112,7 @@ export function MovesRail({ moves, onRoll, modFor, onAddManually }: MovesRailPro
         </div>
       </div>
       {moves.map((m) => (
-        <MoveCard key={m.id} m={m} onRoll={onRoll} modFor={modFor} open={openIds.has(m.id)} onToggle={() => toggleOne(m.id)} />
+        <MoveCard key={m.id} m={m} onRoll={onRoll} modFor={modFor} open={openIds.has(m.id)} onToggle={() => toggleOne(m.id)} onEdit={onEdit} onRemove={onRemove} />
       ))}
     </div>
   );

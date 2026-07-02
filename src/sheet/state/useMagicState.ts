@@ -154,6 +154,8 @@ export function useMagicState(
 
   // ---- Spell handlers ----
   const addMove = (m: Move) => setMoves((prev) => [...prev, m]);
+  const updateMove = (m: Partial<Move> & { id: string }) => setMoves((prev) => prev.map((x) => (x.id === m.id ? { ...x, ...m } : x)));
+  const removeMove = (id: string) => setMoves((prev) => prev.filter((x) => x.id !== id));
   const addSpell = (sp: Spell) => setSpells((prev) => (prev.find((x) => x.id === sp.id) ? prev : [...prev, sp]));
   const updateSpell = (sp: Partial<Spell> & { id: string }) => setSpells((prev) => prev.map((x) => (x.id === sp.id ? { ...x, ...sp } : x)));
   const removeSpell = (sp: { id: string }) => setSpells((prev) => prev.filter((x) => x.id !== sp.id));
@@ -286,7 +288,7 @@ export function useMagicState(
     setState: { setBonuses, setSpells, setMoves },
     handlers: {
       addSpell, updateSpell, removeSpell, setSpellDays,
-      addMove,
+      addMove, updateMove, removeMove,
       addBonus, updateBonus, removeBonus,
       toggleBonus, toggleBonusConditional, setBonusCondNote,
       addArtMove, removeArtMove, setMoveCond,
