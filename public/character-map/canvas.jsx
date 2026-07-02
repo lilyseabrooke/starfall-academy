@@ -20,7 +20,8 @@
   const colorOf = (c) => COLORS[c] || COLORS.gold;
 
   function initials(name) {
-    const parts = name.trim().split(/\s+/);
+    // Strip quoted nicknames/titles (e.g. Aspen 'Rogue' Whitley) before taking initials.
+    const parts = name.replace(/['"`‘’“”][^'"`‘’“”]*['"`‘’“”]/g, " ").trim().split(/\s+/);
     if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   }
