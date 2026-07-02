@@ -187,7 +187,6 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
   // ---- Compendium / manual-add UI ----
   const [compCat, setCompCat] = React.useState("spell");
   const [drawer, setDrawer] = React.useState(false);
-  const [added, setAdded] = React.useState<string[]>([]);
   const [lastAdded, setLastAdded] = React.useState<string | null>(null);
   const [manualKind, setManualKind] = React.useState<string | null>(null);
   const [editRecipe, setEditRecipe] = React.useState<Recipe | null>(null);
@@ -237,6 +236,15 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
   const { rp, classState } = classes.state;
   const { grantRp, chooseOpt, rankUp, refundRank } = classes.handlers;
   const { bonuses, spells, moves } = magic.state;
+  // Spells and potion recipes stay single-add per compendium entry; every other
+  // category can be taken multiple times. Derived live from the sheet so removing
+  // a spell/recipe immediately re-unlocks it in the Compendium.
+  const addedIds = React.useMemo(() => {
+    const ids: string[] = [];
+    spells.forEach((s) => { if (s.id.startsWith("sp-comp-")) ids.push(s.id.slice("sp-comp-".length)); });
+    recipes.forEach((r) => { if (r.id.startsWith("rec-comp-")) ids.push(r.id.slice("rec-comp-".length)); });
+    return ids;
+  }, [spells, recipes]);
   const { toggleBonus, toggleBonusConditional, setBonusCondNote, addSpell, updateSpell, removeSpell, setSpellDays,
     addBonus, updateBonus, removeBonus, addMove } = magic.handlers;
   const { subjectByKey, schoolToneOf, subjectBonusFor, bonusFor, condBonusesFor, spellMod, moveMod,
@@ -796,8 +804,7 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
   const finishToast = (name: string | null) => { setLastAdded(name); };
   const onAdd = (cid: string) => {
     const e = D.compendium.find((x) => x.id === cid);
-    if (added.includes(cid) && e?.cat !== "plant" && e?.cat !== "item") return;
-    if (e?.cat !== "plant" && e?.cat !== "item") setAdded((a) => [...a, cid]);
+    if (e?.cat === "spell" && addedIds.includes(cid)) return;
     finishToast(e ? e.name : null);
     if (e && e.cat === "spell") { const res = computeCompendiumGrant(e, spells); if (res?.field === "spells") magic.setState.setSpells(res.value); }
     else if (e && e.cat === "move") magic.handlers.addMoveFromCompendium(e);
@@ -814,12 +821,10 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
   const clearLastAddedSoon = () => { clearTimeout(lastAddedTimer.current); lastAddedTimer.current = setTimeout(() => setLastAdded(null), 2600); };
 
   const onAddAttuned = (cid: string) => {
-    if (added.includes(cid)) return;
     const e = D.compendium.find((x) => x.id === cid);
     if (!e) return;
     const res = computeAttunedArtifactGrant(e, artifacts, moves);
     if (!res) return;
-    setAdded((a) => [...a, cid]);
     finishToast(e.name);
     setArtifacts(res.artifacts);
     magic.setState.setMoves(res.moves);
@@ -827,12 +832,11 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
   };
 
   const onAddLearning = (cid: string) => {
-    if (added.includes(cid)) return;
+    if (addedIds.includes(cid)) return;
     const e = D.compendium.find((x) => x.id === cid);
     if (!e) return;
     const res = computeLearningSpellGrant(e, spells);
     if (!res) return;
-    setAdded((a) => [...a, cid]);
     finishToast(e.name);
     magic.setState.setSpells(res.value);
     clearLastAddedSoon();
@@ -1131,7 +1135,7 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
         )}
       </main>
 
-      <Compendium open={drawer} onClose={closeDrawer} data={{ compendiumCats: SEED.compendiumCats, compendium: D.compendium }} addedIds={added} onAdd={onAdd} onAddAttuned={onAddAttuned} onAddLearning={onAddLearning} onAddPotionSheaf={onAddPotionSheaf} onAddPotionRecipe={onAddPotionRecipe} onAddWandCraft={onAddWandCraft} potionSheafCount={heldCount} potionCap={INV.potionCap} potionRecipes={recipes} lastAdded={lastAdded} cat={compCat} setCat={setCompCat} width={t.archiveWidth as number} attuneFull={attunedCount >= caps.attuneCap} cultivationCap={caps.plantCap} plantSum={plantSum} />
+      <Compendium open={drawer} onClose={closeDrawer} data={{ compendiumCats: SEED.compendiumCats, compendium: D.compendium }} addedIds={addedIds} onAdd={onAdd} onAddAttuned={onAddAttuned} onAddLearning={onAddLearning} onAddPotionSheaf={onAddPotionSheaf} onAddPotionRecipe={onAddPotionRecipe} onAddWandCraft={onAddWandCraft} potionSheafCount={heldCount} potionCap={INV.potionCap} potionRecipes={recipes} lastAdded={lastAdded} cat={compCat} setCat={setCompCat} width={t.archiveWidth as number} attuneFull={attunedCount >= caps.attuneCap} cultivationCap={caps.plantCap} plantSum={plantSum} />
       <ManualMove open={manualMoveOpen} onClose={() => setManualMoveOpen(false)} onSave={addMove} schools={SEED.magicSchools} stats={stats} classesList={CL.classes.map((cl) => ({ id: cl.id, name: cl.name, rank: classRank(cl.id) }))} />
       <ManualSpell open={manualOpen} onClose={() => { setManualOpen(false); setEditSpell(null); }} onSave={(sp) => { if (editSpell) updateSpell(sp); else addSpell(sp); }} schools={SEED.magicSchools} editSpell={editSpell} />
       <ManualModal open={!!manualKind} kind={manualKind} subjects={allSubjects} skills={stats.flatMap((st) => st.skills)} stats={stats} schools={schools} compendiumSpells={D.compendium.filter((e) => e.cat === "spell")} attuneFull={attunedCount >= caps.attuneCap} sheafFull={heldCount >= caps.potionCap} editSubject={manualKind === "recipe" ? editRecipe : manualKind === "artifact" ? editArtifact : manualKind === "wand" ? editWand : manualKind === "plant" ? editPlant : manualKind === "glyph" ? editGlyph : null} cultivationCap={caps.plantCap} cultivationUsed={plantSum} onSave={saveManual} onClose={() => { setManualKind(null); setEditRecipe(null); setEditArtifact(null); setEditWand(null); setEditPlant(null); setEditGlyph(null); }} />
