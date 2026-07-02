@@ -17,7 +17,8 @@ export default async function CharacterSheetPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // RLS guarantees this only returns a row the user owns.
+  // RLS returns this row if the user owns it, or is a campaign-mate/GM of the
+  // campaign it's in (party-wide read access); writes stay owner/GM-scoped.
   const { data: character, error } = await supabase
     .from("characters")
     .select("id, name, sheet, campaign_code, campaign_id")

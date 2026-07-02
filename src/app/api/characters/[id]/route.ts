@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-// Persist a character sheet snapshot. RLS ensures only the owner can write.
+// Persist a character sheet snapshot. RLS scopes writes to the character's
+// owner or the GM of the campaign it's in (sheet/name only — GMs cannot
+// delete a PC; see the "gm updates campaign pc sheets" policy).
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
