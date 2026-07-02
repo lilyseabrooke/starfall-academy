@@ -31,9 +31,13 @@ export type HudActiveLink =
   | "Character Ledger"
   | "My Characters";
 
+// TODO: replace with the real Gamebook page once it's built.
+const GAMEBOOK_URL =
+  "https://docs.google.com/document/d/1QkXZovkaw1SzvZOmOxjfb_1DwX79_PmoU-LWwiSPLUc/edit?usp=sharing";
+
 const BASE_NAV_LINKS: NavLink[] = [
   { name: "Compendium", icon: BookOpen, href: "/compendium" },
-  { name: "Gamebook", icon: ScrollText, href: "#" },
+  { name: "Gamebook", icon: ScrollText, href: GAMEBOOK_URL },
   { name: "Map", icon: Map, href: "/map" },
   { name: "Character Ledger", icon: BookMarked, href: "/character-map" },
 ];
@@ -44,8 +48,7 @@ const MY_CHARACTERS_LINK: NavLink = {
   href: "/characters",
 };
 
-// TODO: replace with the real Discord invite link.
-const DISCORD_INVITE_URL = "https://discord.gg/your-invite-here";
+const DISCORD_INVITE_URL = "https://discord.gg/JgYPJGF7DE";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -156,6 +159,9 @@ const HudTopBar = forwardRef<
                 key={link.name}
                 className="sa-link-hud"
                 href={link.href}
+                {...(link.href.startsWith("http")
+                  ? { target: "_blank", rel: "noopener noreferrer" }
+                  : {})}
                 style={
                   link.name === active
                     ? { color: "var(--text-gold)" }
@@ -212,6 +218,9 @@ const HudTopBar = forwardRef<
                 key={link.name}
                 className="hud-menu__link"
                 href={link.href}
+                {...(link.href.startsWith("http")
+                  ? { target: "_blank", rel: "noopener noreferrer" }
+                  : {})}
                 onClick={() => setMenuOpen(false)}
               >
                 <Icon size={18} aria-hidden="true" />
