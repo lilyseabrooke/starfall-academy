@@ -43,7 +43,7 @@ export function computeCompendiumGrant(
     }
     case "artifact": {
       const prev = currentField as Artifact[];
-      return { field: "artifacts", value: [...prev, { id: "art-comp-" + e.id, name: e.name, level: e.level, tone: e.tone, subject: e.subject || "—", intensity: e.intensity != null ? e.intensity : 3, attuned: false, condition: "stable", skills: [], dc: 0, desc: e.desc, move: { name: e.name + " — Boon", stat: "Insight", skill: "—", bonus: 0, dc: null, desc: e.desc } }] };
+      return { field: "artifacts", value: [...prev, { id: "art-comp-" + e.id, name: e.name, level: e.level, tone: e.tone, subject: e.subject || "—", intensity: e.intensity != null ? e.intensity : 3, attuned: false, condition: "stable", skills: e.skills || [], dc: e.dc ?? 0, desc: e.desc, move: { name: e.name + " — Boon", stat: e.stat || "Insight", skill: (e.skills && e.skills[0]) || "—", bonus: 0, dc: e.dc ?? null, desc: e.desc } }] };
     }
     case "potion": {
       const prev = currentField as Recipe[];
@@ -97,7 +97,7 @@ export function computeAttunedArtifactGrant(
   currentMoves: Move[]
 ): { artifacts: Artifact[]; moves: Move[] } | null {
   if (e.cat !== "artifact") return null;
-  const art: Artifact = { id: "art-comp-" + e.id, name: e.name, level: e.level, tone: e.tone, subject: e.subject || "—", intensity: 0, attuned: true, condition: "stable", skills: [], dc: 0, desc: e.desc, move: { name: e.name + " — Boon", stat: "Insight", skill: "—", bonus: 0, dc: null, desc: e.desc } };
+  const art: Artifact = { id: "art-comp-" + e.id, name: e.name, level: e.level, tone: e.tone, subject: e.subject || "—", intensity: 0, attuned: true, condition: "stable", skills: e.skills || [], dc: e.dc ?? 0, desc: e.desc, move: { name: e.name + " — Boon", stat: e.stat || "Insight", skill: (e.skills && e.skills[0]) || "—", bonus: 0, dc: e.dc ?? null, desc: e.desc } };
   return { artifacts: [...currentArtifacts, art], moves: [...currentMoves, artifactBoonMove(art)] };
 }
 

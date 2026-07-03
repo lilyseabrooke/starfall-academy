@@ -450,6 +450,7 @@ export interface CompendiumEntry {
   volatile?: boolean;
   higherLevel?: string;
   // artifact / potion / plant / glyph fields
+  skills?: string[];
   mat?: number;
   intensity?: number;
   value?: number;

@@ -86,6 +86,20 @@ SEED.magicSchools.forEach((sc) => {
 });
 const subjInfo = (name: string): SubjInfo => SUBJ[String(name || "").trim().toUpperCase()] || {};
 
+/** Skill name (uppercased) → owning stat name, e.g. "ENDURANCE" -> "Body". */
+const STAT_BY_SKILL: Record<string, string> = {};
+SEED.stats.forEach((st) => {
+  st.skills.forEach((sk) => {
+    STAT_BY_SKILL[sk.name.toUpperCase()] = st.name;
+  });
+});
+function parseSkills(v: string): string[] {
+  return String(v || "")
+    .split(/[\/,]/)
+    .map((s) => titleCase(s))
+    .filter(Boolean);
+}
+
 const PALETTE: Tone[] = ["plum", "teal", "forest", "crimson", "gold"];
 function toneFromName(name: string): Tone {
   const s = String(name || "");
@@ -176,14 +190,20 @@ function artifact(row: Row): CompendiumEntry {
   const info = subjInfo(row.SUBJECT);
   const subject = titleCase(row.SUBJECT);
   const mat = num(row.COST), intensity = num(row.INTENSITY);
+  const skills = parseSkills(row.SKILL);
+  const dc = num(row.DC);
+  const stat = (skills[0] && STAT_BY_SKILL[skills[0].toUpperCase()]) || info.stat || "";
   const meta: string[] = [];
   if (subject) meta.push(subject);
   if (intensity != null) meta.push("Intensity " + intensity);
+  if (skills.length) meta.push(skills.join(" / "));
+  if (dc != null) meta.push("DC " + dc);
   return {
     id: rid(row, "artifact"), cat: "artifact", name: (row.NAME || "").trim(),
     tone: info.tone || toneFromName(row.NAME), level: titleCase(row.LEVEL),
     meta, cost: "", mat: mat != null ? mat : 0,
     subject, intensity: intensity != null ? intensity : 3,
+    skills, stat, dc: dc ?? undefined,
     desc: (row.DESCRIPTION || "").trim(),
   };
 }
