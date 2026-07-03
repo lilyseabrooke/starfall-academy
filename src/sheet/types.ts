@@ -286,6 +286,8 @@ export interface ArtifactMove {
   /** Carried on manual/compendium-built boons; unused by the roll engine. */
   name?: string;
   desc?: string;
+  /** Set when the artifact lists more than one skill it can be rolled with. */
+  rollOptions?: MoveRollOption[];
 }
 
 export interface Artifact {
@@ -451,6 +453,8 @@ export interface CompendiumEntry {
   higherLevel?: string;
   // artifact / potion / plant / glyph fields
   skills?: string[];
+  /** Per-skill {stat, skill} pairs aligned with `skills`, for artifacts with multiple skill options. */
+  skillOptions?: { stat: string; skill: string }[];
   mat?: number;
   intensity?: number;
   value?: number;

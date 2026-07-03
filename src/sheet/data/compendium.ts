@@ -192,7 +192,8 @@ function artifact(row: Row): CompendiumEntry {
   const mat = num(row.COST), intensity = num(row.INTENSITY);
   const skills = parseSkills(row.SKILL);
   const dc = num(row.DC);
-  const stat = (skills[0] && STAT_BY_SKILL[skills[0].toUpperCase()]) || info.stat || "";
+  const skillOptions = skills.map((sk) => ({ stat: STAT_BY_SKILL[sk.toUpperCase()] || info.stat || "", skill: sk }));
+  const stat = (skillOptions[0] && skillOptions[0].stat) || info.stat || "";
   const meta: string[] = [];
   if (subject) meta.push(subject);
   if (intensity != null) meta.push("Intensity " + intensity);
@@ -203,7 +204,7 @@ function artifact(row: Row): CompendiumEntry {
     tone: info.tone || toneFromName(row.NAME), level: titleCase(row.LEVEL),
     meta, cost: "", mat: mat != null ? mat : 0,
     subject, intensity: intensity != null ? intensity : 3,
-    skills, stat, dc: dc ?? undefined,
+    skills, skillOptions, stat, dc: dc ?? undefined,
     desc: (row.DESCRIPTION || "").trim(),
   };
 }
