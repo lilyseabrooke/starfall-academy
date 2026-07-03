@@ -35,6 +35,11 @@ const STEPS = [
   { id: "spells", label: "Spells", icon: "sparkles" },
   { id: "review", label: "Review", icon: "scroll-text" },
 ];
+// Starting wand, inventory, and spells are one-time admission choices, not
+// something to revisit from the "edit character" respec — the respec commit
+// never touches those lists (see commitForge), so don't offer steps that
+// would look editable but silently no-op.
+const RESPEC_STEPS = STEPS.filter((s) => !["wand", "inventory", "spells"].includes(s.id));
 const DRAFT_KEY = "sf-admission-draft";
 
 /* ------------------------------- Identity ----------------------------- */
@@ -276,7 +281,8 @@ export function Admission({ mode, initial, data, classData, onCommit, onClose }:
   const [draft, setDraft] = React.useState<Draft>(initial);
   const [idx, setIdx] = React.useState(0);
   const set = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
-  const step = STEPS[idx];
+  const steps = mode === "edit" ? RESPEC_STEPS : STEPS;
+  const step = steps[idx];
 
   // Persist new-character drafts so a refresh mid-build is safe.
   React.useEffect(() => {
@@ -315,7 +321,7 @@ export function Admission({ mode, initial, data, classData, onCommit, onClose }:
             </div>
           </div>
           <nav className="sf-admission__steps">
-            {STEPS.map((s, i) => {
+            {steps.map((s, i) => {
               const done = validOf(s.id) && i !== idx;
               return (
                 <button key={s.id} type="button" className={"sf-admission__step" + (i === idx ? " is-active" : "") + (done ? " is-done" : "")} onClick={() => setIdx(i)}>
@@ -343,8 +349,8 @@ export function Admission({ mode, initial, data, classData, onCommit, onClose }:
           <footer className="sf-admission__foot">
             <Button variant="ghost" disabled={idx === 0} iconLeft={<Icon name="arrow-left" />} onClick={() => setIdx((i) => Math.max(0, i - 1))}>Back</Button>
             {showHUD ? <BudgetHUD D={D} draft={draft} /> : <div className="sf-admission__footspace"></div>}
-            {idx < STEPS.length - 1 ? (
-              <Button variant="primary" iconLeft={<Icon name="arrow-right" />} onClick={() => setIdx((i) => Math.min(STEPS.length - 1, i + 1))}>Next</Button>
+            {idx < steps.length - 1 ? (
+              <Button variant="primary" iconLeft={<Icon name="arrow-right" />} onClick={() => setIdx((i) => Math.min(steps.length - 1, i + 1))}>Next</Button>
             ) : (
               <Button variant="primary" iconLeft={<Icon name="check" />} disabled={!ready} onClick={begin}>{mode === "edit" ? "Save character" : "Begin"}</Button>
             )}

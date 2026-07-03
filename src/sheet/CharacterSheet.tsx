@@ -982,24 +982,31 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   };
 
   const commitForge = (draft: Draft) => {
-    
+
     setStats(F.buildStats(draft, forgeData));
     setSchools(F.buildSchools(draft, forgeData));
     setC((prev) => ({ ...prev, ...F.buildCharacter(draft, forgeData) }));
-    setConditions(SEED.conditions.map((x) => ({ ...x, value: 0 })));
     classes.handlers.loadState(F.buildClassState(draft), 0);
-    magic.setState.setBonuses(F.buildWandBonuses(draft, forgeData));
-    magic.setState.setSpells(F.buildSpells(draft, forgeData));
-    magic.setState.setMoves([]);
-    const pots = F.buildPotions(draft, forgeData);
-    setRecipes(pots.map((p) => p.recipe));
-    setPotions(pots.map((p) => p.vial));
-    setPlants(F.buildPlants(draft, forgeData) as Plant[]);
-    setItems([]);
-    setGlyphs(F.buildGlyphs(draft, forgeData) as Glyph[]);
-    setArtifacts(F.buildArtifacts(draft, forgeData) as unknown as Artifact[]);
-    setWands([F.buildStartingWand(draft, forgeData) as unknown as Wand, ...(F.buildExtraWands(draft, forgeData) as unknown as Wand[])]);
-    setRuneStack([]);
+    // Starting wand, spells, and inventory are one-time admission choices —
+    // the wizard no longer even shows those steps on a respec (see
+    // RESPEC_STEPS in Forge.tsx), but guard here too so a respec commit can
+    // never wipe them back to an empty/rebuilt-from-draft state regardless
+    // of how it's invoked.
+    if (draft.mode !== "edit") {
+      setConditions(SEED.conditions.map((x) => ({ ...x, value: 0 })));
+      magic.setState.setBonuses(F.buildWandBonuses(draft, forgeData));
+      magic.setState.setSpells(F.buildSpells(draft, forgeData));
+      magic.setState.setMoves([]);
+      const pots = F.buildPotions(draft, forgeData);
+      setRecipes(pots.map((p) => p.recipe));
+      setPotions(pots.map((p) => p.vial));
+      setPlants(F.buildPlants(draft, forgeData) as Plant[]);
+      setItems([]);
+      setGlyphs(F.buildGlyphs(draft, forgeData) as Glyph[]);
+      setArtifacts(F.buildArtifacts(draft, forgeData) as unknown as Artifact[]);
+      setWands([F.buildStartingWand(draft, forgeData) as unknown as Wand, ...(F.buildExtraWands(draft, forgeData) as unknown as Wand[])]);
+      setRuneStack([]);
+    }
     setNav("overview");
     closeForge();
     persistence.notifyCommitted();
