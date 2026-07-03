@@ -115,12 +115,13 @@ export interface CharacterSheetProps {
   mode: "edit" | "create";
   id?: string | null;
   initialSheet?: SerializedSheet | null;
+  initialUpdatedAt?: string | null;
   roster?: RosterMember[];
   me?: string | null;
   campaignId?: string | null;
 }
 
-export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId }: CharacterSheetProps) {
+export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roster, me, campaignId }: CharacterSheetProps) {
   const router = useRouter();
 
   // ---- Live compendium + classes (seed until the loader resolves) ----
@@ -317,7 +318,60 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
   };
 
   /* ---- Persistence + hydration ----------------------------------------- */
-  const persistence = useCharacterPersistence({ mode, id });
+  // Baseline we believe matches the DB row — the server-rendered sheet, or
+  // the last sheet a save/reconcile confirmed. A GM grant (grant_sheet_field)
+  // or another tab's save can move the row without this tab knowing; a plain
+  // full-sheet PATCH would then silently clobber whatever they added (e.g.
+  // wiping a just-learned spell back out). On a 409 conflict, reconcileFromServer
+  // adopts the server's fresher value for any field that still matches this
+  // baseline (untouched locally) while keeping this tab's own in-flight edits,
+  // so neither writer's change is lost.
+  const syncedSheetRef = React.useRef<SerializedSheet | null>(initialSheet ?? null);
+  const jeq = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+  function syncField<T>(local: T, baseVal: T | undefined, serverVal: T, apply: (v: T) => void): T {
+    if (baseVal !== undefined && jeq(local, baseVal)) {
+      apply(serverVal);
+      return serverVal;
+    }
+    return local;
+  }
+  const reconcileFromServer = (serverSheet: SerializedSheet): SerializedSheet => {
+    const base = syncedSheetRef.current;
+    const merged: SerializedSheet = {
+      v: 1,
+      c: syncField(c, base?.c, serverSheet.c, (v) => setC(() => ({ ...v }))),
+      conditions: syncField(conditions, base?.conditions, serverSheet.conditions, (v) => setConditions(v.map((x) => ({ ...x })))),
+      stats: syncField(stats, base?.stats, serverSheet.stats, (v) => setStats(v.map((f) => ({ ...f, skills: (f.skills || []).map((k) => ({ ...k })) })))),
+      schools: syncField(schools, base?.schools, serverSheet.schools, (v) => setSchools(v.map((sc) => ({ ...sc, subjects: (sc.subjects || []).map((x) => ({ ...x })) })))),
+      classes: syncField({ rp, classState }, base?.classes, serverSheet.classes, (v) => classes.handlers.loadState(v.classState, v.rp)),
+      magic: {
+        bonuses: syncField(bonuses, base?.magic?.bonuses, serverSheet.magic?.bonuses ?? [], (v) => magic.setState.setBonuses(v.map((x) => ({ ...x })))),
+        spells: syncField(spells, base?.magic?.spells, serverSheet.magic?.spells ?? [], (v) => magic.setState.setSpells(v.map((x) => ({ ...x })))),
+        moves: syncField(moves, base?.magic?.moves, serverSheet.magic?.moves ?? [], (v) => magic.setState.setMoves(v.map((x) => ({ ...x })))),
+      },
+      inventory: {
+        artifacts: syncField(artifacts, base?.inventory?.artifacts, serverSheet.inventory?.artifacts ?? [], (v) => setArtifacts(v.map((x) => ({ ...x })))),
+        potions: syncField(potions, base?.inventory?.potions, serverSheet.inventory?.potions ?? [], (v) => setPotions(v.map((x) => ({ ...x })))),
+        recipes: syncField(recipes, base?.inventory?.recipes, serverSheet.inventory?.recipes ?? [], (v) => setRecipes(v.map((x) => ({ ...x })))),
+        plants: syncField(plants, base?.inventory?.plants, serverSheet.inventory?.plants ?? [], (v) => setPlants(v.map((x) => ({ ...x })))),
+        wands: syncField(wands, base?.inventory?.wands, serverSheet.inventory?.wands ?? [], (v) => setWands(v.map((x) => ({ ...x })))),
+        glyphs: syncField(glyphs, base?.inventory?.glyphs, serverSheet.inventory?.glyphs ?? [], (v) => setGlyphs(v.map((x) => ({ ...x })))),
+        items: syncField(items, base?.inventory?.items, serverSheet.inventory?.items ?? [], (v) => setItems(v.map((x) => ({ ...x })))),
+        runeStack: syncField(runeStack, base?.inventory?.runeStack, serverSheet.inventory?.runeStack ?? [], (v) => setRuneStack(v.map((x) => ({ ...x })))),
+      },
+      locations: syncField(locations, base?.locations, serverSheet.locations, (v) => setLocations((prev) => ({ ...prev, ...(v as Record<string, string | null>) }))),
+    };
+    syncedSheetRef.current = merged;
+    return merged;
+  };
+
+  const persistence = useCharacterPersistence({
+    mode,
+    id,
+    initialUpdatedAt,
+    onSaved: (sheet) => { syncedSheetRef.current = sheet; },
+    onConflict: (serverSheet, retry) => retry(reconcileFromServer(serverSheet)),
+  });
   const serializeSheet = (): SerializedSheet => ({
     v: 1,
     c, conditions, stats, schools,

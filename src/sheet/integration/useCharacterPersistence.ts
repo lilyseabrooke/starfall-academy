@@ -19,6 +19,17 @@ export interface PersistenceOptions {
   id?: string | null;
   /** Debounce window in ms (matches the prototype's 600ms). */
   debounceMs?: number;
+  /** The row's updated_at as of the last known-good sheet (server-rendered on load). */
+  initialUpdatedAt?: string | null;
+  /**
+   * The row changed since we last synced (a GM grant, or another tab/device
+   * saved) — our PATCH was rejected rather than clobbering it. `retry` sends
+   * a fresh sheet once the caller has reconciled its local state against
+   * `serverSheet`.
+   */
+  onConflict?: (serverSheet: SerializedSheet, retry: (sheet: SerializedSheet) => void) => void;
+  /** A sheet we sent was accepted and is now the server's state of record. */
+  onSaved?: (sheet: SerializedSheet) => void;
 }
 
 export interface Persistence {
@@ -28,16 +39,23 @@ export interface Persistence {
   notifyCommitted: () => void;
 }
 
-export function useCharacterPersistence({ mode, id, debounceMs = 600 }: PersistenceOptions): Persistence {
+export function useCharacterPersistence({ mode, id, debounceMs = 600, initialUpdatedAt, onConflict, onSaved }: PersistenceOptions): Persistence {
   const router = useRouter();
   const idRef = React.useRef<string | null>(id ?? null);
   const committedRef = React.useRef(mode !== "create"); // edit mode is armed immediately
   const creatingRef = React.useRef(false);
   const timer = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const updatedAtRef = React.useRef<string | null>(initialUpdatedAt ?? null);
+  const onConflictRef = React.useRef(onConflict);
+  const onSavedRef = React.useRef(onSaved);
 
   React.useEffect(() => {
     idRef.current = id ?? null;
   }, [id]);
+  React.useEffect(() => { onConflictRef.current = onConflict; }, [onConflict]);
+  React.useEffect(() => { onSavedRef.current = onSaved; }, [onSaved]);
+
+  const persistRef = React.useRef<(sheet: SerializedSheet) => Promise<void>>(async () => {});
 
   const persist = React.useCallback(
     async (sheet: SerializedSheet) => {
@@ -46,10 +64,24 @@ export function useCharacterPersistence({ mode, id, debounceMs = 600 }: Persiste
           const res = await fetch(`/api/characters/${idRef.current}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ sheet }),
+            body: JSON.stringify({ sheet, expectedUpdatedAt: updatedAtRef.current }),
             keepalive: true,
           });
-          if (!res.ok) console.error("Character save failed", res.status, await res.text().catch(() => ""));
+          if (res.status === 409) {
+            const conflict = await res.json().catch(() => null);
+            if (conflict?.sheet) {
+              updatedAtRef.current = conflict.updatedAt ?? updatedAtRef.current;
+              onConflictRef.current?.(conflict.sheet, (retrySheet) => void persistRef.current(retrySheet));
+            }
+            return;
+          }
+          if (!res.ok) {
+            console.error("Character save failed", res.status, await res.text().catch(() => ""));
+            return;
+          }
+          const saved = await res.json().catch(() => null);
+          if (saved?.updatedAt) updatedAtRef.current = saved.updatedAt;
+          onSavedRef.current?.(sheet);
         } catch (err) {
           console.error("Character save request failed", err);
         }
@@ -82,6 +114,7 @@ export function useCharacterPersistence({ mode, id, debounceMs = 600 }: Persiste
     },
     [router]
   );
+  React.useEffect(() => { persistRef.current = persist; }, [persist]);
 
   const save = React.useCallback(
     (sheet: SerializedSheet) => {
