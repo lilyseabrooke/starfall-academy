@@ -307,10 +307,6 @@ export function Admission({ mode, initial, data, classData, onCommit, onClose }:
   const cancel = () => { if (draft.mode === "new") { try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ } } onClose(); };
 
   const showHUD = draft.mode !== "edit" && ["classes", "allocation", "inventory"].includes(step.id);
-  // Respec is just two short sections — identity and stat/ability allocation
-  // — with nothing to page between and nothing to review, so show both at
-  // once and save in a single step instead of a multi-page wizard.
-  const isRespec = mode === "edit";
 
   return (
     <div className="sf-admission" role="dialog" aria-label="The Admission — character creation">
@@ -326,22 +322,12 @@ export function Admission({ mode, initial, data, classData, onCommit, onClose }:
             </div>
           </div>
           <nav className="sf-admission__steps">
-            {steps.map((s, i) =>
-              isRespec ? (
-                // Both sections are shown together on one page (see below) —
-                // these are just a table of contents, not clickable/active
-                // tabs, since there's no paging to reflect.
-                <span key={s.id} className="sf-admission__step">
-                  <span className="sf-admission__stepnum"><Icon name={s.icon} /></span>
-                  <span className="sf-admission__steplabel">{s.label}</span>
-                </span>
-              ) : (
-                <button key={s.id} type="button" className={"sf-admission__step" + (i === idx ? " is-active" : "") + (validOf(s.id) && i !== idx ? " is-done" : "")} onClick={() => setIdx(i)}>
-                  <span className="sf-admission__stepnum">{validOf(s.id) && i !== idx ? <Icon name="check" /> : <Icon name={s.icon} />}</span>
-                  <span className="sf-admission__steplabel">{s.label}</span>
-                </button>
-              )
-            )}
+            {steps.map((s, i) => (
+              <button key={s.id} type="button" className={"sf-admission__step" + (i === idx ? " is-active" : "") + (validOf(s.id) && i !== idx ? " is-done" : "")} onClick={() => setIdx(i)}>
+                <span className="sf-admission__stepnum">{validOf(s.id) && i !== idx ? <Icon name="check" /> : <Icon name={s.icon} />}</span>
+                <span className="sf-admission__steplabel">{s.label}</span>
+              </button>
+            ))}
           </nav>
           <button className="sf-admission__cancel" onClick={cancel} type="button"><Icon name="x" /> {mode === "edit" ? "Discard changes" : "Cancel"}</button>
         </aside>
@@ -349,35 +335,27 @@ export function Admission({ mode, initial, data, classData, onCommit, onClose }:
         {/* content */}
         <div className="sf-admission__main">
           <div className="sf-admission__scroll">
-            {isRespec ? (
-              <>
-                <IdentityStep D={D} draft={draft} set={set} />
-                <AdmissionAllocation D={D} draft={draft} set={set} />
-              </>
-            ) : (
-              <>
-                {step.id === "identity" && <IdentityStep D={D} draft={draft} set={set} />}
-                {step.id === "classes" && <AdmissionClasses D={D} classData={classData} draft={draft} set={set} />}
-                {step.id === "wand" && <WandStep D={D} draft={draft} set={set} />}
-                {step.id === "allocation" && <AdmissionAllocation D={D} draft={draft} set={set} />}
-                {step.id === "inventory" && <AdmissionInventory D={D} draft={draft} set={set} />}
-                {step.id === "spells" && <AdmissionSpells D={D} draft={draft} set={set} />}
-                {step.id === "review" && <ReviewStep D={D} classData={classData} draft={draft} missing={missing} />}
-              </>
-            )}
+            {step.id === "identity" && <IdentityStep D={D} draft={draft} set={set} />}
+            {step.id === "classes" && <AdmissionClasses D={D} classData={classData} draft={draft} set={set} />}
+            {step.id === "wand" && <WandStep D={D} draft={draft} set={set} />}
+            {step.id === "allocation" && <AdmissionAllocation D={D} draft={draft} set={set} />}
+            {step.id === "inventory" && <AdmissionInventory D={D} draft={draft} set={set} />}
+            {step.id === "spells" && <AdmissionSpells D={D} draft={draft} set={set} />}
+            {step.id === "review" && <ReviewStep D={D} classData={classData} draft={draft} missing={missing} />}
           </div>
 
           <footer className="sf-admission__foot">
-            {isRespec ? (
-              <div className="sf-admission__footspace"></div>
-            ) : (
-              <Button variant="ghost" disabled={idx === 0} iconLeft={<Icon name="arrow-left" />} onClick={() => setIdx((i) => Math.max(0, i - 1))}>Back</Button>
-            )}
+            <Button variant="ghost" disabled={idx === 0} iconLeft={<Icon name="arrow-left" />} onClick={() => setIdx((i) => Math.max(0, i - 1))}>Back</Button>
             {showHUD ? <BudgetHUD D={D} draft={draft} /> : <div className="sf-admission__footspace"></div>}
-            {!isRespec && idx < steps.length - 1 ? (
+            {/* Respec has just two short pages — put Save on both instead of
+                making the player click through to the last one to commit. */}
+            {mode === "edit" && (
+              <Button variant={idx < steps.length - 1 ? "ghost" : "primary"} iconLeft={<Icon name="check" />} disabled={!ready} onClick={begin}>Save</Button>
+            )}
+            {idx < steps.length - 1 ? (
               <Button variant="primary" iconLeft={<Icon name="arrow-right" />} onClick={() => setIdx((i) => Math.min(steps.length - 1, i + 1))}>Next</Button>
             ) : (
-              <Button variant="primary" iconLeft={<Icon name="check" />} disabled={!ready} onClick={begin}>{mode === "edit" ? "Save" : "Begin"}</Button>
+              mode !== "edit" && <Button variant="primary" iconLeft={<Icon name="check" />} disabled={!ready} onClick={begin}>Begin</Button>
             )}
           </footer>
         </div>
