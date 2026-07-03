@@ -35,6 +35,12 @@ const STEPS = [
   { id: "spells", label: "Spells", icon: "sparkles" },
   { id: "review", label: "Review", icon: "scroll-text" },
 ];
+// A respec only ever touches identity fields and stat/ability allocation
+// (see commitForge) — starting wand/inventory/spells are one-time admission
+// choices, and classes/moves/bonuses are live play state, not something to
+// revisit from the "edit character" respec. There's nothing to review either
+// once those are the only two editable sections.
+const RESPEC_STEPS = STEPS.filter((s) => ["identity", "allocation"].includes(s.id));
 const DRAFT_KEY = "sf-admission-draft";
 
 /* ------------------------------- Identity ----------------------------- */
@@ -276,7 +282,8 @@ export function Admission({ mode, initial, data, classData, onCommit, onClose }:
   const [draft, setDraft] = React.useState<Draft>(initial);
   const [idx, setIdx] = React.useState(0);
   const set = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
-  const step = STEPS[idx];
+  const steps = mode === "edit" ? RESPEC_STEPS : STEPS;
+  const step = steps[idx];
 
   // Persist new-character drafts so a refresh mid-build is safe.
   React.useEffect(() => {
@@ -315,15 +322,12 @@ export function Admission({ mode, initial, data, classData, onCommit, onClose }:
             </div>
           </div>
           <nav className="sf-admission__steps">
-            {STEPS.map((s, i) => {
-              const done = validOf(s.id) && i !== idx;
-              return (
-                <button key={s.id} type="button" className={"sf-admission__step" + (i === idx ? " is-active" : "") + (done ? " is-done" : "")} onClick={() => setIdx(i)}>
-                  <span className="sf-admission__stepnum">{done ? <Icon name="check" /> : <Icon name={s.icon} />}</span>
-                  <span className="sf-admission__steplabel">{s.label}</span>
-                </button>
-              );
-            })}
+            {steps.map((s, i) => (
+              <button key={s.id} type="button" className={"sf-admission__step" + (i === idx ? " is-active" : "") + (validOf(s.id) && i !== idx ? " is-done" : "")} onClick={() => setIdx(i)}>
+                <span className="sf-admission__stepnum">{validOf(s.id) && i !== idx ? <Icon name="check" /> : <Icon name={s.icon} />}</span>
+                <span className="sf-admission__steplabel">{s.label}</span>
+              </button>
+            ))}
           </nav>
           <button className="sf-admission__cancel" onClick={cancel} type="button"><Icon name="x" /> {mode === "edit" ? "Discard changes" : "Cancel"}</button>
         </aside>
@@ -343,10 +347,15 @@ export function Admission({ mode, initial, data, classData, onCommit, onClose }:
           <footer className="sf-admission__foot">
             <Button variant="ghost" disabled={idx === 0} iconLeft={<Icon name="arrow-left" />} onClick={() => setIdx((i) => Math.max(0, i - 1))}>Back</Button>
             {showHUD ? <BudgetHUD D={D} draft={draft} /> : <div className="sf-admission__footspace"></div>}
-            {idx < STEPS.length - 1 ? (
-              <Button variant="primary" iconLeft={<Icon name="arrow-right" />} onClick={() => setIdx((i) => Math.min(STEPS.length - 1, i + 1))}>Next</Button>
+            {/* Respec has just two short pages — put Save on both instead of
+                making the player click through to the last one to commit. */}
+            {mode === "edit" && (
+              <Button variant={idx < steps.length - 1 ? "ghost" : "primary"} iconLeft={<Icon name="check" />} disabled={!ready} onClick={begin}>Save</Button>
+            )}
+            {idx < steps.length - 1 ? (
+              <Button variant="primary" iconLeft={<Icon name="arrow-right" />} onClick={() => setIdx((i) => Math.min(steps.length - 1, i + 1))}>Next</Button>
             ) : (
-              <Button variant="primary" iconLeft={<Icon name="check" />} disabled={!ready} onClick={begin}>{mode === "edit" ? "Save character" : "Begin"}</Button>
+              mode !== "edit" && <Button variant="primary" iconLeft={<Icon name="check" />} disabled={!ready} onClick={begin}>Begin</Button>
             )}
           </footer>
         </div>

@@ -115,12 +115,13 @@ export interface CharacterSheetProps {
   mode: "edit" | "create";
   id?: string | null;
   initialSheet?: SerializedSheet | null;
+  initialUpdatedAt?: string | null;
   roster?: RosterMember[];
   me?: string | null;
   campaignId?: string | null;
 }
 
-export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId }: CharacterSheetProps) {
+export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roster, me, campaignId }: CharacterSheetProps) {
   const router = useRouter();
 
   // ---- Live compendium + classes (seed until the loader resolves) ----
@@ -317,7 +318,60 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
   };
 
   /* ---- Persistence + hydration ----------------------------------------- */
-  const persistence = useCharacterPersistence({ mode, id });
+  // Baseline we believe matches the DB row — the server-rendered sheet, or
+  // the last sheet a save/reconcile confirmed. A GM grant (grant_sheet_field)
+  // or another tab's save can move the row without this tab knowing; a plain
+  // full-sheet PATCH would then silently clobber whatever they added (e.g.
+  // wiping a just-learned spell back out). On a 409 conflict, reconcileFromServer
+  // adopts the server's fresher value for any field that still matches this
+  // baseline (untouched locally) while keeping this tab's own in-flight edits,
+  // so neither writer's change is lost.
+  const syncedSheetRef = React.useRef<SerializedSheet | null>(initialSheet ?? null);
+  const jeq = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+  function syncField<T>(local: T, baseVal: T | undefined, serverVal: T, apply: (v: T) => void): T {
+    if (baseVal !== undefined && jeq(local, baseVal)) {
+      apply(serverVal);
+      return serverVal;
+    }
+    return local;
+  }
+  const reconcileFromServer = (serverSheet: SerializedSheet): SerializedSheet => {
+    const base = syncedSheetRef.current;
+    const merged: SerializedSheet = {
+      v: 1,
+      c: syncField(c, base?.c, serverSheet.c, (v) => setC(() => ({ ...v }))),
+      conditions: syncField(conditions, base?.conditions, serverSheet.conditions, (v) => setConditions(v.map((x) => ({ ...x })))),
+      stats: syncField(stats, base?.stats, serverSheet.stats, (v) => setStats(v.map((f) => ({ ...f, skills: (f.skills || []).map((k) => ({ ...k })) })))),
+      schools: syncField(schools, base?.schools, serverSheet.schools, (v) => setSchools(v.map((sc) => ({ ...sc, subjects: (sc.subjects || []).map((x) => ({ ...x })) })))),
+      classes: syncField({ rp, classState }, base?.classes, serverSheet.classes, (v) => classes.handlers.loadState(v.classState, v.rp)),
+      magic: {
+        bonuses: syncField(bonuses, base?.magic?.bonuses, serverSheet.magic?.bonuses ?? [], (v) => magic.setState.setBonuses(v.map((x) => ({ ...x })))),
+        spells: syncField(spells, base?.magic?.spells, serverSheet.magic?.spells ?? [], (v) => magic.setState.setSpells(v.map((x) => ({ ...x })))),
+        moves: syncField(moves, base?.magic?.moves, serverSheet.magic?.moves ?? [], (v) => magic.setState.setMoves(v.map((x) => ({ ...x })))),
+      },
+      inventory: {
+        artifacts: syncField(artifacts, base?.inventory?.artifacts, serverSheet.inventory?.artifacts ?? [], (v) => setArtifacts(v.map((x) => ({ ...x })))),
+        potions: syncField(potions, base?.inventory?.potions, serverSheet.inventory?.potions ?? [], (v) => setPotions(v.map((x) => ({ ...x })))),
+        recipes: syncField(recipes, base?.inventory?.recipes, serverSheet.inventory?.recipes ?? [], (v) => setRecipes(v.map((x) => ({ ...x })))),
+        plants: syncField(plants, base?.inventory?.plants, serverSheet.inventory?.plants ?? [], (v) => setPlants(v.map((x) => ({ ...x })))),
+        wands: syncField(wands, base?.inventory?.wands, serverSheet.inventory?.wands ?? [], (v) => setWands(v.map((x) => ({ ...x })))),
+        glyphs: syncField(glyphs, base?.inventory?.glyphs, serverSheet.inventory?.glyphs ?? [], (v) => setGlyphs(v.map((x) => ({ ...x })))),
+        items: syncField(items, base?.inventory?.items, serverSheet.inventory?.items ?? [], (v) => setItems(v.map((x) => ({ ...x })))),
+        runeStack: syncField(runeStack, base?.inventory?.runeStack, serverSheet.inventory?.runeStack ?? [], (v) => setRuneStack(v.map((x) => ({ ...x })))),
+      },
+      locations: syncField(locations, base?.locations, serverSheet.locations, (v) => setLocations((prev) => ({ ...prev, ...(v as Record<string, string | null>) }))),
+    };
+    syncedSheetRef.current = merged;
+    return merged;
+  };
+
+  const persistence = useCharacterPersistence({
+    mode,
+    id,
+    initialUpdatedAt,
+    onSaved: (sheet) => { syncedSheetRef.current = sheet; },
+    onConflict: (serverSheet, retry) => retry(reconcileFromServer(serverSheet)),
+  });
   const serializeSheet = (): SerializedSheet => ({
     v: 1,
     c, conditions, stats, schools,
@@ -928,24 +982,36 @@ export function CharacterSheet({ mode, id, initialSheet, roster, me, campaignId 
   };
 
   const commitForge = (draft: Draft) => {
-    
+
     setStats(F.buildStats(draft, forgeData));
     setSchools(F.buildSchools(draft, forgeData));
-    setC((prev) => ({ ...prev, ...F.buildCharacter(draft, forgeData) }));
-    setConditions(SEED.conditions.map((x) => ({ ...x, value: 0 })));
-    classes.handlers.loadState(F.buildClassState(draft), 0);
-    magic.setState.setBonuses(F.buildWandBonuses(draft, forgeData));
-    magic.setState.setSpells(F.buildSpells(draft, forgeData));
-    magic.setState.setMoves([]);
-    const pots = F.buildPotions(draft, forgeData);
-    setRecipes(pots.map((p) => p.recipe));
-    setPotions(pots.map((p) => p.vial));
-    setPlants(F.buildPlants(draft, forgeData) as Plant[]);
-    setItems([]);
-    setGlyphs(F.buildGlyphs(draft, forgeData) as Glyph[]);
-    setArtifacts(F.buildArtifacts(draft, forgeData) as unknown as Artifact[]);
-    setWands([F.buildStartingWand(draft, forgeData) as unknown as Wand, ...(F.buildExtraWands(draft, forgeData) as unknown as Wand[])]);
-    setRuneStack([]);
+    const built = F.buildCharacter(draft, forgeData);
+    if (draft.mode === "edit") {
+      // Respec only touches what its two steps actually edit (identity +
+      // major, stats/subjects) — vitals like action points, resolve,
+      // trouble, and materials are live play state with no step controlling
+      // them, and class ranks/choices are left alone entirely so the
+      // class-rank ↔ move sync effect (keyed on classState) never fires and
+      // moves/bonuses can't be touched by a respec either.
+      const { name, pronouns, year, yearId, house, houseTone, title, bio, major } = built;
+      setC((prev) => ({ ...prev, name, pronouns, year, yearId, house, houseTone, title, bio, major }));
+    } else {
+      setC((prev) => ({ ...prev, ...built }));
+      setConditions(SEED.conditions.map((x) => ({ ...x, value: 0 })));
+      classes.handlers.loadState(F.buildClassState(draft), 0);
+      magic.setState.setBonuses(F.buildWandBonuses(draft, forgeData));
+      magic.setState.setSpells(F.buildSpells(draft, forgeData));
+      magic.setState.setMoves([]);
+      const pots = F.buildPotions(draft, forgeData);
+      setRecipes(pots.map((p) => p.recipe));
+      setPotions(pots.map((p) => p.vial));
+      setPlants(F.buildPlants(draft, forgeData) as Plant[]);
+      setItems([]);
+      setGlyphs(F.buildGlyphs(draft, forgeData) as Glyph[]);
+      setArtifacts(F.buildArtifacts(draft, forgeData) as unknown as Artifact[]);
+      setWands([F.buildStartingWand(draft, forgeData) as unknown as Wand, ...(F.buildExtraWands(draft, forgeData) as unknown as Wand[])]);
+      setRuneStack([]);
+    }
     setNav("overview");
     closeForge();
     persistence.notifyCommitted();
