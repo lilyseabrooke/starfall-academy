@@ -4,6 +4,7 @@ import * as React from "react";
 import { Badge, Banner, Button, IconButton, Select } from "@/ds";
 import { Icon } from "../Icon";
 import { DualRange, type RangeValue } from "./DualRange";
+import { SpellHLB } from "./SpellCard";
 import { PLANT_ROLL_LABEL, TONE_500, levelTone, parsePlantRoll } from "../../data/shared";
 import {
   COMP_FILTERS, COMP_SORT_FIELDS, compLevelRank, field,
@@ -352,6 +353,7 @@ export function Compendium({
                       </div>
                     ) : null}
                     <p className="sf-entry__desc">{e.desc}</p>
+                    {e.cat === "spell" ? <SpellHLB text={e.higherLevel} /> : null}
                     {e.ability ? (
                       <div className="sf-entry__ability">
                         <span className="sf-entry__ability-lbl"><Icon name="sparkles" /> Ability</span>
