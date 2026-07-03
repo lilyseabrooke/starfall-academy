@@ -328,7 +328,10 @@ export function Admission({ mode, initial, data, classData, onCommit, onClose }:
           <nav className="sf-admission__steps">
             {steps.map((s, i) =>
               isRespec ? (
-                <span key={s.id} className="sf-admission__step is-active">
+                // Both sections are shown together on one page (see below) —
+                // these are just a table of contents, not clickable/active
+                // tabs, since there's no paging to reflect.
+                <span key={s.id} className="sf-admission__step">
                   <span className="sf-admission__stepnum"><Icon name={s.icon} /></span>
                   <span className="sf-admission__steplabel">{s.label}</span>
                 </span>
