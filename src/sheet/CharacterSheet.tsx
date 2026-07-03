@@ -781,14 +781,23 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     const plantRequiresFromForm = () => fs("requiresRoll").toUpperCase() || "NO";
 
     if (kind === "artifact") {
+      const rawSkills = Array.isArray(f.skill) ? (f.skill as unknown[]) : f.skill != null ? [f.skill] : [];
+      const skillsArr = rawSkills.map((s) => String(s || "").trim()).filter(Boolean);
+      const statForSkill = (skName: string) => {
+        const st = stats.find((s) => s.skills.some((k) => k.name === skName));
+        return st ? st.name : fs("subject") ? subjStat(fs("subject")) : "Insight";
+      };
+      const rollOptions = skillsArr.length > 1 ? skillsArr.map((sk) => ({ kind: "skill" as const, stat: statForSkill(sk), skill: sk, label: sk })) : undefined;
+      const primSkill = skillsArr[0] || "—";
+      const primStat = skillsArr.length ? statForSkill(primSkill) : fs("subject") ? subjStat(fs("subject")) : "Insight";
       if (editArtifact) {
-        const artMove = { ...editArtifact.move, name: fs("name") + " — Boon", skill: fs("skill").trim() || "—", dc: fs("dc") ? num(fs("dc")) : null, desc: fs("desc") };
-        setArtifacts((prev) => prev.map((x) => x.id === editArtifact.id ? { ...x, name: fs("name"), level: fs("level") || x.level, tone: fs("subject") ? subjTone(fs("subject")) : x.tone, subject: subjName(fs("subject")) || x.subject, intensity: num(fs("intensity"), 1), desc: fs("desc"), move: artMove } : x));
+        const artMove = { ...editArtifact.move, name: fs("name") + " — Boon", stat: primStat, skill: primSkill, dc: fs("dc") ? num(fs("dc")) : null, desc: fs("desc"), rollOptions };
+        setArtifacts((prev) => prev.map((x) => x.id === editArtifact.id ? { ...x, name: fs("name"), level: fs("level") || x.level, tone: fs("subject") ? subjTone(fs("subject")) : x.tone, subject: subjName(fs("subject")) || x.subject, intensity: num(fs("intensity"), 1), desc: fs("desc"), skills: skillsArr, dc: fs("dc") ? num(fs("dc")) : 0, move: artMove } : x));
         toast("Artifact updated"); setEditArtifact(null); return;
       }
-      const artMove = { name: fs("name") + " — Boon", stat: fs("subject") ? subjStat(fs("subject")) : "Insight", skill: fs("skill").trim() || "—", bonus: 0, dc: fs("dc") ? num(fs("dc")) : null, desc: fs("desc") };
-      setArtifacts((prev) => [...prev, { id: itemId, name: fs("name"), level: fs("level") || "Basic", tone: fs("subject") ? subjTone(fs("subject")) : "plum", subject: subjName(fs("subject")) || "—", intensity: num(fs("intensity"), 1), attuned: fb("attuned"), condition: "stable", skills: fs("skill") ? [fs("skill")] : [], dc: fs("dc") ? num(fs("dc")) : 0, desc: fs("desc"), move: artMove }]);
-      if (fb("attuned")) addMove({ id: "mv-art-" + itemId, name: artMove.name, tag: fs("level") || "Basic", stat: artMove.stat, skill: artMove.skill, bonus: artMove.bonus, dc: artMove.dc, desc: artMove.desc });
+      const artMove = { name: fs("name") + " — Boon", stat: primStat, skill: primSkill, bonus: 0, dc: fs("dc") ? num(fs("dc")) : null, desc: fs("desc"), rollOptions };
+      setArtifacts((prev) => [...prev, { id: itemId, name: fs("name"), level: fs("level") || "Basic", tone: fs("subject") ? subjTone(fs("subject")) : "plum", subject: subjName(fs("subject")) || "—", intensity: num(fs("intensity"), 1), attuned: fb("attuned"), condition: "stable", skills: skillsArr, dc: fs("dc") ? num(fs("dc")) : 0, desc: fs("desc"), move: artMove }]);
+      if (fb("attuned")) addMove({ id: "mv-art-" + itemId, name: artMove.name, tag: fs("level") || "Basic", stat: artMove.stat, skill: artMove.skill, bonus: artMove.bonus, dc: artMove.dc, desc: artMove.desc, rollOptions });
       toast(fb("attuned") ? "Added to attunements" : "Added to inventory");
     } else if (kind === "recipe") {
       if (editRecipe) {
