@@ -987,13 +987,14 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     setSchools(F.buildSchools(draft, forgeData));
     const built = F.buildCharacter(draft, forgeData);
     if (draft.mode === "edit") {
-      // Respec only touches what its steps actually edit (identity + major)
-      // — vitals like action points, resolve, trouble, and materials are
-      // live play state with no step controlling them, so leave them as-is
-      // rather than reset to buildCharacter's fresh-character defaults.
+      // Respec only touches what its two steps actually edit (identity +
+      // major, stats/subjects) — vitals like action points, resolve,
+      // trouble, and materials are live play state with no step controlling
+      // them, and class ranks/choices are left alone entirely so the
+      // class-rank ↔ move sync effect (keyed on classState) never fires and
+      // moves/bonuses can't be touched by a respec either.
       const { name, pronouns, year, yearId, house, houseTone, title, bio, major } = built;
       setC((prev) => ({ ...prev, name, pronouns, year, yearId, house, houseTone, title, bio, major }));
-      classes.handlers.loadState(F.buildClassState(draft));
     } else {
       setC((prev) => ({ ...prev, ...built }));
       setConditions(SEED.conditions.map((x) => ({ ...x, value: 0 })));
