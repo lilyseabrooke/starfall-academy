@@ -985,15 +985,19 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
 
     setStats(F.buildStats(draft, forgeData));
     setSchools(F.buildSchools(draft, forgeData));
-    setC((prev) => ({ ...prev, ...F.buildCharacter(draft, forgeData) }));
-    classes.handlers.loadState(F.buildClassState(draft), 0);
-    // Starting wand, spells, and inventory are one-time admission choices —
-    // the wizard no longer even shows those steps on a respec (see
-    // RESPEC_STEPS in Forge.tsx), but guard here too so a respec commit can
-    // never wipe them back to an empty/rebuilt-from-draft state regardless
-    // of how it's invoked.
-    if (draft.mode !== "edit") {
+    const built = F.buildCharacter(draft, forgeData);
+    if (draft.mode === "edit") {
+      // Respec only touches what its steps actually edit (identity + major)
+      // — vitals like action points, resolve, trouble, and materials are
+      // live play state with no step controlling them, so leave them as-is
+      // rather than reset to buildCharacter's fresh-character defaults.
+      const { name, pronouns, year, yearId, house, houseTone, title, bio, major } = built;
+      setC((prev) => ({ ...prev, name, pronouns, year, yearId, house, houseTone, title, bio, major }));
+      classes.handlers.loadState(F.buildClassState(draft));
+    } else {
+      setC((prev) => ({ ...prev, ...built }));
       setConditions(SEED.conditions.map((x) => ({ ...x, value: 0 })));
+      classes.handlers.loadState(F.buildClassState(draft), 0);
       magic.setState.setBonuses(F.buildWandBonuses(draft, forgeData));
       magic.setState.setSpells(F.buildSpells(draft, forgeData));
       magic.setState.setMoves([]);
