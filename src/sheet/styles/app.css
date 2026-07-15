@@ -136,19 +136,31 @@
 .sf-sheet .sf-side__foot { display: flex; flex-direction: column; gap: var(--space-2); margin-top: auto; padding-top: var(--space-2); }
 
 /* ---- Main + top bar ---------------------------------------------------- */
-.sf-sheet .sf-main { display: flex; flex-direction: column; min-width: 0; height: 100vh; }
+/* Sized by the grid track next to the sidebar, so it naturally shrinks/grows
+   as the sidebar collapses, expands, or overlays — the top bar below queries
+   THIS box's width (via container queries), not the viewport, so its layout
+   reacts to the sidebar's real state instead of assuming a fixed offset. */
+.sf-sheet .sf-main {
+  display: flex; flex-direction: column; min-width: 0; height: 100vh;
+  container-name: sf-top-cq; container-type: inline-size;
+}
 .sf-sheet .sf-top {
   display: flex; align-items: center; gap: var(--space-5);
+  flex-wrap: wrap; row-gap: var(--space-2);
   padding: var(--space-4) var(--space-6);
   border-bottom: 1px solid var(--hairline);
   background: color-mix(in oklab, var(--ink-900) 62%, transparent); backdrop-filter: blur(6px);
   position: sticky; top: 0; z-index: 6;
 }
-.sf-sheet .sf-top__titles { display: flex; flex-direction: column; gap: 3px; }
+.sf-sheet .sf-top__titles { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .sf-sheet .sf-top__eyebrow { white-space: nowrap; overflow: hidden; }
 .sf-sheet .sf-top__h1 { font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: var(--tracking-wide); font-size: var(--text-xl); color: var(--text-strong); margin: 0; }
 .sf-sheet .sf-top__spacer { flex: 1; }
-.sf-sheet .sf-top__status { display: flex; align-items: center; gap: var(--space-5); }
+/* Wraps by default (not just under the tablet/mobile breakpoints below) so
+   that if the clock badge grows — e.g. switching the day tracker to
+   day+time mode — the vitals wrap onto their own line instead of being
+   pushed past the edge of the header. */
+.sf-sheet .sf-top__status { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-3) var(--space-5); }
 
 /* Campaign clock badge (GM: clickable, opens the Clock modal; player: same
    look, read-only — TimeBadge picks the variant via whether onClick is set). */
@@ -298,7 +310,10 @@
 .sf-sheet .sf-col { display: flex; flex-direction: column; gap: var(--space-5); min-width: 0; }
 
 /* ---- Stats ------------------------------------------------------------ */
-.sf-sheet .sf-stats { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); align-items: start; }
+/* auto-fit tracks the *actual* width of the stats column (not the viewport),
+   so it stays 2-up as soon as there's room again after the sidebar column
+   stacks below, instead of collapsing at a fixed breakpoint. */
+.sf-sheet .sf-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--space-4); align-items: start; }
 .sf-sheet .sf-fac {
   display: flex; flex-direction: column;
   background: var(--surface-card); border: 1px solid var(--border-subtle);
@@ -761,6 +776,8 @@
 .sf-sheet .sf-spell__edit svg { width: 13px; height: 13px; }
 .sf-sheet .sf-spell:hover .sf-spell__edit { opacity: 1; }
 .sf-sheet .sf-spell__edit:hover { color: var(--gold-300); border-color: color-mix(in oklab, var(--gold-500) 45%, transparent); }
+.sf-sheet .sf-move:hover .sf-spell__edit { opacity: 1; }
+.sf-sheet .sf-move:hover .sf-spell__remove { opacity: 1; }
 
 .sf-sheet .sf-itm__edit {
   width: 22px; height: 22px; flex: none; border-radius: var(--radius-xs); display: grid; place-items: center;
@@ -951,7 +968,6 @@
 
 @media (max-width: 1180px) {
   .sf-sheet .sf-grid { grid-template-columns: 1fr; }
-  .sf-sheet .sf-stats { grid-template-columns: 1fr; }
 }
 
 /* ============================= BACKFIRE ================================ */
@@ -1302,7 +1318,6 @@
   /* Canvas: tighter padding, single-column grids */
   .sf-sheet .sf-canvas { padding: var(--space-4) var(--space-3); gap: var(--space-4); }
   .sf-sheet .sf-grid { grid-template-columns: 1fr; }
-  .sf-sheet .sf-stats { grid-template-columns: 1fr; }
   .sf-sheet .sf-schools { grid-template-columns: 1fr; }
   .sf-sheet .sf-spells { grid-template-columns: 1fr; }
 
@@ -1329,9 +1344,25 @@
   .sf-sheet .sf-hero__name { font-size: var(--text-3xl); }
 }
 
-/* ============================ TABLET TOP BAR (701–1060px) ============== */
-/* Two-row layout: row 1 = titles + search; row 2 = all three vitals.    */
-@media (min-width: 701px) and (max-width: 1060px) {
+/* ============================ TOP BAR — SEARCH EASING =================== */
+/* Eases the search field's width down as the top bar's own box (not the
+   viewport) narrows, so it shrinks smoothly instead of staying pinned at
+   160px and then cliff-diving to icon-only right at the tablet breakpoint.
+   Keyed to .sf-main's container size, which already reflects the sidebar's
+   collapsed/expanded/overlaid width — no JS needed. */
+@container sf-top-cq (max-width: 1320px) {
+  .sf-sheet .srch__input { width: 120px; }
+}
+@container sf-top-cq (max-width: 1160px) {
+  .sf-sheet .srch__input { width: 90px; }
+}
+
+/* ============================ TABLET TOP BAR (≤1060px of top-bar width) = */
+/* Two-row layout: row 1 = titles + search; row 2 = all three vitals.
+   Queries the top bar's actual available width (via the .sf-main
+   container), not the viewport — so opening/collapsing the left nav
+   shifts this breakpoint exactly as much room as it actually frees up. */
+@container sf-top-cq (min-width: 701px) and (max-width: 1060px) {
   .sf-sheet .sf-top {
     flex-wrap: wrap;
   }
@@ -1378,7 +1409,11 @@
 }
 
 /* ============================ MOBILE TOP BAR =========================== */
-@media (max-width: 700px) {
+/* Also container-queried against .sf-main, same reasoning as the tablet
+   block above: this can now legitimately trigger above 700px of *viewport*
+   width, e.g. a mid-size window with the sidebar expanded, without needing
+   the page shell to have flipped into its own mobile/overlay layout. */
+@container sf-top-cq (max-width: 700px) {
   .sf-sheet .sf-top .srch {
     order: 2;
     margin-left: auto;
@@ -1469,12 +1504,12 @@
 }
 .sf-sheet .srch-mobile-toggle:hover { color: var(--gold-300); border-color: var(--gold-500); }
 .sf-sheet .srch-mobile-toggle svg { width: 16px; height: 16px; }
-@media (max-width: 1060px) {
+@container sf-top-cq (max-width: 1060px) {
   .sf-sheet .srch-mobile-toggle { display: grid !important; }
   .sf-sheet .srch { display: none !important; }
   .sf-sheet .srch.srch--mobile-open { display: flex !important; }
 }
-@media (min-width: 1061px) {
+@container sf-top-cq (min-width: 1061px) {
   .sf-sheet .srch__mobile-toggle { display: none; }
   .sf-sheet .srch__field { display: flex; }
 }

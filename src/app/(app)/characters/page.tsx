@@ -25,9 +25,13 @@ const HOUSE_TONE: Record<string, string> = {
   Scorpion: "gold",
 };
 
+// Strip quoted nicknames/titles (e.g. Aspen 'Rogue' Whitley) before taking initials.
+const QUOTED_SEGMENT = /['"`‘’“”][^'"`‘’“”]*['"`‘’“”]/g;
+
 function initialsOf(name: string) {
   return (
     name
+      .replace(QUOTED_SEGMENT, " ")
       .trim()
       .split(/\s+/)
       .slice(0, 2)
@@ -69,15 +73,21 @@ function toCard(row: {
 
 export default async function CharactersPage() {
   const supabase = await createClient();
-  // RLS scopes both queries to the signed-in user (owner of characters, GM of
-  // campaigns).
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // RLS also allows reading a GM's other campaign members' characters and a
+  // member's other campaigns, so ownership must be filtered explicitly here.
   const { data: characters } = await supabase
     .from("characters")
     .select("id, name, sheet, campaign_code, campaigns(name), updated_at")
+    .eq("owner_id", user?.id ?? "")
     .order("updated_at", { ascending: false });
   const { data: campaigns } = await supabase
     .from("campaigns")
     .select("id, name, code, updated_at")
+    .eq("gm_id", user?.id ?? "")
     .order("updated_at", { ascending: false });
 
   const characterCards = (characters ?? []).map(toCard);

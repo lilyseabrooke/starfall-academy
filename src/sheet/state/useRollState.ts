@@ -231,7 +231,7 @@ export function useRollState(data: RollStateData, activeChar: string, options: R
 
   // ---- Demo conjure helpers (Tweaks panel) ----
   const initials = (n: string) =>
-    String(n).split(/\s+/).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
+    String(n).replace(/['"`‘’“”][^'"`‘’“”]*['"`‘’“”]/g, " ").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
 
   const conjureFromPool = (g: PoolRoll, who: Roll["who"]) =>
     pushRoll({ who, label: g.label, kind: g.kind, stat: g.stat, mod: g.mod, dc: g.dc, meta: g.meta, detail: g.detail, success: g.success, fail: g.fail, hl: g.hl, dice: g.dice });

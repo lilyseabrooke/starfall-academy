@@ -33,7 +33,8 @@ export async function PATCH(
     .eq("id", id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    console.error("PATCH /api/campaigns/[id]", error);
+    return NextResponse.json({ error: "could not rename campaign" }, { status: 400 });
   }
   return NextResponse.json({ ok: true });
 }
@@ -55,7 +56,8 @@ export async function DELETE(
 
   const { error } = await supabase.from("campaigns").delete().eq("id", id);
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    console.error("DELETE /api/campaigns/[id]", error);
+    return NextResponse.json({ error: "could not delete campaign" }, { status: 400 });
   }
   return NextResponse.json({ ok: true });
 }

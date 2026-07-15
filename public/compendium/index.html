@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Starfall Academy · Compendium</title>
+<link rel="icon" type="image/png" href="assets/crest-simple.png" />
+
+<!-- Starfall Academy design tokens (shared with the rest of the app) -->
+<link rel="stylesheet" href="/_ds/starfall-academy-design-system-61fef24c-b8ee-469f-860f-a6fd95fb2a6e/styles.css" />
+
+<!-- Compendium styling -->
+<link rel="stylesheet" href="compendium.css" />
+
+<!-- PapaParse (live Google Sheets) + TomSelect (filter dropdowns) -->
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
+<script src="https://unpkg.com/lucide@0.471.0/dist/umd/lucide.min.js"></script>
+</head>
+<body>
+
+<!-- Centered line-crest watermark behind everything (the Map's stage treatment) -->
+<div class="bg-crest" aria-hidden="true"></div>
+
+<!-- Single slim toolbar: the site's persistent top bar lives on the host page
+     above this iframe, so this is the only chrome row the compendium needs —
+     search, categories (scrolls horizontally instead of wrapping), sort, and
+     filters all share one row so the app never stacks multiple bars. -->
+<header class="topbar">
+  <div class="search">
+    <i data-lucide="search"></i>
+    <input type="text" id="search-bar" placeholder="Search the archive…" autocomplete="off" />
+  </div>
+  <nav class="cats" id="cats" aria-label="Compendium categories"></nav>
+  <div class="sort">
+    <button type="button" class="sort-btn" id="sort-button" aria-label="Sort entries">
+      <i data-lucide="arrow-up-down"></i>
+      <span class="sort-btn__label">Sort</span>
+      <span class="sort-btn__sep">·</span>
+      <span class="sort-current" id="sort-current">Name</span>
+    </button>
+    <div class="sort-menu" id="sort-menu" role="dialog" aria-label="Sort options"></div>
+  </div>
+  <div class="topbar__filter">
+    <button type="button" class="filter-btn" id="filter-button" aria-label="Filters">
+      <i data-lucide="sliders-horizontal"></i>
+      <span>Filters</span>
+      <span class="filter-dot"></span>
+    </button>
+    <div id="filter-menu" class="filter-menu" role="dialog" aria-label="Filter options">
+      <div id="filter-menu-body"></div>
+      <!-- Folded in here (and the standalone Sort button hidden) on very
+           narrow screens, so Sort + Filters collapse into one button. -->
+      <div class="filter-menu__sort" id="filter-menu-sort">
+        <div class="filter-menu__sort-head">Sort By</div>
+        <div class="filter-menu__sort-opts" id="filter-menu-sort-opts"></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ===================== LIST ===================== -->
+<main class="shell">
+  <div id="list" class="list"></div>
+</main>
+
+<!-- copy confirmation toast -->
+<div class="toast" id="toast" role="status" aria-live="polite">
+  <span class="toast__icon" id="toast-icon"></span><span id="toast-text">Copied to clipboard</span>
+</div>
+
+<script src="compendium.js"></script>
+</body>
+</html>

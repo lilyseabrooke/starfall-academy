@@ -174,9 +174,9 @@ export const SEED: SeedData = {
       herbalismPlantMat: 50,
     },
     startingWands: [
-      { id: "sylene", name: "Sylene's Crystal", kind: "stat", value: 2, count: 1, grant: "+2 to one Stat", desc: "A faceted prism that sharpens a single innate talent until it sings." },
-      { id: "champion", name: "Champion's Wand", kind: "ability", value: 2, count: 3, grant: "+2 to three Abilities", desc: "A duellist's favorite — broadly capable, generous to the well-rounded." },
-      { id: "whispered", name: "Whispered Secrets", kind: "ability", value: 4, count: 1, grant: "+4 to one Ability", desc: "Blackened yew that hums with half-heard answers; pours itself into one art." },
+      { id: "sylene", name: "Sylene's Crystal", kind: "stat", value: 2, count: 1, grant: "+2 to one Stat", desc: "A delicate, ornate steel wand with a single inlaid gem at the tip that crystallizes your magic power to sharpen your core instincts. Increases one Stat by 2." },
+      { id: "champion", name: "Champion's Wand", kind: "ability", value: 2, count: 3, grant: "+2 to three Abilities", desc: "A classic styled birch wand woven with griffin mane hair, with a balanced enchantment to improve your abilities. Increases three Abilities by 2." },
+      { id: "whispered", name: "Whispered Secrets", kind: "ability", value: 4, count: 1, grant: "+4 to one Ability", desc: "An untrimmed yew wand brushed with hellclaw sap and smoked over an enchanted flame, resonating with your core ability to strengthen you further. Increases one Ability by 4." },
     ],
   },
 
@@ -564,24 +564,5 @@ export const SEED: SeedData = {
     dice: [10, 1],
   },
 
-  ledgerSeed: [
-    { whoId: "arianna", label: "Perception", kind: "skill", stat: "Insight", mod: 9, dc: 14, dice: [7, 4], detail: null },
-    { whoId: "trinity", label: "Silver Tongue", kind: "move", stat: "Charm", mod: 19, dice: [10, 6],
-      detail: "Once per scene, when you address someone of higher standing, add your Socialite rank to a Win Over roll.",
-      success: "They grant your small request and think well of you for asking.",
-      fail: "They mark you as someone who reaches above their station." },
-    { actor: "Warden Mourncrow", gm: true, label: "Pin the Truant", kind: "move", stat: "Focus", mod: 18, dc: 24, dice: [1, 5],
-      detail: "The Warden's gaze finds you across any crowd. While he holds it, you cannot slip away unseen — only outface him.",
-      fail: "His attention snags elsewhere. Go — quickly.",
-      hl: (deg, s) => (s
-        ? `You are marked for ${deg} round${deg > 1 ? "s" : ""}; slipping away unseen is off the table.`
-        : `His attention snags elsewhere. Go — quickly.`) },
-    { whoId: "suri", label: "Whispering Step", kind: "spell", stat: "Body", mod: 15, dc: 18, dice: [9, 7],
-      meta: ["Teleportation", "Base Body"],
-      detail: "Step from one shadow into another within sight. Arrive in silence — the only sound is the one you left behind.",
-      hl: (deg, s) => (s
-        ? `Step to any shadow you can see, up to ${deg * 3} metres away — the only sound is the one you left behind.`
-        : `You arrive ${deg} pace${deg > 1 ? "s" : ""} wrong, and loudly.`) },
-    { whoId: "claire", label: "Resist Fear", kind: "resist", stat: "Logic", mod: 13, dc: 15, sit: 4, sitReason: "Phoenix-Feather Charm", dice: [8, 9], detail: null },
-  ],
+  ledgerSeed: [],
 };

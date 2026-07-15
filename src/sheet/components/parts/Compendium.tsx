@@ -286,7 +286,7 @@ export function Compendium({
             </div>
           ) : (
             items.map((e) => {
-              const added = e.cat !== "plant" && addedIds.includes(e.id);
+              const added = e.cat === "spell" && addedIds.includes(e.id);
               const isOpen = !!openIds[e.id];
               const facts = factsFor(e);
               const tone = levelTone(e.level);

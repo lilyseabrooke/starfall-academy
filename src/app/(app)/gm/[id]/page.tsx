@@ -18,16 +18,18 @@ export default async function GMToolsPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  if (!user) redirect("/");
 
-  // RLS guarantees this only returns a campaign the signed-in user GMs.
+  // RLS lets any campaign member (players included) read this row, so GM
+  // ownership has to be checked explicitly here rather than assumed from the
+  // query succeeding.
   const { data: campaign, error } = await supabase
     .from("campaigns")
-    .select("id, name, code")
+    .select("id, name, code, gm_id")
     .eq("id", id)
     .single();
 
-  if (error || !campaign) notFound();
+  if (error || !campaign || campaign.gm_id !== user.id) notFound();
 
   // The campaign's player characters (cross-user — RLS lets the GM read members'
   // characters). NPCs (type='npc') are managed in the GM view, not the party board.

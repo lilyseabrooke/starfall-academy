@@ -183,6 +183,8 @@ export interface EditSubject {
   subject?: string;
   level?: string;
   intensity?: number;
+  /** All skill options an artifact can be rolled with (compendium imports may carry more than one). */
+  skills?: string[];
   move?: { skill?: string; dc?: number | null };
   maxCondition?: number;
   twisted?: boolean;
@@ -220,8 +222,10 @@ export function ManualModal({ open, kind, subjects, skills, stats, schools, comp
     let pre: ManualForm = {};
     const es = editSubject;
     if (es) {
-      if (kind === "artifact") pre = { name: es.name, subject: es.subjectKey || (subjects.find((s) => s.name === es.subject) || ({} as Subject)).key || "", level: es.level || "Basic", intensity: es.intensity != null ? String(es.intensity) : "", skill: es.move && es.move.skill && es.move.skill !== "—" ? es.move.skill : "", dc: es.move && es.move.dc != null ? String(es.move.dc) : "", desc: es.desc || "" };
-      else if (kind === "wand") pre = { name: es.name, cost: es.maxCondition != null ? String(es.maxCondition) : "", twisted: !!es.twisted, desc: es.desc || "" };
+      if (kind === "artifact") {
+        const preSkills = es.skills && es.skills.length ? es.skills : es.move && es.move.skill && es.move.skill !== "—" ? [es.move.skill] : [];
+        pre = { name: es.name, subject: es.subjectKey || (subjects.find((s) => s.name === es.subject) || ({} as Subject)).key || "", level: es.level || "Basic", intensity: es.intensity != null ? String(es.intensity) : "", skill: preSkills.length ? preSkills : [""], dc: es.move && es.move.dc != null ? String(es.move.dc) : "", desc: es.desc || "" };
+      } else if (kind === "wand") pre = { name: es.name, cost: es.maxCondition != null ? String(es.maxCondition) : "", twisted: !!es.twisted, desc: es.desc || "" };
       else if (kind === "plant") pre = { name: es.name, value: es.value != null ? String(es.value) : "", intensity: es.intensity != null ? String(es.intensity) : "", desc: es.desc || "", ability: es.ability || "", singleUse: !!es.removeOnUse, requiresRoll: (es.requiresRoll || "NO").toLowerCase(), abilityTab: es.passive ? "passive" : "active", bonusType: es.passive ? es.passive.type : "none", bonusTarget: es.passive ? es.passive.target : "", bonusValue: es.passive ? String(es.passive.value || "") : "", bonusConditional: es.passive ? !!es.passive.conditional : false, bonusCondNote: es.passive ? es.passive.condNote || "" : "" };
       else pre = { name: es.name, intensity: es.intensity != null ? String(es.intensity) : "", cost: es.cost != null ? String(es.cost) : "", twisted: !!es.twisted, desc: es.desc || "" };
     }
@@ -236,7 +240,8 @@ export function ManualModal({ open, kind, subjects, skills, stats, schools, comp
   const set: SetFn = (k, v) => setF((p) => ({ ...p, [k]: v }));
   const newPlantVal = kind === "plant" ? parseInt(str(f.value), 10) || 0 : 0;
   const overCap = kind === "plant" && cultivationCap > 0 && cultivationUsed + newPlantVal > cultivationCap;
-  const canSave = kind === "artifact" ? !!str(f.name).trim() && !!str(f.skill).trim() && !!str(f.dc).trim() : !!str(f.name).trim() && !overCap;
+  const artifactSkills = Array.isArray(f.skill) ? (f.skill as string[]) : str(f.skill) ? [str(f.skill)] : [];
+  const canSave = kind === "artifact" ? !!str(f.name).trim() && artifactSkills.some((s) => s.trim()) && !!str(f.dc).trim() : !!str(f.name).trim() && !overCap;
   const wandStatOpts = [{ value: "", label: "Choose a stat…" }].concat((stats || []).map((s) => ({ value: s.name, label: s.name })));
   const wandSubjectOpts = [{ value: "", label: "Choose a subject…" }].concat(subjects.map((s) => ({ value: s.key, label: s.name })));
   const wandSkillOpts = [{ value: "", label: "Choose a skill…" }].concat((skills || []).map((s) => ({ value: s.name, label: s.name })));
@@ -385,7 +390,24 @@ export function ManualModal({ open, kind, subjects, skills, stats, schools, comp
                     }
                     if (type === "skillselect") {
                       const skillOpts = [{ value: "", label: "Choose a skill…" }].concat((skills || []).map((s) => ({ value: s.name, label: s.name })));
-                      return <Select key={key} label={label} options={skillOpts} value={str(f[key])} onChange={(e) => set(key, e.target.value)} />;
+                      const arr = Array.isArray(f[key]) ? (f[key] as string[]) : str(f[key]) ? [str(f[key])] : [""];
+                      const setArr = (next: string[]) => set(key, next);
+                      return (
+                        <div key={key} className="sf-manual__full" style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                          <span className="sf-modal__label">{label}</span>
+                          {arr.map((val, i) => (
+                            <div key={i} style={{ display: "flex", gap: "var(--space-2)", alignItems: "center" }}>
+                              <div style={{ flex: 1 }}>
+                                <Select options={skillOpts} value={val} onChange={(e) => { const next = arr.slice(); next[i] = e.target.value; setArr(next); }} />
+                              </div>
+                              {arr.length > 1 && (
+                                <IconButton label="Remove skill" variant="ghost" onClick={() => setArr(arr.filter((_, j) => j !== i))}><Icon name="x" /></IconButton>
+                              )}
+                            </div>
+                          ))}
+                          <Button variant="ghost" iconLeft={<Icon name="plus" />} onClick={() => setArr([...arr, ""])}>Add another skill</Button>
+                        </div>
+                      );
                     }
                     if (type === "subject") {
                       return <div key={key} className="sf-manual__full"><Select label={label} options={subjectOpts} value={str(f[key])} onChange={(e) => set(key, e.target.value)} /></div>;

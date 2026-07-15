@@ -15,12 +15,13 @@ export default async function CharacterSheetPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  if (!user) redirect("/");
 
-  // RLS guarantees this only returns a row the user owns.
+  // RLS returns this row if the user owns it, or is a campaign-mate/GM of the
+  // campaign it's in (party-wide read access); writes stay owner/GM-scoped.
   const { data: character, error } = await supabase
     .from("characters")
-    .select("id, name, sheet, campaign_code, campaign_id")
+    .select("id, name, sheet, campaign_code, campaign_id, updated_at")
     .eq("id", id)
     .single();
 
@@ -56,6 +57,7 @@ export default async function CharacterSheetPage({
       mode="edit"
       id={character.id}
       initialSheet={character.sheet as SerializedSheet | null}
+      initialUpdatedAt={character.updated_at as string}
       roster={roster}
       me={character.id}
       campaignId={campaignId}
