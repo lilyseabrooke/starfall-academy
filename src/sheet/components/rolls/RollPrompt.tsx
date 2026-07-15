@@ -18,6 +18,7 @@ export function RollPrompt({ pending, onConfirm, onCancel }: RollPromptProps) {
   const [asRitual, setAsRitual] = React.useState(false);
   const [matCost, setMatCost] = React.useState("0");
   const [hours, setHours] = React.useState("1");
+  const [secret, setSecret] = React.useState(false);
   const [picked, setPicked] = React.useState<Record<string, boolean>>({});
   const [stage, setStage] = React.useState<"form" | "warn">("form");
   const dcRef = React.useRef<HTMLInputElement>(null);
@@ -33,6 +34,7 @@ export function RollPrompt({ pending, onConfirm, onCancel }: RollPromptProps) {
   const showCost = isSpell && (baseCost > 0 || ritualCost > 0);
   const materials = p && p.materials != null ? p.materials : Infinity;
   const hasMatLimit = materials !== Infinity;
+  const canSecret = !!(p && p.canSecret);
 
   React.useEffect(() => {
     if (!pending) return;
@@ -41,6 +43,7 @@ export function RollPrompt({ pending, onConfirm, onCancel }: RollPromptProps) {
     setSit("");
     setAsRitual(false);
     setPicked({});
+    setSecret(false);
     setStage("form");
     setMatCost(pp.kind === "spell" ? String(spellMaterialCost(pp.spellLevel || "", pp.spellAp, false)) : "0");
     setHours("1");
@@ -82,7 +85,7 @@ export function RollPrompt({ pending, onConfirm, onCancel }: RollPromptProps) {
   const buildOpts = (ritual: boolean, cost: number): ConfirmPromptOpts => {
     const pickedList = condBonuses.filter((b) => picked[b.id]);
     const condMeta = pickedList.map((b) => b.source + " " + (b.value >= 0 ? "+" : "−") + Math.abs(b.value));
-    const baseOpts: ConfirmPromptOpts = { dc: dc === "" ? null : parseInt(dc, 10), situational: sitNum, condBonus: condSum, condMeta };
+    const baseOpts: ConfirmPromptOpts = { dc: dc === "" ? null : parseInt(dc, 10), situational: sitNum, condBonus: condSum, condMeta, secret: canSecret && secret };
     if (!isSpell) return { ...baseOpts, ...(isWandcraft ? { hours: Math.max(1, parseInt(hours, 10) || 1) } : {}) };
     const metaAdd: string[] = [];
     if (canRitual) metaAdd.push(ritual ? "Ritual · 1 Hour" : "Instant");
@@ -131,6 +134,7 @@ export function RollPrompt({ pending, onConfirm, onCancel }: RollPromptProps) {
     if (showCost) estH += 40;
   }
   if (isWandcraft) estH += 76;
+  if (canSecret) estH += 52;
   if (condBonuses.length) estH += 30 + condBonuses.length * 44;
   if (stage === "warn") estH = 270 + (offerRitual ? 56 : 0);
   const maxH = window.innerHeight - 2 * M;
@@ -213,6 +217,16 @@ export function RollPrompt({ pending, onConfirm, onCancel }: RollPromptProps) {
                 </div>
               </div>
             )}
+            {canSecret && (
+              <div className="sf-prompt__field">
+                <span className="sf-prompt__flabel">Visibility</span>
+                <div className="sf-prompt__seg">
+                  <button className={"sf-prompt__segbtn" + (!secret ? " is-active" : "")} onClick={() => setSecret(false)}><Icon name="eye" /> Public</button>
+                  <button className={"sf-prompt__segbtn" + (secret ? " is-active" : "")} onClick={() => setSecret(true)}><Icon name="eye-off" /> Secret</button>
+                </div>
+              </div>
+            )}
+
             <div className="sf-prompt__field">
               <span className="sf-prompt__flabel">Difficulty
                 <button className="sf-prompt__none" tabIndex={-1} onClick={() => setDc("")}>{dc === "" ? "No DC" : "Clear"}</button>
@@ -264,7 +278,7 @@ export function RollPrompt({ pending, onConfirm, onCancel }: RollPromptProps) {
             )}
 
             <button className="sf-prompt__roll" onClick={attempt}>
-              <Icon name="dices" /> {isSpell ? "Cast" : "Roll"} 2d10 {combined >= 0 ? "+ " + combined : "− " + Math.abs(combined)}{dc !== "" ? "  vs DC " + dc : ""}
+              <Icon name={canSecret && secret ? "eye-off" : "dices"} /> {canSecret && secret ? "Secretly " : ""}{isSpell ? "Cast" : "Roll"} 2d10 {combined >= 0 ? "+ " + combined : "− " + Math.abs(combined)}{dc !== "" ? "  vs DC " + dc : ""}
             </button>
             <span className="sf-prompt__hint">Enter to {isSpell ? "cast" : "roll"} · Esc to cancel</span>
           </React.Fragment>

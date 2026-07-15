@@ -271,6 +271,8 @@ export interface Roll {
   artifactLevel: string | null;
   artifactCost: number;
   artifactCondition: ArtifactCondition | null;
+  /** Rolled secretly by the GM — kept out of the shared log/broadcast. */
+  secret: boolean;
 }
 
 /* ------------------------------------------------------------- inventory -- */

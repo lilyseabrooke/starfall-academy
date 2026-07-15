@@ -117,6 +117,7 @@ export interface RollInput {
   artifactLevel?: string | null;
   artifactCost?: number;
   artifactCondition?: Roll["artifactCondition"];
+  secret?: boolean;
 }
 
 /** Roll 2d10 (or use provided dice), classify, and resolve degrees + crits. */
@@ -201,6 +202,7 @@ export function makeRoll(p: RollInput): Roll {
     artifactLevel: p.artifactLevel || null,
     artifactCost: p.artifactCost || 0,
     artifactCondition: p.artifactCondition || null,
+    secret: !!p.secret,
   };
 }
 

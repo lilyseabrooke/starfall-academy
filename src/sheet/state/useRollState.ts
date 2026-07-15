@@ -64,6 +64,8 @@ export type PromptPartial = Omit<RollInput, "who"> & {
   canRitual?: boolean;
   condBonuses?: CondBonusOption[];
   materials?: number;
+  /** Offer a Public/Secret toggle in the prompt (GM rolls). */
+  canSecret?: boolean;
 };
 
 export interface PendingPrompt {
@@ -78,6 +80,7 @@ export interface ConfirmPromptOpts {
   condBonus?: number;
   condMeta?: string[];
   meta?: string[] | null;
+  secret?: boolean;
   [k: string]: unknown;
 }
 
@@ -159,7 +162,7 @@ export function useRollState(data: RollStateData, activeChar: string, options: R
 
   const confirmPrompt = (opts: ConfirmPromptOpts) => {
     if (!pending) return;
-    const { matCost, asRitual: _asRitual, condBonus, condMeta, ...rest } = opts;
+    const { matCost, asRitual: _asRitual, condBonus, condMeta, secret, ...rest } = opts;
     void _asRitual;
     const partial = pending.partial;
     const mergedMod = (partial.mod || 0) + (condBonus || 0);
@@ -171,9 +174,10 @@ export function useRollState(data: RollStateData, activeChar: string, options: R
       who: partial.who || meWho(),
       mod: mergedMod,
       meta: mergedMeta.length ? mergedMeta : null,
+      secret: !!secret,
     });
     setLog((prev) => [roll, ...prev]);
-    shareLocal(roll);
+    if (!roll.secret) shareLocal(roll);
     setPending(null);
     if (partial.onCast && matCost) partial.onCast(matCost);
     if (partial.onResult) partial.onResult(roll);
