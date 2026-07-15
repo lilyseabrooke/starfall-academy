@@ -7,7 +7,17 @@
    (GmView.tsx) when persisting a durable grant to an offline player. Pure:
    no React state, no side effects.
    =========================================================================== */
-import type { Artifact, Recipe, Plant, Wand, Glyph, Item, Potion, Spell, Move, CompendiumEntry } from "../types";
+import type { Artifact, ArtifactMove, Recipe, Plant, Wand, Glyph, Item, Potion, Spell, Move, MoveRollOption, CompendiumEntry } from "../types";
+
+/** Builds an artifact's boon-move stat/skill/rollOptions from its (possibly multi-skill) compendium entry. */
+function artifactMoveFrom(e: CompendiumEntry): ArtifactMove {
+  const rollOptions: MoveRollOption[] | undefined =
+    e.skillOptions && e.skillOptions.length > 1
+      ? e.skillOptions.map((o) => ({ kind: "skill", stat: o.stat, skill: o.skill, label: o.skill }))
+      : undefined;
+  const prim = (e.skillOptions && e.skillOptions[0]) || { stat: e.stat || "Insight", skill: (e.skills && e.skills[0]) || "—" };
+  return { name: e.name + " — Boon", stat: prim.stat || "Insight", skill: prim.skill || "—", bonus: 0, dc: e.dc ?? null, desc: e.desc, rollOptions };
+}
 
 export type CompendiumGrantResult =
   | { field: "artifacts"; value: Artifact[] }
@@ -43,7 +53,7 @@ export function computeCompendiumGrant(
     }
     case "artifact": {
       const prev = currentField as Artifact[];
-      return { field: "artifacts", value: [...prev, { id: "art-comp-" + e.id, name: e.name, level: e.level, tone: e.tone, subject: e.subject || "—", intensity: e.intensity != null ? e.intensity : 3, attuned: false, condition: "stable", skills: [], dc: 0, desc: e.desc, move: { name: e.name + " — Boon", stat: "Insight", skill: "—", bonus: 0, dc: null, desc: e.desc } }] };
+      return { field: "artifacts", value: [...prev, { id: "art-comp-" + e.id, name: e.name, level: e.level, tone: e.tone, subject: e.subject || "—", intensity: e.intensity != null ? e.intensity : 3, attuned: false, condition: "stable", skills: e.skills || [], dc: e.dc ?? 0, desc: e.desc, move: artifactMoveFrom(e) }] };
     }
     case "potion": {
       const prev = currentField as Recipe[];
@@ -84,6 +94,7 @@ export function artifactBoonMove(a: Artifact): Move {
     id: "mv-" + a.id, name: a.name, tag: "Artifact",
     stat: a.move.stat, skill: a.move.skill, bonus: a.move.bonus,
     dc: a.move.dc, desc: a.desc, success: a.move.success, fail: a.move.fail,
+    rollOptions: a.move.rollOptions,
     fromArtifact: a.id, artifactCondition: a.condition,
     artifactLevel: a.level || "Basic",
     artifactCost: a.cost || 0,
@@ -97,7 +108,7 @@ export function computeAttunedArtifactGrant(
   currentMoves: Move[]
 ): { artifacts: Artifact[]; moves: Move[] } | null {
   if (e.cat !== "artifact") return null;
-  const art: Artifact = { id: "art-comp-" + e.id, name: e.name, level: e.level, tone: e.tone, subject: e.subject || "—", intensity: 0, attuned: true, condition: "stable", skills: [], dc: 0, desc: e.desc, move: { name: e.name + " — Boon", stat: "Insight", skill: "—", bonus: 0, dc: null, desc: e.desc } };
+  const art: Artifact = { id: "art-comp-" + e.id, name: e.name, level: e.level, tone: e.tone, subject: e.subject || "—", intensity: 0, attuned: true, condition: "stable", skills: e.skills || [], dc: e.dc ?? 0, desc: e.desc, move: artifactMoveFrom(e) };
   return { artifacts: [...currentArtifacts, art], moves: [...currentMoves, artifactBoonMove(art)] };
 }
 
