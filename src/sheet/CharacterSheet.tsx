@@ -1133,7 +1133,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     openPrompt({
       who: meWho(), label: "Enchant — " + sp.name, kind: "enchant", stat: encStat,
       mod: subjectModFor("enchantment") + rollBonusFor("enchant"),
-      dc: sp.dc, detail: "Weave " + sp.name + " into a lasting enchantment.", meta: ["Enchantment", sp.name], hl: enchantHL,
+      dc: sp.dc, detail: sp.desc, meta: ["Enchantment", sp.name], hl: enchantHL,
       crit: spellCrit(sp.level, false, !!sp.volatile),
       baseMatCost: ENCHANT_MATERIAL_COST + spellMaterialCost(sp.level, ap, false), materials: c.materials,
       dosMod: dosShiftFor((b) => b.type === "enchant"),
