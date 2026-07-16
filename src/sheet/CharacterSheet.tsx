@@ -80,6 +80,21 @@ import type {
 const clamp = (v: number, min: number, max: number | null) =>
   Math.max(min, max == null ? v : Math.min(max, v));
 
+/* ---- Blank-slate fallbacks --------------------------------------------
+   Used only when a sheet is being edited with no saved data yet (or the
+   rare edit-mode load with a null `sheet` column) — never for `create`
+   mode, which still opens on the seed demo behind the Forge. Keeps the
+   structural shape (ids/names/icons/tones) so the layout renders, but
+   zeroes every value, so a fresh/loading character never flashes the
+   seed's demo persona (name, stats, spells, etc). */
+const blankVitals = (): CharacterVitals => ({
+  name: "", pronouns: "", year: "", house: "", houseTone: "neutral", title: "",
+  actionPoints: 0, actionPointsMax: 0, resolve: 0, resolveMax: 0, trouble: 0, materials: 0,
+  bio: "", major: [],
+});
+const blankStats = (): Stat[] => SEED.stats.map((f) => ({ ...f, rank: 0, skills: f.skills.map((s) => ({ ...s, rank: 0 })) }));
+const blankSchools = (): MagicSchool[] => SEED.magicSchools.map((s) => ({ ...s, subjects: s.subjects.map((x) => ({ ...x, rank: 0 })) }));
+
 const TWEAK_DEFAULTS = {
   toastPosition: "br",
   stackCap: 3,
@@ -125,6 +140,11 @@ export interface CharacterSheetProps {
 export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roster, me, campaignId }: CharacterSheetProps) {
   const router = useRouter();
 
+  // Whether we have real saved data to hydrate from at first paint (SSR
+  // passes this synchronously) — vs. a brand-new/never-saved character,
+  // where we render blank rather than the seed's demo persona.
+  const hasSheet = !!(initialSheet && Object.keys(initialSheet).length);
+
   // ---- Live compendium + classes (seed until the loader resolves) ----
   const comp = useCompendium();
   const D = React.useMemo(() => ({ ...SEED, compendium: comp.compendium }), [comp.compendium]);
@@ -142,10 +162,26 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
 
   // ---- Core UI / character state ----
   const [nav, setNav] = React.useState("overview");
-  const [c, setC] = React.useState<CharacterVitals>(() => ({ ...SEED.character }));
-  const [conditions, setConditions] = React.useState<Condition[]>(() => SEED.conditions.map((x) => ({ ...x })));
-  const [stats, setStats] = React.useState<Stat[]>(() => SEED.stats.map((f) => ({ ...f, skills: f.skills.map((s) => ({ ...s })) })));
-  const [schools, setSchools] = React.useState<MagicSchool[]>(() => SEED.magicSchools.map((s) => ({ ...s, subjects: s.subjects.map((x) => ({ ...x })) })));
+  const [c, setC] = React.useState<CharacterVitals>(() =>
+    hasSheet ? { ...initialSheet!.c } : mode === "create" ? { ...SEED.character } : blankVitals()
+  );
+  const [conditions, setConditions] = React.useState<Condition[]>(() =>
+    hasSheet ? initialSheet!.conditions.map((x) => ({ ...x })) : SEED.conditions.map((x) => ({ ...x }))
+  );
+  const [stats, setStats] = React.useState<Stat[]>(() =>
+    hasSheet
+      ? initialSheet!.stats.map((f) => ({ ...f, skills: f.skills.map((s) => ({ ...s })) }))
+      : mode === "create"
+        ? SEED.stats.map((f) => ({ ...f, skills: f.skills.map((s) => ({ ...s })) }))
+        : blankStats()
+  );
+  const [schools, setSchools] = React.useState<MagicSchool[]>(() =>
+    hasSheet
+      ? initialSheet!.schools.map((s) => ({ ...s, subjects: s.subjects.map((x) => ({ ...x })) }))
+      : mode === "create"
+        ? SEED.magicSchools.map((s) => ({ ...s, subjects: s.subjects.map((x) => ({ ...x })) }))
+        : blankSchools()
+  );
   const [activeChar, setActiveChar] = React.useState(me || (ROSTER.find((r) => r.active) || ROSTER[0]).id);
 
   const pickChar = (cid: string) => {
@@ -208,25 +244,52 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   const [choosePlant, setChoosePlant] = React.useState<{ pl: Plant; anchor: HTMLElement } | null>(null);
 
   // ---- State modules ----
-  const classes = useClassState(CL);
+  // Hydrate classes/magic straight from the saved sheet (or blank, for a
+  // never-saved edit-mode row) rather than letting them start on the seed's
+  // demo ranks/bonuses/spells and flash-correct once the mount effect runs.
+  const classesInitial = hasSheet
+    ? { rp: initialSheet!.classes.rp, classState: initialSheet!.classes.classState }
+    : mode === "create" ? null : { rp: CL.startingRp, classState: {} };
+  const classes = useClassState(CL, classesInitial);
   const facByName = (name: string) => stats.find((f) => f.name === name);
+  const magicInitial = hasSheet
+    ? { bonuses: initialSheet!.magic.bonuses, spells: initialSheet!.magic.spells, moves: initialSheet!.magic.moves }
+    : mode === "create" ? null : { bonuses: [], spells: [], moves: [] };
   const magic = useMagicState(
     { bonuses: SEED.bonuses, spells: SEED.spells, moves: SEED.moves, magicSchools: SEED.magicSchools },
     { wands: INV.wands, artifacts: INV.artifacts },
     facByName,
     () => schools,
-    (k) => (classes.state.classState[k] ? classes.state.classState[k].rank : 0)
+    (k) => (classes.state.classState[k] ? classes.state.classState[k].rank : 0),
+    magicInitial
   );
 
   // ---- Inventory state (owned here; wired to magic module for cross-cutting) ----
-  const [artifacts, setArtifacts] = React.useState<Artifact[]>(() => INV.artifacts.map((x) => ({ ...x })));
-  const [potions, setPotions] = React.useState<Potion[]>(() => INV.potions.map((x) => ({ ...x })));
-  const [recipes, setRecipes] = React.useState<Recipe[]>(() => INV.recipes.map((x) => ({ ...x })));
-  const [plants, setPlants] = React.useState<Plant[]>(() => INV.plants.map((x) => ({ ...x })));
-  const [wands, setWands] = React.useState<Wand[]>(() => INV.wands.map((x) => ({ ...x })));
-  const [glyphs, setGlyphs] = React.useState<Glyph[]>(() => INV.glyphs.map((x) => ({ ...x })));
-  const [items, setItems] = React.useState<Item[]>(() => INV.items.map((x) => ({ ...x })));
-  const [runeStack, setRuneStack] = React.useState<Glyph[]>([]);
+  // Same hydrate-from-sheet-or-blank rule as above: only `create` mode
+  // starts from the seed's demo inventory.
+  const invInitial = hasSheet ? initialSheet!.inventory : null;
+  const [artifacts, setArtifacts] = React.useState<Artifact[]>(() =>
+    invInitial ? invInitial.artifacts.map((x) => ({ ...x })) : mode === "create" ? INV.artifacts.map((x) => ({ ...x })) : []
+  );
+  const [potions, setPotions] = React.useState<Potion[]>(() =>
+    invInitial ? invInitial.potions.map((x) => ({ ...x })) : mode === "create" ? INV.potions.map((x) => ({ ...x })) : []
+  );
+  const [recipes, setRecipes] = React.useState<Recipe[]>(() =>
+    invInitial ? invInitial.recipes.map((x) => ({ ...x })) : mode === "create" ? INV.recipes.map((x) => ({ ...x })) : []
+  );
+  const [plants, setPlants] = React.useState<Plant[]>(() =>
+    invInitial ? invInitial.plants.map((x) => ({ ...x })) : mode === "create" ? INV.plants.map((x) => ({ ...x })) : []
+  );
+  const [wands, setWands] = React.useState<Wand[]>(() =>
+    invInitial ? invInitial.wands.map((x) => ({ ...x })) : mode === "create" ? INV.wands.map((x) => ({ ...x })) : []
+  );
+  const [glyphs, setGlyphs] = React.useState<Glyph[]>(() =>
+    invInitial ? invInitial.glyphs.map((x) => ({ ...x })) : mode === "create" ? INV.glyphs.map((x) => ({ ...x })) : []
+  );
+  const [items, setItems] = React.useState<Item[]>(() =>
+    invInitial ? invInitial.items.map((x) => ({ ...x })) : mode === "create" ? INV.items.map((x) => ({ ...x })) : []
+  );
+  const [runeStack, setRuneStack] = React.useState<Glyph[]>(() => (invInitial ? invInitial.runeStack.map((x) => ({ ...x })) : []));
   const [invToast, setInvToast] = React.useState<string | null>(null);
   const invToastTimer = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 

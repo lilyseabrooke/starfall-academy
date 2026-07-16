@@ -15,14 +15,23 @@ export interface ClassData {
   cost: (targetRank: number) => number;
 }
 
-export function useClassState(classData: ClassData) {
+/** Overrides the class module's built-in demo starting point — used to
+ *  hydrate straight from a saved sheet (or a blank slate) instead of
+ *  flashing the seed's demo ranks on first paint. */
+export interface ClassStateInit {
+  rp: number;
+  classState: ClassState;
+}
+
+export function useClassState(classData: ClassData, initial?: ClassStateInit | null) {
   const CL = classData;
 
-  const [rp, setRp] = React.useState<number>(CL.startingRp);
+  const [rp, setRp] = React.useState<number>(() => (initial ? initial.rp : CL.startingRp));
   const [classState, setClassState] = React.useState<ClassState>(() => {
+    const source = initial ? initial.classState : CL.start;
     const o: ClassState = {};
-    for (const k in CL.start) {
-      o[k] = { rank: CL.start[k].rank, choices: { ...CL.start[k].choices } };
+    for (const k in source) {
+      o[k] = { rank: source[k].rank, choices: { ...source[k].choices } };
     }
     return o;
   });
