@@ -17,6 +17,7 @@ export function RollPrompt({ pending, onConfirm, onCancel }: RollPromptProps) {
   const [sit, setSit] = React.useState("");
   const [asRitual, setAsRitual] = React.useState(false);
   const [matCost, setMatCost] = React.useState("0");
+  const [spellMatCost, setSpellMatCost] = React.useState("0");
   const [hours, setHours] = React.useState("1");
   const [secret, setSecret] = React.useState(false);
   const [picked, setPicked] = React.useState<Record<string, boolean>>({});
@@ -26,15 +27,19 @@ export function RollPrompt({ pending, onConfirm, onCancel }: RollPromptProps) {
 
   const p = pending ? pending.partial : null;
   const isSpell = !!p && p.kind === "spell";
+  const isEnchant = !!p && p.kind === "enchant";
   const isWandcraft = !!p && p.kind === "wandcraft";
   const baseCost = isSpell ? spellMaterialCost(p!.spellLevel || "", p!.spellAp, false) : 0;
   const ritualCost = isSpell ? spellMaterialCost(p!.spellLevel || "", p!.spellAp, true) : 0;
   const canRitual = !!(p && p.canRitual);
   const condBonuses = (p && p.condBonuses) || [];
   const showCost = isSpell && (baseCost > 0 || ritualCost > 0);
+  const hasSpellField = isEnchant && p != null && p.spellMatCost != null;
+  const hasCost = showCost || isEnchant;
   const materials = p && p.materials != null ? p.materials : Infinity;
   const hasMatLimit = materials !== Infinity;
   const canSecret = !!(p && p.canSecret);
+  const actionWord = isSpell ? "Cast" : isEnchant ? "Enchant" : "Roll";
 
   React.useEffect(() => {
     if (!pending) return;
@@ -45,7 +50,8 @@ export function RollPrompt({ pending, onConfirm, onCancel }: RollPromptProps) {
     setPicked({});
     setSecret(false);
     setStage("form");
-    setMatCost(pp.kind === "spell" ? String(spellMaterialCost(pp.spellLevel || "", pp.spellAp, false)) : "0");
+    setMatCost(pp.kind === "spell" ? String(spellMaterialCost(pp.spellLevel || "", pp.spellAp, false)) : pp.kind === "enchant" ? String(pp.baseMatCost ?? 0) : "0");
+    setSpellMatCost(pp.kind === "enchant" && pp.spellMatCost != null ? String(pp.spellMatCost) : "0");
     setHours("1");
     const id = setTimeout(() => dcRef.current && dcRef.current.select(), 30);
     const onKey = (e: KeyboardEvent) => {
@@ -75,7 +81,8 @@ export function RollPrompt({ pending, onConfirm, onCancel }: RollPromptProps) {
   const sitNum = parseInt(sit, 10) || 0;
   const condSum = condBonuses.reduce((s, b) => s + (picked[b.id] ? b.value : 0), 0);
   const combined = base + sitNum + condSum;
-  const costNum = showCost ? parseInt(matCost, 10) || 0 : 0;
+  const spellCostNum = hasSpellField ? parseInt(spellMatCost, 10) || 0 : 0;
+  const costNum = hasCost ? (parseInt(matCost, 10) || 0) + spellCostNum : 0;
 
   const toggleRitual = (val: boolean) => {
     setAsRitual(val);
@@ -86,6 +93,7 @@ export function RollPrompt({ pending, onConfirm, onCancel }: RollPromptProps) {
     const pickedList = condBonuses.filter((b) => picked[b.id]);
     const condMeta = pickedList.map((b) => b.source + " " + (b.value >= 0 ? "+" : "−") + Math.abs(b.value));
     const baseOpts: ConfirmPromptOpts = { dc: dc === "" ? null : parseInt(dc, 10), situational: sitNum, condBonus: condSum, condMeta, secret: canSecret && secret };
+    if (isEnchant) return { ...baseOpts, matCost: cost, spellMatCost: hasSpellField ? spellCostNum : undefined, meta: (p.meta || []).concat([cost + " materials"]) };
     if (!isSpell) return { ...baseOpts, ...(isWandcraft ? { hours: Math.max(1, parseInt(hours, 10) || 1) } : {}) };
     const metaAdd: string[] = [];
     if (canRitual) metaAdd.push(ritual ? "Ritual · 1 Hour" : "Instant");
@@ -105,7 +113,7 @@ export function RollPrompt({ pending, onConfirm, onCancel }: RollPromptProps) {
     onConfirm(buildOpts(ritual, cost));
   };
   const attempt = () => {
-    if (showCost && hasMatLimit && costNum > materials) {
+    if (hasCost && hasMatLimit && costNum > materials) {
       setStage("warn");
       return;
     }
@@ -120,6 +128,7 @@ export function RollPrompt({ pending, onConfirm, onCancel }: RollPromptProps) {
   const bumpDc = (d: number) => setDc((v) => String(Math.max(1, (parseInt(v || "0", 10) || 0) + d)));
   const bumpSit = (d: number) => setSit((v) => String(Math.max(-20, Math.min(20, (parseInt(v || "0", 10) || 0) + d))));
   const bumpCost = (d: number) => setMatCost((v) => String(Math.max(0, (parseInt(v || "0", 10) || 0) + d)));
+  const bumpSpellCost = (d: number) => setSpellMatCost((v) => String(Math.max(0, (parseInt(v || "0", 10) || 0) + d)));
   const bumpHours = (d: number) => setHours((v) => String(Math.max(1, (parseInt(v || "1", 10) || 1) + d)));
 
   const offerRitual = canRitual && !asRitual && hasMatLimit && ritualCost <= materials && ritualCost < costNum;
@@ -133,6 +142,7 @@ export function RollPrompt({ pending, onConfirm, onCancel }: RollPromptProps) {
     if (canRitual) estH += 40;
     if (showCost) estH += 40;
   }
+  if (isEnchant) estH += 12 + 52 + (hasSpellField ? 52 : 0);
   if (isWandcraft) estH += 76;
   if (canSecret) estH += 52;
   if (condBonuses.length) estH += 30 + condBonuses.length * 44;
@@ -159,7 +169,7 @@ export function RollPrompt({ pending, onConfirm, onCancel }: RollPromptProps) {
           <div className="sf-prompt__warn">
             <span className="sf-prompt__warn-head"><Icon name="triangle-alert" /> Sparked out</span>
             <p className="sf-prompt__warn-txt">
-              You need <b>{costNum.toLocaleString()}</b> materials, but you only have <b>{materials.toLocaleString()}</b>. Burn your magic and cast anyway?
+              You need <b>{costNum.toLocaleString()}</b> materials, but you only have <b>{materials.toLocaleString()}</b>. {isSpell ? "Burn your magic and cast anyway?" : "Spend them anyway?"}
             </p>
             <div className="sf-prompt__warn-acts">
               {offerRitual && (
@@ -168,7 +178,7 @@ export function RollPrompt({ pending, onConfirm, onCancel }: RollPromptProps) {
                 </button>
               )}
               <button className="sf-prompt__warn-btn" onClick={() => commit({ matCost: materials })}>
-                <Icon name="dices" /> Spend all {materials.toLocaleString()} &amp; cast anyway
+                <Icon name="dices" /> Spend all {materials.toLocaleString()} &amp; {actionWord.toLowerCase()} anyway
               </button>
               <div className="sf-prompt__warn-row">
                 <button className="sf-prompt__warn-btn is-ghost" onClick={() => setStage("form")}>
@@ -203,6 +213,34 @@ export function RollPrompt({ pending, onConfirm, onCancel }: RollPromptProps) {
                     </span>
                   </div>
                 )}
+              </div>
+            )}
+
+            {isEnchant && (
+              <div className="sf-prompt__field">
+                <span className="sf-prompt__flabel">Enchanting materials</span>
+                <div className="sf-prompt__row">
+                  <button className="sf-step" tabIndex={-1} onClick={() => bumpCost(-50)}>−</button>
+                  <input className="sf-prompt__num sf-prompt__num--cost" type="number" inputMode="numeric" value={matCost} placeholder="0" onChange={(e) => setMatCost(e.target.value)} />
+                  <button className="sf-step" tabIndex={-1} onClick={() => bumpCost(50)}>+</button>
+                  <span className={"sf-prompt__sithint" + (hasMatLimit && costNum > materials ? " is-short" : "")}>
+                    Materials{hasMatLimit ? " · you have " + materials.toLocaleString() : ""}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {hasSpellField && (
+              <div className="sf-prompt__field">
+                <span className="sf-prompt__flabel">Spell materials</span>
+                <div className="sf-prompt__row">
+                  <button className="sf-step" tabIndex={-1} onClick={() => bumpSpellCost(-50)}>−</button>
+                  <input className="sf-prompt__num sf-prompt__num--cost" type="number" inputMode="numeric" value={spellMatCost} placeholder="0" onChange={(e) => setSpellMatCost(e.target.value)} />
+                  <button className="sf-step" tabIndex={-1} onClick={() => bumpSpellCost(50)}>+</button>
+                  <span className={"sf-prompt__sithint" + (hasMatLimit && costNum > materials ? " is-short" : "")}>
+                    Materials{hasMatLimit ? " · you have " + materials.toLocaleString() : ""}
+                  </span>
+                </div>
               </div>
             )}
 
@@ -278,9 +316,9 @@ export function RollPrompt({ pending, onConfirm, onCancel }: RollPromptProps) {
             )}
 
             <button className="sf-prompt__roll" onClick={attempt}>
-              <Icon name={canSecret && secret ? "eye-off" : "dices"} /> {canSecret && secret ? "Secretly " : ""}{isSpell ? "Cast" : "Roll"} 2d10 {combined >= 0 ? "+ " + combined : "− " + Math.abs(combined)}{dc !== "" ? "  vs DC " + dc : ""}
+              <Icon name={canSecret && secret ? "eye-off" : isEnchant ? "sparkles" : "dices"} /> {canSecret && secret ? "Secretly " : ""}{actionWord} 2d10 {combined >= 0 ? "+ " + combined : "− " + Math.abs(combined)}{dc !== "" ? "  vs DC " + dc : ""}
             </button>
-            <span className="sf-prompt__hint">Enter to {isSpell ? "cast" : "roll"} · Esc to cancel</span>
+            <span className="sf-prompt__hint">Enter to {actionWord.toLowerCase()} · Esc to cancel</span>
           </React.Fragment>
         )}
       </div>

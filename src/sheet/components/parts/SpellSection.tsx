@@ -38,6 +38,7 @@ export interface SpellSectionProps {
   schoolToneOf: (schoolId: string) => Tone | undefined;
   subjectModFor?: (subjectKey: string) => number;
   onRoll: (spell: Spell, e: React.MouseEvent) => void;
+  onEnchant?: (spell: Spell, e: React.MouseEvent) => void;
   onRemove: (spell: Spell) => void;
   onLearn: (spell: Spell, e: React.MouseEvent) => void;
   onSetDays: (spell: Spell, days: number) => void;
@@ -50,7 +51,7 @@ const field = (sp: Spell, key: string) => (sp as unknown as Record<string, unkno
 
 export function SpellSection({
   spells, spellMod, schoolToneOf, subjectModFor,
-  onRoll, onRemove, onLearn, onSetDays, onAddManually, onBrowseCompendium, onEdit,
+  onRoll, onEnchant, onRemove, onLearn, onSetDays, onAddManually, onBrowseCompendium, onEdit,
 }: SpellSectionProps) {
   const [openSpells, setOpenSpells] = React.useState<Set<string>>(() => new Set());
   const [q, setQ] = React.useState("");
@@ -271,7 +272,7 @@ export function SpellSection({
           ) : (
             <div className="sf-spells">
               {visible.map((sp) => (
-                <SpellCard key={sp.id} spell={sp} mod={spellMod(sp)} schoolTone={schoolToneOf(sp.school)} onRoll={onRoll} onRemove={onRemove} onLearn={onLearn} onSetDays={onSetDays} open={openSpells.has(sp.id)} onToggle={() => toggleOne(sp.id)} onEdit={onEdit} />
+                <SpellCard key={sp.id} spell={sp} mod={spellMod(sp)} schoolTone={schoolToneOf(sp.school)} onRoll={onRoll} onEnchant={onEnchant} onRemove={onRemove} onLearn={onLearn} onSetDays={onSetDays} open={openSpells.has(sp.id)} onToggle={() => toggleOne(sp.id)} onEdit={onEdit} />
               ))}
             </div>
           )}

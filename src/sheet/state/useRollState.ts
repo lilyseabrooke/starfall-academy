@@ -55,7 +55,7 @@ export interface CondBonusOption {
  *  casting context the RollPrompt reads. */
 export type PromptPartial = Omit<RollInput, "who"> & {
   who?: RollWho;
-  onCast?: (matCost: number) => void;
+  onCast?: (info: { matCost: number; spellMatCost?: number; roll: Roll }) => void;
   onResult?: (roll: Roll) => void;
   // Spell-cast context:
   spellLevel?: string;
@@ -64,6 +64,11 @@ export type PromptPartial = Omit<RollInput, "who"> & {
   canRitual?: boolean;
   condBonuses?: CondBonusOption[];
   materials?: number;
+  /** A flat, editable material cost for non-spell rolls (e.g. Enchanting) — no ritual math. */
+  baseMatCost?: number;
+  /** The spell's own material surcharge, broken out as a second editable field
+   *  (e.g. Enchanting an Advanced/Legendary spell) — shown only when set. */
+  spellMatCost?: number;
   /** Offer a Public/Secret toggle in the prompt (GM rolls). */
   canSecret?: boolean;
 };
@@ -76,6 +81,7 @@ export interface PendingPrompt {
 
 export interface ConfirmPromptOpts {
   matCost?: number;
+  spellMatCost?: number;
   asRitual?: boolean;
   condBonus?: number;
   condMeta?: string[];
@@ -162,7 +168,7 @@ export function useRollState(data: RollStateData, activeChar: string, options: R
 
   const confirmPrompt = (opts: ConfirmPromptOpts) => {
     if (!pending) return;
-    const { matCost, asRitual: _asRitual, condBonus, condMeta, secret, ...rest } = opts;
+    const { matCost, spellMatCost, asRitual: _asRitual, condBonus, condMeta, secret, ...rest } = opts;
     void _asRitual;
     const partial = pending.partial;
     const mergedMod = (partial.mod || 0) + (condBonus || 0);
@@ -179,7 +185,7 @@ export function useRollState(data: RollStateData, activeChar: string, options: R
     setLog((prev) => [roll, ...prev]);
     if (!roll.secret) shareLocal(roll);
     setPending(null);
-    if (partial.onCast && matCost) partial.onCast(matCost);
+    if (partial.onCast && matCost) partial.onCast({ matCost, spellMatCost, roll });
     if (partial.onResult) partial.onResult(roll);
     const forcesResist =
       (roll.crit && roll.crit.backfire && !(roll.crit as { artifactBackfire?: boolean }).artifactBackfire) ||

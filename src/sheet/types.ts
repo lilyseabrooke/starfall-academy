@@ -204,6 +204,7 @@ export type RollKind =
   | "resist"
   | "attune"
   | "repair"
+  | "enchant"
   | string;
 
 export type RollOutcome = "inflection" | "crit-success" | "crit-fail" | "normal";
