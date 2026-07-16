@@ -27,7 +27,7 @@ import { SEED } from "./data/seed";
 import { CLASSES } from "./data/classes";
 import { INV } from "./data/inventory";
 import { parsePlantRoll, hlbIsNA, hlbResolveText, setAbilityData } from "./data/shared";
-import { spellCrit, artifactBackfireDC, spellLevelKey } from "./data/roll-engine";
+import { spellCrit, spellMaterialCost, artifactBackfireDC, spellLevelKey } from "./data/roll-engine";
 import { ENCHANT_MATERIAL_COST, enchantHL } from "./data/enchant";
 import { blank as blankBonus } from "./data/bonus";
 import { buildIndex, search as runSearch, type SearchResult } from "./data/search";
@@ -1127,11 +1127,15 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   const onEnchantSpell = (sp: Spell, e: { currentTarget: Element }) => {
     const encSub = subjectByKey("enchantment");
     const encStat = encSub ? encSub.sub.stat : "Creativity";
+    const ap = sp.ap != null ? sp.ap : (parseInt((String(sp.level).match(/(\d+)\s*ap/i) || [])[1], 10) || 0);
+    // Enchanting carries the same risks as casting the spell itself — its level's
+    // backfire chance and material surcharge (Ritual doesn't apply to Enchanting).
     openPrompt({
       who: meWho(), label: "Enchant — " + sp.name, kind: "enchant", stat: encStat,
       mod: subjectModFor("enchantment") + rollBonusFor("enchant"),
       dc: sp.dc, detail: "Weave " + sp.name + " into a lasting enchantment.", meta: ["Enchantment", sp.name], hl: enchantHL,
-      baseMatCost: ENCHANT_MATERIAL_COST, materials: c.materials,
+      crit: spellCrit(sp.level, false, !!sp.volatile),
+      baseMatCost: ENCHANT_MATERIAL_COST + spellMaterialCost(sp.level, ap, false), materials: c.materials,
       dosMod: dosShiftFor((b) => b.type === "enchant"),
       condBonuses: catCond("enchant"),
       onCast: (cost) => { if (cost > 0) { adjustMaterials(-cost); toast(sp.name + " enchanted · −" + cost.toLocaleString() + " materials"); } },

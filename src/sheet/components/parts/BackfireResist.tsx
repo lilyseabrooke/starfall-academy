@@ -9,6 +9,7 @@ import type { Condition, RollResist } from "../../types";
 export interface ResistRoll {
   id: string;
   label?: string;
+  kind?: string;
   resist?: (RollResist & { dcPerDegree?: number }) | null;
   forced?: { condition: string; dc: number | null };
   dc?: number | null;
@@ -48,6 +49,7 @@ export function BackfireResist({ open, roll, conditions, facRank, onResist, onCl
   const condObj = conditions.find((c) => c.id === cond) || conditions[0];
   const mod = facRank(condObj.resist);
   const cast = roll.pass;
+  const isEnchant = roll.kind === "enchant";
   const resist = () => {
     onResist({ condition: condObj, dc: dc === "" ? null : parseInt(dc, 10), mod });
     onClose();
@@ -69,9 +71,9 @@ export function BackfireResist({ open, roll, conditions, facRank, onResist, onCl
             {rcfg ? (
               <React.Fragment><Icon name="flame" /><span>{rcfg.verdict || "The magic recoils. Choose what it costs you to resist."}</span></React.Fragment>
             ) : cast ? (
-              <React.Fragment><Icon name="circle-check" /><span>The spell <b>still takes hold</b> — {roll.degrees} {roll.degrees === 1 ? "degree" : "degrees"} of success — but the recoil demands a save.</span></React.Fragment>
+              <React.Fragment><Icon name="circle-check" /><span>The {isEnchant ? "enchantment" : "spell"} <b>still takes hold</b> — {roll.degrees} {roll.degrees === 1 ? "degree" : "degrees"} of success — but the recoil demands a save.</span></React.Fragment>
             ) : cast === false ? (
-              <React.Fragment><Icon name="circle-x" /><span>The casting <b>fails</b>, and the loosed magic turns back on you.</span></React.Fragment>
+              <React.Fragment><Icon name="circle-x" /><span>The {isEnchant ? "enchanting" : "casting"} <b>fails</b>, and the loosed magic turns back on you.</span></React.Fragment>
             ) : (
               <React.Fragment><Icon name="flame" /><span>The magic recoils. Choose what it costs you to resist.</span></React.Fragment>
             )}

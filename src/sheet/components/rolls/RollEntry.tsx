@@ -106,9 +106,13 @@ export function RollEntry({ roll, expanded, compact, affordance, hint }: RollEnt
                 ? roll.pass === true ? "The move lands — but the artifact strains against you. Roll Artificy."
                   : roll.pass === false ? "The move fails, and the artifact strains against you. Roll Artificy."
                   : "A natural 1 — the artifact strains against you. Roll Artificy."
-                : roll.pass ? "It casts — but the magic turns on you. Resist."
-                  : roll.pass === false ? "The casting fails and turns on you. Resist."
-                  : "The magic turns on you. Resist."
+                : roll.kind === "enchant"
+                  ? roll.pass ? "It takes hold — but the magic turns on you. Resist."
+                    : roll.pass === false ? "The enchanting fails and turns on you. Resist."
+                    : "The magic turns on you. Resist."
+                  : roll.pass ? "It casts — but the magic turns on you. Resist."
+                    : roll.pass === false ? "The casting fails and turns on you. Resist."
+                    : "The magic turns on you. Resist."
               : roll.crit.text || ""}
           </span>
         </div>
