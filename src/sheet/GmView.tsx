@@ -50,8 +50,8 @@ const clampN = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, 
 const TONE3: Record<string, string> = { plum: "var(--plum-300)", forest: "var(--forest-300)", teal: "var(--teal-300)", crimson: "var(--crimson-300)", gold: "var(--gold-300)", silver: "var(--text-strong)" };
 const NPC_ICONS = ["user-round", "skull", "cat", "scroll", "crown", "shield", "wand-sparkles", "flask-conical", "eye", "ghost", "book-open", "key-round", "anchor", "feather", "flame", "snowflake", "zap", "star", "moon", "compass", "gem", "bird", "fish", "tree-pine", "mountain", "waves", "bug", "sword"];
 // Strip quoted nicknames/titles (e.g. Aspen 'Rogue' Whitley) before taking initials.
-const QUOTED_SEGMENT = /['"`‘’“”][^'"`‘’“”]*['"`‘’“”]/g;
-const initialsFor = (name: string) => (name || "?").replace(QUOTED_SEGMENT, " ").trim().split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+const ASIDE_SEGMENT = /['"`‘’“”][^'"`‘’“”]*['"`‘’“”]|\([^)]*\)/g;
+const initialsFor = (name: string) => (name || "?").replace(ASIDE_SEGMENT, " ").trim().split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
 /* ----------------------------- small visuals ----------------------------- */
 function Stars({ value, max }: { value: number; max: number }) {
