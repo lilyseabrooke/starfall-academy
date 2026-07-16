@@ -38,7 +38,9 @@ export default async function GMToolsPage({
     .select("id, name, sheet")
     .eq("campaign_id", campaign.id)
     .eq("type", "pc");
-  const party = (partyRows ?? []).map((r) => toGMPartyMember(r as CharacterRow));
+  const party = (partyRows ?? [])
+    .map((r) => toGMPartyMember(r as CharacterRow))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   return <GmView campaign={campaign} party={party} />;
 }

@@ -41,13 +41,17 @@ export default async function CharacterSheetPage({
       .from("characters")
       .select("id, name, sheet")
       .eq("campaign_id", character.campaign_id);
-    roster = (party ?? []).map((p) => toRosterMember(p as CharacterRow, character.id));
+    roster = (party ?? [])
+      .map((p) => toRosterMember(p as CharacterRow, character.id))
+      .sort((a, b) => a.name.localeCompare(b.name));
   } else if (character.campaign_code) {
     const { data: party } = await supabase
       .from("characters")
       .select("id, name, sheet")
       .eq("campaign_code", character.campaign_code);
-    roster = (party ?? []).map((p) => toRosterMember(p as CharacterRow, character.id));
+    roster = (party ?? [])
+      .map((p) => toRosterMember(p as CharacterRow, character.id))
+      .sort((a, b) => a.name.localeCompare(b.name));
   } else {
     roster = [toRosterMember(character as CharacterRow, character.id)];
   }
