@@ -750,7 +750,9 @@
 .sf-sheet .sf-spell:hover { border-color: var(--border-default); box-shadow: var(--shadow-md); transform: translateY(-2px); }
 .sf-sheet .sf-spell.is-unlearned { opacity: .72; }
 .sf-sheet .sf-spell.is-unlearned::before { opacity: .35; }
-.sf-sheet .sf-spell__head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); cursor: pointer; user-select: none; }
+.sf-sheet .sf-spell__head { display: flex; flex-direction: column; gap: 4px; cursor: pointer; user-select: none; }
+.sf-sheet .sf-spell__toprow { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
+.sf-sheet .sf-spell__editrow { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-2); }
 .sf-sheet .sf-spell.is-collapsed { gap: 0; }
 .sf-sheet .sf-spell__headline { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .sf-sheet .sf-spell__name { font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: .03em; font-size: var(--text-md); color: var(--text-strong); line-height: 1.15; text-wrap: balance; }
