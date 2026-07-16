@@ -136,7 +136,7 @@ export function useMagicState(
   const spellMod = (sp: Spell) => {
     const fr = facByName(sp.stat) ? facByName(sp.stat)!.rank : 0;
     const sk = subjectByKey(sp.subjectKey);
-    return fr + statBonusFor(sp.stat) + (sk ? sk.sub.rank : 0) + spellBonusFor(sp.id);
+    return fr + statBonusFor(sp.stat) + (sk ? sk.sub.rank : 0) + subjectBonusFor(sp.subjectKey) + spellBonusFor(sp.id) + rollBonusFor("spellroll", sp.subjectKey);
   };
 
   const moveMod = (m: Move, optIdx?: number) => {
