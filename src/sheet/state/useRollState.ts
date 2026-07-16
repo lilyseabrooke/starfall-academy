@@ -64,6 +64,8 @@ export type PromptPartial = Omit<RollInput, "who"> & {
   canRitual?: boolean;
   condBonuses?: CondBonusOption[];
   materials?: number;
+  /** A flat, editable material cost for non-spell rolls (e.g. Enchanting) — no ritual math. */
+  baseMatCost?: number;
   /** Offer a Public/Secret toggle in the prompt (GM rolls). */
   canSecret?: boolean;
 };

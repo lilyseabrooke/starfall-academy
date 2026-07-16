@@ -28,6 +28,7 @@ import { CLASSES } from "./data/classes";
 import { INV } from "./data/inventory";
 import { parsePlantRoll, hlbIsNA, hlbResolveText, setAbilityData } from "./data/shared";
 import { spellCrit, artifactBackfireDC, spellLevelKey } from "./data/roll-engine";
+import { ENCHANT_MATERIAL_COST, enchantHL } from "./data/enchant";
 import { blank as blankBonus } from "./data/bonus";
 import { buildIndex, search as runSearch, type SearchResult } from "./data/search";
 import { useCompendium } from "./data/compendium";
@@ -1123,6 +1124,19 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       onCast: (cost) => { if (cost > 0) { adjustMaterials(-cost); toast(sp.name + " cast · −" + cost.toLocaleString() + " materials"); } },
     }, e.currentTarget as HTMLElement);
   };
+  const onEnchantSpell = (sp: Spell, e: { currentTarget: Element }) => {
+    const encSub = subjectByKey("enchantment");
+    const encStat = encSub ? encSub.sub.stat : "Creativity";
+    openPrompt({
+      who: meWho(), label: "Enchant — " + sp.name, kind: "enchant", stat: encStat,
+      mod: subjectModFor("enchantment") + rollBonusFor("enchant"),
+      dc: sp.dc, detail: "Weave " + sp.name + " into a lasting enchantment.", meta: ["Enchantment", sp.name], hl: enchantHL,
+      baseMatCost: ENCHANT_MATERIAL_COST, materials: c.materials,
+      dosMod: dosShiftFor((b) => b.type === "enchant"),
+      condBonuses: catCond("enchant"),
+      onCast: (cost) => { if (cost > 0) { adjustMaterials(-cost); toast(sp.name + " enchanted · −" + cost.toLocaleString() + " materials"); } },
+    }, e.currentTarget as HTMLElement);
+  };
 
   // ---- Advancement: rank-up mutators ----
   const bumpStatById = (facId: string) => setStats((prev) => prev.map((f) => (f.id === facId ? { ...f, rank: f.rank + 1 } : f)));
@@ -1221,7 +1235,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
             </div>
             <SpellSection
               spells={spells} spellMod={spellMod} schoolToneOf={schoolToneOf} subjectModFor={subjectModFor}
-              onRoll={onRollSpell} onRemove={removeSpell} onLearn={onLearnSpell}
+              onRoll={onRollSpell} onEnchant={onEnchantSpell} onRemove={removeSpell} onLearn={onLearnSpell}
               onSetDays={(s, d) => setSpellDays(s.id, d)}
               onAddManually={() => { setEditSpell(null); setManualOpen(true); }}
               onEdit={(spell) => { setEditSpell(spell); setManualOpen(true); }}

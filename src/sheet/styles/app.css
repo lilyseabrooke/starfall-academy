@@ -850,6 +850,7 @@
 .sf-sheet .sf-hlb__pip--raw { letter-spacing: .04em; font-size: 12px; }
 .sf-sheet .sf-hlb__body.is-raw { font-style: italic; color: var(--text-faint); }
 .sf-sheet .sf-spell__foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-top: auto; padding-top: var(--space-1); }
+.sf-sheet .sf-spell__foot-acts { display: flex; align-items: center; gap: var(--space-2); }
 .sf-sheet .sf-spell__formula { font-family: var(--font-mono); font-size: 12px; color: var(--text-faint); }
 .sf-sheet .sf-spell__learning { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-sans); font-size: 11px; letter-spacing: var(--tracking-wide); color: var(--text-faint); }
 .sf-sheet .sf-spell__learning svg { width: 13px; height: 13px; color: var(--gold-400); }

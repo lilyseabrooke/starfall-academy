@@ -56,6 +56,7 @@ export interface SpellCardProps {
   mod: number;
   schoolTone?: Tone | string;
   onRoll: (spell: Spell, e: React.MouseEvent) => void;
+  onEnchant?: (spell: Spell, e: React.MouseEvent) => void;
   onRemove: (spell: Spell) => void;
   onLearn: (spell: Spell, e: React.MouseEvent) => void;
   onSetDays: (spell: Spell, days: number) => void;
@@ -64,7 +65,7 @@ export interface SpellCardProps {
   onEdit?: (spell: Spell) => void;
 }
 
-export function SpellCard({ spell, mod, schoolTone, onRoll, onRemove, onLearn, onSetDays, open, onToggle, onEdit }: SpellCardProps) {
+export function SpellCard({ spell, mod, schoolTone, onRoll, onEnchant, onRemove, onLearn, onSetDays, open, onToggle, onEdit }: SpellCardProps) {
   const learned = !spell.days || spell.days <= 0;
   const lf = String(spell.level || "").trim().toLowerCase();
   const isHex = lf.startsWith("hex") || lf === "twisted";
@@ -113,7 +114,10 @@ export function SpellCard({ spell, mod, schoolTone, onRoll, onRemove, onLearn, o
             {learned ? (
               <React.Fragment>
                 <span className="sf-spell__formula">2d10 + {mod}{spell.dc != null ? <span className="sf-move__dc"> · DC {spell.dc}</span> : null}</span>
-                <button className="sf-roll-btn" onClick={(e) => onRoll(spell, e)}><Icon name="dices" /> Cast</button>
+                <div className="sf-spell__foot-acts">
+                  <button className="sf-roll-btn" onClick={(e) => onRoll(spell, e)}><Icon name="dices" /> Cast</button>
+                  {onEnchant && <button className="sf-roll-btn" onClick={(e) => onEnchant(spell, e)}><Icon name="sparkles" /> Enchant</button>}
+                </div>
               </React.Fragment>
             ) : (
               <div className="sf-spell__learn-row">

@@ -41,6 +41,7 @@ export const TYPES: BonusTypeMeta[] = [
   { id: "spellbackfire", label: "Spell backfire rolls", group: "Rolls", target: "opt", kind: "field", allLabel: "All subjects", icon: "flame", hint: "Spell backfire rolls — all, or one subject." },
   { id: "artificybackfire", label: "Artificy backfire rolls", group: "Rolls", target: "none", icon: "wrench", hint: "Every artificy backfire roll." },
   { id: "wandcraft", label: "Wandcraft rolls", group: "Rolls", target: "none", icon: "wand-sparkles", hint: "Every wandcraft roll." },
+  { id: "enchant", label: "Enchanting rolls", group: "Rolls", target: "none", icon: "sparkles", hint: "Every Enchanting roll." },
   { id: "action", label: "Action rolls", group: "Rolls", target: "none", icon: "zap", hint: "The Action roll (DC 10 Insight) that sets your Action Points." },
 ];
 
