@@ -25,13 +25,14 @@ const HOUSE_TONE: Record<string, string> = {
   Scorpion: "gold",
 };
 
-// Strip quoted nicknames/titles (e.g. Aspen 'Rogue' Whitley) before taking initials.
-const QUOTED_SEGMENT = /['"`‘’“”][^'"`‘’“”]*['"`‘’“”]/g;
+// Strip quoted/parenthesized nicknames/titles (e.g. Aspen 'Rogue' Whitley,
+// Kyndra (Kyn) Faulkner) before taking initials.
+const ASIDE_SEGMENT = /['"`‘’“”][^'"`‘’“”]*['"`‘’“”]|\([^)]*\)/g;
 
 function initialsOf(name: string) {
   return (
     name
-      .replace(QUOTED_SEGMENT, " ")
+      .replace(ASIDE_SEGMENT, " ")
       .trim()
       .split(/\s+/)
       .slice(0, 2)

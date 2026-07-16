@@ -7,11 +7,12 @@ import { TONE_MIX } from "../../data/shared";
 import { headline } from "../../data/roll-engine";
 import type { Roll } from "../../types";
 
-// Strip quoted nicknames/titles (e.g. Aspen 'Rogue' Whitley) before taking initials.
-const QUOTED_SEGMENT = /['"`‘’“”][^'"`‘’“”]*['"`‘’“”]/g;
+// Strip quoted/parenthesized nicknames/titles (e.g. Aspen 'Rogue' Whitley,
+// Kyndra (Kyn) Faulkner) before taking initials.
+const ASIDE_SEGMENT = /['"`‘’“”][^'"`‘’“”]*['"`‘’“”]|\([^)]*\)/g;
 
 export const initialsOf = (name: string) =>
-  String(name || "").replace(QUOTED_SEGMENT, " ").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
+  String(name || "").replace(ASIDE_SEGMENT, " ").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
 
 const cap = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 
