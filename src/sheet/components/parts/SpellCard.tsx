@@ -115,8 +115,8 @@ export function SpellCard({ spell, mod, schoolTone, onRoll, onEnchant, onRemove,
               <React.Fragment>
                 <span className="sf-spell__formula">2d10 + {mod}{spell.dc != null ? <span className="sf-move__dc"> · DC {spell.dc}</span> : null}</span>
                 <div className="sf-spell__foot-acts">
-                  <button className="sf-roll-btn" onClick={(e) => onRoll(spell, e)}><Icon name="dices" /> Cast</button>
                   {onEnchant && <button className="sf-roll-btn" onClick={(e) => onEnchant(spell, e)}><Icon name="sparkles" /> Enchant</button>}
+                  <button className="sf-roll-btn" onClick={(e) => onRoll(spell, e)}><Icon name="dices" /> Cast</button>
                 </div>
               </React.Fragment>
             ) : (

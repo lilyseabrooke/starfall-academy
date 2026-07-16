@@ -1115,30 +1115,55 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     const hasHL = !hlbIsNA(sp.higherLevel);
     const hl = hasHL ? ((deg: number, ok: boolean) => (ok ? hlbResolveText(sp.higherLevel, deg) || "" : "the weave slips, and the spell fails to take.")) : null;
     const ap = sp.ap != null ? sp.ap : (parseInt((String(sp.level).match(/(\d+)\s*ap/i) || [])[1], 10) || 0);
+    const lvlKey = spellLevelKey(sp.level);
+    const refundable = lvlKey === "advanced" || lvlKey === "legendary";
     openPrompt({
       who: meWho(), label: sp.name, kind: "spell", stat: sp.stat, mod: spellMod(sp),
       dc: sp.dc, detail: sp.desc, meta: [sp.subject, sp.level], hl,
       spellLevel: sp.level, spellAp: ap, canRitual: !!sp.ritual, spellVolatile: !!sp.volatile, materials: c.materials,
       dosMod: dosShiftFor((b) => (b.type === "spell" && b.target === sp.id) || (b.type === "spellroll" && (!b.target || b.target === sp.subjectKey)) || (b.type === "subject" && b.target === sp.subjectKey)),
       condBonuses: condBonusesFor((b) => (b.type === "spell" && b.target === sp.id) || (b.type === "subject" && b.target === sp.subjectKey)),
-      onCast: (cost) => { if (cost > 0) { adjustMaterials(-cost); toast(sp.name + " cast · −" + cost.toLocaleString() + " materials"); } },
+      onCast: ({ matCost: cost, roll }) => {
+        if (cost <= 0) return;
+        adjustMaterials(-cost);
+        let msg = sp.name + " cast · −" + cost.toLocaleString() + " materials";
+        if (roll.pass === false && refundable) {
+          const refund = Math.floor(cost / 2);
+          if (refund > 0) { adjustMaterials(refund); msg += " · +" + refund.toLocaleString() + " refunded"; }
+        }
+        toast(msg);
+      },
     }, e.currentTarget as HTMLElement);
   };
   const onEnchantSpell = (sp: Spell, e: { currentTarget: Element }) => {
     const encSub = subjectByKey("enchantment");
     const encStat = encSub ? encSub.sub.stat : "Creativity";
     const ap = sp.ap != null ? sp.ap : (parseInt((String(sp.level).match(/(\d+)\s*ap/i) || [])[1], 10) || 0);
+    const lvlKey = spellLevelKey(sp.level);
+    const refundable = lvlKey === "advanced" || lvlKey === "legendary";
+    const spellCost = spellMaterialCost(sp.level, ap, false);
     // Enchanting carries the same risks as casting the spell itself — its level's
-    // backfire chance and material surcharge (Ritual doesn't apply to Enchanting).
+    // backfire chance and material surcharge (Ritual doesn't apply to Enchanting). The
+    // spell's own surcharge is tracked separately so only it (not the flat Enchanting
+    // cost) is eligible for the Advanced/Legendary half-refund on a failed roll.
     openPrompt({
       who: meWho(), label: "Enchant — " + sp.name, kind: "enchant", stat: encStat,
       mod: subjectModFor("enchantment") + rollBonusFor("enchant"),
       dc: sp.dc, detail: sp.desc, meta: ["Enchantment", sp.name], hl: enchantHL,
       crit: spellCrit(sp.level, false, !!sp.volatile),
-      baseMatCost: ENCHANT_MATERIAL_COST + spellMaterialCost(sp.level, ap, false), materials: c.materials,
+      baseMatCost: ENCHANT_MATERIAL_COST, spellMatCost: spellCost > 0 ? spellCost : undefined, materials: c.materials,
       dosMod: dosShiftFor((b) => b.type === "enchant"),
       condBonuses: catCond("enchant"),
-      onCast: (cost) => { if (cost > 0) { adjustMaterials(-cost); toast(sp.name + " enchanted · −" + cost.toLocaleString() + " materials"); } },
+      onCast: ({ matCost: cost, spellMatCost: spentSpellCost, roll }) => {
+        if (cost <= 0) return;
+        adjustMaterials(-cost);
+        let msg = sp.name + " enchanted · −" + cost.toLocaleString() + " materials";
+        if (roll.pass === false && refundable && spentSpellCost) {
+          const refund = Math.floor(spentSpellCost / 2);
+          if (refund > 0) { adjustMaterials(refund); msg += " · +" + refund.toLocaleString() + " refunded"; }
+        }
+        toast(msg);
+      },
     }, e.currentTarget as HTMLElement);
   };
 
