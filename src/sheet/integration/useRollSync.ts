@@ -78,6 +78,7 @@ export function useRollSync({ campaignId, characterId, onRemoteRoll, onPrompt }:
 
     persistRef.current = async (roll: Roll) => {
       if (!roll || typeof roll !== "object") return;
+      channelRef.current?.send({ type: "broadcast", event: "roll", payload: roll });
       const actor = await ensureUserId();
       if (cancelled || !actor) return;
       const { error } = await supabase.from("rolls").insert({
@@ -96,6 +97,7 @@ export function useRollSync({ campaignId, characterId, onRemoteRoll, onPrompt }:
         { event: "INSERT", schema: "public", table: "rolls", filter: `campaign_id=eq.${campaignId}` },
         (payload) => onRemoteRef.current?.((payload.new as { payload: Roll }).payload)
       )
+      .on("broadcast", { event: "roll" }, ({ payload }) => onRemoteRef.current?.(payload as Roll))
       .on("broadcast", { event: "prompt" }, ({ payload }) => onPromptRef.current?.(payload))
       .subscribe((status) => {
         if (status === "SUBSCRIBED") sendBacklog();
