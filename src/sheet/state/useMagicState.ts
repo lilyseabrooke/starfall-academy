@@ -50,12 +50,23 @@ export interface ClassMoveLink {
 
 type FacByName = (name: string) => Stat | undefined;
 
+/** Overrides the seed bonuses/spells/moves — used to hydrate straight from a
+ *  saved sheet (or a blank slate) instead of flashing the seed's demo magic
+ *  on first paint. When provided, wand/artifact-derived entries are NOT
+ *  re-appended, since a saved sheet already carries them. */
+export interface MagicStateInit {
+  bonuses: Bonus[];
+  spells: Spell[];
+  moves: Move[];
+}
+
 export function useMagicState(
   data: MagicStateData,
   inv: MagicStateInv,
   facByName: FacByName,
   getSchools?: () => MagicSchool[],
-  getClassRank?: (key: string) => number
+  getClassRank?: (key: string) => number,
+  initial?: MagicStateInit | null
 ) {
   const schools = (): MagicSchool[] => (getSchools && getSchools()) || data.magicSchools;
   const classRankOf = (key: string | undefined) => (getClassRank ? getClassRank(key || "") : 0) || 0;
@@ -87,16 +98,19 @@ export function useMagicState(
 
   // ---- State ----
   const [bonuses, setBonuses] = React.useState<Bonus[]>(() => {
+    if (initial) return initial.bonuses.map((x) => ({ ...x }));
     const base = data.bonuses.map((x) => ({ ...x }));
     inv.wands.filter((w) => w.equipped && wandHasBonus(w)).forEach((w) => base.push(wandBonus(w)));
     return base;
   });
   const [spells, setSpells] = React.useState<Spell[]>(() => {
+    if (initial) return initial.spells.map((x) => ({ ...x }));
     const base = data.spells.map((x) => ({ ...x }));
     inv.wands.filter((w) => w.equipped && wandHasSpell(w)).forEach((w) => base.push(wandSpell(w)));
     return base;
   });
   const [moves, setMoves] = React.useState<Move[]>(() => {
+    if (initial) return initial.moves.map((m) => ({ ...m }));
     const base = data.moves.map((m) => ({ ...m }));
     inv.artifacts.filter((a) => a.attuned).forEach((a) => base.push(artMove(a)));
     inv.wands.filter((w) => w.equipped && wandHasMove(w)).forEach((w) => base.push(wandMove(w)));
