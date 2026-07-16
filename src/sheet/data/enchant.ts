@@ -34,5 +34,5 @@ export function enchantDurationLabel(degrees: number): string {
 export function enchantHL(degrees: number, ok: boolean): string {
   return ok
     ? "The enchantment takes hold, lasting " + enchantDurationLabel(degrees) + "."
-    : "The materials are spent, but the weave doesn't hold — no enchantment takes.";
+    : "The enchantment sparks out, burning the materials in the process.";
 }

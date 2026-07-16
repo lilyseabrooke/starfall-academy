@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Button, IconButton, Input, Select } from "@/ds";
 import { Icon } from "../Icon";
+import { enchantDurationLabel } from "../../data/enchant";
 import type { Condition, RollResist } from "../../types";
 
 /** The roll awaiting a resist save — a real Roll or a GM-forced stub. */
@@ -71,9 +72,13 @@ export function BackfireResist({ open, roll, conditions, facRank, onResist, onCl
             {rcfg ? (
               <React.Fragment><Icon name="flame" /><span>{rcfg.verdict || "The magic recoils. Choose what it costs you to resist."}</span></React.Fragment>
             ) : cast ? (
-              <React.Fragment><Icon name="circle-check" /><span>The {isEnchant ? "enchantment" : "spell"} <b>still takes hold</b> — {roll.degrees} {roll.degrees === 1 ? "degree" : "degrees"} of success — but the recoil demands a save.</span></React.Fragment>
+              isEnchant ? (
+                <React.Fragment><Icon name="circle-check" /><span>You place an enchantment lasting <b>{enchantDurationLabel(roll.degrees || 1)}</b>, and you burn your magic in the process.</span></React.Fragment>
+              ) : (
+                <React.Fragment><Icon name="circle-check" /><span>The spell <b>still takes hold</b> — {roll.degrees} {roll.degrees === 1 ? "degree" : "degrees"} of success — but the recoil demands a save.</span></React.Fragment>
+              )
             ) : cast === false ? (
-              <React.Fragment><Icon name="circle-x" /><span>The {isEnchant ? "enchanting" : "casting"} <b>fails</b>, and the loosed magic turns back on you.</span></React.Fragment>
+              <React.Fragment><Icon name="circle-x" /><span>{isEnchant ? "The enchantment sparks out, and your magic burns." : "The casting fails, and the loosed magic turns back on you."}</span></React.Fragment>
             ) : (
               <React.Fragment><Icon name="flame" /><span>The magic recoils. Choose what it costs you to resist.</span></React.Fragment>
             )}
