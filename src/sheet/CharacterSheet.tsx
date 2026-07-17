@@ -802,7 +802,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       }
     });
     magic.handlers.syncClassMoves(links);
-  }, [classState]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [classState, CL.classes]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---- Bonus editor handlers ----
   const openAddBonus = () => setBonusEdit({ open: true, mode: "add", bonus: blankBonus() });
