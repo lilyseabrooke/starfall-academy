@@ -49,7 +49,7 @@ export function computeCompendiumGrant(
       const prev = currentField as Spell[];
       const id = "sp-comp-" + e.id;
       if (prev.find((s) => s.id === id)) return { field: "spells", value: prev };
-      return { field: "spells", value: [...prev, { id, name: e.name, level: e.level, subjectKey: e.subjectKey || "", subject: e.subject || "", school: e.school || "", stat: e.stat || "", ap: e.ap || 0, dc: e.dc ?? null, ritual: !!e.ritual, volatile: false, days: 0, desc: e.desc }] };
+      return { field: "spells", value: [...prev, { id, name: e.name, level: e.level, subjectKey: e.subjectKey || "", subject: e.subject || "", school: e.school || "", stat: e.stat || "", ap: e.ap || 0, dc: e.dc ?? null, ritual: !!e.ritual, volatile: false, days: 0, desc: e.desc, higherLevel: e.higherLevel }] };
     }
     case "artifact": {
       const prev = currentField as Artifact[];
@@ -115,7 +115,7 @@ export function computeAttunedArtifactGrant(
 /** onAddLearning: spell granted with days-to-learn set by level tier. */
 export function computeLearningSpellGrant(e: CompendiumEntry, currentSpells: Spell[]): { field: "spells"; value: Spell[] } | null {
   if (e.cat !== "spell") return null;
-  return { field: "spells", value: [...currentSpells, { id: "sp-comp-" + e.id, name: e.name, level: e.level, subjectKey: e.subjectKey || "", subject: e.subject || "", school: e.school || "", stat: e.stat || "", ap: e.ap || 0, dc: e.dc ?? null, ritual: !!e.ritual, volatile: false, days: learnDaysFor(e.level), desc: e.desc }] };
+  return { field: "spells", value: [...currentSpells, { id: "sp-comp-" + e.id, name: e.name, level: e.level, subjectKey: e.subjectKey || "", subject: e.subject || "", school: e.school || "", stat: e.stat || "", ap: e.ap || 0, dc: e.dc ?? null, ritual: !!e.ritual, volatile: false, days: learnDaysFor(e.level), desc: e.desc, higherLevel: e.higherLevel }] };
 }
 
 /** onAddPotionSheaf: a physical potion instance (qty-merge by name), capped. */
