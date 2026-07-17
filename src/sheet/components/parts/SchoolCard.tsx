@@ -10,13 +10,14 @@ export interface SchoolCardProps {
   facByName: (name: string) => Stat | undefined;
   subjectBonusFor: (key: string) => number;
   statBonusFor?: (name: string) => number;
+  universalBonusFor?: () => number;
   onRoll: (school: MagicSchool, sub: Subject, total: number, e: React.MouseEvent) => void;
   onImprove: (school: MagicSchool, sub: Subject, e: React.MouseEvent) => void;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
 }
 
-export function SchoolCard({ school, facByName, subjectBonusFor, statBonusFor, onRoll, onImprove, collapsed, onToggleCollapse }: SchoolCardProps) {
+export function SchoolCard({ school, facByName, subjectBonusFor, statBonusFor, universalBonusFor, onRoll, onImprove, collapsed, onToggleCollapse }: SchoolCardProps) {
   const style = { "--fac-accent": TONE_500[school.tone], "--fac-accent-fg": TONE_FG[school.tone] } as React.CSSProperties;
   const best = Math.max(...school.subjects.map((s) => (facByName(s.stat) ? facByName(s.stat)!.rank : 0) + s.rank));
   return (
@@ -46,7 +47,7 @@ export function SchoolCard({ school, facByName, subjectBonusFor, statBonusFor, o
         <div className="sf-fac__skills">
           {school.subjects.map((sub) => {
             const statFac = facByName(sub.stat);
-            const facRank = (statFac ? statFac.rank : 0) + (statBonusFor ? statBonusFor(sub.stat) : 0);
+            const facRank = (statFac ? statFac.rank : 0) + (statBonusFor ? statBonusFor(sub.stat) : 0) + (universalBonusFor ? universalBonusFor() : 0);
             const statFg = statFac && TONE_FG[statFac.tone] ? TONE_FG[statFac.tone] : "var(--gold-200)";
             const bonus = subjectBonusFor(sub.key);
             const total = facRank + sub.rank + bonus;

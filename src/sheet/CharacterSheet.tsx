@@ -317,7 +317,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   const { toggleBonus, toggleBonusConditional, setBonusCondNote, addSpell, updateSpell, removeSpell, setSpellDays,
     addBonus, updateBonus, removeBonus, addMove, updateMove, removeMove } = magic.handlers;
   const { subjectByKey, schoolToneOf, subjectBonusFor, bonusFor, condBonusesFor, spellMod, moveMod,
-    statBonusFor, rollBonusFor, resolveVal, dosShiftFor } = magic.helpers;
+    statBonusFor, rollBonusFor, universalBonusFor, resolveVal, dosShiftFor } = magic.helpers;
   const { log, dock, pending, resistRoll, artifactResistRoll } = roll.state;
   const { pushRoll, openPrompt, confirmPrompt, cancelPrompt, onResist, openForcedResist, closeResist,
     closeArtifactResist, setDock, meWho, injectRemote } = roll.handlers;
@@ -325,7 +325,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   // ---- Derived character helpers ----
   const subRank = (k: string) => { const r = subjectByKey(k); return r ? r.sub.rank : 0; };
   const facRank = (n: string) => (facByName(n) ? facByName(n)!.rank : 0);
-  const effFacRank = (n: string) => facRank(n) + statBonusFor(n);
+  const effFacRank = (n: string) => facRank(n) + statBonusFor(n) + universalBonusFor();
   const subjectModFor = (subjectKey: string) => {
     const sk = subjectByKey(subjectKey);
     if (!sk) return 0;
@@ -1299,7 +1299,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
                   </div>
                 </div>
                 <div className="sf-stats">
-                  {stats.map((f) => <StatCard key={f.id} fac={f} collapsed={collapsedStats.has(f.id)} onToggleCollapse={() => toggleStatCollapsed(f.id)} bonusFor={bonusFor} statBonusFor={statBonusFor} onRoll={onRollSkill} onImprove={onImproveSkill} />)}
+                  {stats.map((f) => <StatCard key={f.id} fac={f} collapsed={collapsedStats.has(f.id)} onToggleCollapse={() => toggleStatCollapsed(f.id)} bonusFor={bonusFor} statBonusFor={statBonusFor} universalBonusFor={universalBonusFor} onRoll={onRollSkill} onImprove={onImproveSkill} />)}
                 </div>
               </div>
               <div className="sf-col">
@@ -1323,7 +1323,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
               </div>
             </div>
             <div className="sf-schools">
-              {schools.map((s) => <SchoolCard key={s.id} school={s} collapsed={collapsedSchools.has(s.id)} onToggleCollapse={() => toggleSchoolCollapsed(s.id)} facByName={facByName} subjectBonusFor={subjectBonusFor} statBonusFor={statBonusFor} onRoll={onRollSubject} onImprove={onImproveSubject} />)}
+              {schools.map((s) => <SchoolCard key={s.id} school={s} collapsed={collapsedSchools.has(s.id)} onToggleCollapse={() => toggleSchoolCollapsed(s.id)} facByName={facByName} subjectBonusFor={subjectBonusFor} statBonusFor={statBonusFor} universalBonusFor={universalBonusFor} onRoll={onRollSubject} onImprove={onImproveSubject} />)}
             </div>
             <SpellSection
               spells={spells} spellMod={spellMod} schoolToneOf={schoolToneOf} subjectModFor={subjectModFor}
@@ -1400,8 +1400,8 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     const type = result.type;
     const data = result.data as { name?: string; id?: string; stat?: { id?: string; name?: string }; skill?: RollSkill; subject?: RollSubject; rank?: number; key?: string };
     const body = document.body;
-    if (type === "stat") { const fac = stats.find((f) => f.name === data.name); if (fac) onRollSkill(fac, { name: fac.name, rank: 0 }, fac.rank + statBonusFor(fac.name), { currentTarget: body }); }
-    else if (type === "skill") { const fac = stats.find((f) => f.id === data.stat?.id || f.name === data.stat?.name); if (fac) onRollSkill(fac, (data.skill || data) as RollSkill, (fac.rank + statBonusFor(fac.name)) + (data.skill?.rank ?? data.rank ?? 0), { currentTarget: body }); }
+    if (type === "stat") { const fac = stats.find((f) => f.name === data.name); if (fac) onRollSkill(fac, { name: fac.name, rank: 0 }, effFacRank(fac.name), { currentTarget: body }); }
+    else if (type === "skill") { const fac = stats.find((f) => f.id === data.stat?.id || f.name === data.stat?.name); if (fac) onRollSkill(fac, (data.skill || data) as RollSkill, effFacRank(fac.name) + (data.skill?.rank ?? data.rank ?? 0), { currentTarget: body }); }
     else if (type === "subject") { const sub = (data.subject || data) as RollSubject; const school = schools.find((s) => s.subjects?.some((x) => x.key === sub.key)); if (school) { const total = effFacRank(sub.stat) + sub.rank + subjectBonusFor(sub.key); onRollSubject(school, sub, total, { currentTarget: body }); } }
     else if (type === "spell") onRollSpell(data as unknown as Spell, { currentTarget: body });
     else if (type === "move") onRollMove(data as unknown as Move, { currentTarget: body });

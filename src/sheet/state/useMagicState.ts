@@ -140,6 +140,8 @@ export function useMagicState(
   const moveBonusFor = (id: string) => liveSum((b) => b.type === "move" && b.target === id);
   const spellBonusFor = (id: string) => liveSum((b) => b.type === "spell" && b.target === id);
   const rollBonusFor = (type: string, targetKey?: string) => liveSum((b) => b.type === type && (!b.target || b.target === targetKey));
+  /** Applies to every check silently — never surfaced as a per-field badge. */
+  const universalBonusFor = () => liveSum((b) => b.type === "universal");
 
   const condBonusesFor = (pred: (b: Bonus) => boolean) =>
     bonuses
@@ -150,7 +152,7 @@ export function useMagicState(
   const spellMod = (sp: Spell) => {
     const fr = facByName(sp.stat) ? facByName(sp.stat)!.rank : 0;
     const sk = subjectByKey(sp.subjectKey);
-    return fr + statBonusFor(sp.stat) + (sk ? sk.sub.rank : 0) + subjectBonusFor(sp.subjectKey) + spellBonusFor(sp.id) + rollBonusFor("spellroll", sp.subjectKey);
+    return fr + statBonusFor(sp.stat) + (sk ? sk.sub.rank : 0) + subjectBonusFor(sp.subjectKey) + spellBonusFor(sp.id) + rollBonusFor("spellroll", sp.subjectKey) + universalBonusFor();
   };
 
   const moveMod = (m: Move, optIdx?: number) => {
@@ -163,7 +165,7 @@ export function useMagicState(
       abilityRank = s ? s.sub.rank : 0;
     } else abilityRank = skillRankIn(opt.stat, opt.skill);
     const rankAdd = m.addRank && m.fromClass ? classRankOf(m.fromClass) : 0;
-    return facR + statBonusFor(opt.stat) + abilityRank + (m.bonus || 0) + rankAdd + moveBonusFor(m.id);
+    return facR + statBonusFor(opt.stat) + abilityRank + (m.bonus || 0) + rankAdd + moveBonusFor(m.id) + universalBonusFor();
   };
 
   // ---- Spell handlers ----
@@ -314,7 +316,7 @@ export function useMagicState(
     helpers: {
       subjectByKey, schoolToneOf,
       subjectBonusFor, spellBonusFor, bonusFor, skillBonusFor,
-      statBonusFor, moveBonusFor, rollBonusFor, resolveVal,
+      statBonusFor, moveBonusFor, rollBonusFor, universalBonusFor, resolveVal,
       condBonusesFor, dosShiftFor,
       spellMod, moveMod,
       artMove,
