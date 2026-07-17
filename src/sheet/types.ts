@@ -157,7 +157,7 @@ export interface Move {
 
 /* --------------------------------------------------------------- bonuses -- */
 
-export type BonusType = "stat" | "subject" | "skill" | "resist" | "spell" | "improve" | string;
+export type BonusType = "stat" | "subject" | "skill" | "resist" | "spell" | "improve" | "universal" | string;
 /** "flat" = fixed value · "class" = tracks a class rank · "dos" = shifts outcome tiers. */
 export type BonusValueMode = "flat" | "class" | "dos";
 

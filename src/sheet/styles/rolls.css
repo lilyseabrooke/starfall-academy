@@ -265,7 +265,11 @@
 .sf-sheet .sf-dock__filt:hover { color: var(--text-strong); }
 .sf-sheet .sf-dock__filt.is-active { color: var(--gold-100); background: var(--brand-subtle); border-color: var(--border-default); }
 
-.sf-sheet .sf-log-list { flex: 1; overflow-y: auto; min-height: 0; padding: var(--space-2) var(--space-4) var(--space-5); scrollbar-color: var(--ink-600) transparent; }
+.sf-sheet .sf-log-list { flex: 1; overflow-y: auto; min-height: 0; padding: var(--space-2) var(--space-4) var(--space-5); scrollbar-width: thin; scrollbar-color: var(--ink-600) transparent; }
+.sf-sheet .sf-log-list::-webkit-scrollbar { width: 6px; }
+.sf-sheet .sf-log-list::-webkit-scrollbar-track { background: transparent; }
+.sf-sheet .sf-log-list::-webkit-scrollbar-thumb { background: var(--ink-600); border-radius: var(--radius-pill); }
+.sf-sheet .sf-log-list::-webkit-scrollbar-thumb:hover { background: var(--ink-500); }
 .sf-sheet .sf-log-row {
   padding: var(--space-3) var(--space-3); border-radius: var(--radius-md);
   border: 1px solid transparent; cursor: default;
@@ -326,7 +330,10 @@
   box-shadow: var(--inset-hi), var(--shadow-xl);
   overflow-y: auto;
   animation: sf-prompt-in var(--dur-base) var(--ease-out);
+  scrollbar-width: thin; scrollbar-color: color-mix(in oklab, var(--gold-600) 40%, transparent) transparent;
 }
+.sf-sheet .sf-prompt::-webkit-scrollbar { width: 8px; }
+.sf-sheet .sf-prompt::-webkit-scrollbar-thumb { background: color-mix(in oklab, var(--gold-600) 36%, transparent); border-radius: var(--radius-pill); border: 2px solid transparent; background-clip: padding-box; }
 @keyframes sf-prompt-in { from { transform: translateY(-5px); } to { transform: translateY(0); } }
 .sf-sheet .sf-prompt__head { display: flex; flex-direction: column; gap: 3px; }
 .sf-sheet .sf-prompt__sub { font-family: var(--font-sans); font-size: 10px; letter-spacing: var(--tracking-wider); text-transform: uppercase; color: var(--text-faint); }

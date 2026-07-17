@@ -127,7 +127,9 @@
 .sf-sheet .gm-notes__filter { display: flex; align-items: center; gap: 7px; padding: 6px 9px; border-radius: 5px; background: var(--ink-800); border: 1px solid var(--border-subtle); }
 .sf-sheet .gm-notes__filter svg { width: 13px; height: 13px; color: var(--text-faint); flex: none; }
 .sf-sheet .gm-notes__filter input { flex: 1; background: none; border: none; outline: none; font-family: var(--font-sans); font-size: 12px; color: var(--text-body); min-width: 0; }
-.sf-sheet .gm-notes__items { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; min-height: 0; }
+.sf-sheet .gm-notes__items { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; min-height: 0; scrollbar-width: thin; scrollbar-color: color-mix(in oklab, var(--gold-600) 40%, transparent) transparent; }
+.sf-sheet .gm-notes__items::-webkit-scrollbar { width: 8px; }
+.sf-sheet .gm-notes__items::-webkit-scrollbar-thumb { background: color-mix(in oklab, var(--gold-600) 36%, transparent); border-radius: var(--radius-pill); border: 2px solid transparent; background-clip: padding-box; }
 .sf-sheet .gm-noteitem { border-radius: 6px; background: var(--ink-800); border: 1px solid var(--border-subtle); overflow: hidden; }
 .sf-sheet .gm-noteitem.is-active { background: var(--brand-subtle); border-color: var(--border-default); }
 .sf-sheet .gm-noteitem__row { display: flex; align-items: stretch; }
@@ -224,7 +226,9 @@
 .sf-sheet .gm-modal__title { font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; font-size: 19px; color: var(--text-strong); }
 .sf-sheet .gm-modal__x { margin-left: auto; width: 32px; height: 32px; flex: none; border-radius: 6px; display: grid; place-items: center; background: var(--ink-700); border: 1px solid var(--border-subtle); color: var(--text-muted); cursor: pointer; }
 .sf-sheet .gm-modal__x svg { width: 16px; height: 16px; }
-.sf-sheet .gm-modal__body { padding: 20px 22px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+.sf-sheet .gm-modal__body { padding: 20px 22px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; scrollbar-width: thin; scrollbar-color: color-mix(in oklab, var(--gold-600) 40%, transparent) transparent; }
+.sf-sheet .gm-modal__body::-webkit-scrollbar { width: 8px; }
+.sf-sheet .gm-modal__body::-webkit-scrollbar-thumb { background: color-mix(in oklab, var(--gold-600) 36%, transparent); border-radius: var(--radius-pill); border: 2px solid transparent; background-clip: padding-box; }
 .sf-sheet .gm-modal__info { font-family: var(--font-serif); font-size: 12.5px; color: var(--text-muted); margin: 0; line-height: 1.5; }
 .sf-sheet .gm-modal__foot { display: flex; align-items: center; gap: 10px; padding: 16px 22px; border-top: 1px solid var(--hairline); background: color-mix(in oklab, var(--ink-950) 34%, transparent); }
 .sf-sheet .gm-modal__foot--end { justify-content: flex-end; }
@@ -256,11 +260,14 @@
 
 /* ---- Grant drawer (reuses shared sf-drawer / sf-scrim chrome) ---------- */
 .sf-sheet .gm-grant { display: flex; flex-direction: column; }
-.sf-sheet .gm-grant__tabs { display: flex; gap: 7px; padding: 11px 18px; overflow-x: auto; border-bottom: 1px solid var(--hairline); }
+.sf-sheet .gm-grant__tabs { display: flex; gap: 7px; padding: 11px 18px; overflow-x: auto; border-bottom: 1px solid var(--hairline); scrollbar-width: none; }
+.sf-sheet .gm-grant__tabs::-webkit-scrollbar { display: none; }
 .sf-sheet .gm-grant__tab { display: inline-flex; align-items: center; gap: 7px; flex: none; padding: 7px 12px; border-radius: 999px; cursor: pointer; font-family: var(--font-sans); font-size: 12px; letter-spacing: .03em; background: var(--ink-800); border: 1px solid var(--border-subtle); color: var(--text-muted); }
 .sf-sheet .gm-grant__tab.is-on { background: var(--brand-subtle); border-color: var(--border-strong); color: var(--gold-100); }
 .sf-sheet .gm-grant__tab svg { width: 14px; height: 14px; }
-.sf-sheet .gm-grant__body { flex: 1; overflow-y: auto; min-height: 0; padding: 18px 22px; }
+.sf-sheet .gm-grant__body { flex: 1; overflow-y: auto; min-height: 0; padding: 18px 22px; scrollbar-width: thin; scrollbar-color: color-mix(in oklab, var(--gold-600) 40%, transparent) transparent; }
+.sf-sheet .gm-grant__body::-webkit-scrollbar { width: 8px; }
+.sf-sheet .gm-grant__body::-webkit-scrollbar-thumb { background: color-mix(in oklab, var(--gold-600) 36%, transparent); border-radius: var(--radius-pill); border: 2px solid transparent; background-clip: padding-box; }
 .sf-sheet .gm-grant__matcard { display: flex; align-items: center; gap: 16px; padding: 18px; border-radius: 12px; background: linear-gradient(180deg, color-mix(in oklab, var(--gold-500) 10%, var(--ink-800)), var(--ink-800)); border: 1px solid var(--border-default); box-shadow: var(--inset-hi); margin-bottom: 18px; }
 .sf-sheet .gm-grant__matglyph { width: 46px; height: 46px; flex: none; border-radius: 10px; display: grid; place-items: center; background: var(--grad-gold); color: var(--ink-950); box-shadow: var(--inset-hi); }
 .sf-sheet .gm-grant__matglyph svg { width: 22px; height: 22px; }

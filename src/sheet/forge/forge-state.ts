@@ -378,7 +378,7 @@ export function buildSpells(draft: Draft, D: ForgeData): SerializedSheet["magic"
     .map((id) => {
       const e = m[id];
       if (!e || e.cat !== "spell") return null;
-      return { id: "sp-start-" + e.id, name: e.name, level: e.level, subjectKey: e.subjectKey || "", subject: e.subject || "", school: e.school || "", stat: e.stat || "", ap: e.ap, dc: e.dc ?? null, ritual: !!e.ritual, volatile: false, days: 0, desc: e.desc };
+      return { id: "sp-start-" + e.id, name: e.name, level: e.level, subjectKey: e.subjectKey || "", subject: e.subject || "", school: e.school || "", stat: e.stat || "", ap: e.ap, dc: e.dc ?? null, ritual: !!e.ritual, volatile: false, days: 0, desc: e.desc, higherLevel: e.higherLevel };
     })
     .filter((x): x is NonNullable<typeof x> => !!x);
 }
