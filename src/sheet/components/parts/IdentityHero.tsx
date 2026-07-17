@@ -12,17 +12,20 @@ export function IdentityHero({ c }: { c: CharacterVitals; onEdit?: () => void })
   const heroTint = TONE_700[c.houseTone] || TONE_700.plum;
   const [bioExpanded, setBioExpanded] = React.useState(false);
   const [bioOverflows, setBioOverflows] = React.useState(false);
-  const bioRef = React.useRef<HTMLDivElement>(null);
+  const bioRef = React.useRef<HTMLParagraphElement>(null);
 
   React.useEffect(() => {
     const el = bioRef.current;
     if (!el) return;
-    const measure = () => setBioOverflows(el.scrollHeight - el.clientHeight > 1);
+    const measure = () => {
+      const lineHeight = parseFloat(getComputedStyle(el).lineHeight) || 0;
+      setBioOverflows(el.scrollHeight > lineHeight * 6 + 1);
+    };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [c.bio, bioExpanded]);
+  }, [c.bio]);
 
   return (
     <section className="sf-hero" style={{ "--sf-hero-tint": heroTint } as React.CSSProperties}>
@@ -44,7 +47,6 @@ export function IdentityHero({ c }: { c: CharacterVitals; onEdit?: () => void })
         </div>
         {c.bio ? (
           <div
-            ref={bioRef}
             className={
               "sf-hero__bio-wrap" +
               (bioOverflows ? " sf-hero__bio-wrap--clamped" : "") +
@@ -61,7 +63,7 @@ export function IdentityHero({ c }: { c: CharacterVitals; onEdit?: () => void })
               }
             }}
           >
-            <p className="sf-hero__bio">{c.bio}</p>
+            <p className="sf-hero__bio" ref={bioRef}>{c.bio}</p>
           </div>
         ) : null}
       </div>

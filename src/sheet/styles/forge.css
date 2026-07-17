@@ -12,21 +12,17 @@
   max-height: calc(1.55em * 6); overflow: hidden;
   transition: max-height var(--dur-slow) ease;
 }
-.sf-sheet .sf-hero__bio-wrap--clamped { cursor: pointer; }
-.sf-sheet .sf-hero__bio-wrap--clamped::after {
-  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2.4em;
-  background: linear-gradient(to bottom, transparent, var(--ink-850));
-  opacity: 1; transition: opacity var(--dur-base); pointer-events: none;
+.sf-sheet .sf-hero__bio-wrap--clamped {
+  cursor: pointer;
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 2.4em), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 2.4em), transparent 100%);
 }
 .sf-sheet .sf-hero__bio-wrap--clamped:hover,
 .sf-sheet .sf-hero__bio-wrap--clamped:focus-visible,
 .sf-sheet .sf-hero__bio-wrap--expanded {
   max-height: 60vh;
-}
-.sf-sheet .sf-hero__bio-wrap--clamped:hover::after,
-.sf-sheet .sf-hero__bio-wrap--clamped:focus-visible::after,
-.sf-sheet .sf-hero__bio-wrap--expanded::after {
-  opacity: 0;
+  -webkit-mask-image: none;
+  mask-image: none;
 }
 .sf-sheet .sf-hero__edit {
   display: inline-flex; align-items: center; gap: 6px; align-self: flex-end;
