@@ -28,6 +28,7 @@ export const TYPES: BonusTypeMeta[] = [
   { id: "skill", label: "Skill", group: "Totals", target: "req", kind: "skill", icon: "target", hint: "Adds to one skill." },
   { id: "move", label: "A specific move", group: "Totals", target: "req", kind: "move", icon: "swords", hint: "Adds to one move's roll." },
   { id: "spell", label: "A specific spell", group: "Totals", target: "req", kind: "spell", icon: "sparkles", hint: "Adds to one spell's casting roll." },
+  { id: "universal", label: "Universal", group: "Totals", target: "none", icon: "infinity", hint: "Adds to every check, quietly — not shown next to any single field." },
   { id: "metabolize", label: "Metabolize rolls", group: "Rolls", target: "none", icon: "flask-round", hint: "Every Metabolize roll." },
   { id: "attune", label: "Attunement rolls", group: "Rolls", target: "none", icon: "gem", hint: "Every Attunement roll." },
   { id: "artifact-repair", label: "Artifact repair rolls", group: "Rolls", target: "none", icon: "hammer", hint: "Every artifact repair roll." },

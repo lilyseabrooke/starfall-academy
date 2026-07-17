@@ -9,15 +9,17 @@ export interface StatCardProps {
   fac: Stat;
   bonusFor: (skillId: string) => number;
   statBonusFor?: (name: string) => number;
+  universalBonusFor?: () => number;
   onRoll: (fac: Stat, sk: Skill, total: number, e: React.MouseEvent) => void;
   onImprove: (fac: Stat, sk: Skill, e: React.MouseEvent) => void;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
 }
 
-export function StatCard({ fac, bonusFor, statBonusFor, onRoll, onImprove, collapsed, onToggleCollapse }: StatCardProps) {
+export function StatCard({ fac, bonusFor, statBonusFor, universalBonusFor, onRoll, onImprove, collapsed, onToggleCollapse }: StatCardProps) {
   const sbf = statBonusFor ? statBonusFor(fac.name) : 0;
-  const effRank = fac.rank + sbf;
+  const ubf = universalBonusFor ? universalBonusFor() : 0;
+  const effRank = fac.rank + sbf + ubf;
   const style = { "--fac-accent": TONE_500[fac.tone], "--fac-accent-fg": TONE_FG[fac.tone] } as React.CSSProperties;
   return (
     <div className={"sf-fac" + (collapsed ? " is-collapsed" : "")} style={style}>
