@@ -39,6 +39,9 @@ export function RollPrompt({ pending, onConfirm, onCancel }: RollPromptProps) {
   const materials = p && p.materials != null ? p.materials : Infinity;
   const hasMatLimit = materials !== Infinity;
   const canSecret = !!(p && p.canSecret);
+  const replacements = (p && p.replacements) || [];
+  const dcLocked = !!(p && p.dcLocked);
+  const replacingLabel = (p && p.replacingLabel) || null;
   const actionWord = isSpell ? "Cast" : isEnchant ? "Enchant" : "Roll";
 
   React.useEffect(() => {
@@ -130,6 +133,7 @@ export function RollPrompt({ pending, onConfirm, onCancel }: RollPromptProps) {
   const bumpCost = (d: number) => setMatCost((v) => String(Math.max(0, (parseInt(v || "0", 10) || 0) + d)));
   const bumpSpellCost = (d: number) => setSpellMatCost((v) => String(Math.max(0, (parseInt(v || "0", 10) || 0) + d)));
   const bumpHours = (d: number) => setHours((v) => String(Math.max(1, (parseInt(v || "1", 10) || 1) + d)));
+  const pickReplace = (opt: { onPick: (dc: number | null) => void }) => opt.onPick(dc === "" ? null : parseInt(dc, 10) || 0);
 
   const offerRitual = canRitual && !asRitual && hasMatLimit && ritualCost <= materials && ritualCost < costNum;
 
@@ -145,6 +149,8 @@ export function RollPrompt({ pending, onConfirm, onCancel }: RollPromptProps) {
   if (isEnchant) estH += 12 + 52 + (hasSpellField ? 52 : 0);
   if (isWandcraft) estH += 76;
   if (canSecret) estH += 52;
+  if (replacingLabel) estH += 34;
+  if (replacements.length) estH += 30 + replacements.length * 48;
   if (condBonuses.length) estH += 30 + condBonuses.length * 44;
   if (stage === "warn") estH = 270 + (offerRitual ? 56 : 0);
   const maxH = window.innerHeight - 2 * M;
@@ -192,6 +198,30 @@ export function RollPrompt({ pending, onConfirm, onCancel }: RollPromptProps) {
           </div>
         ) : (
           <React.Fragment>
+            {replacingLabel && (
+              <p className="sf-prompt__castnote">
+                <Icon name="repeat" /> Casting in place of your {replacingLabel} check — same DC.
+              </p>
+            )}
+
+            {replacements.length > 0 && (
+              <div className="sf-prompt__field">
+                <span className="sf-prompt__flabel">Cast instead</span>
+                <div className="sf-replace">
+                  {replacements.map((opt) => (
+                    <button key={opt.id} type="button" className="sf-replace__opt" onClick={() => pickReplace(opt)}>
+                      <span className="sf-replace__body">
+                        <span className="sf-replace__name">{opt.name}</span>
+                        <span className="sf-replace__meta">{opt.subject} · 2d10 {opt.mod >= 0 ? "+ " + opt.mod : "− " + Math.abs(opt.mod)}</span>
+                      </span>
+                      {opt.ap ? <span className="sf-replace__ap">{opt.ap} AP</span> : null}
+                      <Icon name="chevron-right" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {isSpell && (canRitual || showCost) && (
               <div className="sf-prompt__cast">
                 <span className="sf-prompt__flabel">Casting
@@ -267,18 +297,26 @@ export function RollPrompt({ pending, onConfirm, onCancel }: RollPromptProps) {
 
             <div className="sf-prompt__field">
               <span className="sf-prompt__flabel">Difficulty
-                <button className="sf-prompt__none" tabIndex={-1} onClick={() => setDc("")}>{dc === "" ? "No DC" : "Clear"}</button>
+                {dcLocked
+                  ? <span className="sf-prompt__lockhint"><Icon name="lock" /> {replacingLabel ? "from your " + replacingLabel + " check" : "carried over"}</span>
+                  : <button className="sf-prompt__none" tabIndex={-1} onClick={() => setDc("")}>{dc === "" ? "No DC" : "Clear"}</button>}
               </span>
-              <div className="sf-prompt__row">
-                <button className="sf-step" tabIndex={-1} onClick={() => bumpDc(-1)}>−</button>
-                <input ref={dcRef} className="sf-prompt__num" type="number" inputMode="numeric" value={dc} placeholder="—" onChange={(e) => setDc(e.target.value)} />
-                <button className="sf-step" tabIndex={-1} onClick={() => bumpDc(1)}>+</button>
-                <div className="sf-prompt__chips">
-                  {[10, 15, 20, 25, 30].map((n) => (
-                    <button key={n} tabIndex={-1} className={"sf-prompt__chip" + (String(n) === dc ? " is-active" : "")} onClick={() => setDc(String(n))}>{n}</button>
-                  ))}
+              {dcLocked ? (
+                <div className="sf-prompt__row">
+                  <span className="sf-prompt__dclock">{dc === "" ? "No DC" : "DC " + dc}</span>
                 </div>
-              </div>
+              ) : (
+                <div className="sf-prompt__row">
+                  <button className="sf-step" tabIndex={-1} onClick={() => bumpDc(-1)}>−</button>
+                  <input ref={dcRef} className="sf-prompt__num" type="number" inputMode="numeric" value={dc} placeholder="—" onChange={(e) => setDc(e.target.value)} />
+                  <button className="sf-step" tabIndex={-1} onClick={() => bumpDc(1)}>+</button>
+                  <div className="sf-prompt__chips">
+                    {[10, 15, 20, 25, 30].map((n) => (
+                      <button key={n} tabIndex={-1} className={"sf-prompt__chip" + (String(n) === dc ? " is-active" : "")} onClick={() => setDc(String(n))}>{n}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="sf-prompt__field">

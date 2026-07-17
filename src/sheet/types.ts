@@ -106,6 +106,9 @@ export interface Spell {
   higherLevel?: string;
   success?: string;
   fail?: string;
+  /** Checks this spell can be rolled in place of, as a raw comma-separated list
+   *  (e.g. "agility, athletics" or "enchanting"). Parsed by data/replace-check.ts. */
+  replaceCheck?: string;
   /** Set when the spell was granted by an equipped wand. */
   fromWand?: string;
 }
@@ -454,6 +457,8 @@ export interface CompendiumEntry {
   ritual?: boolean;
   volatile?: boolean;
   higherLevel?: string;
+  /** Comma-separated checks this spell can be rolled in place of (spell rows). */
+  replaceCheck?: string;
   // artifact / potion / plant / glyph fields
   skills?: string[];
   /** Per-skill {stat, skill} pairs aligned with `skills`, for artifacts with multiple skill options. */

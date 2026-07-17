@@ -5,6 +5,7 @@ import { Button, IconButton } from "@/ds";
 import { Icon } from "../Icon";
 import { artifactBackfireDC } from "../../data/roll-engine";
 import type { Roll } from "../../types";
+import type { ReplaceOption } from "../../state/useRollState";
 
 export interface ArtifactBackfireModalProps {
   open: boolean;
@@ -13,10 +14,15 @@ export interface ArtifactBackfireModalProps {
   subRank?: (key: string) => number;
   onRoll: () => void;
   onClose: () => void;
+  /** Builds the spells that can stand in for the Artificy save (see
+   *  ReplaceOption). A builder (not a plain array) so the parent doesn't invoke
+   *  the roll flow during its own render. */
+  buildReplacements?: () => ReplaceOption[];
 }
 
-export function ArtifactBackfireModal({ open, roll, effFacRank, subRank, onRoll, onClose }: ArtifactBackfireModalProps) {
+export function ArtifactBackfireModal({ open, roll, effFacRank, subRank, onRoll, onClose, buildReplacements }: ArtifactBackfireModalProps) {
   if (!roll) return null;
+  const replacements = buildReplacements ? buildReplacements() : [];
   const level = roll.artifactLevel || "Basic";
   const cost = roll.artifactCost || 0;
   const curCond = roll.artifactCondition || "stable";
@@ -53,6 +59,21 @@ export function ArtifactBackfireModal({ open, roll, effFacRank, subRank, onRoll,
             <span className="sf-chip"><b>Modifier</b> {mod >= 0 ? "+" : "−"}{Math.abs(mod)}</span>
             <span className="sf-chip"><Icon name={curCond === "stable" ? "shield" : "shield-alert"} /> {curCond.charAt(0).toUpperCase() + curCond.slice(1)} → {nextCond}</span>
           </div>
+          {replacements && replacements.length > 0 && (
+            <div className="sf-replace" style={{ marginTop: "var(--space-3)" }}>
+              <span className="sf-prompt__flabel">Cast instead</span>
+              {replacements.map((opt) => (
+                <button key={opt.id} type="button" className="sf-replace__opt" onClick={() => { opt.onPick(dc); onClose(); }}>
+                  <span className="sf-replace__body">
+                    <span className="sf-replace__name">{opt.name}</span>
+                    <span className="sf-replace__meta">{opt.subject} · 2d10 {opt.mod >= 0 ? "+ " + opt.mod : "− " + Math.abs(opt.mod)}</span>
+                  </span>
+                  {opt.ap ? <span className="sf-replace__ap">{opt.ap} AP</span> : null}
+                  <Icon name="chevron-right" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <div className="sf-modal__foot">
           <Button variant="ghost" onClick={onClose}>Shrug it off</Button>

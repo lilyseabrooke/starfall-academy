@@ -50,6 +50,23 @@ export interface CondBonusOption {
   condNote: string | null;
 }
 
+/** A spell offered in the prompt as a stand-in for the check being made (a
+ *  spell whose "REPLACE CHECK" matches). Picking it re-opens as that spell's
+ *  cast prompt, carrying the check's DC across. */
+export interface ReplaceOption {
+  id: string;
+  name: string;
+  level: string;
+  /** AP the spell costs in Action — shown as a badge, never hard-enforced. */
+  ap: number;
+  /** The spell's flat roll modifier (for the "2d10 + n" formula). */
+  mod: number;
+  /** The spell's field of magic, e.g. "Teleportation". */
+  subject: string;
+  /** Open the spell's cast prompt with the check's current DC carried across. */
+  onPick: (dc: number | null) => void;
+}
+
 /** A prompt partial: a roll input whose `who` is filled in at confirm time
  *  (defaults to the active character via meWho()). Spell/wandcraft prompts add
  *  casting context the RollPrompt reads. */
@@ -71,6 +88,12 @@ export type PromptPartial = Omit<RollInput, "who"> & {
   spellMatCost?: number;
   /** Offer a Public/Secret toggle in the prompt (GM rolls). */
   canSecret?: boolean;
+  /** Known spells offered as stand-ins for this check (see ReplaceOption). */
+  replacements?: ReplaceOption[];
+  /** Lock the DC field (used when a replacement carries the check's DC across). */
+  dcLocked?: boolean;
+  /** Context line shown when this prompt is a spell standing in for a check. */
+  replacingLabel?: string;
 };
 
 export interface PendingPrompt {

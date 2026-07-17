@@ -24,9 +24,10 @@ interface SpellForm {
   stat: string;
   desc: string;
   higherLevel: string;
+  replaceCheck: string;
 }
 
-const BLANK: SpellForm = { name: "", level: "Basic", subjectKey: "", ap: 1, dc: "", ritual: false, volatile: false, stat: "", desc: "", higherLevel: "" };
+const BLANK: SpellForm = { name: "", level: "Basic", subjectKey: "", ap: 1, dc: "", ritual: false, volatile: false, stat: "", desc: "", higherLevel: "", replaceCheck: "" };
 
 export function ManualSpell({ open, onClose, onSave, schools, editSpell }: ManualSpellProps) {
   const [f, setF] = React.useState<SpellForm>(BLANK);
@@ -44,6 +45,7 @@ export function ManualSpell({ open, onClose, onSave, schools, editSpell }: Manua
         stat: editSpell.stat || "",
         desc: editSpell.desc || "",
         higherLevel: editSpell.higherLevel || "",
+        replaceCheck: editSpell.replaceCheck || "",
       });
     } else {
       setF(BLANK);
@@ -85,6 +87,7 @@ export function ManualSpell({ open, onClose, onSave, schools, editSpell }: Manua
       days: editSpell ? editSpell.days || 0 : 0,
       desc: f.desc.trim(),
       higherLevel: f.higherLevel.trim(),
+      replaceCheck: f.replaceCheck.trim() || undefined,
     });
     onClose();
   };
@@ -146,6 +149,12 @@ export function ManualSpell({ open, onClose, onSave, schools, editSpell }: Manua
             <span className="sf-modal__label">Higher-level behavior</span>
             <textarea className="sf-modal__textarea" rows={2} placeholder="How it scales with degrees of success — e.g. You affect (1/2/4+) target(s)." value={f.higherLevel} onChange={(e) => set("higherLevel", e.target.value)} />
           </label>
+          <Input
+            label="Replaces check"
+            placeholder="e.g. agility, athletics"
+            value={f.replaceCheck}
+            onChange={(e) => set("replaceCheck", e.target.value)}
+          />
           {f.subjectKey ? (
             <p className="sf-modal__hint"><Icon name="info" /> Rolls 2d10 + your base stat + this field&apos;s rank. The base stat follows the field.</p>
           ) : null}

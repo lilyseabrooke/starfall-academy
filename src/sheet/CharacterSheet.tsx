@@ -30,6 +30,7 @@ import { parsePlantRoll, hlbIsNA, hlbResolveText, setAbilityData } from "./data/
 import { spellCrit, spellMaterialCost, artifactBackfireDC, spellLevelKey } from "./data/roll-engine";
 import { ENCHANT_MATERIAL_COST, enchantHL } from "./data/enchant";
 import { blank as blankBonus } from "./data/bonus";
+import { matchReplacementSpells, spellApOf } from "./data/replace-check";
 import { buildIndex, search as runSearch, type SearchResult } from "./data/search";
 import { useCompendium } from "./data/compendium";
 import { computeCompendiumGrant, computeAttunedArtifactGrant, computeLearningSpellGrant, computePotionSheafGrant, computePotionRecipeGrant, computeWandCraftGrant } from "./data/compendium-grant";
@@ -71,7 +72,7 @@ import * as F from "./forge/forge-state";
 import type { Draft } from "./forge/forge-state";
 
 import type { RosterMember } from "@/app/(app)/characters/roster";
-import type { RollRosterMember } from "./state/useRollState";
+import type { RollRosterMember, ReplaceOption } from "./state/useRollState";
 import type {
   Artifact, Bonus, CharacterVitals, Condition, Glyph, Item, MagicSchool, Move, Plant,
   Potion, Recipe, Roll, SerializedSheet, Spell, Stat, Tone, Wand, WandEffect,
@@ -1107,8 +1108,23 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   const stepCond = (cid: string, delta: number) => setConditions((prev) => prev.map((cd) => (cd.id === cid ? { ...cd, value: clamp(cd.value + delta, 0, cd.max) } : cd)));
 
   // ---- Roll handlers ----
+  // Known spells whose "REPLACE CHECK" matches this check, shaped as prompt
+  // options. Picking one re-opens as that spell's cast prompt (anchored to the
+  // same control) with the check's DC carried across. `checkLabel` names the
+  // check being replaced; `tags` are the raw identifiers it's matched against.
+  const replaceOptionsFor = (checkLabel: string, tags: string[], anchorEl: HTMLElement): ReplaceOption[] =>
+    matchReplacementSpells(spells, tags).map((sp) => ({
+      id: sp.id,
+      name: sp.name,
+      level: sp.level,
+      ap: spellApOf(sp),
+      mod: spellMod(sp),
+      subject: sp.subject,
+      onPick: (dc: number | null) => onRollSpell(sp, { currentTarget: anchorEl }, { forcedDc: dc, replacingLabel: checkLabel }),
+    }));
+
   type RollSkill = { id?: string; name: string; rank?: number };
-  const onRollSkill = (fac: Stat, sk: RollSkill, total: number, e: { currentTarget: Element }) => openPrompt({ who: meWho(), label: sk.name, kind: "skill", stat: fac.name, mod: total, dosMod: dosShiftFor((b) => (b.type === "skill" && b.target === sk.id) || (b.type === "stat" && b.target === fac.name)), condBonuses: condBonusesFor((b) => (b.type === "skill" && b.target === sk.id) || (b.type === "stat" && b.target === fac.name)) }, e.currentTarget as HTMLElement);
+  const onRollSkill = (fac: Stat, sk: RollSkill, total: number, e: { currentTarget: Element }) => openPrompt({ who: meWho(), label: sk.name, kind: "skill", stat: fac.name, mod: total, dosMod: dosShiftFor((b) => (b.type === "skill" && b.target === sk.id) || (b.type === "stat" && b.target === fac.name)), condBonuses: condBonusesFor((b) => (b.type === "skill" && b.target === sk.id) || (b.type === "stat" && b.target === fac.name)), replacements: replaceOptionsFor(sk.name, [sk.id || "", sk.name, fac.name], e.currentTarget as HTMLElement) }, e.currentTarget as HTMLElement);
   const onRollAction = () => openPrompt({
     who: meWho(), label: "Action Roll", kind: "action", stat: "Insight",
     mod: effFacRank("Insight") + rollBonusFor("action"), dc: 10, meta: ["Action Roll", "DC 10 Insight"],
@@ -1152,7 +1168,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     closeArtifactResist();
   };
   type RollSubject = { key: string; name: string; stat: string; rank: number };
-  const onRollSubject = (school: MagicSchool, sub: RollSubject, total: number, e: { currentTarget: Element }) => openPrompt({ who: meWho(), label: sub.name, kind: "skill", stat: sub.stat, mod: total, meta: [school.name.replace(" Magics", "")], dosMod: dosShiftFor((b) => (b.type === "subject" && b.target === sub.key) || (b.type === "stat" && b.target === sub.stat)), condBonuses: condBonusesFor((b) => (b.type === "subject" && b.target === sub.key) || (b.type === "stat" && b.target === sub.stat)) }, e.currentTarget as HTMLElement);
+  const onRollSubject = (school: MagicSchool, sub: RollSubject, total: number, e: { currentTarget: Element }) => openPrompt({ who: meWho(), label: sub.name, kind: "skill", stat: sub.stat, mod: total, meta: [school.name.replace(" Magics", "")], dosMod: dosShiftFor((b) => (b.type === "subject" && b.target === sub.key) || (b.type === "stat" && b.target === sub.stat)), condBonuses: condBonusesFor((b) => (b.type === "subject" && b.target === sub.key) || (b.type === "stat" && b.target === sub.stat)), replacements: replaceOptionsFor(sub.name, [sub.key, sub.name, sub.stat], e.currentTarget as HTMLElement) }, e.currentTarget as HTMLElement);
 
   const spellLearnDC = (sp: Spell) => {
     const f = spellLevelKey(sp.level);
@@ -1174,15 +1190,19 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       onResult: (r) => { if (r.pass) { setSpellDays(sp.id, (sp.days || 0) - 1); if ((sp.days || 0) - 1 <= 0) toast(sp.name + " — fully learned."); } },
     }, e.currentTarget as HTMLElement);
   };
-  const onRollSpell = (sp: Spell, e: { currentTarget: Element }) => {
+  const onRollSpell = (sp: Spell, e: { currentTarget: Element }, opts?: { forcedDc?: number | null; replacingLabel?: string }) => {
     const hasHL = !hlbIsNA(sp.higherLevel);
     const hl = hasHL ? ((deg: number, ok: boolean) => (ok ? hlbResolveText(sp.higherLevel, deg) || "" : "the weave slips, and the spell fails to take.")) : null;
-    const ap = sp.ap != null ? sp.ap : (parseInt((String(sp.level).match(/(\d+)\s*ap/i) || [])[1], 10) || 0);
+    const ap = spellApOf(sp);
     const lvlKey = spellLevelKey(sp.level);
     const refundable = lvlKey === "advanced" || lvlKey === "legendary";
+    // When standing in for a check, carry that check's DC across (and lock it).
+    const replacing = !!(opts && opts.replacingLabel);
+    const dc = opts && "forcedDc" in opts ? (opts.forcedDc ?? null) : sp.dc;
     openPrompt({
       who: meWho(), label: sp.name, kind: "spell", stat: sp.stat, mod: spellMod(sp),
-      dc: sp.dc, detail: sp.desc, meta: [sp.subject, sp.level], hl,
+      dc, dcLocked: replacing && dc != null, replacingLabel: opts?.replacingLabel,
+      detail: sp.desc, meta: [sp.subject, sp.level].concat(replacing ? ["for " + opts!.replacingLabel] : []), hl,
       spellLevel: sp.level, spellAp: ap, canRitual: !!sp.ritual, spellVolatile: !!sp.volatile, materials: c.materials,
       dosMod: dosShiftFor((b) => (b.type === "spell" && b.target === sp.id) || (b.type === "spellroll" && (!b.target || b.target === sp.subjectKey)) || (b.type === "subject" && b.target === sp.subjectKey)),
       condBonuses: condBonusesFor((b) => (b.type === "spell" && b.target === sp.id) || (b.type === "subject" && b.target === sp.subjectKey)),
@@ -1217,6 +1237,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       baseMatCost: ENCHANT_MATERIAL_COST, spellMatCost: spellCost > 0 ? spellCost : undefined, materials: c.materials,
       dosMod: dosShiftFor((b) => b.type === "enchant"),
       condBonuses: catCond("enchant"),
+      replacements: replaceOptionsFor("Enchanting", ["enchant", "enchanting", "enchantment"], e.currentTarget as HTMLElement),
       onCast: ({ matCost: cost, spellMatCost: spentSpellCost, roll }) => {
         if (cost <= 0) return;
         adjustMaterials(-cost);
@@ -1377,7 +1398,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       <RollDock log={log} open={dock} onToggle={() => setDock((v) => !v)} meId={activeChar} />
       <RollPrompt pending={pending} onConfirm={confirmPrompt} onCancel={cancelPrompt} />
       <BackfireResist open={!!resistRoll} roll={resistRoll} conditions={conditions} facRank={facRank} onResist={handleResist} onClose={handleResistClose} />
-      <ArtifactBackfireModal open={!!artifactResistRoll} roll={artifactResistRoll} effFacRank={effFacRank} subRank={subRank} onRoll={onArtifactResist} onClose={closeArtifactResist} />
+      <ArtifactBackfireModal open={!!artifactResistRoll} roll={artifactResistRoll} effFacRank={effFacRank} subRank={subRank} onRoll={onArtifactResist} onClose={closeArtifactResist} buildReplacements={() => replaceOptionsFor("Artifact backfire", ["artifact-backfire", "artificy"], document.body)} />
     </div>
     </div>
   );

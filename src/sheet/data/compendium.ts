@@ -148,6 +148,7 @@ function spell(row: Row): CompendiumEntry {
     dc: dc ?? undefined, ritual, volatile: yes(row.VOLATILE),
     desc: (row.DESCRIPTION || "").trim(),
     higherLevel: (row["HIGHER-LEVEL BEHAVIOR"] || "").trim(),
+    replaceCheck: (row["REPLACE CHECK"] || "").trim() || undefined,
   };
 }
 function potion(row: Row): CompendiumEntry {

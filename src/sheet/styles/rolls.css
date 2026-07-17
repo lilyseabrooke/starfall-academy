@@ -430,6 +430,37 @@
 }
 .sf-sheet .sf-prompt__castnote svg { width: 12px; height: 12px; flex: none; margin-top: 2px; color: var(--gold-300); }
 
+/* ---- Cast-instead (check replacement) options ---- */
+.sf-sheet .sf-replace { display: flex; flex-direction: column; gap: 5px; }
+.sf-sheet .sf-replace__opt {
+  display: flex; flex-direction: row; align-items: center; gap: 9px; width: 100%; text-align: left; cursor: pointer;
+  appearance: none; -webkit-appearance: none;
+  background: var(--ink-800, rgba(0,0,0,.2)); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
+  padding: 7px 10px; color: var(--text-default);
+  transition: border-color var(--dur-fast), background var(--dur-fast);
+}
+.sf-sheet .sf-replace__opt:hover { border-color: var(--gold-500); background: var(--brand-subtle); }
+.sf-sheet .sf-replace__opt > svg { width: 14px; height: 14px; flex: none; color: var(--text-faint); }
+.sf-sheet .sf-replace__opt:hover > svg { color: var(--gold-200); }
+.sf-sheet .sf-replace__body { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
+.sf-sheet .sf-replace__name { font-family: var(--font-sans); font-size: var(--text-sm, 13px); font-weight: 500; color: var(--text-strong); }
+.sf-sheet .sf-replace__meta { font-family: var(--font-sans); font-size: 11px; letter-spacing: var(--tracking-wide); color: var(--text-faint); }
+.sf-sheet .sf-replace__ap {
+  flex: none; font-family: var(--font-sans); font-size: 10px; font-weight: 600; letter-spacing: var(--tracking-wide);
+  text-transform: uppercase; color: var(--gold-200); background: var(--brand-subtle);
+  border: 1px solid var(--border-subtle); border-radius: var(--radius-xs); padding: 2px 6px; white-space: nowrap;
+}
+.sf-sheet .sf-prompt__lockhint {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-family: var(--font-sans); font-size: 10px; letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--text-faint);
+}
+.sf-sheet .sf-prompt__lockhint svg { width: 11px; height: 11px; }
+.sf-sheet .sf-prompt__dclock {
+  display: inline-flex; align-items: center; height: var(--control-md, 36px); padding: 0 12px;
+  font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-strong);
+  background: var(--ink-800, rgba(0,0,0,.2)); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
+}
+
 /* ---- Material-shortfall warning ---- */
 .sf-sheet .sf-prompt__warn { display: flex; flex-direction: column; gap: var(--space-3); }
 .sf-sheet .sf-prompt__warn-head {
