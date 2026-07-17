@@ -5,6 +5,7 @@ import { Button, IconButton, Input, Select } from "@/ds";
 import { Icon } from "../Icon";
 import { enchantDurationLabel } from "../../data/enchant";
 import type { Condition, RollResist } from "../../types";
+import type { ReplaceOption } from "../../state/useRollState";
 
 /** The roll awaiting a resist save — a real Roll or a GM-forced stub. */
 export interface ResistRoll {
@@ -25,9 +26,11 @@ export interface BackfireResistProps {
   facRank: (name: string) => number;
   onResist: (opts: { condition: Condition; dc: number | null; mod: number }) => void;
   onClose: () => void;
+  /** Builds spells that can stand in for this backfire save (see ReplaceOption). */
+  buildReplacements?: () => ReplaceOption[];
 }
 
-export function BackfireResist({ open, roll, conditions, facRank, onResist, onClose }: BackfireResistProps) {
+export function BackfireResist({ open, roll, conditions, facRank, onResist, onClose, buildReplacements }: BackfireResistProps) {
   const [cond, setCond] = React.useState("wound");
   const [dc, setDc] = React.useState("");
   const rcfg = (roll && roll.resist) || null;
@@ -47,6 +50,7 @@ export function BackfireResist({ open, roll, conditions, facRank, onResist, onCl
     }
   }, [open, roll && roll.id]);
   if (!roll) return null;
+  const replacements = buildReplacements ? buildReplacements() : [];
   const condObj = conditions.find((c) => c.id === cond) || conditions[0];
   const mod = facRank(condObj.resist);
   const cast = roll.pass;
@@ -88,6 +92,21 @@ export function BackfireResist({ open, roll, conditions, facRank, onResist, onCl
             <Input label="Save DC" type="number" placeholder="—" value={dc} onChange={(e) => setDc(e.target.value)} />
           </div>
           <p className="sf-modal__hint"><Icon name="info" /> This save rolls {condObj.resist} ({mod >= 0 ? "+" : "−"}{Math.abs(mod)}).</p>
+          {replacements.length > 0 && (
+            <div className="sf-replace" style={{ marginTop: "var(--space-3)" }}>
+              <span className="sf-prompt__flabel">Cast instead</span>
+              {replacements.map((opt) => (
+                <button key={opt.id} type="button" className="sf-replace__opt" onClick={() => { opt.onPick(dc === "" ? null : parseInt(dc, 10) || 0); onClose(); }}>
+                  <span className="sf-replace__body">
+                    <span className="sf-replace__name">{opt.name}</span>
+                    <span className="sf-replace__meta">{opt.subject} · 2d10 {opt.mod >= 0 ? "+ " + opt.mod : "− " + Math.abs(opt.mod)}</span>
+                  </span>
+                  {opt.ap ? <span className="sf-replace__ap">{opt.ap} AP</span> : null}
+                  <Icon name="chevron-right" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <div className="sf-modal__foot">
           <Button variant="ghost" onClick={onClose}>Shrug it off</Button>

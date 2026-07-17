@@ -151,9 +151,10 @@ export function ManualSpell({ open, onClose, onSave, schools, editSpell }: Manua
           </label>
           <Input
             label="Replaces check"
-            placeholder="e.g. agility, athletics"
+            placeholder="e.g. agility, athletics, spell-backfire (evocation)"
             value={f.replaceCheck}
             onChange={(e) => set("replaceCheck", e.target.value)}
+            hint="Checks this spell can be rolled instead of — skills, subjects, or a roll type (action, resist, enchanting, artificy-backfire…). Narrow a roll type with a qualifier in parentheses."
           />
           {f.subjectKey ? (
             <p className="sf-modal__hint"><Icon name="info" /> Rolls 2d10 + your base stat + this field&apos;s rank. The base stat follows the field.</p>

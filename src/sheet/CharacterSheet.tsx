@@ -607,6 +607,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       if (a.attuned || attunedCount >= caps.attuneCap) return;
       op({ label: "Attune to " + a.name, kind: "attune", stat: "Creativity", mod: effFacRank("Creativity") + subRank("artificy") + rollBonusFor("attune"), dc: a.intensity, meta: ["Artificy", "Attunement"], detail: a.desc, hl: attuneHL(a), dosMod: dosShiftFor((b) => b.type === "attune"),
         condBonuses: catCond("attune"),
+        replacements: replaceOptionsFor("Attunement", ["attune"], [a.level], anchor),
         resist: { condition: "wound", dcPerDegree: 5, eyebrow: "Failed attunement", heading: "SOULBURNED", verdict: "The artifact’s magic bites back, lashing out against yours." },
         onResult: (r) => {
           if (r.pass) { setArtifacts((prev) => prev.map((x) => (x.id === a.id ? { ...x, attuned: true, intensity: 0 } : x))); magic.handlers.addArtMove(a); }
@@ -621,6 +622,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       const time = (cfg.time as Record<string, string>)[a.condition] || "";
       op({ label: cfg.label + " repair · " + a.name, kind: "repair", stat: "Creativity", mod: effFacRank("Creativity") + subRank("artificy") + rollBonusFor("artifact-repair"), dc, meta: ["Artificy", "Repair", cfg.label], detail: "Mend the " + a.condition + " " + a.name + " — " + time + " of work.",
         condBonuses: catCond("artifact-repair"),
+        replacements: replaceOptionsFor("Artifact repair", ["artifact-repair"], [a.level], anchor),
         onResult: (r) => {
           if (r.pass) { setArtifacts((prev) => prev.map((x) => (x.id === a.id ? { ...x, condition: "stable" } : x))); magic.handlers.setMoveCond(a.id, "stable"); toast(a.name + " restored to Stable"); }
           else if (a.condition === "broken") { setArtifacts((prev) => prev.map((x) => (x.id === a.id ? { ...x, condition: "damaged" } : x))); magic.handlers.setMoveCond(a.id, "damaged"); toast(a.name + " · partially mended — now Damaged"); }
@@ -632,6 +634,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     brew: (r: Recipe, anchor: HTMLElement) => {
       op({ label: "Brew " + r.name, kind: "skill", mod: effFacRank("Creativity") + subRank("alchemy") + rollBonusFor("brew"), stat: "Creativity", dc: r.intensity, meta: ["Alchemy", "Brew"], detail: r.desc, dosMod: dosShiftFor((b) => b.type === "brew"),
         condBonuses: catCond("brew"),
+        replacements: replaceOptionsFor("Potion-brewing", ["brew"], [], anchor),
         onResult: (rr) => { adjustMaterials(-r.cost); if (rr.pass) mintVial(r); },
       }, anchor);
     },
@@ -639,6 +642,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     takePotion: (p: Potion, anchor: HTMLElement) => {
       op({ label: "METABOLIZE " + p.name, kind: "metabolize", stat: "Body", mod: effFacRank("Body") + subRank("alchemy") + metabolizeBonusFor(), dc: p.intensity, meta: ["Metabolize", "Body", "Alchemy"], detail: p.desc, hl: metabolizeHL, dosMod: dosShiftFor((b) => b.type === "metabolize"),
         condBonuses: catCond("metabolize"),
+        replacements: replaceOptionsFor("Metabolize", ["metabolize"], [], anchor),
         onResult: () => setPotions((prev) => prev.map((x) => (x.id === p.id ? { ...x, qty: x.qty - 1 } : x)).filter((x) => x.qty > 0)),
       }, anchor);
     },
@@ -655,6 +659,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     rollPlant: (pl: Plant, anchor: HTMLElement) => {
       op({ label: "Use " + pl.name, kind: "skill", stat: "Insight", mod: effFacRank("Insight") + subRank("herbalism") + rollBonusFor("plantuse"), dc: pl.intensity, meta: ["Herbalism"], detail: pl.ability || pl.desc, dosMod: dosShiftFor((b) => b.type === "plantuse"),
         condBonuses: catCond("plantuse"),
+        replacements: replaceOptionsFor("Plant-use", ["plantuse"], [], anchor),
         onResult: () => { if (pl.removeOnUse) setPlants((prev) => prev.filter((x) => x.id !== pl.id)); else setPlants((prev) => prev.map((x) => (x.id === pl.id ? { ...x, used: true } : x))); },
       }, anchor);
     },
@@ -696,6 +701,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
         mod: effFacRank("Focus") + subRank("wandcrafting"), dc: 5,
         meta: ["Wandcrafting", "Wandcraft Roll"], detail: w.desc, hl: wandcraftHL,
         dosMod: dosShiftFor((b) => b.type === "wandcraft"),
+        replacements: replaceOptionsFor("Wandcraft", ["wandcraft"], [], anchor),
         onResult: (r) => {
           box.hours = r.hours || 1;
           if (!r.pass) return;
@@ -728,6 +734,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       const name = runeStack.map((g) => g.name).join(" + ");
       op({ label: "Rune · " + name, kind: "skill", stat: "Logic", mod: effFacRank("Logic") + subRank("runology") + rollBonusFor("rune"), dc: intensity, meta: ["Runology", "Rune"], detail: "Inscribe a rune combining " + name + ".", dosMod: dosShiftFor((b) => b.type === "rune"),
         condBonuses: catCond("rune"),
+        replacements: replaceOptionsFor("Rune-creating", ["rune"], [], anchor),
         onResult: () => { adjustMaterials(-cost); setRuneStack([]); },
       }, anchor);
     },
@@ -765,6 +772,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       op({
         label: "Use · " + it.name, kind: "skill", stat: facName, mod, dc, meta: [skillName, "Item"], detail: it.desc,
         condBonuses: catCond("item"),
+        replacements: replaceOptionsFor(skillName, [skillName, facName], [], target),
         crit: lostOnBackfire ? { fail: { on: "one", forces: false, label: "Backfire" } } : undefined,
         onResult: (r) => {
           const didBackfire = lostOnBackfire && Array.isArray(r.dice) && r.dice.some((d) => d === 1);
@@ -1111,9 +1119,10 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   // Known spells whose "REPLACE CHECK" matches this check, shaped as prompt
   // options. Picking one re-opens as that spell's cast prompt (anchored to the
   // same control) with the check's DC carried across. `checkLabel` names the
-  // check being replaced; `tags` are the raw identifiers it's matched against.
-  const replaceOptionsFor = (checkLabel: string, tags: string[], anchorEl: HTMLElement): ReplaceOption[] =>
-    matchReplacementSpells(spells, tags).map((sp) => ({
+  // check being replaced; `tags` are the raw identifiers it's matched against;
+  // `qualifiers` narrow qualified tokens (e.g. "spell-backfire (evocation)").
+  const replaceOptionsFor = (checkLabel: string, tags: string[], qualifiers: string[], anchorEl: HTMLElement): ReplaceOption[] =>
+    matchReplacementSpells(spells, tags, qualifiers).map((sp) => ({
       id: sp.id,
       name: sp.name,
       level: sp.level,
@@ -1123,15 +1132,26 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       onPick: (dc: number | null) => onRollSpell(sp, { currentTarget: anchorEl }, { forcedDc: dc, replacingLabel: checkLabel }),
     }));
 
+  // Spell-backfire replacements for the recoil save: only genuine spell
+  // backfires (not attunement/forced saves, which carry a resist config),
+  // narrowed by the backfiring spell's subject (e.g. "spell-backfire (evocation)").
+  const buildBackfireReplacements = (): ReplaceOption[] => {
+    const rr = resistRoll as Roll | null;
+    if (!rr || rr.kind !== "spell" || rr.resist) return [];
+    const subject = (rr.meta && rr.meta[0]) || rr.stat || "";
+    return replaceOptionsFor("Spell backfire", ["spellbackfire"], [subject], document.body);
+  };
+
   type RollSkill = { id?: string; name: string; rank?: number };
-  const onRollSkill = (fac: Stat, sk: RollSkill, total: number, e: { currentTarget: Element }) => openPrompt({ who: meWho(), label: sk.name, kind: "skill", stat: fac.name, mod: total, dosMod: dosShiftFor((b) => (b.type === "skill" && b.target === sk.id) || (b.type === "stat" && b.target === fac.name)), condBonuses: condBonusesFor((b) => (b.type === "skill" && b.target === sk.id) || (b.type === "stat" && b.target === fac.name)), replacements: replaceOptionsFor(sk.name, [sk.id || "", sk.name, fac.name], e.currentTarget as HTMLElement) }, e.currentTarget as HTMLElement);
+  const onRollSkill = (fac: Stat, sk: RollSkill, total: number, e: { currentTarget: Element }) => openPrompt({ who: meWho(), label: sk.name, kind: "skill", stat: fac.name, mod: total, dosMod: dosShiftFor((b) => (b.type === "skill" && b.target === sk.id) || (b.type === "stat" && b.target === fac.name)), condBonuses: condBonusesFor((b) => (b.type === "skill" && b.target === sk.id) || (b.type === "stat" && b.target === fac.name)), replacements: replaceOptionsFor(sk.name, [sk.id || "", sk.name, fac.name], [], e.currentTarget as HTMLElement) }, e.currentTarget as HTMLElement);
   const onRollAction = () => openPrompt({
     who: meWho(), label: "Action Roll", kind: "action", stat: "Insight",
     mod: effFacRank("Insight") + rollBonusFor("action"), dc: 10, meta: ["Action Roll", "DC 10 Insight"],
     condBonuses: catCond("action"),
+    replacements: replaceOptionsFor("Action", ["action"], [], document.body),
     onResult: (r) => { const ap = r.pass ? Math.min(Math.max(0, r.degrees || 0), c.actionPointsMax) : 0; setC((prev) => ({ ...prev, actionPoints: ap })); },
   }, document.body);
-  const onRollResist = (cd: Condition, e: { currentTarget: Element }) => openPrompt({ who: meWho(), label: "Resist " + cd.name, kind: "resist", stat: cd.resist, mod: effFacRank(cd.resist) + rollBonusFor("resist", cd.id), dosMod: dosShiftFor((b) => b.type === "resist" && (!b.target || b.target === cd.id)), condBonuses: catCond("resist", cd.id) }, e.currentTarget as HTMLElement);
+  const onRollResist = (cd: Condition, e: { currentTarget: Element }) => openPrompt({ who: meWho(), label: "Resist " + cd.name, kind: "resist", stat: cd.resist, mod: effFacRank(cd.resist) + rollBonusFor("resist", cd.id), dosMod: dosShiftFor((b) => b.type === "resist" && (!b.target || b.target === cd.id)), condBonuses: catCond("resist", cd.id), replacements: replaceOptionsFor("Resist " + cd.name, ["resist"], [cd.id, cd.name], e.currentTarget as HTMLElement) }, e.currentTarget as HTMLElement);
   const onRollMove = (m: Move, e: { currentTarget: Element }, optIdx?: number) => {
     const i = optIdx || 0;
     const opt = (m.rollOptions && m.rollOptions[i]) || { stat: m.stat, skill: m.skill, label: m.skill };
@@ -1168,7 +1188,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     closeArtifactResist();
   };
   type RollSubject = { key: string; name: string; stat: string; rank: number };
-  const onRollSubject = (school: MagicSchool, sub: RollSubject, total: number, e: { currentTarget: Element }) => openPrompt({ who: meWho(), label: sub.name, kind: "skill", stat: sub.stat, mod: total, meta: [school.name.replace(" Magics", "")], dosMod: dosShiftFor((b) => (b.type === "subject" && b.target === sub.key) || (b.type === "stat" && b.target === sub.stat)), condBonuses: condBonusesFor((b) => (b.type === "subject" && b.target === sub.key) || (b.type === "stat" && b.target === sub.stat)), replacements: replaceOptionsFor(sub.name, [sub.key, sub.name, sub.stat], e.currentTarget as HTMLElement) }, e.currentTarget as HTMLElement);
+  const onRollSubject = (school: MagicSchool, sub: RollSubject, total: number, e: { currentTarget: Element }) => openPrompt({ who: meWho(), label: sub.name, kind: "skill", stat: sub.stat, mod: total, meta: [school.name.replace(" Magics", "")], dosMod: dosShiftFor((b) => (b.type === "subject" && b.target === sub.key) || (b.type === "stat" && b.target === sub.stat)), condBonuses: condBonusesFor((b) => (b.type === "subject" && b.target === sub.key) || (b.type === "stat" && b.target === sub.stat)), replacements: replaceOptionsFor(sub.name, [sub.key, sub.name, sub.stat], [], e.currentTarget as HTMLElement) }, e.currentTarget as HTMLElement);
 
   const spellLearnDC = (sp: Spell) => {
     const f = spellLevelKey(sp.level);
@@ -1187,6 +1207,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       detail: "You're runelocked on studying. On success, you move one step closer to being able to cast " + sp.name + ".",
       dosMod: dosShiftFor((b) => b.type === "learn" && (!b.target || b.target === sp.subjectKey)),
       condBonuses: catCond("learn", sp.subjectKey),
+      replacements: replaceOptionsFor("Spell-learning", ["learn"], [sp.subjectKey, sp.subject], e.currentTarget as HTMLElement),
       onResult: (r) => { if (r.pass) { setSpellDays(sp.id, (sp.days || 0) - 1); if ((sp.days || 0) - 1 <= 0) toast(sp.name + " — fully learned."); } },
     }, e.currentTarget as HTMLElement);
   };
@@ -1237,7 +1258,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       baseMatCost: ENCHANT_MATERIAL_COST, spellMatCost: spellCost > 0 ? spellCost : undefined, materials: c.materials,
       dosMod: dosShiftFor((b) => b.type === "enchant"),
       condBonuses: catCond("enchant"),
-      replacements: replaceOptionsFor("Enchanting", ["enchant", "enchanting", "enchantment"], e.currentTarget as HTMLElement),
+      replacements: replaceOptionsFor("Enchanting", ["enchant"], [sp.subjectKey, sp.subject], e.currentTarget as HTMLElement),
       onCast: ({ matCost: cost, spellMatCost: spentSpellCost, roll }) => {
         if (cost <= 0) return;
         adjustMaterials(-cost);
@@ -1266,6 +1287,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       crit: improveCrit(fac.name),
       dosMod: dosShiftFor((b) => b.type === "improve" && (!b.target || b.target === sk.id)),
       condBonuses: catCond("improve", sk.id),
+      replacements: replaceOptionsFor("Improvement", ["improve"], [sk.id || "", sk.name], e.currentTarget as HTMLElement),
       detail: "An improvement roll — test your " + fac.name + " against the lesson. Succeed and " + sk.name + " deepens by a rank; roll a natural 10 and " + fac.name + " itself rises instead.",
       fail: "The lesson eludes you — no progress this time.",
       onResult: (r) => {
@@ -1283,6 +1305,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       crit: improveCrit(sub.stat),
       dosMod: dosShiftFor((b) => b.type === "improve" && (!b.target || b.target === sub.key)),
       condBonuses: catCond("improve", sub.key),
+      replacements: replaceOptionsFor("Improvement", ["improve"], [sub.key, sub.name], e.currentTarget as HTMLElement),
       detail: "An improvement roll — test your " + sub.stat + " against the field. Succeed and " + sub.name + " deepens by a rank; roll a natural 10 and " + sub.stat + " itself rises instead.",
       fail: "The field resists you — no progress this time.",
       onResult: (r) => {
@@ -1397,8 +1420,8 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       <RollToasts log={log} position={t.toastPosition as string} cap={t.stackCap as number} lifetime={Math.round((t.toastLifetime as number) * 1000)} graceMs={Math.round((t.graceTail as number) * 1000)} expandDefault={t.expandDefault as boolean} />
       <RollDock log={log} open={dock} onToggle={() => setDock((v) => !v)} meId={activeChar} />
       <RollPrompt pending={pending} onConfirm={confirmPrompt} onCancel={cancelPrompt} />
-      <BackfireResist open={!!resistRoll} roll={resistRoll} conditions={conditions} facRank={facRank} onResist={handleResist} onClose={handleResistClose} />
-      <ArtifactBackfireModal open={!!artifactResistRoll} roll={artifactResistRoll} effFacRank={effFacRank} subRank={subRank} onRoll={onArtifactResist} onClose={closeArtifactResist} buildReplacements={() => replaceOptionsFor("Artifact backfire", ["artifact-backfire", "artificy"], document.body)} />
+      <BackfireResist open={!!resistRoll} roll={resistRoll} conditions={conditions} facRank={facRank} onResist={handleResist} onClose={handleResistClose} buildReplacements={buildBackfireReplacements} />
+      <ArtifactBackfireModal open={!!artifactResistRoll} roll={artifactResistRoll} effFacRank={effFacRank} subRank={subRank} onRoll={onArtifactResist} onClose={closeArtifactResist} buildReplacements={() => replaceOptionsFor("Artifact backfire", ["artificybackfire"], [String((artifactResistRoll as Roll | null)?.artifactLevel || "")], document.body)} />
     </div>
     </div>
   );
