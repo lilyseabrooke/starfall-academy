@@ -26,7 +26,10 @@
 }
 
 *{ box-sizing:border-box; margin:0; padding:0; }
-html{ scroll-behavior:smooth; }
+html{ scroll-behavior:smooth; scrollbar-width:thin; scrollbar-color:color-mix(in oklab, var(--gold-600) 40%, transparent) transparent; }
+html::-webkit-scrollbar{ width:8px; }
+html::-webkit-scrollbar-thumb{ background:color-mix(in oklab, var(--gold-600) 36%, transparent);
+  border-radius:var(--radius-pill); border:2px solid transparent; background-clip:padding-box; }
 body{
   font-family:var(--font-serif); color:var(--text-body);
   background:var(--ink-950);

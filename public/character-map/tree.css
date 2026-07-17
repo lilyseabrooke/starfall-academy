@@ -346,9 +346,12 @@ html, body { height: 100%; margin: 0; }
   padding: var(--space-6); background: var(--ink-850);
   border: 1px solid var(--border-strong); border-top: 2px solid var(--gold-500); border-radius: var(--radius-lg);
   box-shadow: var(--shadow-xl), var(--inset-hi);
+  scrollbar-width: thin; scrollbar-color: color-mix(in oklab, var(--gold-600) 40%, transparent) transparent;
   animation: sft-modal-in var(--dur-slow) var(--ease-out);
 }
 @keyframes sft-modal-in { from { opacity: 0; transform: translateY(14px) scale(0.985); } to { opacity: 1; transform: none; } }
+.sft-modal::-webkit-scrollbar { width: 8px; }
+.sft-modal::-webkit-scrollbar-thumb { background: color-mix(in oklab, var(--gold-600) 36%, transparent); border-radius: var(--radius-pill); border: 2px solid transparent; background-clip: padding-box; }
 .sft-modal-watermark { position: absolute; top: -40px; right: -60px; opacity: 0.06; pointer-events: none; z-index: 0; }
 .sft-modal > * { position: relative; z-index: 1; }
 .sft-modal-close { position: absolute; top: var(--space-4); right: var(--space-4); z-index: 2; display: inline-flex; padding: 6px; background: none; border: none; cursor: pointer; color: var(--text-muted); border-radius: var(--radius-sm); }

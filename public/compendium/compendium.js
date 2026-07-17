@@ -195,10 +195,15 @@ function showState(kind){
 /* ===========================================================================
    Rendering entries
    =========================================================================== */
-const SKIP_KEYS = new Set(["ID", "NAME"]);
+/* Internal-only columns: present in the sheet for game logic but never shown
+   to players — keep them out of both the details view and "Copy entry". */
+const INTERNAL_KEYS = new Set(["REPLACES CHECK"]);
+const SKIP_KEYS = new Set(["ID", "NAME", ...INTERNAL_KEYS]);
 const CATEGORY_SKIP_KEYS = {
   item: new Set(["TAGS", "CHECK"])
 };
+/* These always read as prose, however short — never the facts grid. */
+const ALWAYS_BLOCK_KEYS = new Set(["DESCRIPTION", "HIGHER-LEVEL BEHAVIOR", "ABILITY"]);
 
 function renderEntries(data){
   list.innerHTML = "";
@@ -276,9 +281,10 @@ function renderDetails(entry, category){
     if (val === undefined || val === null) continue;
     val = val.toString().trim();
     if (!val) continue;
+    if (key === "HIGHER-LEVEL BEHAVIOR" && /^n\/?a\.?$/i.test(val)) continue;
     const multiline = /•/.test(val);
     const html = esc(val).replace(/•/g, "<br>");
-    if (multiline || val.length > 46){
+    if (multiline || val.length > 46 || ALWAYS_BLOCK_KEYS.has(key)){
       blocks.push(`<div class="block"><div class="block__k">${esc(key)}</div><div class="block__v">${html}</div></div>`);
     } else {
       facts.push(`<div class="fact"><span class="fact__k">${esc(key)}</span><span class="fact__v">${html}</span></div>`);
@@ -646,6 +652,7 @@ function copyEntry(entry){
   const lines = [];
   for (const key in entry){
     if (key.toUpperCase() === "ID") continue;
+    if (INTERNAL_KEYS.has(key.toUpperCase())) continue;
     let v = entry[key];
     if (!v) continue;
     v = v.toString().trim();
