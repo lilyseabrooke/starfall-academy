@@ -18,7 +18,10 @@
   font-family: var(--font-sans);
   color: var(--text-body);
   overflow-y: auto;
+  scrollbar-width: thin; scrollbar-color: color-mix(in oklab, var(--gold-600) 40%, transparent) transparent;
 }
+.lp-root::-webkit-scrollbar { width: 8px; }
+.lp-root::-webkit-scrollbar-thumb { background: color-mix(in oklab, var(--gold-600) 36%, transparent); border-radius: var(--radius-pill); border: 2px solid transparent; background-clip: padding-box; }
 
 /* ===================== SHARED HUD TOP BAR ===================== */
 .hud {

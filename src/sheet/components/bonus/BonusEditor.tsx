@@ -30,7 +30,7 @@ export interface BonusEditorProps {
   onClose: () => void;
 }
 
-const PRIMARY_IDS = ["stat", "subject", "skill"];
+const PRIMARY_IDS = ["stat", "subject", "skill", "universal"];
 
 const toEdit = (b: Bonus): EditBonus => ({ ...b, value: b.value ?? 0 });
 

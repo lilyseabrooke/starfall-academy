@@ -10,6 +10,23 @@ const CREST_LINES = "/_ds/starfall-academy-design-system-61fef24c-b8ee-469f-860f
 
 export function IdentityHero({ c }: { c: CharacterVitals; onEdit?: () => void }) {
   const heroTint = TONE_700[c.houseTone] || TONE_700.plum;
+  const [bioExpanded, setBioExpanded] = React.useState(false);
+  const [bioOverflows, setBioOverflows] = React.useState(false);
+  const bioRef = React.useRef<HTMLParagraphElement>(null);
+
+  React.useEffect(() => {
+    const el = bioRef.current;
+    if (!el) return;
+    const measure = () => {
+      const lineHeight = parseFloat(getComputedStyle(el).lineHeight) || 0;
+      setBioOverflows(el.scrollHeight > lineHeight * 6 + 1);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [c.bio]);
+
   return (
     <section className="sf-hero" style={{ "--sf-hero-tint": heroTint } as React.CSSProperties}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -28,7 +45,27 @@ export function IdentityHero({ c }: { c: CharacterVitals; onEdit?: () => void })
             </React.Fragment>
           ) : null}
         </div>
-        {c.bio ? <p className="sf-hero__bio">{c.bio}</p> : null}
+        {c.bio ? (
+          <div
+            className={
+              "sf-hero__bio-wrap" +
+              (bioOverflows ? " sf-hero__bio-wrap--clamped" : "") +
+              (bioExpanded ? " sf-hero__bio-wrap--expanded" : "")
+            }
+            onClick={() => setBioExpanded((v) => !v)}
+            role={bioOverflows ? "button" : undefined}
+            tabIndex={bioOverflows ? 0 : undefined}
+            aria-expanded={bioOverflows ? bioExpanded : undefined}
+            onKeyDown={(e) => {
+              if (bioOverflows && (e.key === "Enter" || e.key === " ")) {
+                e.preventDefault();
+                setBioExpanded((v) => !v);
+              }
+            }}
+          >
+            <p className="sf-hero__bio" ref={bioRef}>{c.bio}</p>
+          </div>
+        ) : null}
       </div>
       <div className="sf-hero__side">
         <div className="sf-materials">

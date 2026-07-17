@@ -238,7 +238,11 @@
 .sf-sheet .sf-search:focus-within kbd { display: none; }
 
 .sf-sheet .sf-canvas { padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-5); overflow-y: auto; flex: 1; min-height: 0; }
-.sf-sheet .sf-canvas { scrollbar-color: var(--ink-600) transparent; }
+.sf-sheet .sf-canvas { scrollbar-width: thin; scrollbar-color: var(--ink-600) transparent; }
+.sf-sheet .sf-canvas::-webkit-scrollbar { width: 6px; }
+.sf-sheet .sf-canvas::-webkit-scrollbar-track { background: transparent; }
+.sf-sheet .sf-canvas::-webkit-scrollbar-thumb { background: var(--ink-600); border-radius: var(--radius-pill); }
+.sf-sheet .sf-canvas::-webkit-scrollbar-thumb:hover { background: var(--ink-500); }
 .sf-sheet .sf-canvas > * { flex: 0 0 auto; }
 
 /* ============================ IDENTITY HERO ============================= */
@@ -1622,6 +1626,9 @@
   scrollbar-width: thin;
   scrollbar-color: var(--border-subtle) transparent;
 }
+.sf-sheet .srch__list::-webkit-scrollbar { width: 8px; }
+.sf-sheet .srch__list::-webkit-scrollbar-track { background: transparent; }
+.sf-sheet .srch__list::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: var(--radius-pill); border: 2px solid transparent; background-clip: padding-box; }
 
 /* ── Result row ───────────────────────────────────────────────────────── */
 .sf-sheet .srch__item {
