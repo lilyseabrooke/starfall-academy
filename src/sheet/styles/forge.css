@@ -6,7 +6,28 @@
    =========================================================================== */
 
 /* Identity hero additions (bio + edit affordance) */
-.sf-sheet .sf-hero__bio { margin: var(--space-3) 0 0; max-width: 60ch; font-size: var(--text-sm); line-height: 1.55; color: var(--text-muted); text-wrap: pretty; }
+.sf-sheet .sf-hero__bio { margin: 0; max-width: 60ch; font-size: var(--text-sm); line-height: 1.55; color: var(--text-muted); text-wrap: pretty; }
+.sf-sheet .sf-hero__bio-wrap {
+  position: relative; margin: var(--space-3) 0 0; max-width: 60ch;
+  max-height: calc(1.55em * 6); overflow: hidden;
+  transition: max-height var(--dur-slow) ease;
+}
+.sf-sheet .sf-hero__bio-wrap--clamped { cursor: pointer; }
+.sf-sheet .sf-hero__bio-wrap--clamped::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2.4em;
+  background: linear-gradient(to bottom, transparent, var(--ink-850));
+  opacity: 1; transition: opacity var(--dur-base); pointer-events: none;
+}
+.sf-sheet .sf-hero__bio-wrap--clamped:hover,
+.sf-sheet .sf-hero__bio-wrap--clamped:focus-visible,
+.sf-sheet .sf-hero__bio-wrap--expanded {
+  max-height: 60vh;
+}
+.sf-sheet .sf-hero__bio-wrap--clamped:hover::after,
+.sf-sheet .sf-hero__bio-wrap--clamped:focus-visible::after,
+.sf-sheet .sf-hero__bio-wrap--expanded::after {
+  opacity: 0;
+}
 .sf-sheet .sf-hero__edit {
   display: inline-flex; align-items: center; gap: 6px; align-self: flex-end;
   padding: 5px 11px; border-radius: var(--radius-pill); cursor: pointer;
