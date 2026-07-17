@@ -199,6 +199,8 @@ const SKIP_KEYS = new Set(["ID", "NAME"]);
 const CATEGORY_SKIP_KEYS = {
   item: new Set(["TAGS", "CHECK"])
 };
+/* These always read as prose, however short — never the facts grid. */
+const ALWAYS_BLOCK_KEYS = new Set(["DESCRIPTION", "HIGHER-LEVEL BEHAVIOR", "ABILITY"]);
 
 function renderEntries(data){
   list.innerHTML = "";
@@ -276,9 +278,10 @@ function renderDetails(entry, category){
     if (val === undefined || val === null) continue;
     val = val.toString().trim();
     if (!val) continue;
+    if (key === "HIGHER-LEVEL BEHAVIOR" && /^n\/?a\.?$/i.test(val)) continue;
     const multiline = /•/.test(val);
     const html = esc(val).replace(/•/g, "<br>");
-    if (multiline || val.length > 46){
+    if (multiline || val.length > 46 || ALWAYS_BLOCK_KEYS.has(key)){
       blocks.push(`<div class="block"><div class="block__k">${esc(key)}</div><div class="block__v">${html}</div></div>`);
     } else {
       facts.push(`<div class="fact"><span class="fact__k">${esc(key)}</span><span class="fact__v">${html}</span></div>`);
