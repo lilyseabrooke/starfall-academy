@@ -1108,7 +1108,16 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
 
   // ---- Roll handlers ----
   type RollSkill = { id?: string; name: string; rank?: number };
-  const onRollSkill = (fac: Stat, sk: RollSkill, total: number, e: { currentTarget: Element }) => openPrompt({ who: meWho(), label: sk.name, kind: "skill", stat: fac.name, mod: total, dosMod: dosShiftFor((b) => (b.type === "skill" && b.target === sk.id) || (b.type === "stat" && b.target === fac.name)), condBonuses: condBonusesFor((b) => (b.type === "skill" && b.target === sk.id) || (b.type === "stat" && b.target === fac.name) || b.type === "universal") }, e.currentTarget as HTMLElement);
+  const onRollSkill = (fac: Stat, sk: RollSkill, total: number, e: { currentTarget: Element }) => openPrompt({
+    who: meWho(), label: sk.name, kind: "skill", stat: fac.name, mod: total,
+    dosMod: dosShiftFor((b) => (b.type === "skill" && b.target === sk.id) || (b.type === "stat" && b.target === fac.name)),
+    condBonuses: condBonusesFor((b) => (b.type === "skill" && b.target === sk.id) || (b.type === "stat" && b.target === fac.name) || b.type === "universal"),
+    // A tie against the DC is a bare-minimum success — it earns an immediate improvement roll
+    // in the trained skill (a flat Stat check, sk.id undefined, doesn't have one to earn).
+    onResult: (r) => {
+      if (sk.id && sk.rank != null && r.dc != null && r.total === r.dc) onImproveSkill(fac, sk as RollSkill & { rank: number }, { currentTarget: document.body });
+    },
+  }, e.currentTarget as HTMLElement);
   const onRollAction = () => openPrompt({
     who: meWho(), label: "Action Roll", kind: "action", stat: "Insight",
     mod: effFacRank("Insight") + rollBonusFor("action"), dc: 10, meta: ["Action Roll", "DC 10 Insight"],
@@ -1152,7 +1161,15 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     closeArtifactResist();
   };
   type RollSubject = { key: string; name: string; stat: string; rank: number };
-  const onRollSubject = (school: MagicSchool, sub: RollSubject, total: number, e: { currentTarget: Element }) => openPrompt({ who: meWho(), label: sub.name, kind: "skill", stat: sub.stat, mod: total, meta: [school.name.replace(" Magics", "")], dosMod: dosShiftFor((b) => (b.type === "subject" && b.target === sub.key) || (b.type === "stat" && b.target === sub.stat)), condBonuses: condBonusesFor((b) => (b.type === "subject" && b.target === sub.key) || (b.type === "stat" && b.target === sub.stat) || b.type === "universal") }, e.currentTarget as HTMLElement);
+  const onRollSubject = (school: MagicSchool, sub: RollSubject, total: number, e: { currentTarget: Element }) => openPrompt({
+    who: meWho(), label: sub.name, kind: "skill", stat: sub.stat, mod: total, meta: [school.name.replace(" Magics", "")],
+    dosMod: dosShiftFor((b) => (b.type === "subject" && b.target === sub.key) || (b.type === "stat" && b.target === sub.stat)),
+    condBonuses: condBonusesFor((b) => (b.type === "subject" && b.target === sub.key) || (b.type === "stat" && b.target === sub.stat) || b.type === "universal"),
+    // A tie against the DC is a bare-minimum success — it earns an immediate improvement roll in the subject.
+    onResult: (r) => {
+      if (r.dc != null && r.total === r.dc) onImproveSubject(school, sub, { currentTarget: document.body });
+    },
+  }, e.currentTarget as HTMLElement);
 
   const spellLearnDC = (sp: Spell) => {
     const f = spellLevelKey(sp.level);
