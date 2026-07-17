@@ -195,7 +195,10 @@ function showState(kind){
 /* ===========================================================================
    Rendering entries
    =========================================================================== */
-const SKIP_KEYS = new Set(["ID", "NAME"]);
+/* Internal-only columns: present in the sheet for game logic but never shown
+   to players — keep them out of both the details view and "Copy entry". */
+const INTERNAL_KEYS = new Set(["REPLACES CHECK"]);
+const SKIP_KEYS = new Set(["ID", "NAME", ...INTERNAL_KEYS]);
 const CATEGORY_SKIP_KEYS = {
   item: new Set(["TAGS", "CHECK"])
 };
@@ -646,6 +649,7 @@ function copyEntry(entry){
   const lines = [];
   for (const key in entry){
     if (key.toUpperCase() === "ID") continue;
+    if (INTERNAL_KEYS.has(key.toUpperCase())) continue;
     let v = entry[key];
     if (!v) continue;
     v = v.toString().trim();
