@@ -67,7 +67,7 @@ function WandSpellCompendium({ f, set, compendiumSpells }: { f: ManualForm; set:
                 style={rowStyle(sel)}
                 onClick={() => {
                   set("spellCompId", sp.id);
-                  set("grantedSpell", { id: sp.id, name: sp.name, level: sp.level, subjectKey: sp.subjectKey, subject: sp.subject, school: sp.school, stat: sp.stat, ap: sp.ap, dc: sp.dc, ritual: !!sp.ritual, volatile: !!sp.volatile, days: 0, desc: sp.desc || "" });
+                  set("grantedSpell", { id: sp.id, name: sp.name, level: sp.level, subjectKey: sp.subjectKey, subject: sp.subject, school: sp.school, stat: sp.stat, ap: sp.ap, dc: sp.dc, ritual: !!sp.ritual, volatile: !!sp.volatile, days: 0, desc: sp.desc || "", higherLevel: sp.higherLevel });
                 }}
               >
                 <span style={{ flex: 1, fontWeight: sel ? 600 : 400 }}>{sp.name}</span>
