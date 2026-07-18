@@ -432,6 +432,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   const persistence = useCharacterPersistence({
     mode,
     id,
+    initialSheet,
     initialUpdatedAt,
     onSaved: (sheet) => { syncedSheetRef.current = sheet; },
     onConflict: (serverSheet, retry) => retry(reconcileFromServer(serverSheet)),

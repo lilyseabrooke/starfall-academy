@@ -4,13 +4,37 @@
    Starfall Academy — character persistence
    ---------------------------------------------------------------------------
    Replaces the host-bridge save() + CharacterSheetFrame.persist path. Debounced
-   (600ms) PATCH of the serialized sheet to /api/characters/[id]; in create mode
-   the first save after the Forge commits POST-creates the row and navigates to
-   it. Emits the exact SerializedSheet shape — the durable contract — so existing
-   rows and the API are unchanged.
+   (600ms) diff-patch of the serialized sheet, applied directly against
+   Supabase (patch_character_sheet RPC) rather than through a Next.js API
+   route — full sheets are large (every spell's full text, all inventory),
+   and round-tripping that through the Vercel origin on every edit is billed
+   as Fast Origin Transfer. Only the top-level sheet keys that changed since
+   the last known-good snapshot are sent, and the RPC shallow-merges them in.
+   In create mode the first save after the Forge commits still POSTs through
+   /api/characters (there's no row to diff against yet), and navigates to it.
+
+   Requests are serialized: at most one save is ever in flight, and any save
+   requested while one is already running is coalesced into a single trailing
+   run with the latest sheet once it finishes (rather than firing a second,
+   overlapping request). This closes a livelock that shipped with the
+   original PATCH-based version and carried over here unnoticed: a 409
+   conflict's retry fired immediately with no in-flight guard, so an
+   overlapping save (started before the previous one's response landed —
+   routine under real network latency, since round-trips regularly exceed
+   the 600ms debounce during active play) would itself conflict, retry
+   immediately, conflict again, and so on for as long as the tab stayed
+   open. Production logs showed two characters stuck in exactly this: 9,231
+   and 4,695 requests in 7 days, ~99.9% of them HTTP 409, the overwhelming
+   majority in the final 24h alone — a live, ongoing bug, not a one-off race.
+   Serializing requests removes the overlap that starts the loop; capping
+   consecutive conflict retries (CONFLICT_RETRY_LIMIT) is the backstop for
+   the case that isn't self-inflicted — two tabs/devices genuinely racing
+   each other — so a real, unresolvable disagreement stops instead of
+   spinning forever.
    =========================================================================== */
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import type { SerializedSheet } from "../types";
 
 export interface PersistenceOptions {
@@ -19,11 +43,13 @@ export interface PersistenceOptions {
   id?: string | null;
   /** Debounce window in ms (matches the prototype's 600ms). */
   debounceMs?: number;
+  /** The sheet as server-rendered on load — the diff baseline for the first save. */
+  initialSheet?: SerializedSheet | null;
   /** The row's updated_at as of the last known-good sheet (server-rendered on load). */
   initialUpdatedAt?: string | null;
   /**
    * The row changed since we last synced (a GM grant, or another tab/device
-   * saved) — our PATCH was rejected rather than clobbering it. `retry` sends
+   * saved) — our patch was rejected rather than clobbering it. `retry` sends
    * a fresh sheet once the caller has reconciled its local state against
    * `serverSheet`.
    */
@@ -39,15 +65,53 @@ export interface Persistence {
   notifyCommitted: () => void;
 }
 
-export function useCharacterPersistence({ mode, id, debounceMs = 600, initialUpdatedAt, onConflict, onSaved }: PersistenceOptions): Persistence {
+// Top-level SerializedSheet keys, diffed shallowly against the last synced
+// snapshot: unchanged keys are omitted from the patch entirely rather than
+// re-sent. `magic` (spells/moves/bonuses) and `inventory` (its eight arrays)
+// are each diffed as one unit — coarser than a full recursive diff, but it
+// keeps the patch a plain shallow-mergeable object (`sheet || patch` in SQL)
+// and already skips the common case: an HP/AP/condition tweak touches only
+// `c`/`conditions`, not the far larger magic/inventory blobs.
+const SHEET_KEYS = [
+  "c", "conditions", "stats", "schools", "classes", "magic", "inventory", "locations",
+] as const;
+
+function diffSheet(next: SerializedSheet, base: SerializedSheet | null): Partial<SerializedSheet> {
+  const patch: Partial<SerializedSheet> = {};
+  for (const key of SHEET_KEYS) {
+    if (!base || JSON.stringify(next[key]) !== JSON.stringify(base[key])) {
+      (patch as Record<string, unknown>)[key] = next[key];
+    }
+  }
+  return patch;
+}
+
+// After this many consecutive conflicts with no intervening success, stop
+// auto-retrying and wait for the next real edit (or reload) instead of
+// spinning forever against a writer we can't converge with.
+const CONFLICT_RETRY_LIMIT = 3;
+
+export function useCharacterPersistence({
+  mode, id, debounceMs = 600, initialSheet, initialUpdatedAt, onConflict, onSaved,
+}: PersistenceOptions): Persistence {
   const router = useRouter();
   const idRef = React.useRef<string | null>(id ?? null);
   const committedRef = React.useRef(mode !== "create"); // edit mode is armed immediately
   const creatingRef = React.useRef(false);
   const timer = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const updatedAtRef = React.useRef<string | null>(initialUpdatedAt ?? null);
+  // Last sheet we know the server has (server-rendered, or confirmed by a
+  // save/conflict since) — the diff baseline. Kept in lockstep with
+  // CharacterSheet's own syncedSheetRef via the same onSaved/onConflict calls.
+  const baselineRef = React.useRef<SerializedSheet | null>(initialSheet ?? null);
   const onConflictRef = React.useRef(onConflict);
   const onSavedRef = React.useRef(onSaved);
+
+  // Request serialization: at most one save in flight; a save requested
+  // mid-flight is coalesced into a single trailing run with the latest sheet.
+  const inFlightRef = React.useRef(false);
+  const pendingRef = React.useRef<SerializedSheet | null>(null);
+  const conflictStreakRef = React.useRef(0);
 
   React.useEffect(() => {
     idRef.current = id ?? null;
@@ -55,32 +119,49 @@ export function useCharacterPersistence({ mode, id, debounceMs = 600, initialUpd
   React.useEffect(() => { onConflictRef.current = onConflict; }, [onConflict]);
   React.useEffect(() => { onSavedRef.current = onSaved; }, [onSaved]);
 
-  const persistRef = React.useRef<(sheet: SerializedSheet) => Promise<void>>(async () => {});
+  const runRef = React.useRef<(sheet: SerializedSheet) => void>(() => {});
 
-  const persist = React.useCallback(
+  const sendPersist = React.useCallback(
     async (sheet: SerializedSheet) => {
       if (idRef.current) {
+        const patch = diffSheet(sheet, baselineRef.current);
+        if (Object.keys(patch).length === 0) return; // nothing changed since last sync
+
         try {
-          const res = await fetch(`/api/characters/${idRef.current}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ sheet, expectedUpdatedAt: updatedAtRef.current }),
-            keepalive: true,
+          const supabase = createClient();
+          const { data, error } = await supabase.rpc("patch_character_sheet", {
+            p_character: idRef.current,
+            p_patch: patch,
+            p_expected_updated_at: updatedAtRef.current,
           });
-          if (res.status === 409) {
-            const conflict = await res.json().catch(() => null);
-            if (conflict?.sheet) {
-              updatedAtRef.current = conflict.updatedAt ?? updatedAtRef.current;
-              onConflictRef.current?.(conflict.sheet, (retrySheet) => void persistRef.current(retrySheet));
+          if (error) {
+            console.error("Character save failed", error.message);
+            return;
+          }
+          const row = Array.isArray(data) ? data[0] : data;
+          if (!row) {
+            // Optimistic-concurrency miss: the row moved on since we last
+            // synced. Fetch the current sheet so the caller can reconcile.
+            conflictStreakRef.current += 1;
+            const { data: current, error: fetchError } = await supabase
+              .from("characters")
+              .select("sheet, updated_at")
+              .eq("id", idRef.current)
+              .single();
+            if (fetchError || !current) return;
+            baselineRef.current = current.sheet as SerializedSheet;
+            updatedAtRef.current = current.updated_at;
+            if (conflictStreakRef.current > CONFLICT_RETRY_LIMIT) {
+              console.error("Character save: too many conflicts in a row, giving up until the next edit");
+              onConflictRef.current?.(current.sheet as SerializedSheet, () => {});
+              return;
             }
+            onConflictRef.current?.(current.sheet as SerializedSheet, (retrySheet) => runRef.current(retrySheet));
             return;
           }
-          if (!res.ok) {
-            console.error("Character save failed", res.status, await res.text().catch(() => ""));
-            return;
-          }
-          const saved = await res.json().catch(() => null);
-          if (saved?.updatedAt) updatedAtRef.current = saved.updatedAt;
+          conflictStreakRef.current = 0;
+          baselineRef.current = sheet;
+          updatedAtRef.current = row.updated_at;
           onSavedRef.current?.(sheet);
         } catch (err) {
           console.error("Character save request failed", err);
@@ -100,6 +181,7 @@ export function useCharacterPersistence({ mode, id, debounceMs = 600, initialUpd
         if (res.ok) {
           const { id: newId } = await res.json();
           idRef.current = newId;
+          baselineRef.current = sheet;
           router.replace(`/characters/${newId}`);
         } else {
           const detail = await res.text().catch(() => "");
@@ -114,14 +196,33 @@ export function useCharacterPersistence({ mode, id, debounceMs = 600, initialUpd
     },
     [router]
   );
-  React.useEffect(() => { persistRef.current = persist; }, [persist]);
+
+  // Runs a save if none is in flight; otherwise coalesces it as the one
+  // trailing save to run once the current one finishes.
+  const run = React.useCallback(
+    (sheet: SerializedSheet) => {
+      if (inFlightRef.current) {
+        pendingRef.current = sheet;
+        return;
+      }
+      inFlightRef.current = true;
+      void sendPersist(sheet).finally(() => {
+        inFlightRef.current = false;
+        const next = pendingRef.current;
+        pendingRef.current = null;
+        if (next) runRef.current(next);
+      });
+    },
+    [sendPersist]
+  );
+  React.useEffect(() => { runRef.current = run; }, [run]);
 
   const save = React.useCallback(
     (sheet: SerializedSheet) => {
       clearTimeout(timer.current);
-      timer.current = setTimeout(() => void persist(sheet), debounceMs);
+      timer.current = setTimeout(() => run(sheet), debounceMs);
     },
-    [persist, debounceMs]
+    [run, debounceMs]
   );
 
   const notifyCommitted = React.useCallback(() => {

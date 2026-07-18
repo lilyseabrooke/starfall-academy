@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { toGMPartyMember, type CharacterRow } from "../../characters/roster";
+import { toGMPartyMember, type GMRosterRow } from "../../characters/roster";
 import { GmView } from "@/sheet/GmView";
 
 export const metadata = {
@@ -35,11 +35,11 @@ export default async function GMToolsPage({
   // characters). NPCs (type='npc') are managed in the GM view, not the party board.
   const { data: partyRows } = await supabase
     .from("characters")
-    .select("id, name, sheet")
+    .select("id, name, c:sheet->c, conditions:sheet->conditions")
     .eq("campaign_id", campaign.id)
     .eq("type", "pc");
   const party = (partyRows ?? [])
-    .map((r) => toGMPartyMember(r as CharacterRow))
+    .map((r) => toGMPartyMember(r as GMRosterRow))
     .sort((a, b) => a.name.localeCompare(b.name));
 
   return <GmView campaign={campaign} party={party} />;

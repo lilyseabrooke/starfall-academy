@@ -27,6 +27,16 @@ export type CharacterRow = {
   sheet: unknown;
 };
 
+// Narrow row shape for roster/party-board queries: only `sheet->c` (and, for
+// the GM board, `sheet->conditions`) are selected — not the full sheet JSONB
+// (spells, inventory, etc.), which is unused here and was inflating every
+// party-wide query with megabytes of data nobody reads.
+export type RosterRow = {
+  id: string;
+  name: string | null;
+  c: unknown;
+};
+
 // Strip quoted/parenthesized nicknames/titles (e.g. Aspen 'Rogue' Whitley,
 // Kyndra (Kyn) Faulkner) before taking initials.
 const ASIDE_SEGMENT = /['"`‘’“”][^'"`‘’“”]*['"`‘’“”]|\([^)]*\)/g;
@@ -44,8 +54,8 @@ function initialsOf(name: string): string {
   );
 }
 
-export function toRosterMember(row: CharacterRow, activeId: string): RosterMember {
-  const c = ((row.sheet as { c?: SheetCharacter })?.c ?? {}) as SheetCharacter;
+export function toRosterMember(row: RosterRow, activeId: string): RosterMember {
+  const c = (row.c ?? {}) as SheetCharacter;
   const name = (c.name || row.name || "Unnamed").toString();
   const tone = c.houseTone || (c.house ? HOUSE_TONE[c.house] : undefined) || "gold";
   return { id: row.id, name, initials: initialsOf(name), tone, house: c.house || "", active: row.id === activeId };
@@ -73,30 +83,34 @@ export type GMPartyMember = {
 };
 
 type SheetCondition = { id?: string; value?: number };
-type SheetFull = {
-  c?: SheetCharacter & {
-    title?: string;
-    actionPoints?: number;
-    actionPointsMax?: number;
-    resolve?: number;
-    materials?: number;
-  };
-  conditions?: SheetCondition[];
+type GMSheetCharacter = SheetCharacter & {
+  title?: string;
+  actionPoints?: number;
+  actionPointsMax?: number;
+  resolve?: number;
+  materials?: number;
+};
+
+export type GMRosterRow = {
+  id: string;
+  name: string | null;
+  c: unknown;
+  conditions: unknown;
 };
 
 const COND_IDS = ["fear", "despair", "wound", "loss", "doubt"];
 
-export function toGMPartyMember(row: CharacterRow): GMPartyMember {
-  const sheet = ((row.sheet as SheetFull) ?? {}) as SheetFull;
-  const c = sheet.c ?? {};
+export function toGMPartyMember(row: GMRosterRow): GMPartyMember {
+  const c = (row.c ?? {}) as GMSheetCharacter;
+  const conditions = row.conditions;
   const name = (c.name || row.name || "Unnamed").toString();
   const houseFull = (c.house || "").toString().replace(/\s+House$/i, "").trim();
   const tone = c.houseTone || (houseFull ? HOUSE_TONE[houseFull] : "") || "gold";
 
   const conds: Record<string, number> = {};
   for (const id of COND_IDS) conds[id] = 0;
-  if (Array.isArray(sheet.conditions)) {
-    for (const cn of sheet.conditions) {
+  if (Array.isArray(conditions)) {
+    for (const cn of conditions as SheetCondition[]) {
       const key = (cn?.id || "").toString();
       if (COND_IDS.includes(key)) conds[key] = Number(cn.value) || 0;
     }
