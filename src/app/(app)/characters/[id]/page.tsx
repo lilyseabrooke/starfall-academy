@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { toRosterMember, type CharacterRow, type RosterMember } from "../roster";
+import { toRosterMember, type RosterRow, type RosterMember } from "../roster";
 import { CharacterSheet } from "@/sheet/CharacterSheet";
 import type { SerializedSheet } from "@/sheet/types";
 
@@ -39,21 +39,22 @@ export default async function CharacterSheetPage({
     campaignId = character.campaign_id;
     const { data: party } = await supabase
       .from("characters")
-      .select("id, name, sheet")
+      .select("id, name, c:sheet->c")
       .eq("campaign_id", character.campaign_id);
     roster = (party ?? [])
-      .map((p) => toRosterMember(p as CharacterRow, character.id))
+      .map((p) => toRosterMember(p as RosterRow, character.id))
       .sort((a, b) => a.name.localeCompare(b.name));
   } else if (character.campaign_code) {
     const { data: party } = await supabase
       .from("characters")
-      .select("id, name, sheet")
+      .select("id, name, c:sheet->c")
       .eq("campaign_code", character.campaign_code);
     roster = (party ?? [])
-      .map((p) => toRosterMember(p as CharacterRow, character.id))
+      .map((p) => toRosterMember(p as RosterRow, character.id))
       .sort((a, b) => a.name.localeCompare(b.name));
   } else {
-    roster = [toRosterMember(character as CharacterRow, character.id)];
+    const c = (character.sheet as { c?: unknown } | null)?.c;
+    roster = [toRosterMember({ id: character.id, name: character.name, c }, character.id)];
   }
 
   return (
