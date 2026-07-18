@@ -31,6 +31,11 @@
    the case that isn't self-inflicted — two tabs/devices genuinely racing
    each other — so a real, unresolvable disagreement stops instead of
    spinning forever.
+
+   Every save attempt also logs a row to character_save_events (saved /
+   conflict / gave_up) — durable, queryable telemetry for the autosave path
+   specifically, since that's where the livelock lived and Vercel's runtime
+   logs alone only showed *that* something was hammering a route, not *why*.
    =========================================================================== */
 import * as React from "react";
 import { useRouter } from "next/navigation";
@@ -91,6 +96,30 @@ function diffSheet(next: SerializedSheet, base: SerializedSheet | null): Partial
 // spinning forever against a writer we can't converge with.
 const CONFLICT_RETRY_LIMIT = 3;
 
+// Fire-and-forget telemetry: a durable, queryable record of what the
+// autosave path actually did (saved / conflict / gave_up), so a post-session
+// query can answer what happened without hand-sampling Vercel runtime logs.
+// Never awaited by the caller and never lets a logging failure affect the
+// save itself.
+function logSaveEvent(
+  supabase: ReturnType<typeof createClient>,
+  characterId: string,
+  event: "saved" | "conflict" | "gave_up",
+  extra?: { patchBytes?: number; conflictStreak?: number }
+) {
+  void supabase
+    .from("character_save_events")
+    .insert({
+      character_id: characterId,
+      event,
+      patch_bytes: extra?.patchBytes ?? null,
+      conflict_streak: extra?.conflictStreak ?? null,
+    })
+    .then(({ error }) => {
+      if (error) console.error("Save-event logging failed", error.message);
+    });
+}
+
 export function useCharacterPersistence({
   mode, id, debounceMs = 600, initialSheet, initialUpdatedAt, onConflict, onSaved,
 }: PersistenceOptions): Persistence {
@@ -127,10 +156,11 @@ export function useCharacterPersistence({
         const patch = diffSheet(sheet, baselineRef.current);
         if (Object.keys(patch).length === 0) return; // nothing changed since last sync
 
+        const supabase = createClient();
+        const characterId = idRef.current;
         try {
-          const supabase = createClient();
           const { data, error } = await supabase.rpc("patch_character_sheet", {
-            p_character: idRef.current,
+            p_character: characterId,
             p_patch: patch,
             p_expected_updated_at: updatedAtRef.current,
           });
@@ -143,16 +173,18 @@ export function useCharacterPersistence({
             // Optimistic-concurrency miss: the row moved on since we last
             // synced. Fetch the current sheet so the caller can reconcile.
             conflictStreakRef.current += 1;
+            logSaveEvent(supabase, characterId, "conflict", { conflictStreak: conflictStreakRef.current });
             const { data: current, error: fetchError } = await supabase
               .from("characters")
               .select("sheet, updated_at")
-              .eq("id", idRef.current)
+              .eq("id", characterId)
               .single();
             if (fetchError || !current) return;
             baselineRef.current = current.sheet as SerializedSheet;
             updatedAtRef.current = current.updated_at;
             if (conflictStreakRef.current > CONFLICT_RETRY_LIMIT) {
               console.error("Character save: too many conflicts in a row, giving up until the next edit");
+              logSaveEvent(supabase, characterId, "gave_up", { conflictStreak: conflictStreakRef.current });
               onConflictRef.current?.(current.sheet as SerializedSheet, () => {});
               return;
             }
@@ -162,6 +194,7 @@ export function useCharacterPersistence({
           conflictStreakRef.current = 0;
           baselineRef.current = sheet;
           updatedAtRef.current = row.updated_at;
+          logSaveEvent(supabase, characterId, "saved", { patchBytes: JSON.stringify(patch).length });
           onSavedRef.current?.(sheet);
         } catch (err) {
           console.error("Character save request failed", err);
