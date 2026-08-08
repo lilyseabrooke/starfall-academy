@@ -88,16 +88,17 @@ interface ActionState { active: boolean; included: string[]; selected: string[];
 export interface GmViewProps {
   campaign: Campaign;
   party: GMPartyMember[];
+  npcs?: GmNpc[];
 }
 
-export function GmView({ campaign, party: hostParty }: GmViewProps) {
+export function GmView({ campaign, party: hostParty, npcs: hostNpcs }: GmViewProps) {
   const router = useRouter();
   const [tab, setTab] = React.useState("party");
   const [party, setParty] = React.useState<GmPartyMember[]>(() => {
     const src: GmPartyMember[] = (hostParty as unknown as GmPartyMember[]) ?? [];
     return src.map((p) => ({ ...p, conds: { fear: 0, despair: 0, wound: 0, loss: 0, doubt: 0, ...(p.conds || {}) } }));
   });
-  const [npcs, setNpcs] = React.useState<GmNpc[]>(() => []);
+  const [npcs, setNpcs] = React.useState<GmNpc[]>(() => hostNpcs ?? []);
   const [notes, setNotes] = React.useState<GmNote[]>(() => []);
   const [activeNoteId, setActiveNoteId] = React.useState<string | null>(null);
   const [tagFilter, setTagFilter] = React.useState("");
@@ -180,8 +181,23 @@ export function GmView({ campaign, party: hostParty }: GmViewProps) {
   const gmWho = (): Roll["who"] => ({ name: "Game Master", tone: "gold", gm: true });
 
   // ---- Mutators ----------------------------------------------------------
-  const bumpCondNpc = (npcId: string, condId: string, d: number) => setNpcs((s) => s.map((n) => n.id !== npcId ? n : { ...n, conds: { ...n.conds, [condId]: clampN((n.conds[condId] || 0) + d, 0, 3) } }));
   const addMaterials = (pcId: string, n: number) => setParty((s) => s.map((p) => p.id !== pcId ? p : { ...p, materials: Math.max(0, p.materials + n) }));
+
+  // NPCs were purely local React state — reset to nothing on every reload.
+  // Persist the cast on the campaign row itself (campaigns.npcs), the same
+  // pattern as the campaign clock: RLS already lets the GM write their own
+  // campaign row, so no new policy or RPC is needed.
+  const persistNpcs = (next: GmNpc[]) => {
+    createClient().from("campaigns").update({ npcs: next }).eq("id", campaign.id).then(({ error }) => {
+      if (error) { console.error("NPC cast failed to persist", error.message); toast("Couldn't save NPC changes — try again."); }
+    });
+  };
+  const updateNpcs = (updater: (s: GmNpc[]) => GmNpc[]) => setNpcs((s) => {
+    const next = updater(s);
+    persistNpcs(next);
+    return next;
+  });
+  const bumpCondNpc = (npcId: string, condId: string, d: number) => updateNpcs((s) => s.map((n) => n.id !== npcId ? n : { ...n, conds: { ...n.conds, [condId]: clampN((n.conds[condId] || 0) + d, 0, 3) } }));
 
   /* ----------------------------- Force resist --------------------------- */
   const openResist = (pcId: string) => setResist({ pcId, cond: "fear", dc: 12, dcText: null, rolled: null });
@@ -389,13 +405,13 @@ export function GmView({ campaign, party: hostParty }: GmViewProps) {
   const openAddNpc = () => setAddNpc({ editId: null, name: "", title: "", resolve: 3, strong: 8, weak: 3, icon: "__mono", confirmDelete: false });
   const openEditNpc = (id: string) => { const n = npcs.find((x) => x.id === id); if (!n) return; setAddNpc({ editId: id, name: n.name, title: n.kind || "", resolve: n.maxResolve, strong: n.strong, weak: n.weak, icon: n.icon || "__mono", confirmDelete: false }); };
   const patchAddNpc = (patch: Partial<AddNpcState>) => setAddNpc((a) => a ? { ...a, ...patch } : a);
-  const deleteNpc = (id: string) => { setNpcs((s) => s.filter((n) => n.id !== id)); toast("NPC removed from the cast."); };
+  const deleteNpc = (id: string) => { updateNpcs((s) => s.filter((n) => n.id !== id)); toast("NPC removed from the cast."); };
   const confirmAddNpc = () => {
     const a = addNpc; if (!a || !a.name.trim()) return;
     const name = a.name.trim();
     const icon = a.icon === "__mono" ? null : a.icon;
-    if (a.editId) { setNpcs((s) => s.map((n) => n.id !== a.editId ? n : { ...n, name, kind: a.title.trim() || "NPC", icon, maxResolve: a.resolve, strong: a.strong, weak: a.weak })); toast(name + " updated."); }
-    else { setNpcs((s) => [...s, { id: "npc_" + Math.random().toString(36).slice(2, 9), name, kind: a.title.trim() || "NPC", icon, maxResolve: a.resolve, strong: a.strong, weak: a.weak, conds: { fear: 0, despair: 0, wound: 0, loss: 0, doubt: 0 } }]); toast(name + " added to the cast."); }
+    if (a.editId) { updateNpcs((s) => s.map((n) => n.id !== a.editId ? n : { ...n, name, kind: a.title.trim() || "NPC", icon, maxResolve: a.resolve, strong: a.strong, weak: a.weak })); toast(name + " updated."); }
+    else { updateNpcs((s) => [...s, { id: "npc_" + Math.random().toString(36).slice(2, 9), name, kind: a.title.trim() || "NPC", icon, maxResolve: a.resolve, strong: a.strong, weak: a.weak, conds: { fear: 0, despair: 0, wound: 0, loss: 0, doubt: 0 } }]); toast(name + " added to the cast."); }
     setAddNpc(null);
   };
   const rollNpc = (n: GmNpc, kind: "strong" | "weak", e: React.MouseEvent<HTMLElement>) => {
