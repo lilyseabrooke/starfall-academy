@@ -336,11 +336,14 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
 
   // ---- Tie-improvement resolution ----
   // A tie against the DC is a bare-minimum success. Everywhere except a flat Stat
-  // check, Resist, Action, an Artificy save, and an improvement roll itself (all
-  // fixed/GM/forced-save DCs with no trainable rank behind them), tying the DC
-  // immediately opens an improvement roll for whichever trained skill or magic
-  // subject the check actually tested — instead of requiring the player to notice
-  // and click the improve button themselves.
+  // check, Resist, Action, and an improvement roll itself (fixed/GM DCs with no
+  // trainable rank behind them), tying the DC immediately opens an improvement
+  // roll for whichever trained skill or magic subject the check actually tested —
+  // instead of requiring the player to notice and click the improve button
+  // themselves. Excluded even where a real trained ability sits behind the roll:
+  // a forced crit (Resist's and the Artificy save's auto-fail-on-1/auto-succeed-
+  // on-10) decides the outcome outright, so the DC never actually gets tested —
+  // any numeric total===dc there is coincidence, not a result of the check.
   const findTrainedSkill = (name: string) => {
     const norm = name.trim().toLowerCase();
     for (const fac of stats) {
@@ -366,7 +369,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     else onImproveSubject(target.subject.school, target.subject.sub, { currentTarget: document.body });
   };
   const maybeImproveOnTie = (r: Roll, target: TieTarget) => {
-    if (target && r.dc != null && r.total === r.dc) triggerTieImprovement(target);
+    if (target && r.dc != null && r.total === r.dc && !(r.crit && r.crit.forces)) triggerTieImprovement(target);
   };
 
   const toast = (msg: string) => { setInvToast(msg); clearTimeout(invToastTimer.current); invToastTimer.current = setTimeout(() => setInvToast(null), 2800); };
@@ -1193,6 +1196,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     const dc = artifactBackfireDC(ar.artifactLevel, ar.artifactCost);
     const mod = effFacRank("Creativity") + subRank("artificy");
     const made = pushRoll({ who: meWho(), label: "Artificy save · " + ar.label, kind: "artificy", stat: "Creativity", mod, dc, meta: ["Artificy", "Artifact backfire"], crit: "resist" });
+    maybeImproveOnTie(made, subjectTarget("artificy"));
     if (made && !made.pass) {
       const artId = ar.artifactId;
       const curCond = ar.artifactCondition || "stable";
