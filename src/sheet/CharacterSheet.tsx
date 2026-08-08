@@ -1237,7 +1237,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   };
   const onRollSpell = (sp: Spell, e: { currentTarget: Element }) => {
     const hasHL = !hlbIsNA(sp.higherLevel);
-    const hl = hasHL ? ((deg: number, ok: boolean) => (ok ? hlbResolveText(sp.higherLevel, deg) || "" : "the weave slips, and the spell fails to take.")) : null;
+    const hl = hasHL ? ((deg: number, ok: boolean) => (ok ? hlbResolveText(sp.higherLevel, deg) || "" : "Sparked out—the spell fails without a cast.")) : null;
     const ap = sp.ap != null ? sp.ap : (parseInt((String(sp.level).match(/(\d+)\s*ap/i) || [])[1], 10) || 0);
     const lvlKey = spellLevelKey(sp.level);
     const refundable = lvlKey === "advanced" || lvlKey === "legendary";
