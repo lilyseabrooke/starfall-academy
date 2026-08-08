@@ -177,6 +177,7 @@ export function Compendium({
     if (e.cat === "plant" && e.removeOnUse != null) f.push(["Single-use", e.removeOnUse ? "Yes" : "No"]);
     if (e.cat === "plant" && e.requiresRoll) f.push(["On use", PLANT_ROLL_LABEL[parsePlantRoll(e.requiresRoll).mode]]);
     if (e.ritual) f.push(["Ritual", "Yes"]);
+    if (e.volatile) f.push(["Volatile", "Yes"]);
     return f;
   };
 

@@ -29,6 +29,7 @@ interface SpellFilters {
   level: string;
   dc: RangeValue;
   ritual: string;
+  volatile: string;
   learned: string;
 }
 
@@ -56,7 +57,7 @@ export function SpellSection({
   const [openSpells, setOpenSpells] = React.useState<Set<string>>(() => new Set());
   const [q, setQ] = React.useState("");
   const [sort, setSort] = React.useState<{ field: string; dir: "asc" | "desc" }>({ field: "auto", dir: "asc" });
-  const [filters, setFilters] = React.useState<SpellFilters>({ subject: "any", stat: "any", level: "any", dc: [null, null], ritual: "any", learned: "any" });
+  const [filters, setFilters] = React.useState<SpellFilters>({ subject: "any", stat: "any", level: "any", dc: [null, null], ritual: "any", volatile: "any", learned: "any" });
   const [sortOpen, setSortOpen] = React.useState(false);
   const [filterOpen, setFilterOpen] = React.useState(false);
   const sortRef = React.useRef<HTMLDivElement>(null);
@@ -97,11 +98,12 @@ export function SpellSection({
     filters.level !== "any",
     filters.dc[0] != null || filters.dc[1] != null,
     filters.ritual !== "any",
+    filters.volatile !== "any",
     filters.learned !== "any",
   ].filter(Boolean).length;
 
   const setF = <K extends keyof SpellFilters>(k: K, v: SpellFilters[K]) => setFilters((p) => ({ ...p, [k]: v }));
-  const resetFilters = () => setFilters({ subject: "any", stat: "any", level: "any", dc: [null, null], ritual: "any", learned: "any" });
+  const resetFilters = () => setFilters({ subject: "any", stat: "any", level: "any", dc: [null, null], ritual: "any", volatile: "any", learned: "any" });
 
   let visible = spells.filter((sp) => {
     if (filters.subject !== "any" && sp.subject !== filters.subject) return false;
@@ -110,6 +112,10 @@ export function SpellSection({
     if (filters.ritual !== "any") {
       const want = filters.ritual === "yes";
       if (!!sp.ritual !== want) return false;
+    }
+    if (filters.volatile !== "any") {
+      const want = filters.volatile === "yes";
+      if (!!sp.volatile !== want) return false;
     }
     if (filters.learned !== "any") {
       const isLearned = !sp.days || sp.days <= 0;
@@ -228,6 +234,16 @@ export function SpellSection({
                       {([["any", "Any"], ["yes", "Yes"], ["no", "No"]] as const).map(([v, l]) => (
                         <label key={v} className={"sf-filter-radio" + (filters.ritual === v ? " on" : "")}>
                           <input type="radio" name="sf-spell-ritual" checked={filters.ritual === v} onChange={() => setF("ritual", v)} />{l}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="sf-filter-group">
+                    <label>Volatile</label>
+                    <div className="sf-filter-radios">
+                      {([["any", "Any"], ["yes", "Yes"], ["no", "No"]] as const).map(([v, l]) => (
+                        <label key={v} className={"sf-filter-radio" + (filters.volatile === v ? " on" : "")}>
+                          <input type="radio" name="sf-spell-volatile" checked={filters.volatile === v} onChange={() => setF("volatile", v)} />{l}
                         </label>
                       ))}
                     </div>

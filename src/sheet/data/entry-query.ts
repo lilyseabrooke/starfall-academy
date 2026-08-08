@@ -35,7 +35,7 @@ export type FilterCfg =
   | { kind: "radio"; key: string; label: string };
 
 export const COMP_FILTERS: Record<string, FilterCfg[]> = {
-  spell: [{ kind: "select", key: "subject", label: "Subject" }, { kind: "select", key: "stat", label: "Stat" }, { kind: "level", levels: ["Basic", "Standard", "Advanced", "Legendary", "Hex"] }, { kind: "range", key: "dc", label: "DC" }, { kind: "radio", key: "ritual", label: "Ritual" }],
+  spell: [{ kind: "select", key: "subject", label: "Subject" }, { kind: "select", key: "stat", label: "Stat" }, { kind: "level", levels: ["Basic", "Standard", "Advanced", "Legendary", "Hex"] }, { kind: "range", key: "dc", label: "DC" }, { kind: "radio", key: "ritual", label: "Ritual" }, { kind: "radio", key: "volatile", label: "Volatile" }],
   artifact: [{ kind: "select", key: "subject", label: "Subject" }, { kind: "level", levels: ["Basic", "Standard", "Advanced", "Legendary", "Twisted"] }, { kind: "range", key: "intensity", label: "Intensity" }],
   potion: [{ kind: "range", key: "cost", label: "Cost" }, { kind: "range", key: "intensity", label: "Intensity" }],
   glyph: [{ kind: "range", key: "value", label: "Cost" }, { kind: "range", key: "intensity", label: "Intensity" }],

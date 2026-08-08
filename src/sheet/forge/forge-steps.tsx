@@ -720,6 +720,7 @@ const spellFacts = (e: CompendiumEntry): Array<[string, string | number]> => {
   if (e.ap != null) f.push(["AP", e.ap]);
   if (e.dc != null) f.push(["DC", e.dc]);
   if (e.ritual) f.push(["Ritual", "Yes"]);
+  if (e.volatile) f.push(["Volatile", "Yes"]);
   return f;
 };
 
