@@ -340,10 +340,9 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   // trainable rank behind them), tying the DC immediately opens an improvement
   // roll for whichever trained skill or magic subject the check actually tested —
   // instead of requiring the player to notice and click the improve button
-  // themselves. Excluded even where a real trained ability sits behind the roll:
-  // a forced crit (Resist's and the Artificy save's auto-fail-on-1/auto-succeed-
-  // on-10) decides the outcome outright, so the DC never actually gets tested —
-  // any numeric total===dc there is coincidence, not a result of the check.
+  // themselves. This fires on the numeric tie alone, regardless of a critical
+  // success/failure (e.g. Resist's or the Artificy save's forced auto-fail-on-1/
+  // auto-succeed-on-10) landing on the same roll.
   const findTrainedSkill = (name: string) => {
     const norm = name.trim().toLowerCase();
     for (const fac of stats) {
@@ -369,7 +368,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     else onImproveSubject(target.subject.school, target.subject.sub, { currentTarget: document.body });
   };
   const maybeImproveOnTie = (r: Roll, target: TieTarget) => {
-    if (target && r.dc != null && r.total === r.dc && !(r.crit && r.crit.forces)) triggerTieImprovement(target);
+    if (target && r.dc != null && r.total === r.dc) triggerTieImprovement(target);
   };
 
   const toast = (msg: string) => { setInvToast(msg); clearTimeout(invToastTimer.current); invToastTimer.current = setTimeout(() => setInvToast(null), 2800); };
