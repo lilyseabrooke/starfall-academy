@@ -53,7 +53,7 @@ export function spellCrit(level: string, asRitual: boolean, volatile: boolean): 
   const f = spellLevelKey(level);
   const onAlways: CritSpec = { fail: { on: "always", forces: false, backfire: true, label: "Backfire" } };
   const onOne: CritSpec = { fail: { on: "one", forces: false, backfire: true, label: "Backfire" } };
-  if (volatile) return onAlways;
+  if (volatile && !asRitual) return onAlways;
   if (f === "hex" || f === "twisted") return asRitual ? onOne : onAlways;
   if (f === "standard") return asRitual ? null : onOne;
   if (f === "advanced" || f === "legendary") return onOne;

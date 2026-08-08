@@ -69,7 +69,7 @@ export function SpellCard({ spell, mod, schoolTone, onRoll, onEnchant, onRemove,
   const learned = !spell.days || spell.days <= 0;
   const lf = String(spell.level || "").trim().toLowerCase();
   const isHex = lf.startsWith("hex") || lf === "twisted";
-  const backfire = isHex ? "always" : lf === "standard" || lf === "advanced" || lf === "legendary" ? "one" : null;
+  const backfire = spell.volatile || isHex ? "always" : lf === "standard" || lf === "advanced" || lf === "legendary" ? "one" : null;
   const apHex = isHex ? (spell.ap != null ? spell.ap : (String(spell.level).match(/(\d+)\s*ap/i) || [])[1]) : null;
   const accent = TONE_500[(schoolTone as string) || "plum"] || TONE_500.plum;
   const style = { "--ent-accent": accent } as React.CSSProperties;
