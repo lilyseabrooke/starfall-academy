@@ -160,9 +160,14 @@ export function RollPrompt({ pending, onConfirm, onCancel }: RollPromptProps) {
     <React.Fragment>
       <div className="sf-prompt-catch" onClick={onCancel} />
       <div ref={boxRef} className="sf-prompt" style={{ left, top, width: W, maxHeight: maxH }} onKeyDown={onKeyDown} role="dialog" aria-label="Set difficulty">
-        <div className="sf-prompt__head">
-          <span className="sf-prompt__sub">{subLabel({ kind: p.kind || "skill", stat: p.stat || "", dc: null })} · 2d10 + {base}</span>
-          <span className="sf-prompt__label">{p.label}</span>
+        <div className="sf-prompt__headrow">
+          <div className="sf-prompt__head">
+            <span className="sf-prompt__sub">{subLabel({ kind: p.kind || "skill", stat: p.stat || "", dc: null })} · 2d10 + {base}</span>
+            <span className="sf-prompt__label">{p.label}</span>
+          </div>
+          <button type="button" className="sf-prompt__close" onClick={onCancel} aria-label="Close">
+            <Icon name="x" />
+          </button>
         </div>
 
         {stage === "warn" ? (
