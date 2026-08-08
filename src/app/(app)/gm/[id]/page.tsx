@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { toGMPartyMember, type GMRosterRow } from "../../characters/roster";
 import { GmView } from "@/sheet/GmView";
-import type { GmNpc } from "@/sheet/data/gm-seed";
+import type { GmNote, GmNpc } from "@/sheet/data/gm-seed";
 
 export const metadata = {
   title: "GM Tools — Starfall Academy",
@@ -26,7 +26,7 @@ export default async function GMToolsPage({
   // query succeeding.
   const { data: campaign, error } = await supabase
     .from("campaigns")
-    .select("id, name, code, gm_id, npcs")
+    .select("id, name, code, gm_id, npcs, notes")
     .eq("id", id)
     .single();
 
@@ -43,5 +43,12 @@ export default async function GMToolsPage({
     .map((r) => toGMPartyMember(r as GMRosterRow))
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  return <GmView campaign={campaign} party={party} npcs={(campaign.npcs as GmNpc[] | null) ?? []} />;
+  return (
+    <GmView
+      campaign={campaign}
+      party={party}
+      npcs={(campaign.npcs as GmNpc[] | null) ?? []}
+      notes={(campaign.notes as GmNote[] | null) ?? []}
+    />
+  );
 }

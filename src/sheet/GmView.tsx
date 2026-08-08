@@ -89,9 +89,10 @@ export interface GmViewProps {
   campaign: Campaign;
   party: GMPartyMember[];
   npcs?: GmNpc[];
+  notes?: GmNote[];
 }
 
-export function GmView({ campaign, party: hostParty, npcs: hostNpcs }: GmViewProps) {
+export function GmView({ campaign, party: hostParty, npcs: hostNpcs, notes: hostNotes }: GmViewProps) {
   const router = useRouter();
   const [tab, setTab] = React.useState("party");
   const [party, setParty] = React.useState<GmPartyMember[]>(() => {
@@ -99,7 +100,7 @@ export function GmView({ campaign, party: hostParty, npcs: hostNpcs }: GmViewPro
     return src.map((p) => ({ ...p, conds: { fear: 0, despair: 0, wound: 0, loss: 0, doubt: 0, ...(p.conds || {}) } }));
   });
   const [npcs, setNpcs] = React.useState<GmNpc[]>(() => hostNpcs ?? []);
-  const [notes, setNotes] = React.useState<GmNote[]>(() => []);
+  const [notes, setNotes] = React.useState<GmNote[]>(() => hostNotes ?? []);
   const [activeNoteId, setActiveNoteId] = React.useState<string | null>(null);
   const [tagFilter, setTagFilter] = React.useState("");
   const [confirmDeleteNoteId, setConfirmDeleteNoteId] = React.useState<string | null>(null);
@@ -420,19 +421,51 @@ export function GmView({ campaign, party: hostParty, npcs: hostNpcs }: GmViewPro
     openPrompt({ who, kind: "roll", label: (kind === "strong" ? "Strong" : "Weak") + " roll · " + n.name, stat: "", mod, canSecret: true }, e.currentTarget);
   };
 
-  /* ------------------------------- Notes -------------------------------- */
+  /* ------------------------------- Notes --------------------------------
+     Persisted on the campaign row (campaigns.notes), same pattern as NPCs.
+     Title/tag/body edits fire on every keystroke, so those are debounced —
+     create/delete are discrete actions and persist immediately. */
+  const persistNotes = (next: GmNote[]) => {
+    createClient().from("campaigns").update({ notes: next }).eq("id", campaign.id).then(({ error }) => {
+      if (error) { console.error("Journal failed to persist", error.message); toast("Couldn't save journal changes — try again."); }
+    });
+  };
+  const notesSaveTimer = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const notesPending = React.useRef<GmNote[] | null>(null);
+  const updateNotes = (updater: (s: GmNote[]) => GmNote[]) => setNotes((s) => {
+    const next = updater(s);
+    clearTimeout(notesSaveTimer.current);
+    notesPending.current = null;
+    persistNotes(next);
+    return next;
+  });
+  const updateNotesDebounced = (updater: (s: GmNote[]) => GmNote[]) => setNotes((s) => {
+    const next = updater(s);
+    clearTimeout(notesSaveTimer.current);
+    notesPending.current = next;
+    notesSaveTimer.current = setTimeout(() => { notesPending.current = null; persistNotes(next); }, 700);
+    return next;
+  });
+  // Flush a still-pending debounced edit (e.g. mid-typing tab switch away
+  // from the GM view) so the last keystrokes aren't lost to the debounce.
+  React.useEffect(() => () => {
+    clearTimeout(notesSaveTimer.current);
+    if (notesPending.current) persistNotes(notesPending.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const createNote = () => {
     const label = new Date().toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
     const id = "n_" + Math.random().toString(36).slice(2, 9);
-    setNotes((s) => [...s, { id, title: "Journal Entry · " + label, body: "", tags: "" }]);
+    updateNotes((s) => [...s, { id, title: "Journal Entry · " + label, body: "", tags: "" }]);
     setActiveNoteId(id);
   };
   const deleteNote = (id: string) => {
-    setNotes((s) => { const filtered = s.filter((n) => n.id !== id); if (activeNoteId === id) setActiveNoteId(filtered[0] ? filtered[0].id : null); return filtered; });
+    updateNotes((s) => { const filtered = s.filter((n) => n.id !== id); if (activeNoteId === id) setActiveNoteId(filtered[0] ? filtered[0].id : null); return filtered; });
     setConfirmDeleteNoteId(null);
     toast("Page removed from the journal.");
   };
-  const patchNote = (id: string, patch: Partial<GmNote>) => setNotes((s) => s.map((n) => n.id === id ? { ...n, ...patch } : n));
+  const patchNote = (id: string, patch: Partial<GmNote>) => updateNotesDebounced((s) => s.map((n) => n.id === id ? { ...n, ...patch } : n));
 
   /* ------------------------------- Time ----------------------------------
      The campaign clock is shared by the whole table: broadcasts live (so an
