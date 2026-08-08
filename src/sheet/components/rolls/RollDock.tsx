@@ -36,11 +36,11 @@ export function RollDock({ log, open, onToggle, meId }: RollDockProps) {
   return (
     <div className={"sf-dock" + (open ? " is-open" : "")}>
       <div className="sf-dock__panel">
-        <div className="sf-dock__phead">
+        <div className="sf-dock__phead" onClick={onToggle}>
           <span className="sf-eyebrow">The Roll Log</span>
           <div className="sf-dock__filters">
             {filters.map((f) => (
-              <button key={f.id} className={"sf-dock__filt" + (filter === f.id ? " is-active" : "")} onClick={() => setFilter(f.id)}>{f.label}</button>
+              <button key={f.id} className={"sf-dock__filt" + (filter === f.id ? " is-active" : "")} onClick={(e) => { e.stopPropagation(); setFilter(f.id); }}>{f.label}</button>
             ))}
           </div>
         </div>
@@ -52,7 +52,7 @@ export function RollDock({ log, open, onToggle, meId }: RollDockProps) {
             </div>
           ) : (
             items.map((r) => {
-              const hasDetail = !!(r.detail || r.success || r.fail || r.sitReason || (r.meta && r.meta.length));
+              const hasDetail = !!(r.detail || r.success || r.fail || r.sitReason || r.hl || (r.meta && r.meta.length));
               return (
                 <div
                   key={r.id}
@@ -65,9 +65,6 @@ export function RollDock({ log, open, onToggle, meId }: RollDockProps) {
               );
             })
           )}
-        </div>
-        <div className="sf-dock__foot">
-          <Icon name="eye-off" /> Secret rolls are kept by the Game Master and never appear here.
         </div>
       </div>
 
@@ -87,7 +84,6 @@ export function RollDock({ log, open, onToggle, meId }: RollDockProps) {
         ) : (
           <span className="sf-dock__empty">No rolls yet — roll a skill or move to begin.</span>
         )}
-        <span className="sf-dock__count">{log.length}</span>
         <Icon name={open ? "chevron-down" : "chevron-up"} className="sf-dock__chev" />
       </button>
     </div>
