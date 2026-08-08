@@ -334,6 +334,41 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   const caps = { attuneCap: INV.attuneCap(subRank("artificy")), potionCap: INV.potionCap, plantCap: INV.plantCap(subRank("herbalism")) };
   const adjustMaterials = (delta: number) => setC((prev) => ({ ...prev, materials: Math.max(0, (prev.materials || 0) + delta) }));
 
+  // ---- Tie-improvement resolution ----
+  // A tie against the DC is a bare-minimum success. Everywhere except a flat Stat
+  // check, Resist, Action, an Artificy save, and an improvement roll itself (all
+  // fixed/GM/forced-save DCs with no trainable rank behind them), tying the DC
+  // immediately opens an improvement roll for whichever trained skill or magic
+  // subject the check actually tested — instead of requiring the player to notice
+  // and click the improve button themselves.
+  const findTrainedSkill = (name: string) => {
+    const norm = name.trim().toLowerCase();
+    for (const fac of stats) {
+      const sk = (fac.skills || []).find((s) => s.name.toLowerCase() === norm);
+      if (sk) return { fac, sk };
+    }
+    return null;
+  };
+  type TieTarget = { skill: NonNullable<ReturnType<typeof findTrainedSkill>> } | { subject: NonNullable<ReturnType<typeof subjectByKey>> } | null;
+  const skillTarget = (name?: string | null): TieTarget => {
+    if (!name) return null;
+    const found = findTrainedSkill(name);
+    return found ? { skill: found } : null;
+  };
+  const subjectTarget = (key?: string | null): TieTarget => {
+    if (!key) return null;
+    const found = subjectByKey(key);
+    return found ? { subject: found } : null;
+  };
+  const triggerTieImprovement = (target: TieTarget) => {
+    if (!target) return;
+    if ("skill" in target) onImproveSkill(target.skill.fac, target.skill.sk, { currentTarget: document.body });
+    else onImproveSubject(target.subject.school, target.subject.sub, { currentTarget: document.body });
+  };
+  const maybeImproveOnTie = (r: Roll, target: TieTarget) => {
+    if (target && r.dc != null && r.total === r.dc) triggerTieImprovement(target);
+  };
+
   const toast = (msg: string) => { setInvToast(msg); clearTimeout(invToastTimer.current); invToastTimer.current = setTimeout(() => setInvToast(null), 2800); };
   const mintVial = (recipe: Recipe) => setPotions((prev) => {
     if (prev.reduce((s, p) => s + p.qty, 0) >= INV.potionCap) return prev;
@@ -611,6 +646,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
         onResult: (r) => {
           if (r.pass) { setArtifacts((prev) => prev.map((x) => (x.id === a.id ? { ...x, attuned: true, intensity: 0 } : x))); magic.handlers.addArtMove(a); }
           else { const key = String(Math.max(-11, Math.min(-1, -(r.degrees || 0)))); const ease = INV.attuneEase[key] || 0; setArtifacts((prev) => prev.map((x) => (x.id === a.id ? { ...x, intensity: Math.max(0, x.intensity + ease) } : x))); }
+          maybeImproveOnTie(r, subjectTarget("artificy"));
         },
       }, anchor);
     },
@@ -624,6 +660,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
         onResult: (r) => {
           if (r.pass) { setArtifacts((prev) => prev.map((x) => (x.id === a.id ? { ...x, condition: "stable" } : x))); magic.handlers.setMoveCond(a.id, "stable"); toast(a.name + " restored to Stable"); }
           else if (a.condition === "broken") { setArtifacts((prev) => prev.map((x) => (x.id === a.id ? { ...x, condition: "damaged" } : x))); magic.handlers.setMoveCond(a.id, "damaged"); toast(a.name + " · partially mended — now Damaged"); }
+          maybeImproveOnTie(r, subjectTarget("artificy"));
         },
       }, anchor);
     },
@@ -632,14 +669,14 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     brew: (r: Recipe, anchor: HTMLElement) => {
       op({ label: "Brew " + r.name, kind: "skill", mod: effFacRank("Creativity") + subRank("alchemy") + rollBonusFor("brew"), stat: "Creativity", dc: r.intensity, meta: ["Alchemy", "Brew"], detail: r.desc, dosMod: dosShiftFor((b) => b.type === "brew"),
         condBonuses: catCond("brew"),
-        onResult: (rr) => { adjustMaterials(-r.cost); if (rr.pass) mintVial(r); },
+        onResult: (rr) => { adjustMaterials(-r.cost); if (rr.pass) mintVial(r); maybeImproveOnTie(rr, subjectTarget("alchemy")); },
       }, anchor);
     },
     brewMore: (p: Potion, anchor: HTMLElement) => { const r = recipes.find((x) => x.name === p.name); if (r) invH.brew(r, anchor); },
     takePotion: (p: Potion, anchor: HTMLElement) => {
       op({ label: "METABOLIZE " + p.name, kind: "metabolize", stat: "Body", mod: effFacRank("Body") + subRank("alchemy") + metabolizeBonusFor(), dc: p.intensity, meta: ["Metabolize", "Body", "Alchemy"], detail: p.desc, hl: metabolizeHL, dosMod: dosShiftFor((b) => b.type === "metabolize"),
         condBonuses: catCond("metabolize"),
-        onResult: () => setPotions((prev) => prev.map((x) => (x.id === p.id ? { ...x, qty: x.qty - 1 } : x)).filter((x) => x.qty > 0)),
+        onResult: (r) => { setPotions((prev) => prev.map((x) => (x.id === p.id ? { ...x, qty: x.qty - 1 } : x)).filter((x) => x.qty > 0)); maybeImproveOnTie(r, subjectTarget("alchemy")); },
       }, anchor);
     },
     removePotion: (p: Potion) => setPotions((prev) => prev.filter((x) => x.id !== p.id)),
@@ -655,7 +692,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     rollPlant: (pl: Plant, anchor: HTMLElement) => {
       op({ label: "Use " + pl.name, kind: "skill", stat: "Insight", mod: effFacRank("Insight") + subRank("herbalism") + rollBonusFor("plantuse"), dc: pl.intensity, meta: ["Herbalism"], detail: pl.ability || pl.desc, dosMod: dosShiftFor((b) => b.type === "plantuse"),
         condBonuses: catCond("plantuse"),
-        onResult: () => { if (pl.removeOnUse) setPlants((prev) => prev.filter((x) => x.id !== pl.id)); else setPlants((prev) => prev.map((x) => (x.id === pl.id ? { ...x, used: true } : x))); },
+        onResult: (r) => { if (pl.removeOnUse) setPlants((prev) => prev.filter((x) => x.id !== pl.id)); else setPlants((prev) => prev.map((x) => (x.id === pl.id ? { ...x, used: true } : x))); maybeImproveOnTie(r, subjectTarget("herbalism")); },
       }, anchor);
     },
     markPlantUsed: (pl: Plant) => {
@@ -698,6 +735,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
         dosMod: dosShiftFor((b) => b.type === "wandcraft"),
         onResult: (r) => {
           box.hours = r.hours || 1;
+          maybeImproveOnTie(r, subjectTarget("wandcrafting"));
           if (!r.pass) return;
           const rate = 20 * (r.degrees || 0);
           const needed = w.maxCondition - w.condition;
@@ -728,7 +766,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       const name = runeStack.map((g) => g.name).join(" + ");
       op({ label: "Rune · " + name, kind: "skill", stat: "Logic", mod: effFacRank("Logic") + subRank("runology") + rollBonusFor("rune"), dc: intensity, meta: ["Runology", "Rune"], detail: "Inscribe a rune combining " + name + ".", dosMod: dosShiftFor((b) => b.type === "rune"),
         condBonuses: catCond("rune"),
-        onResult: () => { adjustMaterials(-cost); setRuneStack([]); },
+        onResult: (r) => { adjustMaterials(-cost); setRuneStack([]); maybeImproveOnTie(r, subjectTarget("runology")); },
       }, anchor);
     },
     removeGlyph: (g: Glyph) => setGlyphs((prev) => prev.filter((x) => x.id !== g.id)),
@@ -774,6 +812,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
             const reason = didBackfire ? "lost to backfire" : !r.pass ? "lost on failure" : "expended";
             toast(it.name + " · " + reason);
           }
+          maybeImproveOnTie(r, skillTarget(skillName));
         },
       }, target);
     },
@@ -1145,6 +1184,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       artifactCondition: m.artifactCondition || null,
       dosMod: dosShiftFor((b) => (b.type === "move" && b.target === m.id) || (b.type === "stat" && b.target === opt.stat)),
       condBonuses: cond,
+      onResult: (r) => maybeImproveOnTie(r, "kind" in opt && opt.kind === "subject" ? subjectTarget(opt.subjectKey) : skillTarget(opt.skill)),
     }, e.currentTarget as HTMLElement);
   };
   const onArtifactResist = () => {
@@ -1189,7 +1229,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       detail: "You're runelocked on studying. On success, you move one step closer to being able to cast " + sp.name + ".",
       dosMod: dosShiftFor((b) => b.type === "learn" && (!b.target || b.target === sp.subjectKey)),
       condBonuses: catCond("learn", sp.subjectKey),
-      onResult: (r) => { if (r.pass) { setSpellDays(sp.id, (sp.days || 0) - 1); if ((sp.days || 0) - 1 <= 0) toast(sp.name + " — fully learned."); } },
+      onResult: (r) => { if (r.pass) { setSpellDays(sp.id, (sp.days || 0) - 1); if ((sp.days || 0) - 1 <= 0) toast(sp.name + " — fully learned."); } maybeImproveOnTie(r, subjectTarget(sp.subjectKey)); },
     }, e.currentTarget as HTMLElement);
   };
   const onRollSpell = (sp: Spell, e: { currentTarget: Element }) => {
@@ -1214,6 +1254,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
         }
         toast(msg);
       },
+      onResult: (r) => maybeImproveOnTie(r, subjectTarget(sp.subjectKey)),
     }, e.currentTarget as HTMLElement);
   };
   const onEnchantSpell = (sp: Spell, e: { currentTarget: Element }) => {
@@ -1245,6 +1286,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
         }
         toast(msg);
       },
+      onResult: (r) => maybeImproveOnTie(r, subjectTarget("enchantment")),
     }, e.currentTarget as HTMLElement);
   };
 
