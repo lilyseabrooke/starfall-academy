@@ -39,6 +39,9 @@ export interface RollStateOptions {
   multiplayer?: boolean;
   /** Called for each locally-made roll (JSON-safe clone) to share with the party. */
   onShareRoll?: (roll: Roll) => void;
+  /** Called once for every resist roll (forced or manual) that fails, with the
+   *  Condition id it was rolled against — the single place that bumps a Condition. */
+  onResistFail?: (conditionId: string) => void;
 }
 
 /** A conditional bonus offered as an opt-in in the roll prompt. */
@@ -97,6 +100,19 @@ export function useRollState(data: RollStateData, activeChar: string, options: R
   React.useEffect(() => {
     onShareRollRef.current = options.onShareRoll;
   }, [options.onShareRoll]);
+  const onResistFailRef = React.useRef(options.onResistFail);
+  React.useEffect(() => {
+    onResistFailRef.current = options.onResistFail;
+  }, [options.onResistFail]);
+
+  /** The single point every resist roll passes through, whatever triggered it
+   *  (manual roll, spell backfire, GM-forced save) — fires onResistFail once
+   *  when the save fails, keyed by the Condition id the roll carries. */
+  const checkResistFail = (r: Roll) => {
+    if (r.kind === "resist" && r.pass === false && r.resist && r.resist.condition) {
+      onResistFailRef.current?.(r.resist.condition);
+    }
+  };
 
   // ---- State ----
   const [log, setLog] = React.useState<Roll[]>(() => {
@@ -160,6 +176,7 @@ export function useRollState(data: RollStateData, activeChar: string, options: R
     const made = makeRoll(full);
     setLog((prev) => [made, ...prev]);
     shareLocal(made);
+    checkResistFail(made);
     return made;
   };
 
@@ -184,6 +201,7 @@ export function useRollState(data: RollStateData, activeChar: string, options: R
     });
     setLog((prev) => [roll, ...prev]);
     if (!roll.secret) shareLocal(roll);
+    checkResistFail(roll);
     setPending(null);
     if (partial.onCast && matCost) partial.onCast({ matCost, spellMatCost, roll });
     if (partial.onResult) partial.onResult(roll);
@@ -215,6 +233,7 @@ export function useRollState(data: RollStateData, activeChar: string, options: R
       mod,
       dc,
       meta,
+      resist: { condition: condition.id },
     });
   };
 
