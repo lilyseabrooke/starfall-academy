@@ -205,9 +205,15 @@ export function useRollState(data: RollStateData, activeChar: string, options: R
     setPending(null);
     if (partial.onCast && matCost) partial.onCast({ matCost, spellMatCost, roll });
     if (partial.onResult) partial.onResult(roll);
+    // A resist roll itself never chains into another resist prompt — only a
+    // roll that CARRIES a resist-trigger config (a spell cast, an attunement)
+    // opens the follow-up save when it fails. `roll.resist` is also set on
+    // resist rolls themselves (see onResist/onRollResist) so checkResistFail
+    // can identify their Condition — that's a different purpose and must not
+    // re-trigger the prompt.
     const forcesResist =
       (roll.crit && roll.crit.backfire && !(roll.crit as { artifactBackfire?: boolean }).artifactBackfire) ||
-      (roll.resist && roll.pass === false);
+      (roll.kind !== "resist" && roll.resist && roll.pass === false);
     if (forcesResist) {
       clearTimeout(bfAskTimer.current);
       bfAskTimer.current = setTimeout(() => setResistRoll(roll), 900);
