@@ -618,9 +618,8 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
 
   const handleResist = (args: { condition: Condition; dc: number | null; mod: number }) => {
     const made = onResist(args);
-    const forced = forcedResistRef.current;
     forcedResistRef.current = null;
-    if (forced && made && made.pass === false) {
+    if (made && made.pass === false) {
       setConditions((cs) => cs.map((x) => x.id === args.condition.id ? { ...x, value: Math.min(x.max != null ? x.max : 99, (x.value || 0) + 1) } : x));
     }
   };
