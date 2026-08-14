@@ -298,7 +298,12 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   const roll = useRollState(
     { roster: rollRoster, ledgerSeed: SEED.ledgerSeed, partyPool: SEED.partyPool, gmPool: SEED.gmPool, gmInflection: SEED.gmInflection },
     activeChar,
-    { multiplayer: !!campaignId, onShareRoll: (r) => shareRef.current(r) }
+    {
+      multiplayer: !!campaignId,
+      onShareRoll: (r) => shareRef.current(r),
+      // The single place a failed Resist roll (manual, GM-forced, or backfire) bumps its Condition.
+      onResistFail: (conditionId) => setConditions((cs) => cs.map((x) => x.id === conditionId ? { ...x, value: Math.min(x.max != null ? x.max : 99, (x.value || 0) + 1) } : x)),
+    }
   );
 
   // ---- Destructure module members ----
@@ -617,12 +622,8 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   }, [conditions]);
 
   const handleResist = (args: { condition: Condition; dc: number | null; mod: number }) => {
-    const made = onResist(args);
-    const forced = forcedResistRef.current;
+    onResist(args);
     forcedResistRef.current = null;
-    if (forced && made && made.pass === false) {
-      setConditions((cs) => cs.map((x) => x.id === args.condition.id ? { ...x, value: Math.min(x.max != null ? x.max : 99, (x.value || 0) + 1) } : x));
-    }
   };
   const handleResistClose = () => { forcedResistRef.current = null; closeResist(); };
 
@@ -1166,7 +1167,10 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     condBonuses: catCond("action"),
     onResult: (r) => { const ap = r.pass ? Math.min(Math.max(0, r.degrees || 0), c.actionPointsMax) : 0; setC((prev) => ({ ...prev, actionPoints: ap })); },
   }, document.body);
-  const onRollResist = (cd: Condition, e: { currentTarget: Element }) => openPrompt({ who: meWho(), label: "Resist " + cd.name, kind: "resist", stat: cd.resist, mod: effFacRank(cd.resist) + rollBonusFor("resist", cd.id), dosMod: dosShiftFor((b) => b.type === "resist" && (!b.target || b.target === cd.id)), condBonuses: catCond("resist", cd.id) }, e.currentTarget as HTMLElement);
+  const onRollResist = (cd: Condition, e: { currentTarget: Element }) => openPrompt({
+    who: meWho(), label: "Resist " + cd.name, kind: "resist", stat: cd.resist, mod: effFacRank(cd.resist) + rollBonusFor("resist", cd.id), dosMod: dosShiftFor((b) => b.type === "resist" && (!b.target || b.target === cd.id)), condBonuses: catCond("resist", cd.id),
+    resist: { condition: cd.id },
+  }, e.currentTarget as HTMLElement);
   const onRollMove = (m: Move, e: { currentTarget: Element }, optIdx?: number) => {
     const i = optIdx || 0;
     const opt = (m.rollOptions && m.rollOptions[i]) || { stat: m.stat, skill: m.skill, label: m.skill };
