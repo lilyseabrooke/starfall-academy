@@ -75,6 +75,7 @@ const sortCurrent = document.getElementById("sort-current");
 let currentData = [];
 let currentCategory = "Spells";
 let sortState = { field:"NAME", label:"Name", dir:"asc", type:"text" };
+let randomEntryId = null;
 let sortByCategory = {};
 try { sortByCategory = JSON.parse(localStorage.getItem("starfallCompendiumSort") || "{}") || {}; } catch(e){ sortByCategory = {}; }
 
@@ -494,7 +495,7 @@ function entryMatches(entry, filters, search){
   return show;
 }
 
-function applyFilters(){
+function readFilters(){
   const filters = {};
   const inputs = filterMenu.querySelectorAll("select, input[type=number], input[type=radio]");
   const search = searchBar.value.trim().toUpperCase();
@@ -504,7 +505,13 @@ function applyFilters(){
     else if (input.type === "number"){ filters[idOrName] = input.value ? parseFloat(input.value) : null; }
     else { filters[idOrName] = input.value || ""; }
   });
-  const shown = sortEntries(currentData.filter(e => entryMatches(e, filters, search)));
+  return { filters, search, pool: currentData.filter(e => entryMatches(e, filters, search)) };
+}
+
+function applyFilters(){
+  const { filters, pool } = readFilters();
+  let shown = sortEntries(pool);
+  if (randomEntryId) shown = shown.filter(e => e.ID === randomEntryId);
   renderEntries(shown);
   // active-filter dot
   filterBtn.classList.toggle("has-filters", Object.entries(filters).some(([k,v]) => v && v !== "ANY"));
@@ -539,10 +546,15 @@ function renderSortOptions(category){
     if (match){ init = match; dir = saved.dir === "desc" ? "desc" : "asc"; }
   }
   sortState = { field: init[0], label: init[1], dir, type: init[2] };
+  randomEntryId = null;
   const optsHtml = fields.map(([key,label,type]) =>
     `<button class="sort-opt" data-field="${key}" data-label="${label}" data-type="${type}">
        <span>${label}</span><span class="sort-opt__dir"></span>
-     </button>`).join("");
+     </button>`).join("")
+    + `<div class="sort-divider"></div>
+       <button class="sort-opt" data-field="RANDOM" data-label="Random" data-type="random">
+         <span>Random</span><span class="sort-opt__dir"></span>
+       </button>`;
   // Rendered twice: the standalone Sort dropdown, and (hidden until very
   // narrow screens fold Sort into the Filters button) a matching section at
   // the bottom of the filter menu.
@@ -553,13 +565,25 @@ function renderSortOptions(category){
 
 function updateSortUI(){
   document.querySelectorAll("#sort-menu .sort-opt, #filter-menu-sort-opts .sort-opt").forEach(opt => {
-    const active = opt.dataset.field === sortState.field;
+    const isRandom = opt.dataset.field === "RANDOM";
+    const active = isRandom ? !!randomEntryId : (!randomEntryId && opt.dataset.field === sortState.field);
     opt.classList.toggle("is-active", active);
-    opt.querySelector(".sort-opt__dir").innerHTML =
-      active ? `<i data-lucide="${sortState.dir === "asc" ? "arrow-up" : "arrow-down"}"></i>` : "";
+    opt.querySelector(".sort-opt__dir").innerHTML = !active ? "" :
+      isRandom ? `<i data-lucide="dices"></i>` : `<i data-lucide="${sortState.dir === "asc" ? "arrow-up" : "arrow-down"}"></i>`;
   });
-  sortCurrent.textContent = sortState.label;
+  sortCurrent.textContent = randomEntryId ? "Random" : sortState.label;
   refreshIcons();
+}
+
+/* Picks a random entry from the currently filtered/searched pool and pins
+   the list to just that one. Picking any other sort clears it; picking
+   Random again re-rolls a fresh pick from the same pool. */
+function pickRandomEntry(){
+  const { pool } = readFilters();
+  if (!pool.length) return;
+  randomEntryId = pool[Math.floor(Math.random() * pool.length)].ID;
+  updateSortUI();
+  applyFilters();
 }
 
 function sortEntries(arr){
@@ -590,6 +614,8 @@ sortBtn.addEventListener("click", e => {
 function onSortOptClick(e){
   const opt = e.target.closest(".sort-opt");
   if (!opt) return;
+  if (opt.dataset.field === "RANDOM"){ pickRandomEntry(); return; }
+  randomEntryId = null;
   if (sortState.field === opt.dataset.field){
     sortState.dir = sortState.dir === "asc" ? "desc" : "asc";
   } else {
