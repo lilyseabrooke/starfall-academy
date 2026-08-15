@@ -600,6 +600,7 @@
 .sf-sheet .sf-sort-opt.is-active { background: var(--brand-subtle); color: var(--gold-200); }
 .sf-sheet .sf-sort-opt__dir { display: inline-flex; width: 16px; height: 16px; color: var(--gold-400); }
 .sf-sheet .sf-sort-opt__dir svg { width: 16px; height: 16px; }
+.sf-sheet .sf-sort-divider { height: 1px; margin: 5px 4px; background: var(--rule-gold); opacity: .4; flex: none; }
 
 .sf-sheet .sf-filter-menu { width: 300px; padding: var(--space-4); gap: var(--space-4); }
 .sf-sheet .sf-filter-group { display: flex; flex-direction: column; gap: 8px; }

@@ -62,6 +62,7 @@ export function Compendium({
   const [filterOpen, setFilterOpen] = React.useState(false);
   const [sort, setSort] = React.useState<{ field: string; dir: "asc" | "desc" }>({ field: "name", dir: "asc" });
   const [filters, setFilters] = React.useState<Filters>(() => buildInitFilters(cat));
+  const [randomId, setRandomId] = React.useState<string | null>(null);
   const [openIds, setOpenIds] = React.useState<Record<string, boolean>>({});
   const sortRef = React.useRef<HTMLDivElement>(null);
   const filterRef = React.useRef<HTMLDivElement>(null);
@@ -73,6 +74,7 @@ export function Compendium({
   React.useEffect(() => {
     setSort({ field: "name", dir: "asc" });
     setFilters(buildInitFilters(cat));
+    setRandomId(null);
     setSortOpen(false);
     setFilterOpen(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -110,7 +112,7 @@ export function Compendium({
     return n + (filters[k] && filters[k] !== "any" ? 1 : 0);
   }, 0);
 
-  let items = inCat.filter((e) => {
+  const filtered = inCat.filter((e) => {
     for (const f of filterCfg) {
       if (f.kind === "select") {
         const v = filters[f.key] as string;
@@ -137,6 +139,7 @@ export function Compendium({
     }
     return true;
   });
+  let items = randomId ? filtered.filter((e) => e.id === randomId) : filtered;
   const sign = sort.dir === "asc" ? 1 : -1;
   const type = (sortFields.find((f) => f[0] === sort.field) || [])[2] || "text";
   items = items.slice().sort((a, b) => {
@@ -157,11 +160,17 @@ export function Compendium({
     return r * sign;
   });
 
-  const pickSort = (f: string) => setSort((s) => (s.field === f ? { field: f, dir: s.dir === "asc" ? "desc" : "asc" } : { field: f, dir: "asc" }));
+  const pickSort = (f: string) => { setRandomId(null); setSort((s) => (s.field === f ? { field: f, dir: s.dir === "asc" ? "desc" : "asc" } : { field: f, dir: "asc" })); };
+  const pickRandom = () => {
+    if (!filtered.length) return;
+    const pick = filtered[Math.floor(Math.random() * filtered.length)];
+    setRandomId(pick.id);
+    setSortOpen(false);
+  };
   const setF = (k: string, v: FilterValue) => setFilters((p) => ({ ...p, [k]: v }));
   const resetFilters = () => setFilters(buildInitFilters(cat));
   const toggleEntry = (id: string) => setOpenIds((m) => ({ ...m, [id]: !m[id] }));
-  const sortLabel = (sortFields.find((f) => f[0] === sort.field) || sortFields[0])[1];
+  const sortLabel = randomId ? "Random" : (sortFields.find((f) => f[0] === sort.field) || sortFields[0])[1];
 
   const factsFor = (e: CompendiumEntry): Array<[string, string | number]> => {
     const f: Array<[string, string | number]> = [];
@@ -269,11 +278,16 @@ export function Compendium({
               <div className={"sf-menu sf-sort-menu" + (sortOpen ? " show" : "")} role="dialog" aria-label="Sort options">
                 <div className="sf-menu__head">Order by</div>
                 {sortFields.map(([key, label]) => (
-                  <button key={key} className={"sf-sort-opt" + (sort.field === key ? " is-active" : "")} onClick={() => pickSort(key)}>
+                  <button key={key} className={"sf-sort-opt" + (!randomId && sort.field === key ? " is-active" : "")} onClick={() => pickSort(key)}>
                     <span>{label}</span>
-                    <span className="sf-sort-opt__dir">{sort.field === key ? <Icon name={sort.dir === "asc" ? "arrow-up" : "arrow-down"} /> : null}</span>
+                    <span className="sf-sort-opt__dir">{!randomId && sort.field === key ? <Icon name={sort.dir === "asc" ? "arrow-up" : "arrow-down"} /> : null}</span>
                   </button>
                 ))}
+                <div className="sf-sort-divider" />
+                <button className={"sf-sort-opt" + (randomId ? " is-active" : "")} onClick={pickRandom}>
+                  <span>Random</span>
+                  <span className="sf-sort-opt__dir">{randomId ? <Icon name="dices" /> : null}</span>
+                </button>
               </div>
             </div>
           </div>
