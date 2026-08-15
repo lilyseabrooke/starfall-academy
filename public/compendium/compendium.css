@@ -141,6 +141,7 @@ body.no-icons .cat svg{ display:none; }
 .sort-opt.is-active{ background:var(--brand-subtle); color:var(--gold-200); }
 .sort-opt__dir{ display:inline-flex; width:16px; height:16px; color:var(--gold-400); }
 .sort-opt__dir svg{ width:16px; height:16px; }
+.sort-divider{ height:1px; margin:5px 4px; background:var(--rule-gold); opacity:.4; flex:none; }
 
 /* ---- Search + filter button -------------------------------------------- */
 /* Collapsed to just the icon until focused (or holding a query), so it
