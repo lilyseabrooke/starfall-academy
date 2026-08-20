@@ -16,8 +16,16 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "rankBorder": 22
 }/*EDITMODE-END*/;
 
-/* ---- Live data sources (published CSV, unchanged from the original) ------- */
-const sheets = {
+/* ---- Live data sources (published CSV, unchanged from the original) -------
+   Split into two views so the page never crowds its tabs: every existing
+   Compendium tab (spells, artifacts, wands, etc.) is an "Asset"; any other
+   tab type added to the workbook is a "Lore" tab unless it's deliberately
+   filed under Assets instead. Only one view's tabs show at a time — the
+   Assets/Lore switch in the toolbar swaps ASSET_SHEETS for LORE_SHEETS
+   wholesale (see `sheets`, `selectView`). Lore entries render through the
+   exact same generic card/filter/sort machinery as Asset entries below —
+   nothing category-specific needed to add a new Lore tab beyond its gid. */
+const ASSET_SHEETS = {
   "Spells":    "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXtnorBMPVkIS5vVvc1hiPA_9MNwo3v5gcC__rVMLa28HHCjuKjCm5f_dwQgXfWVF9jF9rfl6oLsfd/pub?gid=0&single=true&output=csv",
   "Potions":   "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXtnorBMPVkIS5vVvc1hiPA_9MNwo3v5gcC__rVMLa28HHCjuKjCm5f_dwQgXfWVF9jF9rfl6oLsfd/pub?gid=646516393&single=true&output=csv",
   "Glyphs":    "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXtnorBMPVkIS5vVvc1hiPA_9MNwo3v5gcC__rVMLa28HHCjuKjCm5f_dwQgXfWVF9jF9rfl6oLsfd/pub?gid=1319626806&single=true&output=csv",
@@ -28,9 +36,22 @@ const sheets = {
   "Classes":   "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXtnorBMPVkIS5vVvc1hiPA_9MNwo3v5gcC__rVMLa28HHCjuKjCm5f_dwQgXfWVF9jF9rfl6oLsfd/pub?gid=1631797228&single=true&output=csv"
 };
 
+/* Lore tabs — proof of concept: Events. */
+const LORE_SHEETS = {
+  "Events":    "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXtnorBMPVkIS5vVvc1hiPA_9MNwo3v5gcC__rVMLa28HHCjuKjCm5f_dwQgXfWVF9jF9rfl6oLsfd/pub?gid=1082602083&single=true&output=csv"
+};
+
+const VIEWS = { assets: ASSET_SHEETS, lore: LORE_SHEETS };
+
+/* The active view's tab map — swapped wholesale by selectView(). Everything
+   below keys off this rather than off ASSET_SHEETS/LORE_SHEETS directly. */
+let sheets = ASSET_SHEETS;
+let currentView = "assets";
+
 const CATEGORY_ICONS = {
   "Spells": "sparkles", "Potions": "flask-conical", "Glyphs": "pen-tool",
-  "Wands": "wand-2", "Artifacts": "gem", "Plants": "sprout", "Items": "backpack", "Classes": "graduation-cap"
+  "Wands": "wand-2", "Artifacts": "gem", "Plants": "sprout", "Items": "backpack", "Classes": "graduation-cap",
+  "Events": "calendar-days"
 };
 
 /* header meta line per category (unchanged formats, rendered as badges below) */
@@ -42,7 +63,10 @@ const headerFields = {
   artifact: e => ({ level: e.LEVEL, txt: e.SUBJECT }),
   plant:    e => ({ txt: trio("Value", e.VALUE, "Intensity", e.INTENSITY) }),
   item:     e => ({ txt: e.COST ? "Cost · " + e.COST : "" }),
-  class:    e => ({ txt: "" })
+  class:    e => ({ txt: "" }),
+  /* Same "level badge" treatment Spells get, just keyed off the season the
+     Timing falls in instead of a spell tier. */
+  event:    e => ({ level: (e.TIMING || "").toString().trim(), tone: eventTone(e.TIMING), txt: "" })
 };
 function trio(a, av, b, bv){
   const parts = [];
@@ -59,7 +83,55 @@ function levelTone(level){
   return LEVEL_TONE[first] || "neutral";
 }
 
+/* ===========================================================================
+   Events — Timing parsing
+   ---------------------------------------------------------------------------
+   The Timing column holds a date ("April 21st"), a bare month ("May"), or a
+   season ("Fall") — any granularity. Shared by the header badge (tone by
+   season) and by the two Timing sort options below (rank by season, then
+   month, then day, most-general-first within a bucket). =========================================================================== */
+const MONTH_NAMES = ["january","february","march","april","may","june","july","august","september","october","november","december"];
+const MONTH_ABBR = { jan:1, feb:2, mar:3, apr:4, may:5, jun:6, jul:7, aug:8, sep:9, sept:9, oct:10, nov:11, dec:12 };
+/* Winter = January · Spring = February–May · Summer = June–August · Fall = September–December */
+const MONTH_SEASON = { 1:"winter", 2:"spring", 3:"spring", 4:"spring", 5:"spring", 6:"summer", 7:"summer", 8:"summer", 9:"fall", 10:"fall", 11:"fall", 12:"fall" };
+const SEASON_ALIASES = { winter:"winter", spring:"spring", summer:"summer", fall:"fall", autumn:"fall" };
+const SEASON_TONE = { winter:"teal", spring:"forest", summer:"plum", fall:"gold" };
+
+/** "Fall" | "May" | "April 21st" → { season, month (1-12 or null), day (or null) }; unparseable → null. */
+function parseTiming(raw){
+  const s = (raw || "").toString().trim().toLowerCase();
+  if (!s) return null;
+  if (SEASON_ALIASES[s]) return { season: SEASON_ALIASES[s], month: null, day: null };
+  const monthOnly = MONTH_NAMES.indexOf(s);
+  if (monthOnly !== -1){ const month = monthOnly + 1; return { season: MONTH_SEASON[month], month, day: null }; }
+  const m = /^([a-z]+)\.?\s+(\d{1,2})(?:st|nd|rd|th)?\.?$/.exec(s);
+  if (m){
+    let month = MONTH_NAMES.indexOf(m[1]) + 1;
+    if (!month) month = MONTH_ABBR[m[1]] || 0;
+    const day = parseInt(m[2], 10);
+    if (month && day >= 1 && day <= 31) return { season: MONTH_SEASON[month], month, day };
+  }
+  return null;
+}
+function eventTone(raw){
+  const t = parseTiming(raw);
+  return (t && SEASON_TONE[t.season]) || "neutral";
+}
+/* Fall→Winter→Spring→Summer (school-year order) vs. Winter→Spring→Summer→Fall
+   (plain calendar order) — the only difference between the two sorts. */
+const SEASON_ORDER = { academic: ["fall","winter","spring","summer"], calendar: ["winter","spring","summer","fall"] };
+/** Composite rank: season bucket, then "just the season" before "just the
+    month" before "a specific day" within it, ascending. Unparseable → last. */
+function timingRank(raw, mode){
+  const t = parseTiming(raw);
+  if (!t) return Infinity;
+  const seasonIdx = SEASON_ORDER[mode].indexOf(t.season);
+  const within = t.month == null ? -1 : (t.month * 100 + (t.day || 0));
+  return seasonIdx * 2000 + within;
+}
+
 /* ---- DOM refs ------------------------------------------------------------ */
+const viewToggleEl = document.getElementById("view-toggle");
 const catsEl   = document.getElementById("cats");
 const list     = document.getElementById("list");
 const searchWrap = document.querySelector(".search");
@@ -88,7 +160,11 @@ const SORT_FIELDS = {
   ARTIFACTS: [["NAME","Name","text"],["SUBJECT","Subject","text"],["LEVEL","Level","level"],["COST","Cost","num"],["INTENSITY","Intensity","num"],["DC","DC","num"]],
   PLANTS:    [["NAME","Name","text"],["VALUE","Value","num"],["INTENSITY","Intensity","num"]],
   ITEMS:     [["NAME","Name","text"],["COST","Cost","num"]],
-  CLASSES:   [["NAME","Name","text"]]
+  CLASSES:   [["NAME","Name","text"]],
+  /* Field keys here are UI-only ids (matched against sort state, not an
+     actual column) — both read TIMING via timingRank(), just with a
+     different season order. See the "Events — Timing parsing" block. */
+  EVENTS:    [["NAME","Name","text"],["TIMING_ACADEMIC","Timing (Academic Year)","timing-academic"],["TIMING_CALENDAR","Timing (Calendar Year)","timing-calendar"]]
 };
 const LEVEL_ORDER = { BASIC:0, STANDARD:1, ADVANCED:2, LEGENDARY:3, HEX:4, TWISTED:4 };
 function levelRank(v){
@@ -141,9 +217,9 @@ window.addEventListener("resize", updateCatsFade);
 function selectCategory(name){
   if (name === currentCategory && currentData.length) return;
   currentCategory = name;
-  localStorage.setItem("starfallCompendiumLastCategory", name);
+  localStorage.setItem("starfallCompendiumLastCategory:" + currentView, name);
   [...catsEl.children].forEach(c => c.classList.toggle("is-active", c.dataset.cat === name));
-  filterBtn.disabled = (name === "Classes");
+  filterBtn.disabled = true; // re-enabled by loadSheet once it knows whether this tab has filters
   filterMenu.classList.remove("show");
   filterBtn.classList.remove("is-active");
   searchBar.value = "";
@@ -151,6 +227,33 @@ function selectCategory(name){
   window.scrollTo({ top: 0, behavior: "smooth" });
   loadSheet(name);
 }
+
+/* ===========================================================================
+   Assets / Lore switch
+   ---------------------------------------------------------------------------
+   Only one view's tabs are ever shown, to keep the toolbar from crowding.
+   Always defaults to Assets on load; each view remembers its own last-open
+   category so hopping back and forth doesn't lose your place. =========================================================================== */
+function selectView(view){
+  if (view === currentView) return;
+  currentView = view;
+  sheets = VIEWS[view];
+  [...viewToggleEl.children].forEach(b => {
+    const active = b.dataset.view === view;
+    b.classList.toggle("is-active", active);
+    b.setAttribute("aria-selected", active ? "true" : "false");
+  });
+  buildCats();
+  updateCatsFade();
+  const saved = localStorage.getItem("starfallCompendiumLastCategory:" + view);
+  const startCat = (saved && sheets[saved]) ? saved : Object.keys(sheets)[0];
+  currentData = []; // force selectCategory to actually (re)load even if the name matches
+  selectCategory(startCat);
+}
+viewToggleEl.addEventListener("click", e => {
+  const btn = e.target.closest(".view-toggle__btn");
+  if (btn) selectView(btn.dataset.view);
+});
 
 /* ===========================================================================
    Data loading
@@ -164,6 +267,9 @@ function loadSheet(name){
       currentData = (results.data || []).filter(r => r && r.ID && (r.NAME || "").trim());
       if (!currentData.length){ showState("empty"); return; }
       renderFilters(name);
+      // Tabs with no filter config (Classes, and any Lore tab like Events)
+      // render nothing but the reset button — leave Filters disabled for those.
+      filterBtn.disabled = filterMenuBody.querySelectorAll(".filter-group").length <= 1;
       setupFilterListeners();
       renderSortOptions(name);
       applyFilters();
@@ -261,7 +367,7 @@ function buildCard(entry){
 function buildMeta(meta){
   let html = "";
   if (meta.level){
-    const tone = levelTone(meta.level);
+    const tone = meta.tone || levelTone(meta.level);
     html += `<span class="badge badge--${tone}"><span class="badge__dot"></span>${esc(meta.level)}</span>`;
   }
   if (meta.txt){
@@ -283,8 +389,8 @@ function renderDetails(entry, category){
     val = val.toString().trim();
     if (!val) continue;
     if (key === "HIGHER-LEVEL BEHAVIOR" && /^n\/?a\.?$/i.test(val)) continue;
-    const multiline = /•/.test(val);
-    const html = esc(val).replace(/•/g, "<br>");
+    const multiline = /•|\r|\n/.test(val);
+    const html = esc(val).replace(/•|\r\n|\r|\n/g, "<br>");
     if (multiline || val.length > 46 || ALWAYS_BLOCK_KEYS.has(key)){
       blocks.push(`<div class="block"><div class="block__k">${esc(key)}</div><div class="block__v">${html}</div></div>`);
     } else {
@@ -314,7 +420,7 @@ function renderClassCard(entry){
       if (!nm && !ds) return;
       ranks.push(`<div class="classRank">
         <div class="classRank__name"><span class="classRank__tier">R${r}.${c}</span>${esc((nm||"").toString())}</div>
-        <div class="classRank__desc">${esc((ds||"").toString()).replace(/•/g,"<br>")}</div>
+        <div class="classRank__desc">${esc((ds||"").toString()).replace(/•|\r\n|\r|\n/g,"<br>")}</div>
       </div>`);
     });
   }
@@ -537,10 +643,16 @@ searchBar.addEventListener("input", applyFilters);
 /* ===========================================================================
    Sort
    =========================================================================== */
+/* Per-category default sort field, when it isn't just "the first option in
+   the menu" (e.g. Events opens sorted by Timing rather than Name, even
+   though Name still lists first). */
+const DEFAULT_SORT_FIELD = { EVENTS: "TIMING_ACADEMIC" };
+
 function renderSortOptions(category){
   const fields = SORT_FIELDS[category.toUpperCase()] || [["NAME","Name","text"]];
   const saved = sortByCategory[category.toUpperCase()];
-  let init = fields[0], dir = "asc";
+  const defaultField = DEFAULT_SORT_FIELD[category.toUpperCase()];
+  let init = (defaultField && fields.find(f => f[0] === defaultField)) || fields[0], dir = "asc";
   if (saved){
     const match = fields.find(f => f[0] === saved.field);
     if (match){ init = match; dir = saved.dir === "desc" ? "desc" : "asc"; }
@@ -598,6 +710,9 @@ function sortEntries(arr){
       r = av - bv;
     } else if (type === "level"){
       r = levelRank(a[field]) - levelRank(b[field]);
+    } else if (type === "timing-academic" || type === "timing-calendar"){
+      const mode = type === "timing-academic" ? "academic" : "calendar";
+      r = timingRank(a.TIMING, mode) - timingRank(b.TIMING, mode);
     } else {
       r = (a[field] || "").toString().toLowerCase().localeCompare((b[field] || "").toString().toLowerCase());
     }
@@ -849,8 +964,10 @@ setTopbarH();
 updateCatsFade();
 window.addEventListener("load", updateCatsFade);
 
-const saved = localStorage.getItem("starfallCompendiumLastCategory");
+// Always boots into the Assets view (Lore is opt-in via the toggle each visit),
+// remembering only which Asset tab was last open within that view.
+const saved = localStorage.getItem("starfallCompendiumLastCategory:assets");
 currentCategory = (saved && sheets[saved]) ? saved : "Spells";
 [...catsEl.children].forEach(c => c.classList.toggle("is-active", c.dataset.cat === currentCategory));
-filterBtn.disabled = (currentCategory === "Classes");
+filterBtn.disabled = true; // re-enabled by loadSheet once it knows whether this tab has filters
 loadSheet(currentCategory);
