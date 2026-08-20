@@ -63,7 +63,10 @@ const headerFields = {
   artifact: e => ({ level: e.LEVEL, txt: e.SUBJECT }),
   plant:    e => ({ txt: trio("Value", e.VALUE, "Intensity", e.INTENSITY) }),
   item:     e => ({ txt: e.COST ? "Cost · " + e.COST : "" }),
-  class:    e => ({ txt: "" })
+  class:    e => ({ txt: "" }),
+  /* Same "level badge" treatment Spells get, just keyed off the season the
+     Timing falls in instead of a spell tier. */
+  event:    e => ({ level: (e.TIMING || "").toString().trim(), tone: eventTone(e.TIMING), txt: "" })
 };
 function trio(a, av, b, bv){
   const parts = [];
@@ -78,6 +81,53 @@ function levelTone(level){
   if (!level) return "neutral";
   const first = level.toString().trim().toUpperCase().split(/\s+/)[0];
   return LEVEL_TONE[first] || "neutral";
+}
+
+/* ===========================================================================
+   Events — Timing parsing
+   ---------------------------------------------------------------------------
+   The Timing column holds a date ("April 21st"), a bare month ("May"), or a
+   season ("Fall") — any granularity. Shared by the header badge (tone by
+   season) and by the two Timing sort options below (rank by season, then
+   month, then day, most-general-first within a bucket). =========================================================================== */
+const MONTH_NAMES = ["january","february","march","april","may","june","july","august","september","october","november","december"];
+const MONTH_ABBR = { jan:1, feb:2, mar:3, apr:4, may:5, jun:6, jul:7, aug:8, sep:9, sept:9, oct:10, nov:11, dec:12 };
+/* Winter = January · Spring = February–May · Summer = June–August · Fall = September–December */
+const MONTH_SEASON = { 1:"winter", 2:"spring", 3:"spring", 4:"spring", 5:"spring", 6:"summer", 7:"summer", 8:"summer", 9:"fall", 10:"fall", 11:"fall", 12:"fall" };
+const SEASON_ALIASES = { winter:"winter", spring:"spring", summer:"summer", fall:"fall", autumn:"fall" };
+const SEASON_TONE = { winter:"teal", spring:"forest", summer:"plum", fall:"gold" };
+
+/** "Fall" | "May" | "April 21st" → { season, month (1-12 or null), day (or null) }; unparseable → null. */
+function parseTiming(raw){
+  const s = (raw || "").toString().trim().toLowerCase();
+  if (!s) return null;
+  if (SEASON_ALIASES[s]) return { season: SEASON_ALIASES[s], month: null, day: null };
+  const monthOnly = MONTH_NAMES.indexOf(s);
+  if (monthOnly !== -1){ const month = monthOnly + 1; return { season: MONTH_SEASON[month], month, day: null }; }
+  const m = /^([a-z]+)\.?\s+(\d{1,2})(?:st|nd|rd|th)?\.?$/.exec(s);
+  if (m){
+    let month = MONTH_NAMES.indexOf(m[1]) + 1;
+    if (!month) month = MONTH_ABBR[m[1]] || 0;
+    const day = parseInt(m[2], 10);
+    if (month && day >= 1 && day <= 31) return { season: MONTH_SEASON[month], month, day };
+  }
+  return null;
+}
+function eventTone(raw){
+  const t = parseTiming(raw);
+  return (t && SEASON_TONE[t.season]) || "neutral";
+}
+/* Fall→Winter→Spring→Summer (school-year order) vs. Winter→Spring→Summer→Fall
+   (plain calendar order) — the only difference between the two sorts. */
+const SEASON_ORDER = { academic: ["fall","winter","spring","summer"], calendar: ["winter","spring","summer","fall"] };
+/** Composite rank: season bucket, then "just the season" before "just the
+    month" before "a specific day" within it, ascending. Unparseable → last. */
+function timingRank(raw, mode){
+  const t = parseTiming(raw);
+  if (!t) return Infinity;
+  const seasonIdx = SEASON_ORDER[mode].indexOf(t.season);
+  const within = t.month == null ? -1 : (t.month * 100 + (t.day || 0));
+  return seasonIdx * 2000 + within;
 }
 
 /* ---- DOM refs ------------------------------------------------------------ */
@@ -110,7 +160,11 @@ const SORT_FIELDS = {
   ARTIFACTS: [["NAME","Name","text"],["SUBJECT","Subject","text"],["LEVEL","Level","level"],["COST","Cost","num"],["INTENSITY","Intensity","num"],["DC","DC","num"]],
   PLANTS:    [["NAME","Name","text"],["VALUE","Value","num"],["INTENSITY","Intensity","num"]],
   ITEMS:     [["NAME","Name","text"],["COST","Cost","num"]],
-  CLASSES:   [["NAME","Name","text"]]
+  CLASSES:   [["NAME","Name","text"]],
+  /* Field keys here are UI-only ids (matched against sort state, not an
+     actual column) — both read TIMING via timingRank(), just with a
+     different season order. See the "Events — Timing parsing" block. */
+  EVENTS:    [["NAME","Name","text"],["TIMING_ACADEMIC","Timing (Academic Year)","timing-academic"],["TIMING_CALENDAR","Timing (Calendar Year)","timing-calendar"]]
 };
 const LEVEL_ORDER = { BASIC:0, STANDARD:1, ADVANCED:2, LEGENDARY:3, HEX:4, TWISTED:4 };
 function levelRank(v){
@@ -313,7 +367,7 @@ function buildCard(entry){
 function buildMeta(meta){
   let html = "";
   if (meta.level){
-    const tone = levelTone(meta.level);
+    const tone = meta.tone || levelTone(meta.level);
     html += `<span class="badge badge--${tone}"><span class="badge__dot"></span>${esc(meta.level)}</span>`;
   }
   if (meta.txt){
@@ -650,6 +704,9 @@ function sortEntries(arr){
       r = av - bv;
     } else if (type === "level"){
       r = levelRank(a[field]) - levelRank(b[field]);
+    } else if (type === "timing-academic" || type === "timing-calendar"){
+      const mode = type === "timing-academic" ? "academic" : "calendar";
+      r = timingRank(a.TIMING, mode) - timingRank(b.TIMING, mode);
     } else {
       r = (a[field] || "").toString().toLowerCase().localeCompare((b[field] || "").toString().toLowerCase());
     }
