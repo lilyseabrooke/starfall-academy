@@ -643,10 +643,16 @@ searchBar.addEventListener("input", applyFilters);
 /* ===========================================================================
    Sort
    =========================================================================== */
+/* Per-category default sort field, when it isn't just "the first option in
+   the menu" (e.g. Events opens sorted by Timing rather than Name, even
+   though Name still lists first). */
+const DEFAULT_SORT_FIELD = { EVENTS: "TIMING_ACADEMIC" };
+
 function renderSortOptions(category){
   const fields = SORT_FIELDS[category.toUpperCase()] || [["NAME","Name","text"]];
   const saved = sortByCategory[category.toUpperCase()];
-  let init = fields[0], dir = "asc";
+  const defaultField = DEFAULT_SORT_FIELD[category.toUpperCase()];
+  let init = (defaultField && fields.find(f => f[0] === defaultField)) || fields[0], dir = "asc";
   if (saved){
     const match = fields.find(f => f[0] === saved.field);
     if (match){ init = match; dir = saved.dir === "desc" ? "desc" : "asc"; }
