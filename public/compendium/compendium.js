@@ -16,8 +16,16 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "rankBorder": 22
 }/*EDITMODE-END*/;
 
-/* ---- Live data sources (published CSV, unchanged from the original) ------- */
-const sheets = {
+/* ---- Live data sources (published CSV, unchanged from the original) -------
+   Split into two views so the page never crowds its tabs: every existing
+   Compendium tab (spells, artifacts, wands, etc.) is an "Asset"; any other
+   tab type added to the workbook is a "Lore" tab unless it's deliberately
+   filed under Assets instead. Only one view's tabs show at a time — the
+   Assets/Lore switch in the toolbar swaps ASSET_SHEETS for LORE_SHEETS
+   wholesale (see `sheets`, `selectView`). Lore entries render through the
+   exact same generic card/filter/sort machinery as Asset entries below —
+   nothing category-specific needed to add a new Lore tab beyond its gid. */
+const ASSET_SHEETS = {
   "Spells":    "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXtnorBMPVkIS5vVvc1hiPA_9MNwo3v5gcC__rVMLa28HHCjuKjCm5f_dwQgXfWVF9jF9rfl6oLsfd/pub?gid=0&single=true&output=csv",
   "Potions":   "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXtnorBMPVkIS5vVvc1hiPA_9MNwo3v5gcC__rVMLa28HHCjuKjCm5f_dwQgXfWVF9jF9rfl6oLsfd/pub?gid=646516393&single=true&output=csv",
   "Glyphs":    "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXtnorBMPVkIS5vVvc1hiPA_9MNwo3v5gcC__rVMLa28HHCjuKjCm5f_dwQgXfWVF9jF9rfl6oLsfd/pub?gid=1319626806&single=true&output=csv",
@@ -28,9 +36,22 @@ const sheets = {
   "Classes":   "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXtnorBMPVkIS5vVvc1hiPA_9MNwo3v5gcC__rVMLa28HHCjuKjCm5f_dwQgXfWVF9jF9rfl6oLsfd/pub?gid=1631797228&single=true&output=csv"
 };
 
+/* Lore tabs — proof of concept: Events. */
+const LORE_SHEETS = {
+  "Events":    "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXtnorBMPVkIS5vVvc1hiPA_9MNwo3v5gcC__rVMLa28HHCjuKjCm5f_dwQgXfWVF9jF9rfl6oLsfd/pub?gid=1082602083&single=true&output=csv"
+};
+
+const VIEWS = { assets: ASSET_SHEETS, lore: LORE_SHEETS };
+
+/* The active view's tab map — swapped wholesale by selectView(). Everything
+   below keys off this rather than off ASSET_SHEETS/LORE_SHEETS directly. */
+let sheets = ASSET_SHEETS;
+let currentView = "assets";
+
 const CATEGORY_ICONS = {
   "Spells": "sparkles", "Potions": "flask-conical", "Glyphs": "pen-tool",
-  "Wands": "wand-2", "Artifacts": "gem", "Plants": "sprout", "Items": "backpack", "Classes": "graduation-cap"
+  "Wands": "wand-2", "Artifacts": "gem", "Plants": "sprout", "Items": "backpack", "Classes": "graduation-cap",
+  "Events": "calendar-days"
 };
 
 /* header meta line per category (unchanged formats, rendered as badges below) */
@@ -60,6 +81,7 @@ function levelTone(level){
 }
 
 /* ---- DOM refs ------------------------------------------------------------ */
+const viewToggleEl = document.getElementById("view-toggle");
 const catsEl   = document.getElementById("cats");
 const list     = document.getElementById("list");
 const searchWrap = document.querySelector(".search");
@@ -141,9 +163,9 @@ window.addEventListener("resize", updateCatsFade);
 function selectCategory(name){
   if (name === currentCategory && currentData.length) return;
   currentCategory = name;
-  localStorage.setItem("starfallCompendiumLastCategory", name);
+  localStorage.setItem("starfallCompendiumLastCategory:" + currentView, name);
   [...catsEl.children].forEach(c => c.classList.toggle("is-active", c.dataset.cat === name));
-  filterBtn.disabled = (name === "Classes");
+  filterBtn.disabled = true; // re-enabled by loadSheet once it knows whether this tab has filters
   filterMenu.classList.remove("show");
   filterBtn.classList.remove("is-active");
   searchBar.value = "";
@@ -151,6 +173,33 @@ function selectCategory(name){
   window.scrollTo({ top: 0, behavior: "smooth" });
   loadSheet(name);
 }
+
+/* ===========================================================================
+   Assets / Lore switch
+   ---------------------------------------------------------------------------
+   Only one view's tabs are ever shown, to keep the toolbar from crowding.
+   Always defaults to Assets on load; each view remembers its own last-open
+   category so hopping back and forth doesn't lose your place. =========================================================================== */
+function selectView(view){
+  if (view === currentView) return;
+  currentView = view;
+  sheets = VIEWS[view];
+  [...viewToggleEl.children].forEach(b => {
+    const active = b.dataset.view === view;
+    b.classList.toggle("is-active", active);
+    b.setAttribute("aria-selected", active ? "true" : "false");
+  });
+  buildCats();
+  updateCatsFade();
+  const saved = localStorage.getItem("starfallCompendiumLastCategory:" + view);
+  const startCat = (saved && sheets[saved]) ? saved : Object.keys(sheets)[0];
+  currentData = []; // force selectCategory to actually (re)load even if the name matches
+  selectCategory(startCat);
+}
+viewToggleEl.addEventListener("click", e => {
+  const btn = e.target.closest(".view-toggle__btn");
+  if (btn) selectView(btn.dataset.view);
+});
 
 /* ===========================================================================
    Data loading
@@ -164,6 +213,9 @@ function loadSheet(name){
       currentData = (results.data || []).filter(r => r && r.ID && (r.NAME || "").trim());
       if (!currentData.length){ showState("empty"); return; }
       renderFilters(name);
+      // Tabs with no filter config (Classes, and any Lore tab like Events)
+      // render nothing but the reset button — leave Filters disabled for those.
+      filterBtn.disabled = filterMenuBody.querySelectorAll(".filter-group").length <= 1;
       setupFilterListeners();
       renderSortOptions(name);
       applyFilters();
@@ -849,8 +901,10 @@ setTopbarH();
 updateCatsFade();
 window.addEventListener("load", updateCatsFade);
 
-const saved = localStorage.getItem("starfallCompendiumLastCategory");
+// Always boots into the Assets view (Lore is opt-in via the toggle each visit),
+// remembering only which Asset tab was last open within that view.
+const saved = localStorage.getItem("starfallCompendiumLastCategory:assets");
 currentCategory = (saved && sheets[saved]) ? saved : "Spells";
 [...catsEl.children].forEach(c => c.classList.toggle("is-active", c.dataset.cat === currentCategory));
-filterBtn.disabled = (currentCategory === "Classes");
+filterBtn.disabled = true; // re-enabled by loadSheet once it knows whether this tab has filters
 loadSheet(currentCategory);

@@ -71,6 +71,20 @@ button{ font-family:inherit; color:inherit; cursor:pointer; background:none; bor
 }
 .topbar__filter{ position:relative; flex:none; }
 
+/* ---- Assets / Lore switch — segmented pair, defaults to Assets ---------- */
+.view-toggle{
+  flex:none; display:flex; align-self:center; gap:2px; padding:2px;
+  background:var(--ink-850); border:1px solid var(--border-default); border-radius:var(--radius-sm);
+}
+.view-toggle__btn{
+  height:calc(var(--control-sm) - 4px); padding:0 12px; border-radius:calc(var(--radius-sm) - 2px);
+  font-family:var(--font-sans); font-weight:500; font-size:var(--text-sm); letter-spacing:var(--tracking-wide);
+  text-transform:uppercase; color:var(--text-muted);
+  transition:color var(--dur-base) var(--ease-standard), background var(--dur-base) var(--ease-standard);
+}
+.view-toggle__btn:hover{ color:var(--text-strong); }
+.view-toggle__btn.is-active{ background:var(--grad-gold); color:var(--ink-950); font-weight:600; }
+
 .cats{
   flex:1; min-width:0; align-self:stretch;
   display:flex; align-items:stretch; flex-wrap:nowrap; gap:2px;
@@ -552,6 +566,7 @@ body.flat-levels .badge[class*="badge--"]{ color:var(--gold-300); background:var
      the Filters button (as a "Sort By" section at the bottom of that menu)
      rather than keep two buttons. */
   .topbar{ height:56px; padding:0 var(--space-4); gap:var(--space-2); }
+  .view-toggle__btn{ padding:0 9px; font-size:11px; }
   .filter-btn{ padding:0 var(--space-3); }
   .filter-btn span:not(.filter-dot){ display:none; }
   .filter-menu{ width:min(340px, calc(100vw - 24px)); }
