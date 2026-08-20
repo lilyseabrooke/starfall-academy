@@ -335,8 +335,8 @@ function renderDetails(entry, category){
     val = val.toString().trim();
     if (!val) continue;
     if (key === "HIGHER-LEVEL BEHAVIOR" && /^n\/?a\.?$/i.test(val)) continue;
-    const multiline = /•/.test(val);
-    const html = esc(val).replace(/•/g, "<br>");
+    const multiline = /•|\r|\n/.test(val);
+    const html = esc(val).replace(/•|\r\n|\r|\n/g, "<br>");
     if (multiline || val.length > 46 || ALWAYS_BLOCK_KEYS.has(key)){
       blocks.push(`<div class="block"><div class="block__k">${esc(key)}</div><div class="block__v">${html}</div></div>`);
     } else {
@@ -366,7 +366,7 @@ function renderClassCard(entry){
       if (!nm && !ds) return;
       ranks.push(`<div class="classRank">
         <div class="classRank__name"><span class="classRank__tier">R${r}.${c}</span>${esc((nm||"").toString())}</div>
-        <div class="classRank__desc">${esc((ds||"").toString()).replace(/•/g,"<br>")}</div>
+        <div class="classRank__desc">${esc((ds||"").toString()).replace(/•|\r\n|\r|\n/g,"<br>")}</div>
       </div>`);
     });
   }
