@@ -234,6 +234,11 @@ body.no-icons .cat svg{ display:none; }
   padding-top:var(--space-3);
   border-top:1px solid var(--hairline);
 }
+/* On tabs with no filter fields (Classes, Lore tabs like Events),
+   #filter-menu-body renders nothing — collapse it and drop the sort
+   section's separator so the popover isn't just a stray rule up top. */
+#filter-menu-body:empty{ display:none; }
+.filter-menu.filters-empty .filter-menu__sort{ padding-top:0; border-top:none; }
 .filter-menu__sort-head{ font-family:var(--font-sans); font-size:10px; letter-spacing:var(--tracking-widest);
   text-transform:uppercase; color:var(--text-gold); padding-bottom:var(--space-1); }
 .filter-menu__sort-opts{ display:flex; flex-direction:column; gap:2px; }

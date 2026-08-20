@@ -143,6 +143,10 @@ const filterMenuSortOpts = document.getElementById("filter-menu-sort-opts");
 const sortBtn  = document.getElementById("sort-button");
 const sortMenu = document.getElementById("sort-menu");
 const sortCurrent = document.getElementById("sort-current");
+/* Matches the breakpoint in compendium.css where Sort folds into the Filters
+   menu — below it, Filters is the only way to reach Sort, so the button
+   must stay open-able even on tabs with no filter fields of their own. */
+const sortFoldedIntoFilters = window.matchMedia("(max-width:680px)");
 
 let currentData = [];
 let currentCategory = "Spells";
@@ -267,11 +271,13 @@ function loadSheet(name){
       currentData = (results.data || []).filter(r => r && r.ID && (r.NAME || "").trim());
       if (!currentData.length){ showState("empty"); return; }
       renderFilters(name);
-      // Tabs with no filter config (Classes, and any Lore tab like Events)
-      // render nothing but the reset button — leave Filters disabled for those.
-      filterBtn.disabled = filterMenuBody.querySelectorAll(".filter-group").length <= 1;
       setupFilterListeners();
       renderSortOptions(name);
+      // Tabs with no filter config (Classes, and any Lore tab like Events)
+      // leave Filters disabled on wide screens, where Sort has its own
+      // standalone button. On narrow screens Sort folds into the Filters
+      // menu, so the button must stay open-able there even with no filters.
+      updateFilterButtonState();
       applyFilters();
     },
     error: () => showState("error")
@@ -436,7 +442,7 @@ const SKILLS   = ["Any","Agility","Analyze","Art","Athletics","Comprehend","Conc
 const STATS    = ["Any","Focus","Creativity","Logic","Insight","Body","Charm"];
 
 function renderFilters(category){
-  filterMenuBody.innerHTML = `<div class="filter-menu__head">Refine ${category}</div>`;
+  filterMenuBody.innerHTML = "";
   const c = category.toUpperCase();
   if (c === "SPELLS"){
     appendCategorySelect("SUBJECT", SUBJECTS); appendCategorySelect("STAT", STATS);
@@ -455,7 +461,14 @@ function renderFilters(category){
   } else if (c === "ITEMS"){
     appendRange("COST"); appendRadios("SINGLE-USE");
   }
-  appendResetButton();
+  // Tabs with no filter config (Classes, and any Lore tab like Events) get no
+  // header and no "Clear filters" button — there's nothing to refine or reset.
+  const hasFilters = filterMenuBody.children.length > 0;
+  if (hasFilters){
+    filterMenuBody.insertAdjacentHTML("afterbegin", `<div class="filter-menu__head">Refine ${category}</div>`);
+    appendResetButton();
+  }
+  filterMenu.classList.toggle("filters-empty", !hasFilters);
 }
 
 function appendCategorySelect(title, options){
@@ -626,6 +639,15 @@ function applyFilters(){
 /* ===========================================================================
    Filter popover open/close
    =========================================================================== */
+/* Re-evaluated whenever the current tab's filters change and whenever the
+   viewport crosses the Sort-folds-into-Filters breakpoint, so resizing
+   across it (or rotating a device) doesn't leave the button stuck disabled. */
+function updateFilterButtonState(){
+  const hasFilters = !filterMenu.classList.contains("filters-empty");
+  filterBtn.disabled = !hasFilters && !sortFoldedIntoFilters.matches;
+  filterBtn.setAttribute("aria-label", hasFilters ? "Filters" : "Sort entries");
+}
+sortFoldedIntoFilters.addEventListener("change", updateFilterButtonState);
 filterBtn.addEventListener("click", e => {
   e.stopPropagation();
   if (filterBtn.disabled) return;
