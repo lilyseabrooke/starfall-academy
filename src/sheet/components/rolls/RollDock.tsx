@@ -52,7 +52,7 @@ export function RollDock({ log, open, onToggle, meId }: RollDockProps) {
             </div>
           ) : (
             items.map((r) => {
-              const hasDetail = !!(r.detail || r.success || r.fail || r.sitReason || r.hl || (r.meta && r.meta.length));
+              const hasDetail = !!(r.detail || r.success || r.fail || r.sitReason || r.hlText || r.hl || (r.meta && r.meta.length));
               return (
                 <div
                   key={r.id}

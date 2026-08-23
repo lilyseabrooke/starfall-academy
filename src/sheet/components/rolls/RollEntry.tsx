@@ -54,9 +54,12 @@ export interface RollEntryProps {
 
 export function RollEntry({ roll, expanded, compact, affordance, hint }: RollEntryProps) {
   const h = headline(roll);
-  const hasDetail = !!(roll.detail || roll.success || roll.fail || roll.sitReason || roll.hl || (roll.meta && roll.meta.length));
-  const avStyle = { background: TONE_MIX[roll.who.tone] || "var(--ink-600)" };
   const degrees = roll.degrees ?? 0;
+  // Shared rolls arrive JSON-cloned, without the `hl` function — read the
+  // resolved text makeRoll() stored, falling back to the function locally.
+  const hlText = roll.hlText ?? (roll.hl ? roll.hl(degrees, roll.result === "success") : null);
+  const hasDetail = !!(roll.detail || roll.success || roll.fail || roll.sitReason || hlText || (roll.meta && roll.meta.length));
+  const avStyle = { background: TONE_MIX[roll.who.tone] || "var(--ink-600)" };
   return (
     <div className={"sf-re out-" + h.key + (roll.crit ? " is-crit-" + roll.crit.kind : "")}>
       <div className="sf-re__head">
@@ -128,10 +131,10 @@ export function RollEntry({ roll, expanded, compact, affordance, hint }: RollEnt
             <div className="sf-re__chips">{roll.meta.map((m, i) => <span key={i} className="sf-chip">{m}</span>)}</div>
           )}
           {roll.detail && <p className="sf-re__desc">{roll.detail}</p>}
-          {roll.dc != null && roll.hl ? (
+          {roll.dc != null && hlText ? (
             <p className={"sf-re__hl out-" + roll.result}>
               <b>{roll.result === "success" ? "At " + degrees + (degrees === 1 ? " degree" : " degrees") : degrees + (degrees === 1 ? " degree" : " degrees") + " of failure"}</b>
-              {roll.hl(degrees, roll.result === "success")}
+              {hlText}
             </p>
           ) : roll.dc != null && (roll.success || roll.fail) ? (
             <div className="sf-re__io">
