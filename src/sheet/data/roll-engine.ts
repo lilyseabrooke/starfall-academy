@@ -172,6 +172,11 @@ export function makeRoll(p: RollInput): Roll {
     }
   }
 
+  // Higher-level behavior is authored as a function of the roll's own outcome,
+  // which can't survive the JSON clone used to share/persist a roll. Resolve it
+  // here so every viewer (party members, GM) sees the same text the roller does.
+  const hlText = dc != null && p.hl ? p.hl(degrees ?? 0, result === "success") : null;
+
   return {
     id: "r" + ++_seq + "-" + Date.now(),
     ts: p.ts || Date.now(),
@@ -184,6 +189,7 @@ export function makeRoll(p: RollInput): Roll {
     success: p.success || null,
     fail: p.fail || null,
     hl: p.hl || null,
+    hlText,
     dice,
     mod,
     sit,

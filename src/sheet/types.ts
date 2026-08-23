@@ -240,8 +240,10 @@ export interface RollResist {
   dcPerDegree?: number;
 }
 
-/** The output of makeRoll() — also the shared/durable roll payload (the `hl`
- *  function is dropped when JSON-cloned for sharing, hence optional). */
+/** The output of makeRoll() — also the shared/durable roll payload. The `hl`
+ *  function is dropped when JSON-cloned for sharing, so makeRoll() also
+ *  resolves it against the roll's own degrees/result into `hlText`, which is
+ *  what the log renders. */
 export interface Roll {
   id: string;
   ts: number;
@@ -254,6 +256,8 @@ export interface Roll {
   success: string | null;
   fail: string | null;
   hl?: ((degrees: number, isSuccess: boolean) => string) | null;
+  /** Higher-level behavior, resolved at roll time so it survives sharing. */
+  hlText?: string | null;
   dice: number[];
   mod: number;
   sit: number;
