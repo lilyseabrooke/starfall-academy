@@ -1315,8 +1315,8 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       detail: "An improvement roll — test your " + fac.name + " against the lesson. Succeed and " + sk.name + " deepens by a rank; roll a natural 10 and " + fac.name + " itself rises instead.",
       fail: "The lesson eludes you — no progress this time.",
       onResult: (r) => {
-        if (r.crit && r.crit.kind === "success") { bumpStatById(fac.id); toast(fac.name + " rises to rank " + (fac.rank + 1)); }
-        else if (r.pass && sk.id) { bumpSkillRank(fac.id, sk.id); toast(sk.name + " deepens to rank " + (sk.rank + 1)); }
+        if (r.crit && r.crit.kind === "success") { bumpStatById(fac.id); toast(fac.name + " rises to rank " + (fac.rank + 1) + " · +1 Rank Point"); grantRp(1); }
+        else if (r.pass && sk.id) { bumpSkillRank(fac.id, sk.id); toast(sk.name + " deepens to rank " + (sk.rank + 1) + " · +1 Rank Point"); grantRp(1); }
       },
     }, e.currentTarget as HTMLElement);
   };
@@ -1332,8 +1332,8 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       detail: "An improvement roll — test your " + sub.stat + " against the field. Succeed and " + sub.name + " deepens by a rank; roll a natural 10 and " + sub.stat + " itself rises instead.",
       fail: "The field resists you — no progress this time.",
       onResult: (r) => {
-        if (r.crit && r.crit.kind === "success") { bumpStatByName(sub.stat); toast(sub.stat + " rises to rank " + (fr + 1)); }
-        else if (r.pass) { bumpSubjectRank(school.id, sub.key); toast(sub.name + " deepens to rank " + (sub.rank + 1)); }
+        if (r.crit && r.crit.kind === "success") { bumpStatByName(sub.stat); toast(sub.stat + " rises to rank " + (fr + 1) + " · +1 Rank Point"); grantRp(1); }
+        else if (r.pass) { bumpSubjectRank(school.id, sub.key); toast(sub.name + " deepens to rank " + (sub.rank + 1) + " · +1 Rank Point"); grantRp(1); }
       },
     }, e.currentTarget as HTMLElement);
   };
