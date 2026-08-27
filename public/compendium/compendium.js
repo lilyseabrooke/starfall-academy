@@ -38,7 +38,8 @@ const ASSET_SHEETS = {
 
 /* Lore tabs — proof of concept: Events. */
 const LORE_SHEETS = {
-  "Events":    "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXtnorBMPVkIS5vVvc1hiPA_9MNwo3v5gcC__rVMLa28HHCjuKjCm5f_dwQgXfWVF9jF9rfl6oLsfd/pub?gid=1082602083&single=true&output=csv"
+  "Events":     "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXtnorBMPVkIS5vVvc1hiPA_9MNwo3v5gcC__rVMLa28HHCjuKjCm5f_dwQgXfWVF9jF9rfl6oLsfd/pub?gid=1082602083&single=true&output=csv",
+  "Archetypes": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXtnorBMPVkIS5vVvc1hiPA_9MNwo3v5gcC__rVMLa28HHCjuKjCm5f_dwQgXfWVF9jF9rfl6oLsfd/pub?gid=1862278646&single=true&output=csv"
 };
 
 const VIEWS = { assets: ASSET_SHEETS, lore: LORE_SHEETS };
@@ -51,7 +52,7 @@ let currentView = "assets";
 const CATEGORY_ICONS = {
   "Spells": "sparkles", "Potions": "flask-conical", "Glyphs": "pen-tool",
   "Wands": "wand-2", "Artifacts": "gem", "Plants": "sprout", "Items": "backpack", "Classes": "graduation-cap",
-  "Events": "calendar-days"
+  "Events": "calendar-days", "Archetypes": "shapes"
 };
 
 /* header meta line per category (unchanged formats, rendered as badges below) */
@@ -66,7 +67,8 @@ const headerFields = {
   class:    e => ({ txt: "" }),
   /* Same "level badge" treatment Spells get, just keyed off the season the
      Timing falls in instead of a spell tier. */
-  event:    e => ({ level: (e.TIMING || "").toString().trim(), tone: eventTone(e.TIMING), txt: "" })
+  event:    e => ({ level: (e.TIMING || "").toString().trim(), tone: eventTone(e.TIMING), txt: "" }),
+  archetype: e => ({ txt: e.CLASS ? "Class · " + e.CLASS : "" })
 };
 function trio(a, av, b, bv){
   const parts = [];
@@ -151,7 +153,10 @@ const sortFoldedIntoFilters = window.matchMedia("(max-width:680px)");
 let currentData = [];
 let currentCategory = "Spells";
 let sortState = { field:"NAME", label:"Name", dir:"asc", type:"text" };
-let randomEntryId = null;
+/* Picked entries from the current "Random" sort, and how many the active
+   random button draws (most tabs only ever offer 1 — see RANDOM_DRAWS). */
+let randomEntryIds = [];
+let randomDraw = 1;
 let sortByCategory = {};
 try { sortByCategory = JSON.parse(localStorage.getItem("starfallCompendiumSort") || "{}") || {}; } catch(e){ sortByCategory = {}; }
 
@@ -168,7 +173,8 @@ const SORT_FIELDS = {
   /* Field keys here are UI-only ids (matched against sort state, not an
      actual column) — both read TIMING via timingRank(), just with a
      different season order. See the "Events — Timing parsing" block. */
-  EVENTS:    [["NAME","Name","text"],["TIMING_ACADEMIC","Timing (Academic Year)","timing-academic"],["TIMING_CALENDAR","Timing (Calendar Year)","timing-calendar"]]
+  EVENTS:    [["NAME","Name","text"],["TIMING_ACADEMIC","Timing (Academic Year)","timing-academic"],["TIMING_CALENDAR","Timing (Calendar Year)","timing-calendar"]],
+  ARCHETYPES: [["NAME","Name","text"],["CLASS","Class","text"]]
 };
 const LEVEL_ORDER = { BASIC:0, STANDARD:1, ADVANCED:2, LEGENDARY:3, HEX:4, TWISTED:4 };
 function levelRank(v){
@@ -630,7 +636,7 @@ function readFilters(){
 function applyFilters(){
   const { filters, pool } = readFilters();
   let shown = sortEntries(pool);
-  if (randomEntryId) shown = shown.filter(e => e.ID === randomEntryId);
+  if (randomEntryIds.length) shown = shown.filter(e => randomEntryIds.includes(e.ID));
   renderEntries(shown);
   // active-filter dot
   filterBtn.classList.toggle("has-filters", Object.entries(filters).some(([k,v]) => v && v !== "ANY"));
@@ -669,6 +675,10 @@ searchBar.addEventListener("input", applyFilters);
    the menu" (e.g. Events opens sorted by Timing rather than Name, even
    though Name still lists first). */
 const DEFAULT_SORT_FIELD = { EVENTS: "TIMING_ACADEMIC" };
+/* How many entries each category's "Random" sort draws — one button per
+   number listed. Archetypes gets a second button that draws a pair;
+   every other tab keeps the single-entry Random it always had. */
+const RANDOM_DRAWS = { ARCHETYPES: [1, 2] };
 
 function renderSortOptions(category){
   const fields = SORT_FIELDS[category.toUpperCase()] || [["NAME","Name","text"]];
@@ -680,15 +690,19 @@ function renderSortOptions(category){
     if (match){ init = match; dir = saved.dir === "desc" ? "desc" : "asc"; }
   }
   sortState = { field: init[0], label: init[1], dir, type: init[2] };
-  randomEntryId = null;
+  randomEntryIds = [];
+  const randomDraws = RANDOM_DRAWS[category.toUpperCase()] || [1];
+  const randomHtml = randomDraws.map(n => {
+    const label = n > 1 ? `Random ×${n}` : "Random";
+    return `<button class="sort-opt" data-field="RANDOM" data-label="${label}" data-type="random" data-draw="${n}">
+       <span>${label}</span><span class="sort-opt__dir"></span>
+     </button>`;
+  }).join("");
   const optsHtml = fields.map(([key,label,type]) =>
     `<button class="sort-opt" data-field="${key}" data-label="${label}" data-type="${type}">
        <span>${label}</span><span class="sort-opt__dir"></span>
      </button>`).join("")
-    + `<div class="sort-divider"></div>
-       <button class="sort-opt" data-field="RANDOM" data-label="Random" data-type="random">
-         <span>Random</span><span class="sort-opt__dir"></span>
-       </button>`;
+    + `<div class="sort-divider"></div>` + randomHtml;
   // Rendered twice: the standalone Sort dropdown, and (hidden until very
   // narrow screens fold Sort into the Filters button) a matching section at
   // the bottom of the filter menu.
@@ -700,22 +714,32 @@ function renderSortOptions(category){
 function updateSortUI(){
   document.querySelectorAll("#sort-menu .sort-opt, #filter-menu-sort-opts .sort-opt").forEach(opt => {
     const isRandom = opt.dataset.field === "RANDOM";
-    const active = isRandom ? !!randomEntryId : (!randomEntryId && opt.dataset.field === sortState.field);
+    const draw = isRandom ? (+opt.dataset.draw || 1) : null;
+    const active = isRandom
+      ? (randomEntryIds.length > 0 && randomDraw === draw)
+      : (!randomEntryIds.length && opt.dataset.field === sortState.field);
     opt.classList.toggle("is-active", active);
     opt.querySelector(".sort-opt__dir").innerHTML = !active ? "" :
       isRandom ? `<i data-lucide="dices"></i>` : `<i data-lucide="${sortState.dir === "asc" ? "arrow-up" : "arrow-down"}"></i>`;
   });
-  sortCurrent.textContent = randomEntryId ? "Random" : sortState.label;
+  sortCurrent.textContent = randomEntryIds.length ? (randomDraw > 1 ? `Random ×${randomDraw}` : "Random") : sortState.label;
   refreshIcons();
 }
 
-/* Picks a random entry from the currently filtered/searched pool and pins
-   the list to just that one. Picking any other sort clears it; picking
-   Random again re-rolls a fresh pick from the same pool. */
-function pickRandomEntry(){
+/* Picks `draw` random entries from the currently filtered/searched pool and
+   pins the list to just those. Picking any other sort clears it; picking a
+   Random button again re-rolls a fresh pick (of the same size) from the
+   same pool. */
+function pickRandomEntry(draw){
   const { pool } = readFilters();
   if (!pool.length) return;
-  randomEntryId = pool[Math.floor(Math.random() * pool.length)].ID;
+  const shuffled = pool.slice();
+  for (let i = shuffled.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  randomEntryIds = shuffled.slice(0, Math.min(draw, shuffled.length)).map(e => e.ID);
+  randomDraw = draw;
   updateSortUI();
   applyFilters();
 }
@@ -751,8 +775,8 @@ sortBtn.addEventListener("click", e => {
 function onSortOptClick(e){
   const opt = e.target.closest(".sort-opt");
   if (!opt) return;
-  if (opt.dataset.field === "RANDOM"){ pickRandomEntry(); return; }
-  randomEntryId = null;
+  if (opt.dataset.field === "RANDOM"){ pickRandomEntry(+opt.dataset.draw || 1); return; }
+  randomEntryIds = [];
   if (sortState.field === opt.dataset.field){
     sortState.dir = sortState.dir === "asc" ? "desc" : "asc";
   } else {
