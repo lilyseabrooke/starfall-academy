@@ -1441,7 +1441,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       </div>
 
       <RollToasts log={log} position={t.toastPosition as string} cap={t.stackCap as number} lifetime={Math.round((t.toastLifetime as number) * 1000)} graceMs={Math.round((t.graceTail as number) * 1000)} expandDefault={t.expandDefault as boolean} />
-      <RollDock log={log} open={dock} onToggle={() => setDock((v) => !v)} meId={activeChar} />
+      <RollDock log={log} open={dock} onToggle={() => setDock((v) => !v)} meId={activeChar} campaignId={campaignId ?? null} />
       <RollPrompt pending={pending} onConfirm={confirmPrompt} onCancel={cancelPrompt} />
       <BackfireResist open={!!resistRoll} roll={resistRoll} conditions={conditions} facRank={facRank} onResist={handleResist} onClose={handleResistClose} />
       <ArtifactBackfireModal open={!!artifactResistRoll} roll={artifactResistRoll} effFacRank={effFacRank} subRank={subRank} onRoll={onArtifactResist} onClose={closeArtifactResist} />

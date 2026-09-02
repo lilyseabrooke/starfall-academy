@@ -611,7 +611,7 @@ export function GmView({ campaign, party: hostParty, npcs: hostNpcs, notes: host
         </div>
       </main>
 
-      <RollDock log={log} open={dock} onToggle={() => setDock((v) => !v)} meId="__gm__" />
+      <RollDock log={log} open={dock} onToggle={() => setDock((v) => !v)} meId="__gm__" campaignId={campaign.id} />
       <RollToasts log={log} position="br" cap={3} lifetime={5000} graceMs={1500} expandDefault={false} />
       <RollPrompt pending={pending} onConfirm={confirmPrompt} onCancel={cancelPrompt} />
 
