@@ -5,6 +5,7 @@ import { Icon } from "../Icon";
 import { TONE_MIX } from "../../data/shared";
 import { headline } from "../../data/roll-engine";
 import { RollEntry, initialsOf, relTime } from "./RollEntry";
+import { RollArchive } from "./RollArchive";
 import type { Roll } from "../../types";
 
 export interface RollDockProps {
@@ -12,11 +13,14 @@ export interface RollDockProps {
   open: boolean;
   onToggle: () => void;
   meId?: string | null;
+  /** Campaign whose full history the archive pages through; null when solo. */
+  campaignId?: string | null;
 }
 
-export function RollDock({ log, open, onToggle, meId }: RollDockProps) {
+export function RollDock({ log, open, onToggle, meId, campaignId }: RollDockProps) {
   const [filter, setFilter] = React.useState("all");
   const [openRows, setOpenRows] = React.useState<Record<string, boolean>>({});
+  const [archive, setArchive] = React.useState(false);
   const latest = log[0];
 
   const filters = [
@@ -32,6 +36,7 @@ export function RollDock({ log, open, onToggle, meId }: RollDockProps) {
     : !r.who.gm && r.who.id !== meId;
   const items = log.filter(match);
   const toggleRow = (id: string) => setOpenRows((p) => ({ ...p, [id]: !p[id] }));
+  const openArchive = () => setArchive(true);
 
   return (
     <div className={"sf-dock" + (open ? " is-open" : "")}>
@@ -42,6 +47,13 @@ export function RollDock({ log, open, onToggle, meId }: RollDockProps) {
             {filters.map((f) => (
               <button key={f.id} className={"sf-dock__filt" + (filter === f.id ? " is-active" : "")} onClick={(e) => { e.stopPropagation(); setFilter(f.id); }}>{f.label}</button>
             ))}
+            <button
+              className="sf-dock__full"
+              onClick={(e) => { e.stopPropagation(); openArchive(); }}
+              title="Search and read every roll ever made"
+            >
+              <Icon name="scroll-text" /> Full log
+            </button>
           </div>
         </div>
         <div className="sf-log-list">
@@ -65,6 +77,13 @@ export function RollDock({ log, open, onToggle, meId }: RollDockProps) {
               );
             })
           )}
+          {items.length > 0 && (
+            <button className="sf-log-more" onClick={openArchive}>
+              <Icon name="scroll-text" />
+              <span>Older rolls are kept in the full log</span>
+              <Icon name="arrow-right" className="sf-log-more__go" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -86,6 +105,8 @@ export function RollDock({ log, open, onToggle, meId }: RollDockProps) {
         )}
         <Icon name={open ? "chevron-down" : "chevron-up"} className="sf-dock__chev" />
       </button>
+
+      <RollArchive open={archive} onClose={() => setArchive(false)} log={log} meId={meId} campaignId={campaignId} />
     </div>
   );
 }
