@@ -66,14 +66,18 @@ export function useRollSync({ campaignId, characterId, onRemoteRoll, onPrompt }:
     }
 
     async function sendBacklog() {
+      // Most recent 200 rolls, newest first — then replay oldest→newest so
+      // injectRemote's prepend lands them with the newest roll on top. Fetching
+      // ascending here would cap at the *oldest* 200 rolls forever once a
+      // campaign passes that count, silently hiding everything since.
       const { data } = await supabase
         .from("rolls")
         .select("payload")
         .eq("campaign_id", campaignId)
-        .order("created_at", { ascending: true })
+        .order("created_at", { ascending: false })
         .limit(200);
       if (cancelled || !data) return;
-      for (const row of data) onRemoteRef.current?.((row as { payload: Roll }).payload);
+      for (const row of data.reverse()) onRemoteRef.current?.((row as { payload: Roll }).payload);
     }
 
     persistRef.current = async (roll: Roll) => {
