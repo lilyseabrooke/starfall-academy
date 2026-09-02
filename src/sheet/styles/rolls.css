@@ -24,6 +24,9 @@
   border-radius: var(--radius-xs); padding: 1px 5px; flex: none;
 }
 .sf-sheet .sf-re__stat { font-family: var(--font-sans); font-size: 10.5px; letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--text-faint); }
+/* "Inflection Point" is the longest headline badge — keep it whole and let the
+   roller's name ellipsize instead, in the narrow toast and dock rows alike. */
+.sf-sheet .sf-re__head .sa-badge { flex: none; }
 .sf-sheet .sf-re__chev { color: var(--text-faint); width: 15px; height: 15px; flex: none; transition: transform var(--dur-base) var(--ease-standard), color var(--dur-fast); }
 .sf-sheet .sf-re__chev.is-open { transform: rotate(180deg); color: var(--text-gold); }
 

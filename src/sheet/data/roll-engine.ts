@@ -221,10 +221,10 @@ export interface Headline {
 /** The headline a roll wears (inflection trumps; with a DC the result colours the total). */
 export function headline(roll: Roll): Headline {
   if (roll.dc != null) {
-    if (roll.outcome === "inflection") return { key: "inflection", tone: "gold", label: "Inflection" };
+    if (roll.outcome === "inflection") return { key: "inflection", tone: "gold", label: "Inflection Point" };
     return { key: roll.result || "" };
   }
-  if (roll.outcome === "inflection") return { key: "inflection", tone: "gold", label: "Inflection" };
+  if (roll.outcome === "inflection") return { key: "inflection", tone: "gold", label: "Inflection Point" };
   if (roll.outcome === "crit-success") return { key: "crit-success", tone: "forest", label: "Critical" };
   if (roll.outcome === "crit-fail") return { key: "crit-fail", tone: "crimson", label: "Crit fail" };
   return { key: "normal" };
