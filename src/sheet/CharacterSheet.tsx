@@ -20,6 +20,7 @@ import "./styles/rolls.css";
 import "./styles/inventory.css";
 import "./styles/bonus.css";
 import "./styles/map.css";
+import "./styles/journal.css";
 import "./styles/forge.css";
 import "./styles/forge-alloc.css";
 
@@ -33,7 +34,7 @@ import { blank as blankBonus } from "./data/bonus";
 import { buildIndex, search as runSearch, type SearchResult } from "./data/search";
 import { useCompendium } from "./data/compendium";
 import { computeCompendiumGrant, computeAttunedArtifactGrant, computeLearningSpellGrant, computePotionSheafGrant, computePotionRecipeGrant, computeWandCraftGrant } from "./data/compendium-grant";
-import type { GmTime } from "./data/gm-seed";
+import type { GmNote, GmTime } from "./data/gm-seed";
 
 import { useClassState } from "./state/useClassState";
 import { useMagicState } from "./state/useMagicState";
@@ -62,6 +63,7 @@ import { InventoryPage } from "./components/inventory/InventoryPage";
 import { ManualModal } from "./components/inventory/ManualModal";
 import { GiveModal, ChoosePlantModal, type GivePayload } from "./components/inventory/Modals";
 import { MapPage } from "./components/map/MapPage";
+import { JournalPage } from "./components/journal/JournalPage";
 import { BonusEditor } from "./components/bonus/BonusEditor";
 import { RollToasts } from "./components/rolls/RollToasts";
 import { RollDock } from "./components/rolls/RollDock";
@@ -125,6 +127,9 @@ interface GmPrompt {
   /** For kind:"condition" — which character's conditions changed (this sheet's id, not a GM target). */
   character?: string;
   conds?: Record<string, number>;
+  /** For kind:"journal" — the GM shared a page, edited a shared one, or took one back. */
+  action?: "share" | "unshare" | "update";
+  title?: string;
 }
 
 export interface CharacterSheetProps {
@@ -546,6 +551,19 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     });
     return () => { cancelled = true; };
   }, [campaignId]);
+  // The campaign journal — the pages the GM marked "share with players".
+  // Read-only here, and fetched through shared_campaign_notes() rather than
+  // the campaign row: the GM's unshared pages never reach this client.
+  const [journal, setJournal] = React.useState<GmNote[]>([]);
+  const loadJournal = React.useCallback(() => {
+    if (!campaignId) return;
+    createClient().rpc("shared_campaign_notes", { p_campaign: campaignId }).then(({ data, error }) => {
+      if (error) { console.error("Journal load failed", error.message); return; }
+      setJournal((data as GmNote[] | null) ?? []);
+    });
+  }, [campaignId]);
+  React.useEffect(() => { loadJournal(); }, [loadJournal]);
+
   React.useEffect(() => { insightModRef.current = effFacRank("Insight"); });
 
   // `onPrompt`'s identity must stay stable across renders (it's a dependency
@@ -565,6 +583,12 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       if (prompt.kind === "time") {
         // Campaign-wide — no target, everyone at the table sees the same clock.
         setGmTime({ day: prompt.day ?? 0, block: prompt.block ?? 0, enabled: !!prompt.enabled });
+        return;
+      }
+      if (prompt.kind === "journal") {
+        // Campaign-wide, like the clock: everyone's Journal tab refreshes.
+        loadJournal();
+        if (prompt.action === "share") toast("The Game Master shared a journal entry" + (prompt.title ? ": " + prompt.title : "") + ".");
         return;
       }
       if (prompt.target !== me) return;
@@ -1338,7 +1362,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     }, e.currentTarget as HTMLElement);
   };
 
-  const titleMap: Record<string, string> = { overview: "Overview", classes: "Classes", magic: "Magic", inventory: "Inventory", map: "Map" };
+  const titleMap: Record<string, string> = { overview: "Overview", classes: "Classes", magic: "Magic", inventory: "Inventory", journal: "Journal", map: "Map" };
   const plantSum = plants.reduce((s, p) => s + (p.value || 0), 0);
 
   return (
@@ -1413,6 +1437,10 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
             materials={c.materials} caps={caps}
             artifacts={artifacts} potions={potions} recipes={recipes} plants={plants} wands={wands} glyphs={glyphs} items={items}
             runeStack={runeStack} h={invH} />
+        )}
+
+        {nav === "journal" && (
+          <JournalPage entries={campaignId ? journal : []} campaignId={campaignId ?? null} />
         )}
 
         {nav === "map" && (

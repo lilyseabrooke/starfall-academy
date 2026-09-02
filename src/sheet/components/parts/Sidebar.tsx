@@ -60,6 +60,7 @@ const NAV = [
   { id: "classes", label: "Classes", icon: "graduation-cap" },
   { id: "magic", label: "Magic", icon: "sparkles" },
   { id: "inventory", label: "Inventory", icon: "backpack" },
+  { id: "journal", label: "Journal", icon: "book-open-text" },
   { id: "map", label: "Map", icon: "map" },
 ];
 

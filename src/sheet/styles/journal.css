@@ -1,0 +1,100 @@
+/* ===========================================================================
+   Starfall Academy — Journal tab (player, read-only)
+   ---------------------------------------------------------------------------
+   Deliberately mirrors the GM's Notes tab (gm.css .gm-notes*) so a page looks
+   the same on both sides of the table: 268px page list, parchment reader.
+   Scoped under .sf-sheet like every other sheet stylesheet.
+   =========================================================================== */
+.sf-sheet .sf-journal {
+  display: grid; grid-template-columns: 268px 1fr; gap: 20px;
+  align-items: stretch; overflow: hidden; padding-bottom: 56px; /* clear the roll dock */
+}
+
+/* ---- page list --------------------------------------------------------- */
+.sf-sheet .sf-journal__list { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+.sf-sheet .sf-journal__lead {
+  display: inline-flex; align-items: center; gap: 8px; padding: 10px;
+  border-radius: 6px; background: var(--ink-700); border: 1px solid var(--border-subtle);
+  font-family: var(--font-sans); font-size: 12.5px; color: var(--text-strong);
+}
+.sf-sheet .sf-journal__lead svg { width: 15px; height: 15px; flex: none; }
+.sf-sheet .sf-journal__filter {
+  display: flex; align-items: center; gap: 7px; padding: 6px 9px;
+  border-radius: 5px; background: var(--ink-800); border: 1px solid var(--border-subtle);
+}
+.sf-sheet .sf-journal__filter svg { width: 13px; height: 13px; color: var(--text-faint); flex: none; }
+.sf-sheet .sf-journal__filter input {
+  flex: 1; background: none; border: none; outline: none;
+  font-family: var(--font-sans); font-size: 12px; color: var(--text-body); min-width: 0;
+}
+.sf-sheet .sf-journal__items {
+  display: flex; flex-direction: column; gap: 6px; overflow-y: auto; min-height: 0;
+  scrollbar-width: thin; scrollbar-color: color-mix(in oklab, var(--gold-600) 40%, transparent) transparent;
+}
+.sf-sheet .sf-journal__items::-webkit-scrollbar { width: 8px; }
+.sf-sheet .sf-journal__items::-webkit-scrollbar-thumb {
+  background: color-mix(in oklab, var(--gold-600) 36%, transparent);
+  border-radius: var(--radius-pill); border: 2px solid transparent; background-clip: padding-box;
+}
+.sf-sheet .sf-journalitem {
+  display: flex; flex-direction: column; gap: 4px; padding: 10px 12px;
+  border-radius: 6px; background: var(--ink-800); border: 1px solid var(--border-subtle);
+  text-align: left; cursor: pointer; min-width: 0; overflow: hidden;
+  transition: border-color var(--dur-fast), background var(--dur-fast);
+}
+.sf-sheet .sf-journalitem:hover { border-color: var(--border-default); }
+.sf-sheet .sf-journalitem.is-active { background: var(--brand-subtle); border-color: var(--border-default); }
+.sf-sheet .sf-journalitem__title {
+  font-family: var(--font-display); font-weight: 700; font-size: 13px; letter-spacing: .02em;
+  color: var(--text-strong); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sf-sheet .sf-journalitem.is-active .sf-journalitem__title { color: var(--gold-100); }
+.sf-sheet .sf-journalitem__tags { display: flex; flex-wrap: wrap; gap: 3px; }
+.sf-sheet .sf-journal__tag {
+  font-family: var(--font-sans); font-size: 9px; letter-spacing: .03em;
+  padding: 2px 6px; border-radius: 999px;
+  background: color-mix(in oklab, var(--gold-500) 10%, transparent);
+  border: 1px solid color-mix(in oklab, var(--gold-500) 28%, transparent);
+  color: var(--gold-300);
+}
+.sf-sheet .sf-journal__nomatch {
+  padding: 12px; font-family: var(--font-sans); font-size: 11.5px; color: var(--text-faint); text-align: center;
+}
+
+/* ---- reader ------------------------------------------------------------ */
+.sf-sheet .sf-journal__reader {
+  display: flex; flex-direction: column; min-height: 0;
+  background: var(--surface-card); border: 1px solid var(--border-subtle);
+  border-radius: 10px; box-shadow: var(--shadow-md); overflow: hidden;
+}
+.sf-sheet .sf-journal__titlebar {
+  display: flex; align-items: center; gap: 12px; padding: 14px 18px;
+  border-bottom: 1px solid var(--hairline); flex: none;
+}
+.sf-sheet .sf-journal__titlebar svg { width: 18px; height: 18px; color: var(--gold-400); flex: none; }
+.sf-sheet .sf-journal__titlebar h2 {
+  margin: 0; font-family: var(--font-display); font-weight: 700; text-transform: uppercase;
+  letter-spacing: .05em; font-size: 18px; color: var(--text-strong);
+}
+.sf-sheet .sf-journal__tagbar {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 6px; padding: 7px 18px;
+  border-bottom: 1px solid var(--hairline); flex: none;
+}
+.sf-sheet .sf-journal__tagbar svg { width: 13px; height: 13px; color: var(--text-faint); flex: none; }
+.sf-sheet .sf-journal__body {
+  flex: 1; min-height: 0; overflow-y: auto; padding: 20px 22px; white-space: pre-wrap;
+  font-family: var(--font-serif); font-size: 15px; line-height: 1.7; color: var(--text-body);
+  scrollbar-width: thin; scrollbar-color: var(--ink-600) transparent;
+}
+.sf-sheet .sf-journal__empty {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 14px; padding: 40px; text-align: center; opacity: .55;
+}
+.sf-sheet .sf-journal__empty svg { width: 36px; height: 36px; color: var(--text-faint); }
+.sf-sheet .sf-journal__empty span { font-family: var(--font-serif); font-size: 14px; color: var(--text-muted); max-width: 34ch; }
+
+@media (max-width: 1100px) {
+  .sf-sheet .sf-journal { grid-template-columns: 1fr; overflow-y: auto; }
+  .sf-sheet .sf-journal__items { max-height: 220px; }
+  .sf-sheet .sf-journal__reader { min-height: 320px; }
+}

@@ -465,7 +465,29 @@ export function GmView({ campaign, party: hostParty, npcs: hostNpcs, notes: host
     setConfirmDeleteNoteId(null);
     toast("Page removed from the journal.");
   };
-  const patchNote = (id: string, patch: Partial<GmNote>) => updateNotesDebounced((s) => s.map((n) => n.id === id ? { ...n, ...patch } : n));
+  // Editing a page that is already shared has to reach the players too —
+  // debounced on the same beat as the save, and silent (no toast): they were
+  // told about the page when it was shared.
+  const journalPingTimer = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const patchNote = (id: string, patch: Partial<GmNote>) => {
+    updateNotesDebounced((s) => s.map((n) => n.id === id ? { ...n, ...patch } : n));
+    if (!notes.find((n) => n.id === id)?.shared) return;
+    clearTimeout(journalPingTimer.current);
+    journalPingTimer.current = setTimeout(() => rollSync.requestRoll({ kind: "journal", action: "update" }), 700);
+  };
+  // Showing a page to the players is a discrete act, so it persists straight
+  // away (no debounce) and broadcasts, which pops a toast on every sheet at
+  // the table and refreshes their Journal tab. Un-sharing broadcasts too, so
+  // an open Journal drops the page instead of holding a stale copy.
+  const toggleNoteShared = (id: string) => {
+    const note = notes.find((n) => n.id === id);
+    if (!note) return;
+    const shared = !note.shared;
+    updateNotes((s) => s.map((n) => n.id === id ? { ...n, shared, sharedAt: shared ? new Date().toISOString() : undefined } : n));
+    clearTimeout(journalPingTimer.current);
+    rollSync.requestRoll({ kind: "journal", action: shared ? "share" : "unshare", title: note.title });
+    toast(shared ? "Shared with the players — it's in their Journal now." : "Hidden from the players again.");
+  };
 
   /* ------------------------------- Time ----------------------------------
      The campaign clock is shared by the whole table: broadcasts live (so an
@@ -606,7 +628,7 @@ export function GmView({ campaign, party: hostParty, npcs: hostNpcs, notes: host
         <div className="sf-canvas gm-canvas">
           {tab === "party" && <PartyTab party={party} onResist={openResist} onGrant={openGrant} onGrantAll={openGrantAll} onCompendium={openCompendium} onCompendiumAll={() => setCompendiumGrant({ pcId: "__all__" })} />}
           {tab === "npcs" && <NpcsTab npcs={npcs} conds={GM_SEED.CONDS} onAdd={openAddNpc} onEdit={openEditNpc} onRoll={rollNpc} onBumpCond={bumpCondNpc} />}
-          {tab === "notes" && <NotesTab notes={notes} activeId={activeNoteId} setActiveId={setActiveNoteId} tagFilter={tagFilter} setTagFilter={setTagFilter} onCreate={createNote} onPatch={patchNote} confirmId={confirmDeleteNoteId} setConfirmId={setConfirmDeleteNoteId} onDelete={deleteNote} />}
+          {tab === "notes" && <NotesTab notes={notes} activeId={activeNoteId} setActiveId={setActiveNoteId} tagFilter={tagFilter} setTagFilter={setTagFilter} onCreate={createNote} onPatch={patchNote} onToggleShared={toggleNoteShared} confirmId={confirmDeleteNoteId} setConfirmId={setConfirmDeleteNoteId} onDelete={deleteNote} />}
           {tab === "action" && <ActionTab party={party} action={action} onToggleInclude={toggleInclude} onToggleSelect={toggleSelect} onBegin={beginAction} onEnd={endAction} onThreat={threatMove} onTargeted={targetedThreat} onOpening={opening} onChangeAp={changeAp} onTarget={targetPlayer} setChangeApId={(id) => setAction((s) => ({ ...s, changeApId: s.changeApId === id ? null : id }))} />}
         </div>
       </main>
@@ -767,9 +789,10 @@ function NpcsTab({ npcs, conds, onAdd, onEdit, onRoll, onBumpCond }: { npcs: GmN
 }
 
 /* =============================== NOTES TAB =============================== */
-function NotesTab({ notes, activeId, setActiveId, tagFilter, setTagFilter, onCreate, onPatch, confirmId, setConfirmId, onDelete }: {
+function NotesTab({ notes, activeId, setActiveId, tagFilter, setTagFilter, onCreate, onPatch, onToggleShared, confirmId, setConfirmId, onDelete }: {
   notes: GmNote[]; activeId: string | null; setActiveId: (id: string) => void; tagFilter: string; setTagFilter: (s: string) => void;
-  onCreate: () => void; onPatch: (id: string, patch: Partial<GmNote>) => void; confirmId: string | null; setConfirmId: (id: string | null) => void; onDelete: (id: string) => void;
+  onCreate: () => void; onPatch: (id: string, patch: Partial<GmNote>) => void; onToggleShared: (id: string) => void;
+  confirmId: string | null; setConfirmId: (id: string | null) => void; onDelete: (id: string) => void;
 }) {
   const active = notes.find((n) => n.id === activeId) || notes[0] || null;
   const tf = (tagFilter || "").trim().toLowerCase();
@@ -792,7 +815,12 @@ function NotesTab({ notes, activeId, setActiveId, tagFilter, setTagFilter, onCre
                   <div className="gm-noteitem__row">
                     <button className="gm-noteitem__sel" onClick={() => { setActiveId(n.id); setConfirmId(null); }}>
                       <span className="gm-noteitem__title">{n.title}</span>
-                      {tags.length > 0 && <span className="gm-noteitem__tags">{tags.map((s, i) => <span key={i} className="gm-tag">{s}</span>)}</span>}
+                      {(tags.length > 0 || n.shared) && (
+                        <span className="gm-noteitem__tags">
+                          {n.shared && <span className="gm-tag gm-tag--shared"><Icon name="eye" />Shared</span>}
+                          {tags.map((s, i) => <span key={i} className="gm-tag">{s}</span>)}
+                        </span>
+                      )}
                     </button>
                     <button className="gm-noteitem__del" title="Delete page" onClick={(e) => { e.stopPropagation(); setConfirmId(n.id); }}><Icon name="trash-2" /></button>
                   </div>
@@ -816,6 +844,14 @@ function NotesTab({ notes, activeId, setActiveId, tagFilter, setTagFilter, onCre
             <div className="gm-notes__titlebar">
               <Icon name="scroll-text" />
               <input value={active.title} onChange={(e) => onPatch(active.id, { title: e.target.value })} />
+              <button
+                className={"gm-notes__share" + (active.shared ? " is-on" : "")}
+                onClick={() => onToggleShared(active.id)}
+                title={active.shared ? "Stop showing this page to the players" : "Show this page in the players' Journal tab"}
+              >
+                <Icon name={active.shared ? "eye" : "eye-off"} />
+                {active.shared ? "Shared with players" : "Share with players"}
+              </button>
             </div>
             <div className="gm-notes__tagbar">
               <Icon name="tag" />
