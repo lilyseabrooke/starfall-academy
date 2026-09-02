@@ -39,7 +39,7 @@ const SCOPES: Array<{ id: Scope; label: string }> = [
 
 const OUTCOMES = [
   { value: "any", label: "Any outcome" },
-  { value: "inflection", label: "Inflections" },
+  { value: "inflection", label: "Inflection Points" },
   { value: "crit", label: "Criticals" },
   { value: "success", label: "Successes" },
   { value: "failure", label: "Failures" },
@@ -279,7 +279,7 @@ export function RollArchive({ open, onClose, log, meId, campaignId }: RollArchiv
             <span className="sf-arch__stat out-success"><b>{tally.success.toLocaleString()}</b> successes</span>
             <span className="sf-arch__stat out-fail"><b>{tally.failure.toLocaleString()}</b> failures</span>
             <span className="sf-arch__stat out-crit"><b>{tally.crit.toLocaleString()}</b> criticals</span>
-            <span className="sf-arch__stat out-inflection"><b>{tally.inflection.toLocaleString()}</b> inflections</span>
+            <span className="sf-arch__stat out-inflection"><b>{tally.inflection.toLocaleString()}</b> inflection points</span>
           </div>
         </div>
 
