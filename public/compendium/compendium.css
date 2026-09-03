@@ -431,6 +431,9 @@ body.flat-levels .badge[class*="badge--"]{ color:var(--gold-300); background:var
 /* longer blocks (prose) — flow into columns on wide cards */
 .blocks{ display:grid; grid-template-columns:repeat(auto-fit, minmax(340px, 1fr));
   gap:var(--space-4) var(--space-7); margin-top:var(--space-4); align-items:start; }
+/* Notably longer than its neighbors — claims the full row instead of
+   sharing one with a short block and leaving space stranded beneath it. */
+.block--full{ grid-column:1 / -1; }
 .block__k{ font-family:var(--font-sans); font-size:0.66em; letter-spacing:var(--tracking-widest);
   text-transform:uppercase; color:var(--text-gold); margin-bottom:5px; }
 .block__v{ font-family:var(--font-serif); font-size:0.95em; line-height:var(--leading-relaxed);

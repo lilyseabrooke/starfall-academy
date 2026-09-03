@@ -406,7 +406,13 @@ function renderDetails(entry, category){
     const multiline = /•|\r|\n/.test(val);
     const html = esc(val).replace(/•|\r\n|\r|\n/g, "<br>");
     if (multiline || val.length > 46 || ALWAYS_BLOCK_KEYS.has(key)){
-      blocks.push(`<div class="block"><div class="block__k">${esc(key)}</div><div class="block__v">${html}</div></div>`);
+      // A block much longer than a typical field (long prose, or several
+      // bulleted/broken lines) spans the full row instead of sharing one
+      // with whatever shorter block lands next to it — otherwise the grid
+      // row's height follows the tall block, stranding empty space under
+      // its short neighbor. Shorter blocks still pair up in the columns.
+      const isLong = val.length > 200 || (val.match(/•|\r\n|\r|\n/g) || []).length >= 2;
+      blocks.push(`<div class="block${isLong ? " block--full" : ""}"><div class="block__k">${esc(key)}</div><div class="block__v">${html}</div></div>`);
     } else {
       facts.push(`<div class="fact"><span class="fact__k">${esc(key)}</span><span class="fact__v">${html}</span></div>`);
     }
