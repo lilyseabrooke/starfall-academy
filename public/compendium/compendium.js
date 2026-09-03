@@ -38,8 +38,9 @@ const ASSET_SHEETS = {
 
 /* Lore tabs — proof of concept: Events. */
 const LORE_SHEETS = {
-  "Events":     "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXtnorBMPVkIS5vVvc1hiPA_9MNwo3v5gcC__rVMLa28HHCjuKjCm5f_dwQgXfWVF9jF9rfl6oLsfd/pub?gid=1082602083&single=true&output=csv",
-  "Archetypes": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXtnorBMPVkIS5vVvc1hiPA_9MNwo3v5gcC__rVMLa28HHCjuKjCm5f_dwQgXfWVF9jF9rfl6oLsfd/pub?gid=1862278646&single=true&output=csv"
+  "Events":      "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXtnorBMPVkIS5vVvc1hiPA_9MNwo3v5gcC__rVMLa28HHCjuKjCm5f_dwQgXfWVF9jF9rfl6oLsfd/pub?gid=1082602083&single=true&output=csv",
+  "Archetypes":  "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXtnorBMPVkIS5vVvc1hiPA_9MNwo3v5gcC__rVMLa28HHCjuKjCm5f_dwQgXfWVF9jF9rfl6oLsfd/pub?gid=1862278646&single=true&output=csv",
+  "Subcultures": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXtnorBMPVkIS5vVvc1hiPA_9MNwo3v5gcC__rVMLa28HHCjuKjCm5f_dwQgXfWVF9jF9rfl6oLsfd/pub?gid=1363649626&single=true&output=csv"
 };
 
 const VIEWS = { assets: ASSET_SHEETS, lore: LORE_SHEETS };
@@ -52,7 +53,7 @@ let currentView = "assets";
 const CATEGORY_ICONS = {
   "Spells": "sparkles", "Potions": "flask-conical", "Glyphs": "pen-tool",
   "Wands": "wand-2", "Artifacts": "gem", "Plants": "sprout", "Items": "backpack", "Classes": "graduation-cap",
-  "Events": "calendar-days", "Archetypes": "shapes"
+  "Events": "calendar-days", "Archetypes": "shapes", "Subcultures": "users"
 };
 
 /* header meta line per category (unchanged formats, rendered as badges below) */
@@ -68,7 +69,8 @@ const headerFields = {
   /* Same "level badge" treatment Spells get, just keyed off the season the
      Timing falls in instead of a spell tier. */
   event:    e => ({ level: (e.TIMING || "").toString().trim(), tone: eventTone(e.TIMING), txt: "" }),
-  archetype: e => ({ txt: e.CLASS ? "Class · " + e.CLASS : "" })
+  archetype: e => ({ txt: e.CLASS ? "Class · " + e.CLASS : "" }),
+  subculture: e => ({ txt: "" })
 };
 function trio(a, av, b, bv){
   const parts = [];
