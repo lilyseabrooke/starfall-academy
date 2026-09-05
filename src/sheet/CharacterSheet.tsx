@@ -1424,7 +1424,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
         )}
       </main>
 
-      <Compendium open={drawer} onClose={closeDrawer} data={{ compendiumCats: SEED.compendiumCats, compendium: D.compendium }} addedIds={addedIds} onAdd={onAdd} onAddAttuned={onAddAttuned} onAddLearning={onAddLearning} onAddPotionSheaf={onAddPotionSheaf} onAddPotionRecipe={onAddPotionRecipe} onAddWandCraft={onAddWandCraft} potionSheafCount={heldCount} potionCap={INV.potionCap} potionRecipes={recipes} lastAdded={lastAdded} cat={compCat} setCat={setCompCat} width={t.archiveWidth as number} attuneFull={attunedCount >= caps.attuneCap} cultivationCap={caps.plantCap} plantSum={plantSum} />
+      <Compendium open={drawer} onClose={closeDrawer} loading={!comp.ready} data={{ compendiumCats: SEED.compendiumCats, compendium: D.compendium }} addedIds={addedIds} onAdd={onAdd} onAddAttuned={onAddAttuned} onAddLearning={onAddLearning} onAddPotionSheaf={onAddPotionSheaf} onAddPotionRecipe={onAddPotionRecipe} onAddWandCraft={onAddWandCraft} potionSheafCount={heldCount} potionCap={INV.potionCap} potionRecipes={recipes} lastAdded={lastAdded} cat={compCat} setCat={setCompCat} width={t.archiveWidth as number} attuneFull={attunedCount >= caps.attuneCap} cultivationCap={caps.plantCap} plantSum={plantSum} />
       <ManualMove
         open={manualMoveOpen}
         onClose={() => { setManualMoveOpen(false); setEditMove(null); }}
