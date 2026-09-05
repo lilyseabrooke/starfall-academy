@@ -1316,7 +1316,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       crit: improveCrit(fac.name), centered: true,
       dosMod: dosShiftFor((b) => b.type === "improve" && (!b.target || b.target === sk.id)),
       condBonuses: catCond("improve", sk.id),
-      detail: "An improvement roll — test your " + fac.name + " against the lesson. Succeed and " + sk.name + " deepens by a rank; roll a natural 10 and " + fac.name + " itself rises instead.",
+      detail: "Sparked it, just narrowly. Your skills improve from pushing them to their limits. Roll " + fac.name + " to improve your " + sk.name + ", or boost " + fac.name + " on a critical success.",
       fail: "The lesson eludes you — no progress this time.",
       onResult: (r) => {
         if (r.crit && r.crit.kind === "success") { bumpStatById(fac.id); toast(fac.name + " rises to rank " + (fac.rank + 1) + " · +1 Rank Point"); grantRp(1); }
@@ -1333,7 +1333,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       crit: improveCrit(sub.stat), centered: true,
       dosMod: dosShiftFor((b) => b.type === "improve" && (!b.target || b.target === sub.key)),
       condBonuses: catCond("improve", sub.key),
-      detail: "An improvement roll — test your " + sub.stat + " against the field. Succeed and " + sub.name + " deepens by a rank; roll a natural 10 and " + sub.stat + " itself rises instead.",
+      detail: "Sparked it, just narrowly. Your skills improve from pushing them to their limits. Roll " + sub.stat + " to improve your " + sub.name + ", or boost " + sub.stat + " on a critical success.",
       fail: "The field resists you — no progress this time.",
       onResult: (r) => {
         if (r.crit && r.crit.kind === "success") { bumpStatByName(sub.stat); toast(sub.stat + " rises to rank " + (fr + 1) + " · +1 Rank Point"); grantRp(1); }

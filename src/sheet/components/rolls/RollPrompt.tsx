@@ -213,7 +213,7 @@ export function RollPrompt({ pending, onConfirm, onCancel }: RollPromptProps) {
           <div className="sf-modal__body">
             <p className="sf-imp-modal__verdict">
               <Icon name="sparkles" />
-              <span>{p.detail || "You tied the DC — a bare-minimum success that earns a shot at the lesson."}</span>
+              <span>{p.detail || "Sparked it, just narrowly. Your skills improve from pushing them to their limits."}</span>
             </p>
             {fieldsBody}
           </div>
