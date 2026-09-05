@@ -299,7 +299,7 @@ export function Compendium({
           {loading ? (
             <div className="sf-comp-loading">
               <Crest form="lines" size={56} tint="gold" className="sf-comp-loading__crest" />
-              <p>Consulting the archive…</p>
+              <p>The fetch hound is working…</p>
             </div>
           ) : items.length === 0 ? (
             <div className="sf-comp-empty">
