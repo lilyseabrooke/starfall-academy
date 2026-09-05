@@ -24,6 +24,7 @@ import {
   X,
 } from "lucide-react";
 import HudTopBar from "@/components/HudTopBar";
+import { APP_VERSION } from "@/lib/version";
 import "@/styles/landing.css";
 import "@/styles/characters.css";
 
@@ -413,7 +414,10 @@ export default function CharactersView({
           </div>
         </section>
 
-        <footer className="lp-footer">Starfall Academy · Semper Ad Astra</footer>
+        <footer className="lp-footer">
+          Starfall Academy · Semper Ad Astra
+          <span className="lp-footer__version">v{APP_VERSION}</span>
+        </footer>
       </main>
 
       {/* ===================== CHARACTER MANAGE / JOIN POPUP ===================== */}
