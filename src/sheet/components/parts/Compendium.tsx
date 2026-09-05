@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Badge, Banner, Button, IconButton, Select } from "@/ds";
+import { Badge, Banner, Button, Crest, IconButton, Select } from "@/ds";
 import { Icon } from "../Icon";
 import { DualRange, type RangeValue } from "./DualRange";
 import { SpellHLB } from "./SpellCard";
@@ -23,6 +23,8 @@ const learnDaysFor = (level: string | undefined) => {
 export interface CompendiumProps {
   open: boolean;
   onClose: () => void;
+  /** True while the live compendium is still loading — shows a crest placeholder instead of seed entries. */
+  loading?: boolean;
   data: { compendiumCats: CompendiumCat[]; compendium: CompendiumEntry[] };
   addedIds: string[];
   onAdd: (id: string) => void;
@@ -44,7 +46,7 @@ export interface CompendiumProps {
 }
 
 export function Compendium({
-  open, onClose, data, addedIds, onAdd, onAddAttuned, onAddLearning, onAddPotionSheaf,
+  open, onClose, loading, data, addedIds, onAdd, onAddAttuned, onAddLearning, onAddPotionSheaf,
   onAddPotionRecipe, onAddWandCraft, potionSheafCount, potionCap, potionRecipes, lastAdded,
   cultivationCap = 0, plantSum = 0, attuneFull, cat, setCat, width,
 }: CompendiumProps) {
@@ -220,7 +222,7 @@ export function Compendium({
         </div>
 
         <div className="sf-comp-toolbar">
-          <span className="sf-comp-count">{items.length} {items.length === 1 ? "entry" : "entries"}</span>
+          <span className="sf-comp-count">{loading ? "Loading…" : `${items.length} ${items.length === 1 ? "entry" : "entries"}`}</span>
           <div className="sf-comp-controls">
             <div className="sf-pop" ref={filterRef}>
               <button className={"sf-tool-btn" + (filterOpen ? " is-open" : "")} disabled={!filterCfg.length} onClick={() => { setFilterOpen((v) => !v); setSortOpen(false); }} aria-label="Filters">
@@ -294,7 +296,12 @@ export function Compendium({
         </div>
 
         <div className="sf-comp-list">
-          {items.length === 0 ? (
+          {loading ? (
+            <div className="sf-comp-loading">
+              <Crest form="lines" size={56} tint="gold" className="sf-comp-loading__crest" />
+              <p>The fetch hound is working…</p>
+            </div>
+          ) : items.length === 0 ? (
             <div className="sf-comp-empty">
               <Icon name="search-x" />
               <p>No entries match — try another wing of the archive.</p>

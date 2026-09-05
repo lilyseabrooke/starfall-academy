@@ -708,6 +708,11 @@
 .sf-sheet .sf-comp-empty svg { width: 28px; height: 28px; }
 .sf-sheet .sf-comp-empty p { font-family: var(--font-serif); font-size: var(--text-sm); margin: 0; max-width: 32ch; }
 
+.sf-sheet .sf-comp-loading { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); padding: var(--space-9) 0; color: var(--text-faint); text-align: center; }
+.sf-sheet .sf-comp-loading p { font-family: var(--font-serif); font-size: var(--text-sm); margin: 0; }
+.sf-sheet .sf-comp-loading__crest { animation: sfCompLoadingPulse 1.6s ease-in-out infinite; }
+@keyframes sfCompLoadingPulse { 0%, 100% { opacity: .4; } 50% { opacity: 1; } }
+
 /* small toast inside drawer when something is added */
 .sf-sheet .sf-toast {
   position: absolute; left: var(--space-5); right: var(--space-5); bottom: var(--space-5); z-index: 2;

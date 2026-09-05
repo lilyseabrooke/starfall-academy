@@ -8,6 +8,11 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.9.3 — 2026-09-05
+- Fix the Compendium drawer briefly showing baked-in seed spells (like
+  "Kindle the Hearth-Ward") while the live data was still loading; it now
+  shows a crest loading placeholder instead.
+
 ## v1.9.2 — 2026-09-05
 - Fix the DC-tie improvement roll never surfacing — it opened anchored to
   the bottom-left corner of the screen instead of as a centered modal, and
