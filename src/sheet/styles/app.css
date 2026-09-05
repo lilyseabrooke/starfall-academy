@@ -1065,6 +1065,18 @@
 .sf-sheet .sf-bf-modal__verdict.is-cast svg { color: var(--forest-300); }
 .sf-sheet .sf-bf-modal__verdict.is-failed { border-color: color-mix(in oklab, var(--crimson-500) 42%, transparent); }
 
+/* Improvement-roll modal — the centered, gold "Breakthrough" counterpart to
+   the backfire resist modal above, for a DC-tie improvement roll (nobody
+   clicked a button to open it, so it can't anchor to one). */
+.sf-sheet .sf-scrim--imp.open { background: color-mix(in oklab, var(--gold-500) 14%, var(--surface-overlay)); }
+.sf-sheet .sf-modal--imp { border-color: color-mix(in oklab, var(--gold-500) 50%, var(--border-default)); box-shadow: var(--inset-hi), var(--shadow-xl), 0 0 44px color-mix(in oklab, var(--gold-500) 22%, transparent); }
+.sf-sheet .sf-modal--imp .sf-modal__head { border-bottom-color: color-mix(in oklab, var(--gold-500) 30%, transparent); background: linear-gradient(180deg, color-mix(in oklab, var(--gold-500) 12%, transparent), transparent); }
+.sf-sheet .sf-imp-modal__glyph { display: grid; place-items: center; width: 38px; height: 38px; flex: none; border-radius: var(--radius-sm); color: var(--gold-300); background: color-mix(in oklab, var(--gold-500) 18%, var(--ink-900)); border: 1px solid color-mix(in oklab, var(--gold-500) 45%, transparent); }
+.sf-sheet .sf-imp-modal__glyph svg { width: 20px; height: 20px; }
+.sf-sheet .sf-imp-modal__verdict { display: flex; align-items: flex-start; gap: 9px; margin: 0; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--ink-950); border: 1px solid var(--hairline); font-family: var(--font-serif); font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--text-body); }
+.sf-sheet .sf-imp-modal__verdict svg { width: 17px; height: 17px; flex: none; margin-top: 1px; color: var(--gold-300); }
+.sf-sheet .sf-imp-modal__verdict b { color: var(--text-strong); }
+
 @media (prefers-reduced-motion: reduce) {
   .sf-sheet .sf-rtoast.is-crit-fail, .sf-sheet .sf-rtoast.is-crit-success { animation: none; }
   .sf-sheet .sf-rtoast.out-inflection { animation: sf-toast-in var(--dur-stately) var(--ease-out); }

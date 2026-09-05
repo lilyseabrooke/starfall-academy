@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { Button, IconButton } from "@/ds";
 import { Icon } from "../Icon";
 import { subLabel } from "./RollEntry";
 import { spellCrit, spellMaterialCost } from "../../data/roll-engine";
@@ -26,6 +27,7 @@ export function RollPrompt({ pending, onConfirm, onCancel }: RollPromptProps) {
   const boxRef = React.useRef<HTMLDivElement>(null);
 
   const p = pending ? pending.partial : null;
+  const centered = !!p && !!p.centered;
   const isSpell = !!p && p.kind === "spell";
   const isEnchant = !!p && p.kind === "enchant";
   const isWandcraft = !!p && p.kind === "wandcraft";
@@ -65,7 +67,11 @@ export function RollPrompt({ pending, onConfirm, onCancel }: RollPromptProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pending && pending.id]);
 
+  // Centered modals position with CSS (fixed + transform), not this inline
+  // top clamp — running it there would stomp the CSS-driven top with a
+  // literal pixel value and de-center the box.
   React.useLayoutEffect(() => {
+    if (centered) return;
     const el = boxRef.current;
     if (!el) return;
     const M = 12;
@@ -132,6 +138,95 @@ export function RollPrompt({ pending, onConfirm, onCancel }: RollPromptProps) {
   const bumpHours = (d: number) => setHours((v) => String(Math.max(1, (parseInt(v || "1", 10) || 1) + d)));
 
   const offerRitual = canRitual && !asRitual && hasMatLimit && ritualCost <= materials && ritualCost < costNum;
+
+  // The Difficulty / Situational modifier / Conditional bonuses fields are
+  // the whole body of a centered (always kind "improve") prompt, and are
+  // also part of the anchored prompt's body below — shared so a Universal or
+  // "improve"-tagged conditional bonus still applies either way.
+  const fieldsBody = (
+    <React.Fragment>
+      <div className="sf-prompt__field">
+        <span className="sf-prompt__flabel">Difficulty
+          <button className="sf-prompt__none" tabIndex={-1} onClick={() => setDc("")}>{dc === "" ? "No DC" : "Clear"}</button>
+        </span>
+        <div className="sf-prompt__row">
+          <button className="sf-step" tabIndex={-1} onClick={() => bumpDc(-1)}>−</button>
+          <input ref={dcRef} className="sf-prompt__num" type="number" inputMode="numeric" value={dc} placeholder="—" onChange={(e) => setDc(e.target.value)} />
+          <button className="sf-step" tabIndex={-1} onClick={() => bumpDc(1)}>+</button>
+          <div className="sf-prompt__chips">
+            {[10, 15, 20, 25, 30].map((n) => (
+              <button key={n} tabIndex={-1} className={"sf-prompt__chip" + (String(n) === dc ? " is-active" : "")} onClick={() => setDc(String(n))}>{n}</button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="sf-prompt__field">
+        <span className="sf-prompt__flabel">Situational modifier</span>
+        <div className="sf-prompt__row">
+          <button className="sf-step" tabIndex={-1} onClick={() => bumpSit(-1)}>−</button>
+          <input className="sf-prompt__num" type="number" inputMode="numeric" value={sit} placeholder="0" onChange={(e) => setSit(e.target.value)} />
+          <button className="sf-step" tabIndex={-1} onClick={() => bumpSit(1)}>+</button>
+          <span className="sf-prompt__sithint">applied to this roll only</span>
+        </div>
+      </div>
+
+      {condBonuses.length > 0 && (
+        <div className="sf-prompt__field">
+          <span className="sf-prompt__flabel">Conditional bonuses</span>
+          <div className="sf-prompt__cond">
+            {condBonuses.map((b) => (
+              <button
+                key={b.id}
+                type="button"
+                className={"sf-condopt" + (picked[b.id] ? " is-on" : "")}
+                onClick={() => setPicked((prev) => ({ ...prev, [b.id]: !prev[b.id] }))}
+                aria-pressed={!!picked[b.id]}
+              >
+                <span className="sf-condopt__box"><Icon name="check" /></span>
+                <span className="sf-condopt__body">
+                  <span className="sf-condopt__src">{b.source}</span>
+                  {b.condNote ? <span className="sf-condopt__note">{b.condNote}</span> : null}
+                </span>
+                <span className={"sf-condopt__val " + (b.value >= 0 ? "pos" : "neg")}>{b.value >= 0 ? "+" : "−"}{Math.abs(b.value)}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </React.Fragment>
+  );
+
+  if (centered) {
+    return (
+      <React.Fragment>
+        <div className="sf-scrim sf-scrim--imp open" onClick={onCancel} />
+        <div className="sf-modal sf-modal--imp open" onKeyDown={onKeyDown} role="dialog" aria-label="Improvement roll">
+          <div className="sf-modal__head">
+            <span className="sf-imp-modal__glyph"><Icon name="trending-up" /></span>
+            <div className="sf-drawer__title">
+              <span className="sf-eyebrow">{p.stat} · Improvement</span>
+              <h2>{p.label}</h2>
+            </div>
+            <IconButton label="Close" variant="ghost" onClick={onCancel}><Icon name="x" /></IconButton>
+          </div>
+          <div className="sf-modal__body">
+            <p className="sf-imp-modal__verdict">
+              <Icon name="sparkles" />
+              <span>{p.detail || "You tied the DC — a bare-minimum success that earns a shot at the lesson."}</span>
+            </p>
+            {fieldsBody}
+          </div>
+          <div className="sf-modal__foot">
+            <Button variant="ghost" onClick={onCancel}>Not now</Button>
+            <Button variant="primary" iconLeft={<Icon name="dices" />} onClick={attempt}>
+              Roll 2d10 {combined >= 0 ? "+ " + combined : "− " + Math.abs(combined)}{dc !== "" ? " · DC " + dc : ""}
+            </Button>
+          </div>
+        </div>
+      </React.Fragment>
+    );
+  }
 
   const r = pending.rect;
   const W = 304;
@@ -270,55 +365,7 @@ export function RollPrompt({ pending, onConfirm, onCancel }: RollPromptProps) {
               </div>
             )}
 
-            <div className="sf-prompt__field">
-              <span className="sf-prompt__flabel">Difficulty
-                <button className="sf-prompt__none" tabIndex={-1} onClick={() => setDc("")}>{dc === "" ? "No DC" : "Clear"}</button>
-              </span>
-              <div className="sf-prompt__row">
-                <button className="sf-step" tabIndex={-1} onClick={() => bumpDc(-1)}>−</button>
-                <input ref={dcRef} className="sf-prompt__num" type="number" inputMode="numeric" value={dc} placeholder="—" onChange={(e) => setDc(e.target.value)} />
-                <button className="sf-step" tabIndex={-1} onClick={() => bumpDc(1)}>+</button>
-                <div className="sf-prompt__chips">
-                  {[10, 15, 20, 25, 30].map((n) => (
-                    <button key={n} tabIndex={-1} className={"sf-prompt__chip" + (String(n) === dc ? " is-active" : "")} onClick={() => setDc(String(n))}>{n}</button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="sf-prompt__field">
-              <span className="sf-prompt__flabel">Situational modifier</span>
-              <div className="sf-prompt__row">
-                <button className="sf-step" tabIndex={-1} onClick={() => bumpSit(-1)}>−</button>
-                <input className="sf-prompt__num" type="number" inputMode="numeric" value={sit} placeholder="0" onChange={(e) => setSit(e.target.value)} />
-                <button className="sf-step" tabIndex={-1} onClick={() => bumpSit(1)}>+</button>
-                <span className="sf-prompt__sithint">applied to this roll only</span>
-              </div>
-            </div>
-
-            {condBonuses.length > 0 && (
-              <div className="sf-prompt__field">
-                <span className="sf-prompt__flabel">Conditional bonuses</span>
-                <div className="sf-prompt__cond">
-                  {condBonuses.map((b) => (
-                    <button
-                      key={b.id}
-                      type="button"
-                      className={"sf-condopt" + (picked[b.id] ? " is-on" : "")}
-                      onClick={() => setPicked((prev) => ({ ...prev, [b.id]: !prev[b.id] }))}
-                      aria-pressed={!!picked[b.id]}
-                    >
-                      <span className="sf-condopt__box"><Icon name="check" /></span>
-                      <span className="sf-condopt__body">
-                        <span className="sf-condopt__src">{b.source}</span>
-                        {b.condNote ? <span className="sf-condopt__note">{b.condNote}</span> : null}
-                      </span>
-                      <span className={"sf-condopt__val " + (b.value >= 0 ? "pos" : "neg")}>{b.value >= 0 ? "+" : "−"}{Math.abs(b.value)}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+            {fieldsBody}
 
             <button className="sf-prompt__roll" onClick={attempt}>
               <Icon name={canSecret && secret ? "eye-off" : isEnchant ? "sparkles" : "dices"} /> {canSecret && secret ? "Secretly " : ""}{actionWord} 2d10 {combined >= 0 ? "+ " + combined : "− " + Math.abs(combined)}{dc !== "" ? "  vs DC " + dc : ""}
