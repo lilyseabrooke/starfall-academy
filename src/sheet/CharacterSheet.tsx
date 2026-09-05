@@ -369,8 +369,8 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   };
   const triggerTieImprovement = (target: TieTarget) => {
     if (!target) return;
-    if ("skill" in target) onImproveSkill(target.skill.fac, target.skill.sk, { currentTarget: document.body });
-    else onImproveSubject(target.subject.school, target.subject.sub, { currentTarget: document.body });
+    if ("skill" in target) onImproveSkill(target.skill.fac, target.skill.sk);
+    else onImproveSubject(target.subject.school, target.subject.sub);
   };
   const maybeImproveOnTie = (r: Roll, target: TieTarget) => {
     if (target && r.dc != null && r.total === r.dc) triggerTieImprovement(target);
@@ -1158,7 +1158,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     // A tie against the DC is a bare-minimum success — it earns an immediate improvement roll
     // in the trained skill (a flat Stat check, sk.id undefined, doesn't have one to earn).
     onResult: (r) => {
-      if (sk.id && sk.rank != null && r.dc != null && r.total === r.dc) onImproveSkill(fac, sk as RollSkill & { rank: number }, { currentTarget: document.body });
+      if (sk.id && sk.rank != null && r.dc != null && r.total === r.dc) onImproveSkill(fac, sk as RollSkill & { rank: number });
     },
   }, e.currentTarget as HTMLElement);
   const onRollAction = () => openPrompt({
@@ -1215,7 +1215,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     condBonuses: condBonusesFor((b) => (b.type === "subject" && b.target === sub.key) || (b.type === "stat" && b.target === sub.stat) || b.type === "universal"),
     // A tie against the DC is a bare-minimum success — it earns an immediate improvement roll in the subject.
     onResult: (r) => {
-      if (r.dc != null && r.total === r.dc) onImproveSubject(school, sub, { currentTarget: document.body });
+      if (r.dc != null && r.total === r.dc) onImproveSubject(school, sub);
     },
   }, e.currentTarget as HTMLElement);
 
@@ -1304,38 +1304,42 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   const bumpSubjectRank = (schoolId: string, subKey: string) => setSchools((prev) => prev.map((sc) => (sc.id === schoolId ? { ...sc, subjects: sc.subjects.map((s) => (s.key === subKey ? { ...s, rank: s.rank + 1 } : s)) } : sc)));
 
   const improveCrit = (statName: string) => ({ success: { on: "ten" as const, forces: true, label: "Breakthrough", text: "A natural 10 — the lesson lifts your " + statName + " itself by a rank." } });
-  const onImproveSkill = (fac: Stat, sk: RollSkill & { rank: number }, e: { currentTarget: Element }) => {
+  // Both improvement rolls below are always auto-triggered by a DC tie —
+  // nobody clicks a button to open them — so they always render as the
+  // centered modal (see RollPrompt's `centered` branch), never the anchored
+  // popover a real button click would otherwise position.
+  const onImproveSkill = (fac: Stat, sk: RollSkill & { rank: number }) => {
     const dc = 10 + sk.rank;
     openPrompt({
       who: meWho(), label: sk.name, kind: "improve", stat: fac.name, mod: effFacRank(fac.name) + rollBonusFor("improve", sk.id), dc,
       meta: ["Improvement", "DC 10 + " + sk.rank + " rank" + (sk.rank === 1 ? "" : "s")],
-      crit: improveCrit(fac.name),
+      crit: improveCrit(fac.name), centered: true,
       dosMod: dosShiftFor((b) => b.type === "improve" && (!b.target || b.target === sk.id)),
       condBonuses: catCond("improve", sk.id),
-      detail: "An improvement roll — test your " + fac.name + " against the lesson. Succeed and " + sk.name + " deepens by a rank; roll a natural 10 and " + fac.name + " itself rises instead.",
+      detail: "Sparked it, just narrowly. Your skills improve from pushing them to their limits. Roll " + fac.name + " to improve your " + sk.name + ", or boost " + fac.name + " on a critical success.",
       fail: "The lesson eludes you — no progress this time.",
       onResult: (r) => {
         if (r.crit && r.crit.kind === "success") { bumpStatById(fac.id); toast(fac.name + " rises to rank " + (fac.rank + 1) + " · +1 Rank Point"); grantRp(1); }
         else if (r.pass && sk.id) { bumpSkillRank(fac.id, sk.id); toast(sk.name + " deepens to rank " + (sk.rank + 1) + " · +1 Rank Point"); grantRp(1); }
       },
-    }, e.currentTarget as HTMLElement);
+    });
   };
-  const onImproveSubject = (school: MagicSchool, sub: RollSubject, e: { currentTarget: Element }) => {
+  const onImproveSubject = (school: MagicSchool, sub: RollSubject) => {
     const fr = facRank(sub.stat);
     const dc = 10 + sub.rank;
     openPrompt({
       who: meWho(), label: sub.name, kind: "improve", stat: sub.stat, mod: effFacRank(sub.stat) + rollBonusFor("improve", sub.key), dc,
       meta: [school.name.replace(" Magics", ""), "Improvement", "DC 10 + " + sub.rank + " rank" + (sub.rank === 1 ? "" : "s")],
-      crit: improveCrit(sub.stat),
+      crit: improveCrit(sub.stat), centered: true,
       dosMod: dosShiftFor((b) => b.type === "improve" && (!b.target || b.target === sub.key)),
       condBonuses: catCond("improve", sub.key),
-      detail: "An improvement roll — test your " + sub.stat + " against the field. Succeed and " + sub.name + " deepens by a rank; roll a natural 10 and " + sub.stat + " itself rises instead.",
+      detail: "Sparked it, just narrowly. Your skills improve from pushing them to their limits. Roll " + sub.stat + " to improve your " + sub.name + ", or boost " + sub.stat + " on a critical success.",
       fail: "The field resists you — no progress this time.",
       onResult: (r) => {
         if (r.crit && r.crit.kind === "success") { bumpStatByName(sub.stat); toast(sub.stat + " rises to rank " + (fr + 1) + " · +1 Rank Point"); grantRp(1); }
         else if (r.pass) { bumpSubjectRank(school.id, sub.key); toast(sub.name + " deepens to rank " + (sub.rank + 1) + " · +1 Rank Point"); grantRp(1); }
       },
-    }, e.currentTarget as HTMLElement);
+    });
   };
 
   const titleMap: Record<string, string> = { overview: "Overview", classes: "Classes", magic: "Magic", inventory: "Inventory", map: "Map" };
