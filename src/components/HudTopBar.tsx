@@ -31,13 +31,9 @@ export type HudActiveLink =
   | "Character Ledger"
   | "My Characters";
 
-// TODO: replace with the real Gamebook page once it's built.
-const GAMEBOOK_URL =
-  "https://docs.google.com/document/d/1QkXZovkaw1SzvZOmOxjfb_1DwX79_PmoU-LWwiSPLUc/edit?usp=sharing";
-
 const BASE_NAV_LINKS: NavLink[] = [
   { name: "Compendium", icon: BookOpen, href: "/compendium" },
-  { name: "Gamebook", icon: ScrollText, href: GAMEBOOK_URL },
+  { name: "Gamebook", icon: ScrollText, href: "/gamebook" },
   { name: "Map", icon: Map, href: "/map" },
   { name: "Character Ledger", icon: BookMarked, href: "/character-map" },
 ];

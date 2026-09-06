@@ -40,8 +40,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
+    // data-scroll-behavior: the Gamebook sets `scroll-behavior: smooth` for its
+    // in-page anchors. Next 16 no longer overrides that during route changes
+    // unless this attribute is present, and without it navigation animates.
     <html
       lang="en"
+      data-scroll-behavior="smooth"
       className={`${geistSans.variable} ${geistMono.variable} ${jost.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
