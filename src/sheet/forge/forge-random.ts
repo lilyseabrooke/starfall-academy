@@ -135,29 +135,50 @@ function dynamicWeights(nd: Draft, D: ForgeData, cfg: ArchetypeConfig, map: MapK
   return w;
 }
 
+function nonZeroCount(o: Record<string, number>): number {
+  return Object.values(o).filter((v) => (v || 0) > 0).length;
+}
+
 /** Spend weighted-random points across stats/subjects/skills *together* —
  *  one point at a time, re-weighted after every point — until each map hits
  *  its own `targets[map]` (in budget-cost units) or nothing eligible is left
  *  (cap hit / out of budget). Interleaving the three, instead of draining
  *  them one at a time, is what makes the correlation in `dynamicWeights`
- *  actually bidirectional within a single pass. */
-function spendCorrelated(nd: Draft, D: ForgeData, cfg: ArchetypeConfig, graph: StatGraph, targets: Record<MapKey, number>, maxIter = 8000) {
+ *  actually bidirectional within a single pass.
+ *
+ *  `slots[map]` caps how many *distinct* keys in that map may ever hold a
+ *  point: once that many are non-zero, spending only continues on keys
+ *  already touched (a class-move floor, a major, or a prior point from this
+ *  same call all count as "touched"). Weighting alone tends to spread thin —
+ *  with enough eligible keys, a modest per-point bias still gets sampled
+ *  onto many of them over dozens of points, which reads as generically
+ *  diffuse rather than built on purpose. A hard slot cap is what actually
+ *  produces a T-shape: strong at the couple of things that got in, plain
+ *  zero at everything that didn't, instead of a faint +1 smeared everywhere
+ *  eligible. */
+function spendCorrelated(nd: Draft, D: ForgeData, cfg: ArchetypeConfig, graph: StatGraph, targets: Record<MapKey, number>, slots: Record<MapKey, number>, maxIter = 8000) {
   const maps: MapKey[] = ["stats", "subjects", "skills"];
+  const touched: Record<MapKey, number> = { stats: nonZeroCount(nd.stats), subjects: nonZeroCount(nd.subjects), skills: nonZeroCount(nd.skills) };
   let iter = 0;
   while (iter++ < maxIter) {
     const options: { map: MapKey; key: string; weight: number }[] = [];
     for (const map of maps) {
       if (currentSpend(nd, D, map) >= targets[map]) continue;
       const weights = dynamicWeights(nd, D, cfg, map, graph);
+      const full = touched[map] >= slots[map];
       Object.keys(weights).forEach((k) => {
-        if (weights[k] > 0 && canIncPoint(nd, D, map, k)) options.push({ map, key: k, weight: weights[k] });
+        if (weights[k] <= 0) return;
+        if (full && (nd[map][k] || 0) <= 0) return; // T-shape: no new keys once slots are full
+        if (canIncPoint(nd, D, map, k)) options.push({ map, key: k, weight: weights[k] });
       });
     }
     if (!options.length) break;
     const total = options.reduce((s, o) => s + o.weight, 0);
     let r = Math.random() * total, chosen = options[0];
     for (const o of options) { r -= o.weight; if (r <= 0) { chosen = o; break; } }
+    const wasUntouched = (nd[chosen.map][chosen.key] || 0) <= 0;
     nd[chosen.map] = { ...nd[chosen.map], [chosen.key]: (nd[chosen.map][chosen.key] || 0) + 1 };
+    if (wasUntouched) touched[chosen.map]++;
   }
 }
 
@@ -171,6 +192,13 @@ interface ArchetypeConfig {
   shareStat: number;
   shareSubject: number;
   shareSkill: number;
+  /** How many distinct stats/subjects/skills the build is allowed to ever put
+   *  a point into — the T-shape's width. Kept small by default (strong at a
+   *  couple of things, decent at a handful, everything else untrained);
+   *  broader archetypes (Broad Magic Spread) get more room on purpose. */
+  statSlots: number;
+  subjectSlots: number;
+  skillSlots: number;
   majorCount: number;
   classModeBias?: "single" | "double";
   preferStatWand?: boolean;
@@ -196,7 +224,8 @@ function buildArchetypeConfig(id: string, D: ForgeData): ArchetypeConfig {
   switch (id) {
     case "stat-titan":
       return { id, label: "Stat-heavy Powerhouse", statWeights: evenStats(), subjectWeights: evenSubjects(), skillWeights: evenSkills(),
-        shareStat: 0.55, shareSubject: 0.2, shareSkill: 0.25, majorCount: Math.random() < 0.5 ? 1 : 2, preferStatWand: true };
+        shareStat: 0.55, shareSubject: 0.2, shareSkill: 0.25, statSlots: 3, subjectSlots: 3, skillSlots: 4,
+        majorCount: Math.random() < 0.5 ? 1 : 2, preferStatWand: true };
 
     case "single-stat-focus": {
       const focus = stats[Math.floor(Math.random() * stats.length)];
@@ -204,18 +233,21 @@ function buildArchetypeConfig(id: string, D: ForgeData): ArchetypeConfig {
       const skw = zeroSkills(); skills.forEach((s) => { skw[s.id] = s.fac.id === focus.id ? 4 : 0.3; });
       const subw = zeroSubjects(); subjects.forEach((s) => { subw[s.key] = s.stat.toLowerCase() === focus.id ? 1.5 : 0.4; });
       return { id, label: `One-Stat Devotee (${focus.name})`, statWeights: sw, subjectWeights: subw, skillWeights: skw,
-        shareStat: 0.3, shareSubject: 0.15, shareSkill: 0.55, majorCount: 1, preferStatWand: true };
+        shareStat: 0.3, shareSubject: 0.15, shareSkill: 0.55, statSlots: 1, subjectSlots: 2, skillSlots: 4, majorCount: 1, preferStatWand: true };
     }
     case "skill-specialist": {
       const focus = stats[Math.floor(Math.random() * stats.length)];
       const skw = zeroSkills(); skills.forEach((s) => { skw[s.id] = s.fac.id === focus.id ? 4 : 1; });
       const sw = evenStats(); sw[focus.id] = 2;
       return { id, label: `Skill Specialist (${focus.name})`, statWeights: sw, subjectWeights: evenSubjects(), skillWeights: skw,
-        shareStat: 0.25, shareSubject: 0.15, shareSkill: 0.6, majorCount: Math.random() < 0.5 ? 1 : 2, classModeBias: "double", preferStatWand: false };
+        shareStat: 0.25, shareSubject: 0.15, shareSkill: 0.6, statSlots: 2, subjectSlots: 2, skillSlots: 5,
+        majorCount: Math.random() < 0.5 ? 1 : 2, classModeBias: "double", preferStatWand: false };
     }
     case "broad-caster":
+      // The one archetype meant to genuinely spread wide — still capped well
+      // short of all 24 subjects, just noticeably broader than the rest.
       return { id, label: "Broad Magic Spread", statWeights: evenStats(), subjectWeights: evenSubjects(), skillWeights: evenSkills(),
-        shareStat: 0.25, shareSubject: 0.55, shareSkill: 0.2, majorCount: 2, preferStatWand: false };
+        shareStat: 0.25, shareSubject: 0.55, shareSkill: 0.2, statSlots: 4, subjectSlots: 8, skillSlots: 6, majorCount: 2, preferStatWand: false };
 
     case "subject-specialist": {
       const focus = subjects[Math.floor(Math.random() * subjects.length)];
@@ -224,7 +256,7 @@ function buildArchetypeConfig(id: string, D: ForgeData): ArchetypeConfig {
       const sw = zeroStats(); stats.forEach((s) => { sw[s.id] = s.id === statId ? 3 : 0.5; });
       const skw = zeroSkills(); skills.forEach((s) => { skw[s.id] = s.fac.id === statId ? 2 : 0.4; });
       return { id, label: `Single-Subject Specialist (${focus.name})`, statWeights: sw, subjectWeights: subw, skillWeights: skw,
-        shareStat: 0.25, shareSubject: 0.5, shareSkill: 0.25, majorCount: 1, preferStatWand: false };
+        shareStat: 0.25, shareSubject: 0.5, shareSkill: 0.25, statSlots: 2, subjectSlots: 1, skillSlots: 3, majorCount: 1, preferStatWand: false };
     }
     case "school-specialist": {
       const school = D.magicSchools[Math.floor(Math.random() * D.magicSchools.length)];
@@ -234,13 +266,15 @@ function buildArchetypeConfig(id: string, D: ForgeData): ArchetypeConfig {
       const sw = zeroStats(); stats.forEach((s) => { sw[s.id] = relevantStats.has(s.id) ? 2 : 0.5; });
       const skw = zeroSkills(); skills.forEach((s) => { skw[s.id] = relevantStats.has(s.fac.id) ? 1.5 : 0.5; });
       return { id, label: `Magic School Specialist (${school.name})`, statWeights: sw, subjectWeights: subw, skillWeights: skw,
-        shareStat: 0.25, shareSubject: 0.55, shareSkill: 0.2, majorCount: Math.random() < 0.5 ? 1 : 2, preferStatWand: false };
+        shareStat: 0.25, shareSubject: 0.55, shareSkill: 0.2, statSlots: 2, subjectSlots: 4, skillSlots: 3,
+        majorCount: Math.random() < 0.5 ? 1 : 2, preferStatWand: false };
     }
     case "battle-skirmisher": {
       const sw = zeroStats(); stats.forEach((s) => { sw[s.id] = (s.id === "body" || s.id === "focus") ? 3 : 0.6; });
       const skw = zeroSkills(); skills.forEach((s) => { skw[s.id] = (s.fac.id === "body" || s.fac.id === "focus") ? 3 : 0.5; });
       return { id, label: "Battle Skirmisher", statWeights: sw, subjectWeights: evenSubjects(), skillWeights: skw,
-        shareStat: 0.4, shareSubject: 0.1, shareSkill: 0.5, majorCount: 1, classModeBias: "double", preferStatWand: true };
+        shareStat: 0.4, shareSubject: 0.1, shareSkill: 0.5, statSlots: 2, subjectSlots: 2, skillSlots: 4,
+        majorCount: 1, classModeBias: "double", preferStatWand: true };
     }
     case "arcane-scholar": {
       const sw = zeroStats(); stats.forEach((s) => { sw[s.id] = (s.id === "logic" || s.id === "insight") ? 3 : 0.6; });
@@ -251,12 +285,13 @@ function buildArchetypeConfig(id: string, D: ForgeData): ArchetypeConfig {
       });
       const skw = zeroSkills(); skills.forEach((s) => { skw[s.id] = (s.fac.id === "logic" || s.fac.id === "insight") ? 2 : 0.6; });
       return { id, label: "Arcane Scholar", statWeights: sw, subjectWeights: subw, skillWeights: skw,
-        shareStat: 0.3, shareSubject: 0.45, shareSkill: 0.25, majorCount: Math.random() < 0.5 ? 1 : 2, preferStatWand: false };
+        shareStat: 0.3, shareSubject: 0.45, shareSkill: 0.25, statSlots: 2, subjectSlots: 4, skillSlots: 4,
+        majorCount: Math.random() < 0.5 ? 1 : 2, preferStatWand: false };
     }
     case "generalist":
     default:
       return { id: "generalist", label: "Well-Rounded Generalist", statWeights: evenStats(), subjectWeights: evenSubjects(), skillWeights: evenSkills(),
-        shareStat: 0.34, shareSubject: 0.33, shareSkill: 0.33, majorCount: Math.random() < 0.5 ? 1 : 2 };
+        shareStat: 0.34, shareSubject: 0.33, shareSkill: 0.33, statSlots: 3, subjectSlots: 4, skillSlots: 4, majorCount: Math.random() < 0.5 ? 1 : 2 };
   }
 }
 
@@ -455,10 +490,12 @@ export function randomizeDraft(draft: Draft, D: ForgeData, classData: { classes:
     const subjects = F.flatSubjects(D);
     nd.major = subjects.length ? [subjects[Math.floor(Math.random() * subjects.length)].key] : [];
   }
-  // A major is a strong statement of intent — heavily bias spending toward
-  // it and toward its governing stat (an Evocation major should mean an
-  // Evocation-heavy build *and* a Focus-heavy one).
+  // A major is a strong statement of intent — guarantee it's actually
+  // trained, and heavily bias spending toward it and its governing stat (an
+  // Evocation major should mean an Evocation-heavy build *and* a Focus-heavy
+  // one).
   nd.major.forEach((key) => {
+    guaranteeFloor(nd, D, "subjects", key, 1);
     cfg.subjectWeights[key] *= 4;
     const subj = F.flatSubjects(D).find((s) => s.key === key);
     if (subj && cfg.statWeights[subj.stat.toLowerCase()] > 0) cfg.statWeights[subj.stat.toLowerCase()] *= 1.8;
@@ -473,23 +510,36 @@ export function randomizeDraft(draft: Draft, D: ForgeData, classData: { classes:
   });
 
   // Now spend — stats, subjects, and skills together, re-weighted after
-  // every single point so the correlation above compounds as it goes.
+  // every single point so the correlation above compounds as it goes. The
+  // slot caps are what keep it a T-shape instead of a thin smear: the same
+  // budget concentrates into fewer things because there's nowhere else for
+  // it to go.
+  const slots: Record<MapKey, number> = { stats: cfg.statSlots, subjects: cfg.subjectSlots, skills: cfg.skillSlots };
   const year = F.yearById(D, nd.yearId);
   if (nd.buildType === "quick") {
     spendCorrelated(nd, D, cfg, graph, {
       stats: Math.round(cfg.shareStat * year.quick.stat),
       subjects: Math.round(cfg.shareSubject * year.quick.subject),
       skills: Math.round(cfg.shareSkill * year.quick.skill),
-    });
+    }, slots);
   } else {
     const total = year.custom;
     spendCorrelated(nd, D, cfg, graph, {
       stats: Math.round(cfg.shareStat * total),
       subjects: Math.round(cfg.shareSubject * total),
       skills: Math.round(cfg.shareSkill * total),
-    });
-    // Mop up leftover budget so a build doesn't end up wastefully unspent.
-    spendCorrelated(nd, D, cfg, graph, { stats: Infinity, subjects: Infinity, skills: Infinity });
+    }, slots);
+    // Mop up leftover budget within the same slots first — this mostly tops
+    // already-touched things up toward their caps, not new ones.
+    spendCorrelated(nd, D, cfg, graph, { stats: Infinity, subjects: Infinity, skills: Infinity }, slots);
+    // If there's still a meaningful chunk of budget left (everything touched
+    // is capped out), let a couple more things in rather than waste it —
+    // still nowhere near "everything gets a +1".
+    const leftover = F.budgets(nd, D);
+    if (leftover.mode === "custom" && leftover.remaining >= D.creation.custom.abilityCost * 3) {
+      const openSlots: Record<MapKey, number> = { stats: slots.stats + 1, subjects: slots.subjects + 2, skills: slots.skills + 2 };
+      spendCorrelated(nd, D, cfg, graph, { stats: Infinity, subjects: Infinity, skills: Infinity }, openSlots);
+    }
   }
 
   pickStartWand(nd, D, cfg);
