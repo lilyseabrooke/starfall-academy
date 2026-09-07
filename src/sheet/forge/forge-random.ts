@@ -513,9 +513,20 @@ export function randomizeDraft(draft: Draft, D: ForgeData, classData: { classes:
   // every single point so the correlation above compounds as it goes. The
   // slot caps are what keep it a T-shape instead of a thin smear: the same
   // budget concentrates into fewer things because there's nowhere else for
-  // it to go.
-  const slots: Record<MapKey, number> = { stats: cfg.statSlots, subjects: cfg.subjectSlots, skills: cfg.skillSlots };
+  // it to go. But a higher year has a bigger budget and a higher rank cap —
+  // a graduate should end up competent at more things than a first-year, not
+  // just push the same couple of things harder — so the slot counts widen
+  // with year: subjects/skills gain a slot per year past first, stats (only
+  // 6 of them to begin with) gain one every other year.
   const year = F.yearById(D, nd.yearId);
+  const yearIdx = Math.max(0, D.creation.years.findIndex((y) => y.id === year.id));
+  const extraAbilitySlots = yearIdx;
+  const extraStatSlots = Math.floor(yearIdx / 2);
+  const slots: Record<MapKey, number> = {
+    stats: Math.min(D.stats.length, cfg.statSlots + extraStatSlots),
+    subjects: Math.min(F.flatSubjects(D).length, cfg.subjectSlots + extraAbilitySlots),
+    skills: Math.min(F.flatSkills(D).length, cfg.skillSlots + extraAbilitySlots),
+  };
   if (nd.buildType === "quick") {
     spendCorrelated(nd, D, cfg, graph, {
       stats: Math.round(cfg.shareStat * year.quick.stat),
