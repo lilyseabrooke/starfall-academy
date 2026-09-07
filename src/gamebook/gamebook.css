@@ -623,8 +623,9 @@ html {
   background: color-mix(in oklab, var(--gold-500) 22%, var(--ink-900));
 }
 
-/* The mark: a plate that stays put through the toggle, shrinking into the
-   header of the opened panel. */
+/* The mark. Closed it is a plate, because a plate is the shape that breaks a
+   run of paragraphs; open it drops the plate and sits on the header as the
+   glyph in front of the label. */
 .gb-scene__mark {
   display: grid;
   place-items: center;
@@ -640,20 +641,21 @@ html {
     border-color var(--dur-fast), color var(--dur-fast), transform var(--dur-fast);
 }
 .gb-scene:not([open]) .gb-scene__head:hover .gb-scene__mark {
-  border-color: var(--border-strong);
-  color: var(--gold-200);
+  color: var(--gold-100);
   transform: translateY(-1px);
 }
 .gb-scene[open] .gb-scene__mark {
-  width: 26px;
-  height: 26px;
-  border-color: var(--border-default);
-  border-radius: var(--radius-sm);
+  width: 15px;
+  height: 15px;
+  border: none;
+  border-radius: 0;
+  background: none;
   box-shadow: none;
+  color: var(--text-gold);
 }
 .gb-scene[open] .gb-scene__mark svg {
-  width: 14px;
-  height: 14px;
+  width: 15px;
+  height: 15px;
 }
 
 .gb-scene__label {
@@ -665,44 +667,6 @@ html {
 }
 .gb-scene:not([open]) .gb-scene__head:hover .gb-scene__label {
   color: var(--gold-200);
-}
-.gb-scene__cast {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.gb-scene__member {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: 2px var(--space-3) 2px 2px;
-  border: 1px solid color-mix(in oklab, var(--voice) 24%, transparent);
-  border-radius: var(--radius-pill);
-  background: color-mix(in oklab, var(--voice) 7%, transparent);
-}
-.gb-scene__token {
-  display: grid;
-  place-items: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: color-mix(in oklab, var(--voice) 26%, var(--ink-900));
-  font-size: 10px;
-  font-weight: var(--weight-bold);
-  color: var(--voice);
-}
-.gb-scene__player {
-  font-size: var(--text-2xs);
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
-  color: var(--voice);
-}
-.gb-scene__role {
-  font-size: var(--text-2xs);
-  color: var(--text-faint);
 }
 .gb-scene__toggle {
   display: inline-flex;
@@ -1635,9 +1599,6 @@ html {
   .gb-msg__token {
     width: 22px;
     height: 22px;
-  }
-  .gb-scene__role {
-    display: none;
   }
   .gb-tip__bubble {
     max-width: min(240px, 68vw);

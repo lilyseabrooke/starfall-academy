@@ -22,34 +22,6 @@ import DiceRoll from "./DiceRoll";
    the scene in, a line at a time, the way it happened.
    =========================================================================== */
 
-interface Member {
-  speaker: string;
-  /** Whoever they are playing, for the chip's second line. */
-  character: string | null;
-  gm: boolean;
-}
-
-function castOf(entries: DialogEntry[], cast: Cast): Member[] {
-  const seen = new Map<string, Member>();
-
-  for (const entry of entries) {
-    if (entry.kind !== "line" || !entry.speaker) continue;
-    const existing = seen.get(entry.speaker);
-    if (existing) {
-      // A GM who steps into an NPC mid-scene keeps her billing as the GM.
-      if (!existing.character && entry.character) existing.character = entry.character;
-      continue;
-    }
-    seen.set(entry.speaker, {
-      speaker: entry.speaker,
-      character: entry.character,
-      gm: !!cast.gm[entry.speaker],
-    });
-  }
-
-  return [...seen.values()];
-}
-
 /**
  * Consecutive lines from one speaker are one run: the token and the name are
  * drawn once and the rest of the run tucks under them, the way a chat log
@@ -77,7 +49,6 @@ export default function TableScene({
   /** Inline rendering is owned by the page — it resolves cross-part links. */
   render: (nodes: Inline[]) => React.ReactNode;
 }) {
-  const members = React.useMemo(() => castOf(entries, cast), [entries, cast]);
   const [open, setOpen] = React.useState(false);
   const [shown, setShown] = React.useState(0);
 
@@ -112,25 +83,10 @@ export default function TableScene({
         <span className="gb-scene__label">{open ? "At the table" : "See an example"}</span>
 
         {open && (
-          <>
-            <ul className="gb-scene__cast">
-              {members.map((m) => (
-                <li key={m.speaker} className="gb-scene__member" data-tone={cast.tone[m.speaker]}>
-                  <span className="gb-scene__token" aria-hidden="true">
-                    {initials(m.speaker)}
-                  </span>
-                  <span className="gb-scene__player">{m.speaker}</span>
-                  {m.character && (
-                    <span className="gb-scene__role">{m.gm ? m.character : `as ${m.character}`}</span>
-                  )}
-                </li>
-              ))}
-            </ul>
-            <span className="gb-scene__toggle">
-              Hide
-              <ChevronDown size={14} aria-hidden="true" />
-            </span>
-          </>
+          <span className="gb-scene__toggle">
+            Hide
+            <ChevronDown size={14} aria-hidden="true" />
+          </span>
         )}
       </summary>
 
