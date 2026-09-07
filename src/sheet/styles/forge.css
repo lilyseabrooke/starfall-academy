@@ -92,6 +92,9 @@
 .sf-sheet .sf-fhint { margin: 0; font-size: var(--text-sm); line-height: 1.5; color: var(--text-muted); max-width: 64ch; }
 .sf-sheet .sf-fhint--mut { color: var(--text-faint); font-style: italic; }
 
+.sf-sheet .sf-frandom { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; padding: var(--space-4); border: 1px dashed color-mix(in oklab, var(--gold-500) 45%, transparent); border-radius: var(--radius-lg); background: color-mix(in oklab, var(--gold-500) 6%, transparent); }
+.sf-sheet .sf-frandom .sf-fhint { flex: 1 1 240px; margin: 0; }
+
 /* fields */
 .sf-sheet .sf-frow { display: grid; gap: var(--space-4); }
 .sf-sheet .sf-frow--2 { grid-template-columns: 1fr 1fr; }

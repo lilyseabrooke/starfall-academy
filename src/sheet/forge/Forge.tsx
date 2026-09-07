@@ -13,6 +13,7 @@ import { TONE_500, TONE_FG } from "../data/shared";
 import type { ClassDef } from "../data/classes";
 import * as F from "./forge-state";
 import type { Draft, ForgeData } from "./forge-state";
+import { randomizeDraft } from "./forge-random";
 import {
   AdmissionAllocation,
   AdmissionClasses,
@@ -44,7 +45,7 @@ const RESPEC_STEPS = STEPS.filter((s) => ["identity", "allocation"].includes(s.i
 const DRAFT_KEY = "sf-admission-draft";
 
 /* ------------------------------- Identity ----------------------------- */
-function IdentityStep({ D, draft, set }: { D: ForgeData; draft: Draft; set: SetFn }) {
+function IdentityStep({ D, draft, set, onRandomize }: { D: ForgeData; draft: Draft; set: SetFn; onRandomize?: () => void }) {
   const builds: ["quick" | "custom", string, string][] = (() => {
     const yr = D.creation.years.find((y) => y.id === draft.yearId) || D.creation.years[0];
     const q = yr.quick;
@@ -85,6 +86,13 @@ function IdentityStep({ D, draft, set }: { D: ForgeData; draft: Draft; set: SetF
           ))}
         </div>
       </div>
+
+      {onRandomize ? (
+        <div className="sf-frandom">
+          <Button variant="secondary" iconLeft={<Icon name="dices" />} onClick={onRandomize}>Random Character</Button>
+          <span className="sf-fhint sf-fhint--mut">Builds a full character for your Year &amp; Build above — classes, stats, spells, gear, all of it — then drops you at Review to tweak anything you like.</span>
+        </div>
+      ) : null}
 
       <div className="sf-ffield">
         <span className="sf-flabel">House <span className="sf-flabel__opt">· flavor, and your sheet&apos;s color</span></span>
@@ -305,6 +313,10 @@ export function Admission({ mode, initial, data, classData, onCommit, onClose }:
 
   const begin = () => { if (ready) { try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ } onCommit(draft); } };
   const cancel = () => { if (draft.mode === "new") { try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ } } onClose(); };
+  const randomize = () => {
+    setDraft(randomizeDraft(draft, D, classData));
+    setIdx(STEPS.length - 1);
+  };
 
   const showHUD = draft.mode !== "edit" && ["classes", "allocation", "inventory"].includes(step.id);
 
@@ -335,7 +347,7 @@ export function Admission({ mode, initial, data, classData, onCommit, onClose }:
         {/* content */}
         <div className="sf-admission__main">
           <div className="sf-admission__scroll">
-            {step.id === "identity" && <IdentityStep D={D} draft={draft} set={set} />}
+            {step.id === "identity" && <IdentityStep D={D} draft={draft} set={set} onRandomize={mode === "new" ? randomize : undefined} />}
             {step.id === "classes" && <AdmissionClasses D={D} classData={classData} draft={draft} set={set} />}
             {step.id === "wand" && <WandStep D={D} draft={draft} set={set} />}
             {step.id === "allocation" && <AdmissionAllocation D={D} draft={draft} set={set} />}
