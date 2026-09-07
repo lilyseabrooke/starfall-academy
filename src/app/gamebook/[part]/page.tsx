@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { PARTS, getPart, loadPart, buildAnchorIndex } from "@/gamebook/parts";
-import Blocks from "@/gamebook/Blocks";
+import LiveBlocks from "@/gamebook/LiveBlocks";
 import Toc from "@/gamebook/Toc";
 
 export function generateStaticParams() {
@@ -53,7 +53,7 @@ export default async function PartPage({
         </header>
 
         <article className="gb-prose">
-          <Blocks blocks={loaded.blocks} anchorIndex={anchorIndex} partSlug={part} />
+          <LiveBlocks blocks={loaded.blocks} anchorIndex={anchorIndex} partSlug={part} />
         </article>
 
         <nav className="gb-part__pager" aria-label="Gamebook parts">

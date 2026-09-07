@@ -3,32 +3,46 @@
 import * as React from "react";
 import { parseMarkdown } from "@/gamebook/markdown";
 import Blocks from "@/gamebook/Blocks";
+import { createClient } from "@/lib/supabase/client";
 
 // Kept structurally identical to gamebook/parts.ts's PartMeta, but fetched
 // from the API rather than imported — parts.ts pulls in node:fs, which has
 // no business in a client bundle.
 type PartOption = { slug: string; title: string; numeral: string };
 
+const OWNER_EMAIL = "lilyseabrooke00@gmail.com";
+
 /* ===========================================================================
    TEMPORARY — gamebook live-edit utility
    ---------------------------------------------------------------------------
-   A raw textarea over content/*.md, previewed through the site's real parser
-   and Blocks renderer, saving back through /api/gamebook-edit. For quickly
-   tweaking book text without an editor open on the file.
+   A raw textarea over the gamebook, previewed through the site's real
+   parser and Blocks renderer. Loads a saved override if one exists,
+   otherwise the original content/*.md text, and saves back to the
+   gamebook_overrides Supabase table, which the live /gamebook/[part] pages
+   pick up on their next render (no redeploy needed; see LiveBlocks.tsx).
+   Writes are gated by RLS to the site owner's account, not by anything in
+   this page — signed out or signed in as anyone else, Save will fail.
 
-   Not linked from anywhere in the site nav. Delete this page and the
-   gamebook-edit API route once it's no longer needed.
+   Not linked from anywhere in the site nav. Delete this page, the
+   gamebook-edit API route, LiveBlocks.tsx, and the gamebook_overrides
+   table once it's no longer needed.
    =========================================================================== */
 
 type Status = { kind: "idle" } | { kind: "saving" } | { kind: "saved" } | { kind: "error"; message: string };
 
 export default function GamebookEditPage() {
+  const supabase = React.useMemo(() => createClient(), []);
+  const [email, setEmail] = React.useState<string | null | undefined>(undefined); // undefined = still checking
   const [parts, setParts] = React.useState<PartOption[]>([]);
   const [slug, setSlug] = React.useState<string | null>(null);
   const [text, setText] = React.useState("");
   const [saved, setSaved] = React.useState("");
   const [loading, setLoading] = React.useState(true);
   const [status, setStatus] = React.useState<Status>({ kind: "idle" });
+
+  React.useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
+  }, [supabase]);
 
   // Fetch the part list once, then default to the first part.
   React.useEffect(() => {
@@ -42,43 +56,48 @@ export default function GamebookEditPage() {
       .catch((err) => setStatus({ kind: "error", message: String(err.message ?? err) }));
   }, []);
 
-  const load = React.useCallback((partSlug: string) => {
-    setLoading(true);
-    setStatus({ kind: "idle" });
-    fetch(`/api/gamebook-edit?part=${encodeURIComponent(partSlug)}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.error) throw new Error(data.error);
-        setText(data.text);
-        setSaved(data.text);
-      })
-      .catch((err) => setStatus({ kind: "error", message: String(err.message ?? err) }))
-      .finally(() => setLoading(false));
-  }, []);
+  const load = React.useCallback(
+    async (partSlug: string) => {
+      setLoading(true);
+      setStatus({ kind: "idle" });
+      try {
+        // A saved override wins over the original file, so re-opening a
+        // part after editing it picks up where the last save left off.
+        const [override, original] = await Promise.all([
+          supabase.from("gamebook_overrides").select("text").eq("slug", partSlug).maybeSingle(),
+          fetch(`/api/gamebook-edit?part=${encodeURIComponent(partSlug)}`).then((r) => r.json()),
+        ]);
+        if (original.error) throw new Error(original.error);
+        const initial = override.data?.text ?? original.text;
+        setText(initial);
+        setSaved(initial);
+      } catch (err) {
+        setStatus({ kind: "error", message: String((err as Error).message ?? err) });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [supabase]
+  );
 
   React.useEffect(() => {
     if (slug) load(slug);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slug]);
+  }, [slug, load]);
 
   const dirty = text !== saved;
 
   async function save() {
     if (!slug) return;
     setStatus({ kind: "saving" });
-    try {
-      const res = await fetch("/api/gamebook-edit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ part: slug, text }),
-      });
-      const data = await res.json();
-      if (!res.ok || data.error) throw new Error(data.error ?? "save failed");
-      setSaved(text);
-      setStatus({ kind: "saved" });
-    } catch (err) {
-      setStatus({ kind: "error", message: String((err as Error).message ?? err) });
+    const { error } = await supabase
+      .from("gamebook_overrides")
+      .upsert({ slug, text, updated_at: new Date().toISOString() });
+    if (error) {
+      setStatus({ kind: "error", message: error.message });
+      return;
     }
+    setSaved(text);
+    setStatus({ kind: "saved" });
   }
 
   // Cmd/Ctrl+S saves without leaving the textarea.
@@ -96,6 +115,8 @@ export default function GamebookEditPage() {
       return { blocks: [], error: String((err as Error).message ?? err) };
     }
   }, [text]);
+
+  const canWrite = email === OWNER_EMAIL;
 
   return (
     <div className="gb-edit">
@@ -128,19 +149,23 @@ export default function GamebookEditPage() {
             </option>
           ))}
         </select>
-        <button onClick={save} disabled={loading || !dirty || status.kind === "saving"}>
+        <button onClick={save} disabled={loading || !dirty || !canWrite || status.kind === "saving"}>
           {status.kind === "saving" ? "Saving…" : dirty ? "Save (⌘S)" : "Saved"}
         </button>
         <span
           className={`gb-edit__status ${status.kind === "error" ? "gb-edit__status--error" : ""}`}
         >
-          {status.kind === "error"
-            ? status.message
-            : status.kind === "saved"
-              ? "Saved to content/…md — reload the real page to see it live."
-              : dirty
-                ? "Unsaved changes"
-                : ""}
+          {email === undefined
+            ? ""
+            : !canWrite
+              ? "Signed in as someone other than the site owner — Save is disabled."
+              : status.kind === "error"
+                ? status.message
+                : status.kind === "saved"
+                  ? "Saved — live on the site now."
+                  : dirty
+                    ? "Unsaved changes"
+                    : ""}
         </span>
       </div>
 
