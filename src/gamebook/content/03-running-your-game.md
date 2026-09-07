@@ -468,7 +468,8 @@ Here’s an example of **improvisational** gameplay:
 **Helena (GM):** I don’t think she and Finn run in the same circles, but… maybe we can say you both have a mutual contact and you know *of* each other. In fact—why don’t we say this? You know she’s heard some nasty things about you and probably thinks you’re a monster.
 **Ava (Finn):** I love it. I think Finn’s going to stand at the sidelines and wait to come in as the bad guy, then.
 **Helena (GM):** You can absolutely creep off to the side somewhere to blend in. So you’re going to approach Emelia, ignoring the professor for now?
-**Kayla (Maya):** Yeah, I think maybe we can get through to the professor via her, if they were chatting. I’ll go up to her and flatter her, like, “Oh, Miss Hawkins, isn’t it? I saw your demonstration at the Midnight Exhibition the other night, I didn’t think I’d meet you here.”(Helena checks her notes—she’d originally been planning that nobody had been at the Midnight Exhibition and that something happened there that would come up later, but she decides it’s more fun this way, and she adjusts some things, settling in to roleplay Emelia and reference the thing that happened at the Midnight Exhibition as foreshadowing for later.)
+**Kayla (Maya):** Yeah, I think maybe we can get through to the professor via her, if they were chatting. I’ll go up to her and flatter her, like, “Oh, Miss Hawkins, isn’t it? I saw your demonstration at the Midnight Exhibition the other night, I didn’t think I’d meet you here.”
+@beat Helena checks her notes—she’d originally been planning that nobody had been at the Midnight Exhibition and that something happened there that would come up later, but she decides it’s more fun this way, and she adjusts some things, settling in to roleplay Emelia and reference the thing that happened at the Midnight Exhibition as foreshadowing for later.
 :::
 
 #### Freeform

@@ -20,6 +20,19 @@ export function classify(dice: number[]): Roll["outcome"] {
   return "normal";
 }
 
+/**
+ * How far a total cleared or missed a DC, in the game's blocks of five: one
+ * degree for meeting or beating it, one more for every full 5 either side.
+ */
+export function degreesFor(total: number, dc: number): { pass: boolean; result: RollResult; degrees: number } {
+  const diff = total - dc;
+  return {
+    pass: diff >= 0,
+    result: diff >= 0 ? "success" : "failure",
+    degrees: Math.floor(Math.abs(diff) / 5) + 1,
+  };
+}
+
 /** A crit "spec": special outcomes tied to the dice, independent of the total. */
 export interface CritSide {
   on: "one" | "ten" | "always";
@@ -141,10 +154,7 @@ export function makeRoll(p: RollInput): Roll {
       result = pass ? "success" : "failure";
       degrees = 1;
     } else {
-      const diff = total - dc;
-      pass = total >= dc;
-      result = diff >= 0 ? "success" : "failure";
-      degrees = Math.floor(Math.abs(diff) / 5) + 1;
+      ({ pass, result, degrees } = degreesFor(total, dc));
     }
   }
 

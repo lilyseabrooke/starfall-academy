@@ -15,12 +15,16 @@ That might sound a bit confusing. Here’s an example dialog:
 :::dialog
 **Ahmed (Carlos):** I want to study the runes, see if I can work out some kind of pattern.
 **Helena (GM):** Sure. You look closer at the runes, which seem to link together somehow, but you can’t quite make it out… roll **Analyze, DC14.**
-**Ahmed (Carlos):** You got it.(Ahmed rolls 2d10 and gets a 2 and a 4, really just embarrassing himself outright. He adds his character Carlos’s Logic, 0, and Analyze rank, 0, for a 6.)
-**Ahmed (Carlos):** Well… it’s a 6.(Helena counts out—6 is below the DC, so it’s a failure. It’s below the DC by more than 5, so it’s a second degree of failure, but not by more than 10, so it’s only two degrees of failure.)
+**Ahmed (Carlos):** You got it.
+@roll Ahmed as Carlos | dice 2, 4 | add Logic 0, Analyze 0 | dc 14 | note Really just embarrassing himself outright.
+**Ahmed (Carlos):** Well… it’s a 6.
+@beat Helena counts out—6 is below the DC, so it’s a failure. It’s below the DC by more than 5, so it’s a second degree of failure, but not by more than 10, so it’s only two degrees of failure.
 **Helena (GM):** So, that’s two degrees of failure, which means you have absolutely no idea what you’re looking at. Furthermore—trying to fuss with the runes, you’ve awakened something in them, and a toxic power leaks out, a noxious energy crackling in the air around you—
 **Ahmed (Carlos):** I run away.
-**Helena (GM):** Smart move. Roll **Athletics, DC10.**(Ahmed rolls 2d10 and gets a 9 and a 10. He adds Carlos’s Body, 5, and Athletics rank, 5, for a 29.)
-**Ahmed (Carlos):** I got a 29!(Helena counts the degrees of success—29 is above the DC, which gives a degree of success, and beats it by more than 15, for 3 additional degrees of success, for a grand total of 4 degrees of success. Helena now has to come up with something to represent that level of success.)
+**Helena (GM):** Smart move. Roll **Athletics, DC10.**
+@roll Ahmed as Carlos | dice 9, 10 | add Body 5, Athletics 5 | dc 10
+**Ahmed (Carlos):** I got a 29!
+@beat Helena counts the degrees of success—29 is above the DC, which gives a degree of success, and beats it by more than 15, for 3 additional degrees of success, for a grand total of 4 degrees of success. Helena now has to come up with something to represent that level of success.
 **Helena (GM):** Wow, okay. You run faster than anyone’s ever run before. In fact—I’ll let you drag your entire party along with you, getting all of you away from danger, up to where—well, normally you’d have to leap over the chasm, but I think Carlos just throws everyone over the chasm and jumps himself.
 :::
 
@@ -72,11 +76,13 @@ When this happens, roll the Stat associated against **DC10 + your ranks in the A
 :::dialog
 **Kayla (Maya):** I know the professor left his journal somewhere here. Can I scour the place for it?
 **Helena (GM):** Sure, roll **Search, DC20.**
-**Kayla (Maya):** Twenty!? I swear, you’re mad at me.(Kayla rolls 2d10, getting a 7 and an 8, and adds Maya’s Focus, 2, and her Search rank, 3, for a 20.)
+**Kayla (Maya):** Twenty!? I swear, you’re mad at me.
+@roll Kayla as Maya | dice 7, 8 | add Focus 2, Search 3 | dc 20 | note Exactly the DC — which is what earns her a chance to improve.
 **Kayla (Maya):** Oh! It’s a twenty!
 **Helena (GM):** Great! You scan through the room, pulling out drawers and crawling under furniture, and it’s when you’re putting a drawer back that you notice it rolls weirdly… you feel around inside and uncover a hidden cabinet that unlatches and creaks open slowly, and your fingers close on the tough leather binding of the professor’s journal, a thin layer of dust under your fingertips.
 **Kayla (Maya):** This guy’s so sneaky. Can I read it?
-**Helena (GM):** Hold on. You just tied the DC, so you get a chance to improve your **Search**. You have 3 ranks in **Search,** so roll **Focus, DC13.**(Kayla rolls 2d10, getting a 5 and a 7, and adds Maya’s Focus, 2, for a 14.)
+**Helena (GM):** Hold on. You just tied the DC, so you get a chance to improve your **Search**. You have 3 ranks in **Search,** so roll **Focus, DC13.**
+@roll Kayla as Maya | dice 5, 7 | add Focus 2 | dc 13 | note The improvement roll: the Stat behind the Ability, against DC10 plus Maya’s 3 ranks in Search.
 **Kayla (Maya):** Fourteen!
 **Helena (GM):** Nice! You feel a rush of adrenaline when your fingers come down on the book, a sense of satisfaction. Bump up Maya’s **Search** rank by 1.
 :::
@@ -121,16 +127,21 @@ In this type of contest, ties do not exist—because the first roll is completed
 
 :::dialog
 **Kayla (Maya):** I don’t like the look this guy is giving me. I’m going to cast Barrier and close him out.
-**Helena (GM):** This guy is built like a tank, but I guess it’s worth a try. Roll your Barrier spell.(Kayla rolls a 3 and a 5 on the dice, and adds her character Maya’s Logic rank, 4, and her Warding rank, 7, for a 19.)
+**Helena (GM):** This guy is built like a tank, but I guess it’s worth a try. Roll your Barrier spell.
+@roll Kayla as Maya | dice 3, 5 | add Logic 4, Warding 7 | dc 16 | note Barrier carries its own DC of 16.
 **Kayla (Maya):** Nineteen.
 **Helena (GM):** Okay, that beats the Barrier DC of 16, so you create a barrier, but it’s a pretty flimsy one. You thrust your wand out with an incantation, and the translucent crystal lattice springs up covering the doorway. You see the guy’s expression darkening, studying the barrier, before he raises a fist and brings it down with a magic flare—
 **Kayla (Maya):** I probably just antagonized him.
-**Helena (GM):** He’s going to roll **Athletics** against your Barrier check.(Helena rolls for the muscleman, getting a 6 and a 10 on the dice, adding his Body rank, 5, and his Athletics rank, 5, for a 26.)
+**Helena (GM):** He’s going to roll **Athletics** against your Barrier check.
+@roll Helena as the muscleman | dice 6, 10 | add Body 5, Athletics 5 | vs 19 Maya’s Barrier | note An asynchronous contest: Maya’s Barrier roll set the number he has to beat.
 **Helena (GM):** That’s a 26 for him, which gives him two degrees of success. He smashes through the barrier, staggering forwards with the momentum, and he lurches forward and grabs Maya by the collar—
 **Kayla (Maya):** I’m not letting this creep grab me! I push him away.
-**Helena (GM):** You can roll **Athletics** against this guy and try to keep him away.(Helena rolls a 4 and a 2 for the strongman, adding 5 Body and 5 Athletics for a 16, while Kayla rolls an 8 and a 6 for Maya, adding 2 Body and 0 Athletics for a 16 as well.)
+**Helena (GM):** You can roll **Athletics** against this guy and try to keep him away.
+@roll Helena as the strongman | dice 4, 2 | add Body 5, Athletics 5
+@roll Kayla as Maya | dice 8, 6 | add Body 2, Athletics 0 | note Sixteen each.
 **Kayla (Maya):** Sixteen!
-**Helena (GM):** He gets a sixteen too! That puts you at a tie, so… I’m going to say he doesn’t successfully grab you. He goes in for your neck, but you drop and squirm away, kicking and shoving to get him off of you, scrabbling away towards the back of the house. You’re fighting for your life right now, so give me an improvement roll for that.(Kayla rolls a 4 and a 5 for the improvement roll, adding 2 Body for an 11.)
+**Helena (GM):** He gets a sixteen too! That puts you at a tie, so… I’m going to say he doesn’t successfully grab you. He goes in for your neck, but you drop and squirm away, kicking and shoving to get him off of you, scrabbling away towards the back of the house. You’re fighting for your life right now, so give me an improvement roll for that.
+@roll Kayla as Maya | dice 4, 5 | add Body 2 | dc 10 | note An improvement roll for Athletics: DC10 plus Maya’s ranks in it, which are none.
 **Kayla (Maya):** Yes! Eleven!
 **Helena (GM):** Bump your **Athletics** rank up by one, then. You might need it.
 :::
@@ -197,14 +208,17 @@ Every time a Threat Move takes place, every player involved in the **Action** sc
 
 :::dialog
 **Helena (GM):** The creatures are trapped inside by Maya’s Barrier, but they crash and claw at the Barrier, their tiny claws and tiny jaws leaving long scratch marks along the white lattice pattern. They’re going to roll to get through, and with those gnashing jaws, they’ll roll Strong, which, as a horde, is plus ten.
-**Kayla (Maya):** Plus ten? *Helena.* I told you I’m sorry—(Helena rolls for the creatures, getting a 14 on the dice plus the 10 for their Strong roll, giving them a 24 that beats Maya’s Barrier roll.)
+**Kayla (Maya):** Plus ten? *Helena.* I told you I’m sorry—
+@roll Helena as the horde | pool 14 | add Strong 10 | vs 19 Maya’s Barrier | note A horde rolls as one creature, and a Strong roll for one is +10.
 **Helena (GM):** That’s a 24, which shatters Maya’s Barrier. The crashing sound of it echoes hauntingly through the valley, the horde of them pouring out across the ground. You each take 1AP for the Threat Move—
 **Kayla (Maya):** Don’t I take 2? They targeted my Barrier.
 **Helena (GM):** They targeted your Barrier, not you. You get 2 if you get directly targeted yourself.
 **Kayla (Maya):** Ugh—
 **Helena (GM):** Don’t worry, though. They’re directly targeting you now.
 **Kayla (Maya):** That’s not what I wanted—
-**Helena (GM):** Three of them come at you at once, two tackling your legs and chomping at you, one jumping off from where it climbed up the door. We’ll contest their Strong roll versus your **Agility** to keep away from them.(Helena rolls a 20 for the creatures, while Kayla rolls a lucky 22 with only a +3 to **Agility**.)
+**Helena (GM):** Three of them come at you at once, two tackling your legs and chomping at you, one jumping off from where it climbed up the door. We’ll contest their Strong roll versus your **Agility** to keep away from them.
+@roll Helena as the horde | total 20 | note Their Strong roll again.
+@roll Kayla as Maya | pool 19 | add Agility 3 | note A lucky roll, on only a +3 to Agility.
 **Helena (GM):** That’s a 20—
 **Kayla (Maya):** 22! Yes!
 **Helena (GM):** Oh, nice! You’re not normally good at this, but right now you’re operating purely on adrenaline, fear pumping your blood in your veins, and you bat them away with a scream that tears itself up out of your throat, backing away from the flood of gnashing jaws. They don’t get you this time, and that’s 2AP for you, 1AP for the others.
@@ -225,7 +239,8 @@ At the GM’s discretion, they may ask anyone to make an improvement roll at the
 **Ava (Finn):** Let me guess, something does.
 **Helena (GM):** Actually, no, this time. The valley is quiet. **Action** is over.
 **Kayla (Maya):** Oh, thank God—
-**Helena (GM):** That was a really clever **Nullity Field**. Give me an improvement roll for **Warding**.(Kayla rolls a 1 and a 3, adding Maya’s Logic rank of 4 for an 8.)
+**Helena (GM):** That was a really clever **Nullity Field**. Give me an improvement roll for **Warding**.
+@roll Kayla as Maya | dice 1, 3 | add Logic 4 | dc 17 | note An improvement roll for Warding: DC10 plus Maya’s 7 ranks in it.
 **Kayla (Maya):** Eight. Dammit. I’m not getting any wins today.
 :::
 
@@ -274,7 +289,8 @@ If the character succeeds on the **Resist** roll, they weather the blow and do n
 **Helena (GM):** Instead, in the black gloom, the shadow appears to pull the light straight off the tip of the wand and consumes it…
 **Kayla (Maya):** I think maybe we should have turned right at the fork.
 **Helena (GM):** But in the last flicker before your light goes out, you see a hazy outline of something that’s almost human, there at the edge of the clearing, but standing too tall, too… lean. With pale, empty eyes that focus on Finn. Something about it—that one split-second glimpse of its hollow gaze—strikes cold, dead fear into your heart like an icy knife. **Resist Fear, DC12.**
-**Ava (Finn):** I *said* we shouldn’t come out here—(Ava rolls a 3 and a 1 and adds Finn’s Logic rank, 2, for a total of 6.)
+**Ava (Finn):** I *said* we shouldn’t come out here—
+@roll Ava as Finn | dice 3, 1 | add Logic 2 | dc 12 | note The total misses by 6 — and the natural 1 would have failed the Resist on its own anyway.
 **Ava (Finn):** Ugh. Six. Two degrees of failure. Don’t tell me I take two stacks.
 **Helena (GM):** Not this time. You take a stack of Fear, the cold tendrils of that stare clutching like claws around your heart, and for your second degree of failure, I’ll say… the fear roots you to the spot, freezing you in place, your heart pounding in your ears suddenly the only thing that exists.
 **Ava (Finn):** Guys—a little help?
@@ -283,7 +299,8 @@ If the character succeeds on the **Resist** roll, they weather the blow and do n
 **Ahmed (Carlos):** Eh, yeah. What’s the worst that could happen?
 **Helena (GM):** Gutsy. Roll **Athletics, DC19.**
 **Ahmed (Carlos):** (rolls) Uh—fourteen.
-**Helena (GM):** That’s two degrees of failure, so you blow it. You strain, rushing forwards, and try to scoop up Finn, but the weight puts a sudden strain on the cut in your midsection, pain flaring up and lacing through your body. **Resist Wound, DC14.**(Ahmed rolls a 7 and a 5 and adds Carlos’s Body rank, 4, for a total of 16.)
+**Helena (GM):** That’s two degrees of failure, so you blow it. You strain, rushing forwards, and try to scoop up Finn, but the weight puts a sudden strain on the cut in your midsection, pain flaring up and lacing through your body. **Resist Wound, DC14.**
+@roll Ahmed as Carlos | dice 7, 5 | add Body 4 | dc 14
 **Ahmed (Carlos):** Sixteen! I’m good!
 **Helena (GM):** You wince, bearing the pain as best you can, and it’s not slowing you down—
 **Ahmed (Carlos):** I’m going to try again to carry Finn.
@@ -360,12 +377,16 @@ The GM will decide, based on the circumstances, which Condition is most appropri
 **Ava (Finn):** Okay, I’ve had it. I cast **Elery’s Cannon.**
 **Helena (GM):** On the squirrel?
 **Ava (Finn):** On the squirrel.
-**Helena (GM):** Right then. That’s a **DC17 Telekinesis** roll.(Ava rolls a 1 and a 9 and adds Finn’s Focus, 5, and their Telekinesis rank, 7, for a 22. Because of their **Wandjock** rank ability **Signature Trick,** they add their **Wandjock** rank of 4, for a total of 26.)
+**Helena (GM):** Right then. That’s a **DC17 Telekinesis** roll.
+@roll Ava as Finn | dice 1, 9 | add Focus 5, Telekinesis 7, Wandjock 4 | dc 17 | note The Wandjock rank ability Signature Trick adds their class rank on top — and the natural 1 is what triggers the backfire.
 **Ava (Finn):** 26. With a backfire.
-**Helena (GM):** Let’s go ahead and resolve your backfire first. **Elery’s Cannon** is an explosively powerful spell, so I’m thinking Wound, but since you’re just casting it on a… squirrel… we’ll keep the stakes lower and make it DC5. **Resist Wound, DC5.**(Ava rolls a 1 and a 7, adding Finn’s Body rank of 2 for a total of 10, but because they rolled a 1, the roll is a **critical failure**, meaning it’s at least 1 degree of failure.)
+**Helena (GM):** Let’s go ahead and resolve your backfire first. **Elery’s Cannon** is an explosively powerful spell, so I’m thinking Wound, but since you’re just casting it on a… squirrel… we’ll keep the stakes lower and make it DC5. **Resist Wound, DC5.**
+@roll Ava as Finn | dice 1, 7 | add Body 2 | dc 5 | result One degree of failure | note The total clears DC5 comfortably, but a natural 1 on a Resist fails it outright however high the total came out.
 **Ava (Finn):** Ugh… critical failure. 1 degree of failure.
-**Helena (GM):** Ouch. Okay, so a 26 definitely casts the spell successfully, even if the blowback from the spell knocks you clear over backwards and sends a stabbing pain up your arm. Mark one stack of Wound. The squirrel is going to roll Strong for Agility, but its Strong roll is, like, a two, so…(Helena rolls for the poor squirrel.)
-**Helena (GM):** Okay, the squirrel gets a 7, which is 4 degrees of failure. I’ll give it a minus three to Resist for each degree of failure, and it’s probably rolling Weak on **Resist Wound, DC22**, so, um…(Helena rolls for the poor squirrel.)
+**Helena (GM):** Ouch. Okay, so a 26 definitely casts the spell successfully, even if the blowback from the spell knocks you clear over backwards and sends a stabbing pain up your arm. Mark one stack of Wound. The squirrel is going to roll Strong for Agility, but its Strong roll is, like, a two, so…
+@beat Helena rolls for the poor squirrel.
+**Helena (GM):** Okay, the squirrel gets a 7, which is 4 degrees of failure. I’ll give it a minus three to Resist for each degree of failure, and it’s probably rolling Weak on **Resist Wound, DC22**, so, um…
+@beat Helena rolls for the poor squirrel.
 **Helena (GM):** All right, that’s a negative six. That’s six degrees of failure. You launch a piece of scrap metal at the squirrel, and it nearly breaks your arm, but it launches the squirrel into low-earth orbit, where it will never bother you again. I guess you win?
 :::
 
@@ -526,7 +547,8 @@ You can obtain potion recipes through [Alchemy classes](#daily-life), [Downtime 
 **Helena (GM):** Great, I’ll knock 400 off the materials cost for your bonus degree of success, taking it down to, uh… 1800 materials. Are you brewing hands-on?
 **Ahmed (Carlos):** When did Maya want to meet up at the Counterhexology Building?
 **Kayla (Maya):** Midnight. Probably like five hours?
-**Helena (GM):** Probably, yeah. You spend five hours slaving over the hot plates and boilers of the alchemy lab, brewing this brilliant green potion—well, it starts with a noxious black suspension that keeps belching out clouds of smoke, glistening black like onyx dust in the room around you. You’re sweaty and smelly at the end, but you leave it to keep brewing close to midnight, with another 1300 materials’ worth of brewing left to go.(The party goes about their lives for two more days.)
+**Helena (GM):** Probably, yeah. You spend five hours slaving over the hot plates and boilers of the alchemy lab, brewing this brilliant green potion—well, it starts with a noxious black suspension that keeps belching out clouds of smoke, glistening black like onyx dust in the room around you. You’re sweaty and smelly at the end, but you leave it to keep brewing close to midnight, with another 1300 materials’ worth of brewing left to go.
+@beat The party goes about their lives for two more days.
 **Ava (Finn):** All right, let’s go see the professor and see if we need to knock her teeth out.
 **Ahmed (Carlos):** Wait, wait. Before we go. Did my potion finish?
 **Helena (GM):** Let’s see… you left off two days ago with 1300 materials left to go, so there’s still 300 materials’ worth left to do.
@@ -588,7 +610,8 @@ Once you create a rune, it will last until it is dispelled. You can also choose,
 **Ahmed (Carlos):** (rolls) Oh my god, I’m a born runologist. Nineteen!
 **Helena (GM):** Nice! That’s two degrees of success, so ten hours minus eight hours means it’s only going to take two hours to put that one down on the door. What are the others doing in the meantime?
 **Ava (Finn):** I think I’ll put some time into my artifact repair… working on a slow repair, so I’ll just tick two hours off.
-**Kayla (Maya):** Y’all are so productive. I’m going to awkwardly flirt with Isabela over text.(Maya embarrasses herself to her on-and-off love interest with a terrible Win Over check while the others do something practical, and two hours later, Carlos finishes.)
+**Kayla (Maya):** Y’all are so productive. I’m going to awkwardly flirt with Isabela over text.
+@beat Maya embarrasses herself to her on-and-off love interest with a terrible Win Over check while the others do something practical, and two hours later, Carlos finishes.
 **Helena (GM):** So, at this point, Carlos, you’re just finishing up that rune, and the magic flares up as you do. Do you want this rune to be active all the time, or just under certain criteria?
 **Kayla (Maya):** We should set up an activation, deactivation phrase. We don’t want to lose the place ourselves.
 **Ahmed (Carlos):** For sure. It activates and deactivates if somebody says “pineapple on pizza” three times in its vicinity.
@@ -748,7 +771,8 @@ If an artifact is left unused and unattended for a long period (at the GM’s di
 **Ava (Finn):** I assume Carlos is already wandering around to find the grimoire anyway, so I’ll work on this while he’s doing his thing.
 **Helena (GM):** Sure, you can stay by the door and try to hastily fix up the **Hand**. I assume you’re doing a fast repair?
 **Ava (Finn):** Yeah. Carlos, go get to work. Maya, don’t screw anything up.
-**Kayla (Maya):** Me? I’m not the one who just broke something!(Carlos and Maya scour the room for a while, pulling out a stack of books and sitting down close to the entrance to search through them for the grimoire they’re after, and an hour passes, Finn putting the time into a fast repair.)
+**Kayla (Maya):** Me? I’m not the one who just broke something!
+@beat Carlos and Maya scour the room for a while, pulling out a stack of books and sitting down close to the entrance to search through them for the grimoire they’re after, and an hour passes, Finn putting the time into a fast repair.
 **Helena (GM):** All right, Finn, it’s been an hour, so you can roll **Artificy, DC23** for your repair now.
 **Ava (Finn):** Please, please… (rolls) Yes! Twenty-three exactly.
 **Helena (GM):** Great! You manage to patch it back together, sealing back up the antimagic rivulets in the gauntlet, and you feel a little shaky from the strain of having put it together as fast as possible, but you feel a sense of satisfaction as you flex the working gauntlet. Roll **Creativity** to improve, and you have 5 ranks in Artificy, so **DC15.**
@@ -890,13 +914,18 @@ There are other routes you can take to reduce your **Trouble** rank, listed belo
 **Ava (Finn):** “Not even a greeting?”
 **Helena (Marisa):** “Maybe if you put me in a good mood and hand it over.”
 **Ava (Finn):** Okay—I want to **Elery’s Cannon** the capsule in the direction I know the others are waiting, just get it away from her.
-**Helena (GM):** Absolutely! Go ahead and roll it.(Ava rolls a 31 for Finn’s **Elery’s Cannon,** against Marisa’s 26 to catch it, and the stolen capsule is launched with a flare of magic into the trees, far out of sight.)
+**Helena (GM):** Absolutely! Go ahead and roll it.
+@roll Ava as Finn | total 31 | note Elery’s Cannon, aimed at the capsule in Marisa’s hands.
+@roll Helena as Marisa | total 26 | note Catching it.
+@beat The stolen capsule is launched with a flare of magic into the trees, far out of sight.
 **Ava (Finn):** “Oops—slipped right from my hand.”
 **Helena (GM):** Marisa tries to stay stoic, but you’ve spent enough time dodging her you know that irritated twitch in her eye. You’re already at one **Trouble,** but breaking in, stealing the capsule, escaping, and now resisting an Enforcer’s direct order is going to bump you up to three.
 **Kayla (Maya):** What’s a little more trouble for Finn, if not just a chance to hang out with Marisa more?
 **Ahmed (Carlos):** They’re going to start reflecting badly on us soon enough…
 **Ava (Finn):** Hanging out at one **Trouble** is no big deal, but… three is going to get annoying. I know about Marisa’s whole thing with Jackson, right? I’m going to offer a favor in exchange for her forgetting this whole thing.
-**Helena (GM):** Oh, she’ll love that. Let’s roll for it. Since you know about some dirty insider information on her work, I’ll give you a +4 to your **Persuasion** roll.(Ava rolls an 18 for Finn’s **Persuasion**, versus Marisa’s 17 for **Willpower.**)
+**Helena (GM):** Oh, she’ll love that. Let’s roll for it. Since you know about some dirty insider information on her work, I’ll give you a +4 to your **Persuasion** roll.
+@roll Ava as Finn | total 18 | note Persuasion, with the +4 Helena offered for the insider information.
+@roll Helena as Marisa | total 17 | note Willpower.
 **Ava (Finn):** “Hold on, hold on. It’s probably going to give Jackson an opening if you’re distracted dragging me into the Garrison, don’t you think? I’m sure we can work something out here.”
 **Helena (GM):** You see that twitch in her eyes again, but after studying you for a while, you know just from the fractional shift in her shoulders that you’ve gotten through to her. “I can’t even grab you for two seconds before you start begging.”
 **Ava (Finn):** “Only because I know you love it.”

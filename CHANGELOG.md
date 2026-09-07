@@ -8,6 +8,22 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.10.0 — 2026-09-07
+- Add the Gamebook as an integrated page at `/gamebook` — four parts, one
+  route each, plus a hub. The Google Doc the site used to link out to is
+  retired; the Markdown under `src/gamebook/content` is now the source of
+  truth.
+- Rebuild the "at the table" examples of play as transcript panels: a feed of
+  message blocks, one colour per voice, that light up on hover, with a cast
+  strip in the header that follows a single voice through a scene (click to
+  pin the rest back).
+- Draw the dice instead of describing them. The parentheticals that used to
+  spell out "(Ahmed rolls 2d10 and gets a 2 and a 4, and adds his character
+  Carlos's Logic, 0…)" are now roll cards — faces, modifiers, total, and the
+  verdict, with criticals and Inflection Points marked on the die that caused
+  them. Every number explains itself on hover, and where a card knows the
+  whole sum you can roll the same check yourself to see how the degrees fall.
+
 ## v1.9.3 — 2026-09-05
 - Fix the Compendium drawer briefly showing baked-in seed spells (like
   "Kindle the Hearth-Ward") while the live data was still loading; it now

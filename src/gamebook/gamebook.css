@@ -543,44 +543,614 @@ html {
   background: color-mix(in oklab, var(--ink-800) 60%, transparent);
 }
 
-/* ---- Example-of-play transcript ----------------------------------------- */
+/* ---- Example of play ----------------------------------------------------- */
 
-.gb-dialog {
-  position: relative;
+/* The transcripts are built like the explorers, because they are one: a panel
+   with a header, not a block of prose with a label on top. */
+.gb-scene {
   margin: var(--space-7) 0;
-  padding: var(--space-6);
-  border: 1px solid var(--border-subtle);
-  border-left: 3px solid var(--gold-600);
-  border-radius: var(--radius-md);
-  background: color-mix(in oklab, var(--ink-850) 80%, transparent);
-  font-size: var(--text-md);
-  line-height: var(--leading-relaxed);
-}
-.gb-dialog__label {
-  display: block;
-  margin-bottom: var(--space-4);
+  width: min(100%, calc(var(--width-prose) + 12ch));
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, var(--ink-850) 0%, var(--ink-900) 100%);
+  box-shadow: var(--shadow-md);
   font-family: var(--font-sans);
+  font-size: var(--text-sm);
+}
+
+/* One accent per voice, set on the element and inherited by everything in it —
+   the token, the rail down the side of the message, the roll card. */
+.gb-scene [data-tone="gm"] {
+  --voice: var(--gold-400);
+}
+.gb-scene [data-tone="teal"] {
+  --voice: var(--teal-300);
+}
+.gb-scene [data-tone="plum"] {
+  --voice: var(--plum-300);
+}
+.gb-scene [data-tone="crimson"] {
+  --voice: var(--crimson-300);
+}
+.gb-scene [data-tone="forest"] {
+  --voice: var(--forest-300);
+}
+
+/* ---- Header and cast ---- */
+
+.gb-scene__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--hairline);
+  background: var(--brand-subtle);
+}
+.gb-scene__label {
   font-size: var(--text-2xs);
   letter-spacing: var(--tracking-widest);
   text-transform: uppercase;
   color: var(--text-gold);
 }
-.gb-dialog__line {
-  display: grid;
-  grid-template-columns: 12ch minmax(0, 1fr);
-  gap: var(--space-4);
-  margin: 0 0 var(--space-3);
+.gb-scene__cast {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
-.gb-dialog__speaker {
-  font-family: var(--font-sans);
-  font-size: var(--text-xs);
-  line-height: 1.7;
-  text-align: right;
-  color: var(--text-gold);
-  overflow-wrap: break-word;
+.gb-scene__meta {
+  margin-left: auto;
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-faint);
 }
-.gb-dialog__body {
+
+.gb-scene__member {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 2px var(--space-3) 2px 2px;
+  border: 1px solid color-mix(in oklab, var(--voice) 24%, transparent);
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--voice) 7%, transparent);
   color: var(--text-body);
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color var(--dur-fast), background var(--dur-fast), opacity var(--dur-fast);
+}
+.gb-scene__member[data-state="on"] {
+  border-color: color-mix(in oklab, var(--voice) 70%, transparent);
+  background: color-mix(in oklab, var(--voice) 16%, transparent);
+}
+.gb-scene__member[data-state="off"] {
+  opacity: 0.4;
+}
+.gb-scene__member:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+.gb-scene__token {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--voice) 26%, var(--ink-900));
+  font-size: 10px;
+  font-weight: var(--weight-bold);
+  color: var(--voice);
+}
+.gb-scene__names {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+.gb-scene__player {
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--voice);
+}
+.gb-scene__role {
+  font-size: var(--text-2xs);
+  color: var(--text-faint);
+}
+
+/* ---- The feed ---- */
+
+.gb-scene__feed {
+  margin: 0;
+  padding: var(--space-4) var(--space-4) var(--space-5);
+  list-style: none;
+}
+.gb-scene__feed > li {
+  margin-top: var(--space-2);
+}
+.gb-scene__feed > li:first-child {
+  margin-top: 0;
+}
+
+.gb-msg {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid transparent;
+  border-left: 2px solid color-mix(in oklab, var(--voice) 30%, transparent);
+  border-radius: var(--radius-sm);
+  transition: background var(--dur-fast), border-color var(--dur-fast), opacity var(--dur-fast);
+}
+/* A run of consecutive lines from one voice tucks under its own token. */
+.gb-msg[data-cont] {
+  margin-top: 2px;
+}
+.gb-msg:hover,
+.gb-msg[data-state="on"] {
+  background: color-mix(in oklab, var(--voice) 11%, transparent);
+  border-color: color-mix(in oklab, var(--voice) 26%, transparent);
+  border-left-color: var(--voice);
+}
+.gb-msg[data-state="off"] {
+  opacity: 0.32;
+}
+
+.gb-msg__token {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid color-mix(in oklab, var(--voice) 42%, transparent);
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--voice) 18%, var(--ink-900));
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
+  color: var(--voice);
+}
+.gb-msg[data-cont] .gb-msg__token {
+  border-color: transparent;
+  background: none;
+}
+
+.gb-msg__who {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-bottom: 3px;
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-medium);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--voice);
+}
+.gb-msg__as {
+  letter-spacing: var(--tracking-normal);
+  text-transform: none;
+  color: var(--text-faint);
+}
+.gb-msg__text {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: var(--text-md);
+  line-height: var(--leading-relaxed);
+  color: var(--text-body);
+}
+.gb-msg[data-gm] .gb-msg__text {
+  color: var(--text-strong);
+}
+
+/* A stage direction inside a line — "(rolls)", "(deep sigh)". */
+.gb-cue {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-right: 5px;
+  padding: 1px 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--ink-700) 55%, transparent);
+  font-family: var(--font-sans);
+  font-size: var(--text-2xs);
+  font-style: normal;
+  letter-spacing: var(--tracking-wide);
+  color: var(--text-muted);
+  vertical-align: 1px;
+}
+.gb-cue::before {
+  content: "";
+  width: 4px;
+  height: 4px;
+  background: var(--gold-600);
+  transform: rotate(45deg);
+}
+
+/* Something that happens at the table without anybody saying it. */
+.gb-beat {
+  padding: var(--space-3) var(--space-5);
+  transition: opacity var(--dur-fast);
+  border-top: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
+  background: color-mix(in oklab, var(--ink-950) 45%, transparent);
+}
+.gb-beat__text {
+  display: block;
+  font-family: var(--font-serif);
+  font-size: var(--text-sm);
+  font-style: italic;
+  line-height: var(--leading-relaxed);
+  text-align: center;
+  color: var(--text-muted);
+}
+
+/* ---- Roll cards ---- */
+
+/* Both sides of a contest stack, with the comparison drawn between them —
+   two roll cards side by side would be too narrow at the prose measure. */
+.gb-rolls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  transition: opacity var(--dur-fast);
+}
+.gb-beat[data-state="off"],
+.gb-rolls[data-state="off"] {
+  opacity: 0.32;
+}
+.gb-rolls__vs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.gb-rolls__vs::before,
+.gb-rolls__vs::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--hairline);
+}
+
+.gb-roll {
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  border: 1px solid color-mix(in oklab, var(--voice) 26%, transparent);
+  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, color-mix(in oklab, var(--voice) 8%, var(--ink-850)) 0%, var(--ink-900) 100%);
+  box-shadow: var(--inset-hi);
+  transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
+}
+.gb-roll:hover {
+  border-color: color-mix(in oklab, var(--voice) 50%, transparent);
+  box-shadow: var(--inset-hi), 0 0 0 1px color-mix(in oklab, var(--voice) 16%, transparent), var(--shadow-sm);
+}
+
+.gb-roll__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+.gb-roll__who {
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--voice);
+}
+.gb-roll__as {
+  margin-left: 6px;
+  letter-spacing: var(--tracking-normal);
+  text-transform: none;
+  color: var(--text-faint);
+}
+.gb-roll__target {
+  padding: 2px var(--space-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--ink-950) 50%, transparent);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--text-gold);
+  white-space: nowrap;
+}
+
+.gb-roll__sum {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* The d10 silhouette, with the face that came up sitting on top of it. */
+.gb-die {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+}
+.gb-die__face {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.gb-die__face > path:first-child {
+  fill: color-mix(in oklab, var(--ink-700) 85%, transparent);
+  stroke: var(--border-default);
+  stroke-width: 1;
+}
+.gb-die__facet {
+  fill: none;
+  stroke: color-mix(in oklab, var(--gold-500) 14%, transparent);
+  stroke-width: 0.75;
+}
+.gb-die__value {
+  position: relative;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--text-strong);
+}
+.gb-die__face[data-flair="high"] > path:first-child {
+  fill: color-mix(in oklab, var(--gold-600) 38%, var(--ink-800));
+  stroke: var(--gold-400);
+}
+.gb-die__face[data-flair="low"] > path:first-child {
+  fill: color-mix(in oklab, var(--crimson-500) 34%, var(--ink-800));
+  stroke: var(--crimson-300);
+}
+.gb-die__face[data-flair="inflection"] > path:first-child {
+  fill: color-mix(in oklab, var(--plum-500) 38%, var(--ink-800));
+  stroke: var(--plum-300);
+}
+
+/* Where an example gave the dice as one number, or not at all. */
+.gb-die--pool,
+.gb-die--unknown {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  min-width: 46px;
+  padding: 0 var(--space-2);
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--ink-800) 65%, transparent);
+}
+.gb-die--unknown .gb-die__value {
+  color: var(--text-muted);
+}
+.gb-die__sub {
+  font-family: var(--font-sans);
+  font-size: 9px;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.gb-roll__mod {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 6px var(--space-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--ink-800) 65%, transparent);
+  transition: border-color var(--dur-fast);
+}
+.gb-roll__mod:hover {
+  border-color: var(--border-default);
+}
+.gb-roll__mod-op,
+.gb-roll__mod-value {
+  font-family: var(--font-mono);
+}
+.gb-roll__mod-op {
+  color: var(--text-faint);
+}
+.gb-roll__mod-value {
+  font-size: var(--text-sm);
+  color: var(--text-strong);
+}
+.gb-roll__mod-label {
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.gb-roll__eq {
+  margin: 0 2px;
+  font-family: var(--font-mono);
+  color: var(--text-faint);
+}
+.gb-roll__total {
+  padding: 0 var(--space-2) 1px;
+  border-bottom: 2px solid color-mix(in oklab, var(--voice) 55%, transparent);
+  font-family: var(--font-mono);
+  font-size: var(--text-xl);
+  line-height: 1.25;
+  color: var(--text-strong);
+}
+
+/* Verdict, dice flair and the try-it control share one row under the sum. */
+.gb-roll__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+.gb-roll__verdict {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-body);
+}
+.gb-roll__verdict-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--gold-400);
+}
+.gb-roll__verdict-dot[data-verdict="success"] {
+  background: var(--forest-300);
+}
+.gb-roll__verdict-dot[data-verdict="failure"] {
+  background: var(--crimson-300);
+}
+
+.gb-roll__flair {
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-pill);
+  border: 1px solid currentcolor;
+  font-size: 10px;
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+}
+.gb-roll__flair[data-flair="crit-success"] {
+  color: var(--gold-300);
+}
+.gb-roll__flair[data-flair="crit-fail"] {
+  color: var(--crimson-300);
+}
+.gb-roll__flair[data-flair="inflection"] {
+  color: var(--plum-300);
+}
+
+.gb-roll__note {
+  margin: var(--space-3) 0 0;
+  font-family: var(--font-serif);
+  font-size: var(--text-sm);
+  font-style: italic;
+  line-height: var(--leading-normal);
+  color: var(--text-muted);
+}
+
+/* Rolling the same check yourself, to see how the degrees fall out. The
+   control sits quiet until the card is hovered — there is one on most cards,
+   and a column of buttons would read louder than the transcript does. */
+.gb-roll__try-btn,
+.gb-roll__try-reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text-faint);
+  font-family: var(--font-sans);
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color var(--dur-fast);
+}
+.gb-roll__try-btn {
+  margin-left: auto;
+}
+.gb-roll:hover .gb-roll__try-btn,
+.gb-roll__try-btn:hover,
+.gb-roll__try-reset:hover {
+  color: var(--text-gold);
+}
+.gb-roll__try-btn:focus-visible,
+.gb-roll__try-reset:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
+  border-radius: var(--radius-xs);
+}
+.gb-roll__try {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  padding-top: var(--space-3);
+  border-top: 1px dashed var(--hairline);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+.gb-roll__try-label {
+  font-family: var(--font-sans);
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.gb-roll__try-total {
+  font-size: var(--text-md);
+  color: var(--text-strong);
+}
+.gb-roll__try-verdict {
+  font-family: var(--font-sans);
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-body);
+}
+.gb-roll__try-reset {
+  margin-left: auto;
+}
+
+/* ---- Hover detail ---- */
+
+.gb-tip {
+  position: relative;
+  cursor: help;
+}
+.gb-tip__bubble {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  z-index: 6;
+  width: max-content;
+  max-width: 260px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--ink-950);
+  box-shadow: var(--shadow-md);
+  font-family: var(--font-sans);
+  font-size: var(--text-2xs);
+  font-style: normal;
+  font-weight: var(--weight-regular);
+  letter-spacing: var(--tracking-normal);
+  line-height: var(--leading-normal);
+  text-align: left;
+  text-transform: none;
+  color: var(--text-body);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(4px);
+  transition: opacity var(--dur-fast), transform var(--dur-fast), visibility var(--dur-fast);
+}
+.gb-tip:hover > .gb-tip__bubble,
+.gb-tip:focus-visible > .gb-tip__bubble {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+/* Anything sitting at the right edge of a card hangs its bubble the other way,
+   so neither end of a roll card pushes one off the page. */
+.gb-roll__target > .gb-tip__bubble {
+  left: auto;
+  right: 0;
+}
+.gb-tip:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
 }
 
 /* ---- Pull quote --------------------------------------------------------- */
@@ -1096,12 +1666,20 @@ html {
   .gb-houses__traits {
     grid-template-columns: 1fr;
   }
-  .gb-dialog__line {
-    grid-template-columns: 1fr;
-    gap: var(--space-1);
+  .gb-scene__feed {
+    padding: var(--space-3) var(--space-3) var(--space-4);
   }
-  .gb-dialog__speaker {
-    text-align: left;
+  .gb-msg {
+    grid-template-columns: 22px minmax(0, 1fr);
+    gap: var(--space-2);
+    padding: var(--space-2);
+  }
+  .gb-msg__token {
+    width: 22px;
+    height: 22px;
+  }
+  .gb-tip__bubble {
+    max-width: min(240px, 68vw);
   }
   .gb-widget__head {
     flex-direction: column;

@@ -7,6 +7,8 @@ import { useCompendiumIndex, isReference } from "./widgets/CompendiumContext";
 import CompendiumTerm from "./widgets/CompendiumTerm";
 import StatsMatrix from "./widgets/StatsMatrix";
 import HouseExplorer from "./widgets/HouseExplorer";
+import TableScene from "./widgets/TableScene";
+import { buildCast } from "./cast";
 
 /* ===========================================================================
    Renders the parsed gamebook block tree.
@@ -87,6 +89,12 @@ function Inlines({
                 <Inlines nodes={n.children} href={href} />
               </em>
             );
+          case "cue":
+            return (
+              <span key={i} className="gb-cue">
+                {n.text}
+              </span>
+            );
           case "break":
             return <br key={i} />;
           case "link": {
@@ -120,6 +128,14 @@ export default function Blocks({
   partSlug: string;
 }) {
   const href = useHref(anchorIndex, partSlug);
+
+  // Speaker colours are settled across the whole page, so a voice keeps the
+  // same colour from the first example of play to the last.
+  const cast = React.useMemo(() => buildCast(blocks), [blocks]);
+  const renderInlines = React.useCallback(
+    (nodes: Inline[]) => <Inlines nodes={nodes} href={href} />,
+    [href]
+  );
 
   return (
     <>
@@ -195,19 +211,7 @@ export default function Blocks({
             );
 
           case "dialog":
-            return (
-              <aside key={i} className="gb-dialog">
-                <span className="gb-dialog__label">At the table</span>
-                {b.lines.map((l, j) => (
-                  <p key={j} className="gb-dialog__line">
-                    {l.speaker && <span className="gb-dialog__speaker">{l.speaker}</span>}
-                    <span className="gb-dialog__body">
-                      <Inlines nodes={l.body} href={href} />
-                    </span>
-                  </p>
-                ))}
-              </aside>
-            );
+            return <TableScene key={i} entries={b.entries} cast={cast} render={renderInlines} />;
 
           case "quote":
             return (

@@ -10,7 +10,10 @@
      ## .. #####          headings (each gets a stable slug for deep links)
      | a | b |            tables, with <br> for in-cell line breaks
      1. / -               ordered and unordered lists
-     :::dialog … :::      an example-of-play transcript
+     :::dialog … :::      an example-of-play transcript. Inside it:
+                            **Name (Character):** spoken line
+                            @roll  …           a die roll, as a roll card
+                            @beat  …           a stage direction / table beat
      :::quote … :::       a pull-quote
      :::caption Text      a caption attached to the table that follows
      :::widget-name       an interactive block (stats-matrix, house-explorer)
@@ -22,6 +25,7 @@ export type Inline =
   | { kind: "strong"; children: Inline[] }
   | { kind: "em"; children: Inline[] }
   | { kind: "link"; href: string; children: Inline[] }
+  | { kind: "cue"; text: string }
   | { kind: "break" };
 
 export type Block =
@@ -29,9 +33,56 @@ export type Block =
   | { kind: "para"; children: Inline[] }
   | { kind: "list"; ordered: boolean; items: Inline[][] }
   | { kind: "table"; caption: string | null; head: Inline[][]; rows: Inline[][][] }
-  | { kind: "dialog"; lines: { speaker: string; body: Inline[] }[] }
+  | { kind: "dialog"; entries: DialogEntry[] }
   | { kind: "quote"; children: Inline[] }
   | { kind: "widget"; name: string };
+
+/* ------------------------- example-of-play transcripts -------------------- */
+
+/** One labelled number added to a roll — a Stat, an Ability rank, a bonus. */
+export interface RollMod {
+  label: string;
+  value: number;
+}
+
+/**
+ * A single die roll as an example of play prints it.
+ *
+ * The examples are not uniform: some spell out both dice, some give only the
+ * dice subtotal, some give nothing but the final number. Each of `dice`,
+ * `pool` and `declaredTotal` records what the text actually said, and nothing
+ * is inferred from the others — a roll card shows what is known and says so
+ * where it isn't.
+ */
+export interface Roll {
+  /** The player at the table who picks up the dice. */
+  who: string;
+  /** Who they are rolling for — their character, or an NPC the GM runs. */
+  as: string | null;
+  /** Individual die faces, when the example gives them. */
+  dice: number[] | null;
+  /** The dice subtotal, when the example gives only that. */
+  pool: number | null;
+  mods: RollMod[];
+  /** A total stated outright, for examples that skip the arithmetic. */
+  declaredTotal: number | null;
+  /** A flat difficulty to beat. Ties count as a success. */
+  dc: number | null;
+  /** An opposing total to beat. Ties are ties. */
+  vs: { total: number; label: string } | null;
+  /** Overrides the computed verdict where a rule bends it (crits, forfeits). */
+  result: string | null;
+  /** The colour the example gave the roll, shown under the card. */
+  note: string | null;
+}
+
+export type DialogEntry =
+  /** Someone speaks. */
+  | { kind: "line"; speaker: string; character: string | null; body: Inline[] }
+  /** Something happens at the table that nobody says out loud. */
+  | { kind: "beat"; children: Inline[] }
+  /** One roll, or the two sides of a contest, resolved together. */
+  | { kind: "rolls"; rolls: Roll[] };
 
 export interface Heading {
   level: number;
@@ -84,6 +135,147 @@ export function parseInline(src: string): Inline[] {
   }
 
   return out.filter((n) => n.kind !== "text" || n.text !== "");
+}
+
+/* --------------------------- dialog transcripts --------------------------- */
+
+/**
+ * A stage direction inside a spoken line: short, lower-case, unpunctuated —
+ * "(rolls)", "(deep sigh)". Anything longer or sentence-shaped is left as the
+ * prose it is; the run-on narration the Doc export produced was lifted out of
+ * these lines into `@beat` and `@roll` instead.
+ */
+const CUE_RE = /\((?=[a-z])([^()]{1,34})\)/g;
+
+function parseSpeech(src: string): Inline[] {
+  const out: Inline[] = [];
+  let last = 0;
+
+  for (const m of src.matchAll(CUE_RE)) {
+    if (m.index === undefined || /[.!?]/.test(m[1])) continue;
+    if (m.index > last) out.push(...parseInline(src.slice(last, m.index)));
+    out.push({ kind: "cue", text: m[1].trim() });
+    last = m.index + m[0].length;
+  }
+
+  if (last < src.length) out.push(...parseInline(src.slice(last)));
+  return out;
+}
+
+/** "Logic 0, Analyze 0" → the numbers a roll adds, with what each one is. */
+function parseMods(src: string): RollMod[] {
+  return src
+    .split(",")
+    .map((chunk) => chunk.trim().match(/^(.+?)\s+([+-]?\d+)$/))
+    .filter((m): m is RegExpMatchArray => m !== null)
+    .map((m) => ({ label: m[1].trim(), value: Number(m[2]) }));
+}
+
+/**
+ * One `@roll` line.
+ *
+ *   @roll Ahmed as Carlos | dice 2, 4 | add Logic 0, Analyze 0 | dc 14 | note …
+ *
+ * The first segment is who rolled; every later segment is a keyword and its
+ * value. Segments are optional and order-free, because the examples differ in
+ * how much of the arithmetic they bother to show.
+ */
+function parseRoll(src: string): Roll {
+  const [first, ...segments] = src.split("|").map((s) => s.trim());
+  const asSplit = first.split(/\s+as\s+/);
+
+  const roll: Roll = {
+    who: asSplit[0].trim(),
+    as: asSplit.length > 1 ? asSplit.slice(1).join(" as ").trim() : null,
+    dice: null,
+    pool: null,
+    mods: [],
+    declaredTotal: null,
+    dc: null,
+    vs: null,
+    result: null,
+    note: null,
+  };
+
+  for (const seg of segments) {
+    const m = seg.match(/^([a-z]+)\s+([\s\S]+)$/);
+    if (!m) continue;
+    const [, key, value] = m;
+
+    switch (key) {
+      case "dice":
+        roll.dice = value.split(",").map((n) => Number(n.trim()));
+        break;
+      case "pool":
+        roll.pool = Number(value.trim());
+        break;
+      case "total":
+        roll.declaredTotal = Number(value.trim());
+        break;
+      case "add":
+        roll.mods = parseMods(value);
+        break;
+      case "dc":
+        roll.dc = Number(value.trim());
+        break;
+      case "vs": {
+        const vs = value.match(/^(-?\d+)\s*([\s\S]*)$/);
+        if (vs) roll.vs = { total: Number(vs[1]), label: vs[2].trim() };
+        break;
+      }
+      case "result":
+        roll.result = value.trim();
+        break;
+      case "note":
+        roll.note = value.trim();
+        break;
+    }
+  }
+
+  return roll;
+}
+
+/** The body of a `:::dialog` fence: speech, rolls and table beats, in order. */
+export function parseDialog(body: string[]): DialogEntry[] {
+  const entries: DialogEntry[] = [];
+
+  for (const raw of body) {
+    const line = raw.trim();
+    if (!line) continue;
+
+    const roll = line.match(/^@roll\s+(.+)$/);
+    if (roll) {
+      // Consecutive @roll lines are the two sides of one contest, and resolve
+      // against each other rather than against a DC.
+      const last = entries[entries.length - 1];
+      if (last && last.kind === "rolls") last.rolls.push(parseRoll(roll[1]));
+      else entries.push({ kind: "rolls", rolls: [parseRoll(roll[1])] });
+      continue;
+    }
+
+    const beat = line.match(/^@beat\s+(.+)$/);
+    if (beat) {
+      entries.push({ kind: "beat", children: parseInline(beat[1].trim()) });
+      continue;
+    }
+
+    const said = line.match(/^\*\*([^:*]+):\*\*\s*(.*)$/);
+    if (said) {
+      // "Helena (GM)" — the player, then who they are speaking as.
+      const who = said[1].trim().match(/^([^(]+?)\s*(?:\(([^)]*)\))?$/);
+      entries.push({
+        kind: "line",
+        speaker: who ? who[1].trim() : said[1].trim(),
+        character: who && who[2] ? who[2].trim() : null,
+        body: parseSpeech(said[2].trim()),
+      });
+      continue;
+    }
+
+    entries.push({ kind: "line", speaker: "", character: null, body: parseSpeech(line) });
+  }
+
+  return entries;
 }
 
 /* -------------------------------- blocks --------------------------------- */
@@ -152,15 +344,7 @@ export function parseMarkdown(src: string): ParsedPart {
         if (name === "quote") {
           blocks.push({ kind: "quote", children: parseInline(body.join(" ").trim()) });
         } else {
-          const dialogLines = body
-            .filter((l) => l.trim())
-            .map((l) => {
-              const m = l.match(/^\*\*([^:*]+):\*\*\s*(.*)$/);
-              return m
-                ? { speaker: m[1].trim(), body: parseInline(m[2].trim()) }
-                : { speaker: "", body: parseInline(l.trim()) };
-            });
-          blocks.push({ kind: "dialog", lines: dialogLines });
+          blocks.push({ kind: "dialog", entries: parseDialog(body) });
         }
         continue;
       }
