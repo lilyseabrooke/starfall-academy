@@ -42,6 +42,14 @@ export default function GamebookEditPage() {
 
   React.useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
+    // Picks up a sign-in that happens after this page has already loaded
+    // (e.g. via the nav's sign-in flow), without needing a reload.
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setEmail(session?.user?.email ?? null);
+    });
+    return () => subscription.unsubscribe();
   }, [supabase]);
 
   // Fetch the part list once, then default to the first part.
@@ -157,15 +165,17 @@ export default function GamebookEditPage() {
         >
           {email === undefined
             ? ""
-            : !canWrite
-              ? "Signed in as someone other than the site owner — Save is disabled."
-              : status.kind === "error"
-                ? status.message
-                : status.kind === "saved"
-                  ? "Saved — live on the site now."
-                  : dirty
-                    ? "Unsaved changes"
-                    : ""}
+            : email === null
+              ? "Not signed in — sign in as the site owner (top right) to save."
+              : !canWrite
+                ? `Signed in as ${email}, not the site owner — Save is disabled.`
+                : status.kind === "error"
+                  ? status.message
+                  : status.kind === "saved"
+                    ? "Saved — live on the site now."
+                    : dirty
+                      ? "Unsaved changes"
+                      : ""}
         </span>
       </div>
 
