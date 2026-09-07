@@ -24,8 +24,10 @@ export type DiceShape =
 
 export interface Verdict {
   tone: "success" | "failure" | "tie";
-  /** The headline on the badge — "2 degrees of failure", "Tie". */
+  /** The headline on the badge — "Two degrees of failure", "Tie". */
   label: string;
+  /** How many degrees, for the pips. A tie has none. */
+  degrees: number;
   /** The arithmetic behind it, for the badge's hover. */
   detail: string;
 }
@@ -75,6 +77,7 @@ export function verdictFor(total: number, target: Target): Verdict {
     return {
       tone: "tie",
       label: "Tie",
+      degrees: 0,
       detail: `Both sides land on ${total}. A contest that ties is a tie — what that means is the GM's call.`,
     };
   }
@@ -84,6 +87,7 @@ export function verdictFor(total: number, target: Target): Verdict {
   return {
     tone: pass ? "success" : "failure",
     label: degreeLabel(degrees, pass),
+    degrees,
     detail:
       `${total} against ${target.contested ? `${target.label}'s ${target.total}` : target.total}` +
       `${gap === 0 ? ", exactly" : `, ${gap} ${pass ? "over" : "under"}`} — ` +
@@ -119,9 +123,14 @@ export function resolveRoll(roll: Roll, opponent?: Roll): Resolved {
   // A stated result wins: some rules bend the arithmetic — a critical failure
   // on a Resist fails outright however high the total came out.
   if (roll.result) {
+    // "One degree of failure" — read the count back off the stated wording so
+    // the pips agree with the words.
+    const stated = roll.result.match(/^(\w+) degree/i);
+    const counted = stated ? ordinal.indexOf(stated[1].toLowerCase()) : -1;
     verdict = {
       tone: /fail/i.test(roll.result) ? "failure" : /tie/i.test(roll.result) ? "tie" : "success",
       label: roll.result,
+      degrees: counted > 0 ? counted : 1,
       detail: verdict?.detail ?? "",
     };
   }

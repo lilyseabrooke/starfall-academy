@@ -49,10 +49,16 @@ drop `:::your-widget-name` into the content.
 ## Examples of play
 
 A `:::dialog` fence renders as a transcript panel — a feed of messages, one
-colour per voice, with a cast strip in the header that follows a single voice
-through the scene on hover (click to pin). Colours are assigned once per page
-in `cast.ts`, in order of first appearance, so a player keeps the same colour
-from the first example on a page to the last. The GM is always gold.
+colour per voice, each lighting up under the pointer. Colours are assigned
+once per page in `cast.ts`, in order of first appearance, so a player keeps
+the same colour from the first example on a page to the last. The GM is
+always gold.
+
+The panel opens on request. A page of rules with nine full transcripts
+inlined reads as mostly transcript, so a closed one shows only its header —
+the label and who is at the table — behind a **See example** toggle. It is a
+`<details>`, so it works before hydration and browsers can still find text
+inside it.
 
 Three kinds of line go inside the fence:
 
@@ -68,6 +74,11 @@ sigh)` — becomes a stage-direction chip. Anything longer stays prose.
 ### `@roll`
 
     @roll Ahmed as Carlos | dice 2, 4 | add Logic 0, Analyze 0 | dc 14 | note …
+
+which draws the way the character sheet's roll card does: every number in its
+own square, the total after them, then the degrees. Only the numbers are on
+the card — what each one *is* comes on hover, so a reader who already knows
+how a check works just reads the arithmetic.
 
 The first segment is who rolled and who for; every later segment is a keyword
 and its value, all optional and order-free:
@@ -88,15 +99,11 @@ against the other, and the card stack draws the comparison between them.
 
 **Nothing is inferred across those fields.** `dice`, `pool` and `total` each
 record only what the text actually said, and a card that doesn't know the dice
-says so rather than inventing faces that add up. The verdict — degrees,
-criticals, Inflection Points — is computed by `rolls.ts` from the same rules
-the character sheet uses (`degreesFor` and `classify` in
+shows a dashed `2d10` rather than inventing faces that add up. The verdict —
+degrees, criticals, Inflection Points — is computed by `rolls.ts` from the
+same rules the character sheet uses (`degreesFor` and `classify` in
 `sheet/data/roll-engine.ts`), so the book and the sheet can never disagree
 about what a 6 against DC14 means.
-
-Where a card knows the whole sum, it offers to roll the same check for the
-reader — a fresh 2d10 under the same modifiers, against the same number,
-shown beside the example rather than replacing it.
 
 ## Data lifted out of the prose
 

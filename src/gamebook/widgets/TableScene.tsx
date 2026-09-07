@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { ChevronDown } from "lucide-react";
 import type { DialogEntry, Inline, Roll } from "../markdown";
 import { type Cast, initials } from "../cast";
 import { resolveTotal } from "../rolls";
@@ -14,19 +15,15 @@ import DiceRoll from "./DiceRoll";
    past. As one column of prose that is hard work; as a feed of messages, each
    in its speaker's colour, it is nearly free.
 
-   The header names the cast, and hovering — or clicking, to pin it — follows
-   one voice through the scene: their lines come forward and everyone else
-   recedes. Rolls are drawn as cards rather than described in parentheses;
-   beats are the things that happen without anybody saying them.
+   They open on request rather than by default: a page of rules with nine
+   full transcripts inlined reads as mostly transcript, so the header — the
+   label and who is at the table — stands in for a closed one, and the reader
+   decides when an example is worth the room.
    =========================================================================== */
-
-type Rendered = React.ReactNode;
-
-/* ------------------------------ the cast strip ---------------------------- */
 
 interface Member {
   speaker: string;
-  /** Whoever they most often speak as, for the chip's second line. */
+  /** Whoever they are playing, for the chip's second line. */
   character: string | null;
   gm: boolean;
 }
@@ -51,8 +48,6 @@ function castOf(entries: DialogEntry[], cast: Cast): Member[] {
 
   return [...seen.values()];
 }
-
-/* --------------------------------- entries -------------------------------- */
 
 /**
  * Consecutive lines from one speaker are one run: the token and the name are
@@ -79,79 +74,56 @@ export default function TableScene({
   entries: DialogEntry[];
   cast: Cast;
   /** Inline rendering is owned by the page — it resolves cross-part links. */
-  render: (nodes: Inline[]) => Rendered;
+  render: (nodes: Inline[]) => React.ReactNode;
 }) {
   const members = React.useMemo(() => castOf(entries, cast), [entries, cast]);
-  const [hovered, setHovered] = React.useState<string | null>(null);
-  const [pinned, setPinned] = React.useState<string | null>(null);
-  const focused = pinned ?? hovered;
-
-  const rollCount = entries.reduce((n, e) => n + (e.kind === "rolls" ? e.rolls.length : 0), 0);
+  const [open, setOpen] = React.useState(false);
 
   return (
-    <figure className="gb-scene" data-focused={focused ? "" : undefined}>
-      <figcaption className="gb-scene__head">
+    <details
+      className="gb-scene"
+      open={open}
+      onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}
+    >
+      <summary className="gb-scene__head">
         <span className="gb-scene__label">At the table</span>
 
         <ul className="gb-scene__cast">
           {members.map((m) => (
-            <li key={m.speaker}>
-              <button
-                type="button"
-                className="gb-scene__member"
-                data-tone={cast.tone[m.speaker]}
-                data-state={focused === m.speaker ? "on" : focused ? "off" : undefined}
-                aria-pressed={pinned === m.speaker}
-                onMouseEnter={() => setHovered(m.speaker)}
-                onMouseLeave={() => setHovered(null)}
-                onFocus={() => setHovered(m.speaker)}
-                onBlur={() => setHovered(null)}
-                onClick={() => setPinned((p) => (p === m.speaker ? null : m.speaker))}
-                title={`Follow ${m.speaker} through this scene`}
-              >
-                <span className="gb-scene__token" aria-hidden="true">
-                  {initials(m.speaker)}
-                </span>
-                <span className="gb-scene__names">
-                  <span className="gb-scene__player">{m.speaker}</span>
-                  {m.character && <span className="gb-scene__role">{m.gm ? m.character : `as ${m.character}`}</span>}
-                </span>
-              </button>
+            <li key={m.speaker} className="gb-scene__member" data-tone={cast.tone[m.speaker]}>
+              <span className="gb-scene__token" aria-hidden="true">
+                {initials(m.speaker)}
+              </span>
+              <span className="gb-scene__player">{m.speaker}</span>
+              {m.character && (
+                <span className="gb-scene__role">{m.gm ? m.character : `as ${m.character}`}</span>
+              )}
             </li>
           ))}
         </ul>
 
-        {rollCount > 0 && (
-          <span className="gb-scene__meta">
-            {rollCount} roll{rollCount === 1 ? "" : "s"}
-          </span>
-        )}
-      </figcaption>
+        <span className="gb-scene__toggle">
+          {open ? "Hide" : "See example"}
+          <ChevronDown size={14} aria-hidden="true" />
+        </span>
+      </summary>
 
       <ol className="gb-scene__feed">
         {entries.map((entry, i) => {
           if (entry.kind === "beat") {
-            // Following one voice sets everything that isn't theirs back.
             return (
-              <li key={i} className="gb-beat" data-state={focused ? "off" : undefined}>
+              <li key={i} className="gb-beat">
                 <span className="gb-beat__text">{render(entry.children)}</span>
               </li>
             );
           }
 
           if (entry.kind === "rolls") {
-            // Two rolls side by side are the two halves of a contest, and each
-            // is resolved against the other rather than against a DC.
+            // Two rolls together are the two halves of a contest, and each is
+            // resolved against the other rather than against a DC.
             const contest = entry.rolls.length === 2;
             return (
-              <li
-                key={i}
-                className="gb-rolls"
-                data-contest={contest ? "" : undefined}
-                data-state={
-                  focused ? (entry.rolls.some((r) => r.who === focused) ? "on" : "off") : undefined
-                }
-              >
+              <li key={i} className="gb-rolls">
                 {entry.rolls.map((roll: Roll, j) => (
                   <React.Fragment key={j}>
                     {contest && j === 1 && (
@@ -178,9 +150,6 @@ export default function TableScene({
               data-tone={cast.tone[entry.speaker] ?? "teal"}
               data-gm={cast.gm[entry.speaker] ? "" : undefined}
               data-cont={cont ? "" : undefined}
-              data-state={focused ? (focused === entry.speaker ? "on" : "off") : undefined}
-              onMouseEnter={() => setHovered(entry.speaker || null)}
-              onMouseLeave={() => setHovered(null)}
             >
               <span className="gb-msg__token" aria-hidden="true">
                 {cont ? "" : initials(entry.speaker)}
@@ -204,6 +173,6 @@ export default function TableScene({
           );
         })}
       </ol>
-    </figure>
+    </details>
   );
 }

@@ -546,7 +546,9 @@ html {
 /* ---- Example of play ----------------------------------------------------- */
 
 /* The transcripts are built like the explorers, because they are one: a panel
-   with a header, not a block of prose with a label on top. */
+   with a header, not a block of prose with a label on top. Closed by default —
+   the header says who is at the table, and the reader opens the ones they
+   want rather than reading a rules page that is mostly transcript. */
 .gb-scene {
   margin: var(--space-7) 0;
   width: min(100%, calc(var(--width-prose) + 12ch));
@@ -569,11 +571,11 @@ html {
 .gb-scene [data-tone="plum"] {
   --voice: var(--plum-300);
 }
-.gb-scene [data-tone="crimson"] {
-  --voice: var(--crimson-300);
-}
 .gb-scene [data-tone="forest"] {
   --voice: var(--forest-300);
+}
+.gb-scene [data-tone="crimson"] {
+  --voice: var(--crimson-300);
 }
 
 /* ---- Header and cast ---- */
@@ -584,8 +586,25 @@ html {
   align-items: center;
   gap: var(--space-2) var(--space-4);
   padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid var(--hairline);
+  border-radius: calc(var(--radius-lg) - 1px);
   background: var(--brand-subtle);
+  cursor: pointer;
+  list-style: none;
+  transition: background var(--dur-fast);
+}
+.gb-scene__head::-webkit-details-marker {
+  display: none;
+}
+.gb-scene__head:hover {
+  background: color-mix(in oklab, var(--gold-500) 22%, var(--ink-900));
+}
+.gb-scene__head:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+.gb-scene[open] .gb-scene__head {
+  border-radius: calc(var(--radius-lg) - 1px) calc(var(--radius-lg) - 1px) 0 0;
+  border-bottom: 1px solid var(--hairline);
 }
 .gb-scene__label {
   font-size: var(--text-2xs);
@@ -601,14 +620,6 @@ html {
   padding: 0;
   list-style: none;
 }
-.gb-scene__meta {
-  margin-left: auto;
-  font-size: var(--text-2xs);
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
-  color: var(--text-faint);
-}
-
 .gb-scene__member {
   display: flex;
   align-items: center;
@@ -617,21 +628,6 @@ html {
   border: 1px solid color-mix(in oklab, var(--voice) 24%, transparent);
   border-radius: var(--radius-pill);
   background: color-mix(in oklab, var(--voice) 7%, transparent);
-  color: var(--text-body);
-  font-family: inherit;
-  cursor: pointer;
-  transition: border-color var(--dur-fast), background var(--dur-fast), opacity var(--dur-fast);
-}
-.gb-scene__member[data-state="on"] {
-  border-color: color-mix(in oklab, var(--voice) 70%, transparent);
-  background: color-mix(in oklab, var(--voice) 16%, transparent);
-}
-.gb-scene__member[data-state="off"] {
-  opacity: 0.4;
-}
-.gb-scene__member:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 2px;
 }
 .gb-scene__token {
   display: grid;
@@ -644,11 +640,6 @@ html {
   font-weight: var(--weight-bold);
   color: var(--voice);
 }
-.gb-scene__names {
-  display: flex;
-  align-items: baseline;
-  gap: 5px;
-}
 .gb-scene__player {
   font-size: var(--text-2xs);
   letter-spacing: var(--tracking-wide);
@@ -658,6 +649,27 @@ html {
 .gb-scene__role {
   font-size: var(--text-2xs);
   color: var(--text-faint);
+}
+.gb-scene__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+  transition: color var(--dur-fast);
+}
+.gb-scene__head:hover .gb-scene__toggle {
+  color: var(--text-gold);
+}
+.gb-scene__toggle svg {
+  transition: transform var(--dur-base) var(--ease-standard);
+}
+.gb-scene[open] .gb-scene__toggle svg {
+  transform: rotate(180deg);
 }
 
 /* ---- The feed ---- */
@@ -682,20 +694,16 @@ html {
   border: 1px solid transparent;
   border-left: 2px solid color-mix(in oklab, var(--voice) 30%, transparent);
   border-radius: var(--radius-sm);
-  transition: background var(--dur-fast), border-color var(--dur-fast), opacity var(--dur-fast);
+  transition: background var(--dur-fast), border-color var(--dur-fast);
 }
 /* A run of consecutive lines from one voice tucks under its own token. */
 .gb-msg[data-cont] {
   margin-top: 2px;
 }
-.gb-msg:hover,
-.gb-msg[data-state="on"] {
+.gb-msg:hover {
   background: color-mix(in oklab, var(--voice) 11%, transparent);
   border-color: color-mix(in oklab, var(--voice) 26%, transparent);
   border-left-color: var(--voice);
-}
-.gb-msg[data-state="off"] {
-  opacity: 0.32;
 }
 
 .gb-msg__token {
@@ -771,7 +779,6 @@ html {
 /* Something that happens at the table without anybody saying it. */
 .gb-beat {
   padding: var(--space-3) var(--space-5);
-  transition: opacity var(--dur-fast);
   border-top: 1px solid var(--hairline);
   border-bottom: 1px solid var(--hairline);
   background: color-mix(in oklab, var(--ink-950) 45%, transparent);
@@ -786,7 +793,7 @@ html {
   color: var(--text-muted);
 }
 
-/* ---- Roll cards ---- */
+/* ---- Roll cards ---------------------------------------------------------- */
 
 /* Both sides of a contest stack, with the comparison drawn between them —
    two roll cards side by side would be too narrow at the prose measure. */
@@ -794,11 +801,6 @@ html {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  transition: opacity var(--dur-fast);
-}
-.gb-beat[data-state="off"],
-.gb-rolls[data-state="off"] {
-  opacity: 0.32;
 }
 .gb-rolls__vs {
   display: flex;
@@ -823,11 +825,6 @@ html {
   border-radius: var(--radius-md);
   background: linear-gradient(180deg, color-mix(in oklab, var(--voice) 8%, var(--ink-850)) 0%, var(--ink-900) 100%);
   box-shadow: var(--inset-hi);
-  transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
-}
-.gb-roll:hover {
-  border-color: color-mix(in oklab, var(--voice) 50%, transparent);
-  box-shadow: var(--inset-hi), 0 0 0 1px color-mix(in oklab, var(--voice) 16%, transparent), var(--shadow-sm);
 }
 
 .gb-roll__head {
@@ -852,7 +849,7 @@ html {
 .gb-roll__target {
   padding: 2px var(--space-2);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-xs);
   background: color-mix(in oklab, var(--ink-950) 50%, transparent);
   font-family: var(--font-mono);
   font-size: var(--text-2xs);
@@ -864,122 +861,78 @@ html {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2);
+  gap: 5px;
 }
-
-/* The d10 silhouette, with the face that came up sitting on top of it. */
-.gb-die {
-  display: inline-grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-}
-.gb-die__face {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-}
-.gb-die__face > path:first-child {
-  fill: color-mix(in oklab, var(--ink-700) 85%, transparent);
-  stroke: var(--border-default);
-  stroke-width: 1;
-}
-.gb-die__facet {
-  fill: none;
-  stroke: color-mix(in oklab, var(--gold-500) 14%, transparent);
-  stroke-width: 0.75;
-}
-.gb-die__value {
-  position: relative;
+.gb-roll__eq {
+  margin: 0 3px;
   font-family: var(--font-mono);
   font-size: var(--text-sm);
-  color: var(--text-strong);
-}
-.gb-die__face[data-flair="high"] > path:first-child {
-  fill: color-mix(in oklab, var(--gold-600) 38%, var(--ink-800));
-  stroke: var(--gold-400);
-}
-.gb-die__face[data-flair="low"] > path:first-child {
-  fill: color-mix(in oklab, var(--crimson-500) 34%, var(--ink-800));
-  stroke: var(--crimson-300);
-}
-.gb-die__face[data-flair="inflection"] > path:first-child {
-  fill: color-mix(in oklab, var(--plum-500) 38%, var(--ink-800));
-  stroke: var(--plum-300);
-}
-
-/* Where an example gave the dice as one number, or not at all. */
-.gb-die--pool,
-.gb-die--unknown {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: auto;
-  min-width: 46px;
-  padding: 0 var(--space-2);
-  border: 1px dashed var(--border-default);
-  border-radius: var(--radius-sm);
-  background: color-mix(in oklab, var(--ink-800) 65%, transparent);
-}
-.gb-die--unknown .gb-die__value {
-  color: var(--text-muted);
-}
-.gb-die__sub {
-  font-family: var(--font-sans);
-  font-size: 9px;
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
   color: var(--text-faint);
 }
 
-.gb-roll__mod {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 5px;
-  padding: 6px var(--space-2);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  background: color-mix(in oklab, var(--ink-800) 65%, transparent);
+/* Every number on the card is a square, as it is on the character sheet's
+   roll card. Only the number shows; what it is comes on hover. */
+.gb-num {
+  display: grid;
+  place-items: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 5px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xs);
+  background: var(--ink-700);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text-body);
   transition: border-color var(--dur-fast);
 }
-.gb-roll__mod:hover {
-  border-color: var(--border-default);
+.gb-num:hover {
+  border-color: var(--border-strong);
 }
-.gb-roll__mod-op,
-.gb-roll__mod-value {
-  font-family: var(--font-mono);
+/* A natural 10 or 1 is the whole reason to look at a single die. */
+.gb-num--die.is-ten {
+  border-color: color-mix(in oklab, var(--forest-500) 55%, transparent);
+  background: color-mix(in oklab, var(--forest-700) 38%, var(--ink-800));
+  color: var(--forest-300);
 }
-.gb-roll__mod-op {
-  color: var(--text-faint);
+.gb-num--die.is-one {
+  border-color: color-mix(in oklab, var(--crimson-500) 55%, transparent);
+  background: color-mix(in oklab, var(--crimson-700) 36%, var(--ink-800));
+  color: var(--crimson-300);
 }
-.gb-roll__mod-value {
-  font-size: var(--text-sm);
-  color: var(--text-strong);
-}
-.gb-roll__mod-label {
-  font-size: var(--text-2xs);
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
+/* Modifiers sit back from the dice — same square, quieter fill. */
+.gb-num--mod {
+  background: color-mix(in oklab, var(--ink-800) 70%, transparent);
   color: var(--text-muted);
 }
-
-.gb-roll__eq {
-  margin: 0 2px;
-  font-family: var(--font-mono);
+/* Where an example gave the dice as one number, or not at all. */
+.gb-num--wide {
+  min-width: 44px;
+}
+.gb-num--unknown {
+  border-style: dashed;
+  background: none;
+  font-size: var(--text-2xs);
   color: var(--text-faint);
 }
-.gb-roll__total {
-  padding: 0 var(--space-2) 1px;
-  border-bottom: 2px solid color-mix(in oklab, var(--voice) 55%, transparent);
-  font-family: var(--font-mono);
+.gb-num--total {
+  min-width: 40px;
+  height: 34px;
+  border-color: var(--border-strong);
+  background: color-mix(in oklab, var(--ink-950) 60%, transparent);
+  font-family: var(--font-display);
   font-size: var(--text-xl);
-  line-height: 1.25;
-  color: var(--text-strong);
+  font-weight: var(--weight-bold);
+  color: var(--gold-200);
+}
+.gb-roll[data-outcome="success"] .gb-num--total {
+  color: var(--forest-300);
+}
+.gb-roll[data-outcome="failure"] .gb-num--total {
+  color: var(--crimson-300);
 }
 
-/* Verdict, dice flair and the try-it control share one row under the sum. */
 .gb-roll__foot {
   display: flex;
   flex-wrap: wrap;
@@ -992,41 +945,46 @@ html {
   align-items: center;
   gap: var(--space-2);
   font-size: var(--text-2xs);
+  font-weight: var(--weight-medium);
   letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
   color: var(--text-body);
 }
-.gb-roll__verdict-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--gold-400);
+.gb-roll[data-outcome="success"] .gb-roll__verdict {
+  color: var(--forest-300);
 }
-.gb-roll__verdict-dot[data-verdict="success"] {
-  background: var(--forest-300);
+.gb-roll[data-outcome="failure"] .gb-roll__verdict {
+  color: var(--crimson-300);
 }
-.gb-roll__verdict-dot[data-verdict="failure"] {
-  background: var(--crimson-300);
+.gb-roll__pips {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
 }
-
+.gb-roll__pips i {
+  display: block;
+  width: 12px;
+  height: 5px;
+  border-radius: 1px;
+  background: currentcolor;
+}
 .gb-roll__flair {
   padding: 2px var(--space-2);
-  border-radius: var(--radius-pill);
   border: 1px solid currentcolor;
+  border-radius: var(--radius-pill);
   font-size: 10px;
   letter-spacing: var(--tracking-wider);
   text-transform: uppercase;
 }
 .gb-roll__flair[data-flair="crit-success"] {
-  color: var(--gold-300);
+  color: var(--forest-300);
 }
 .gb-roll__flair[data-flair="crit-fail"] {
   color: var(--crimson-300);
 }
 .gb-roll__flair[data-flair="inflection"] {
-  color: var(--plum-300);
+  color: var(--gold-300);
 }
-
 .gb-roll__note {
   margin: var(--space-3) 0 0;
   font-family: var(--font-serif);
@@ -1034,73 +992,6 @@ html {
   font-style: italic;
   line-height: var(--leading-normal);
   color: var(--text-muted);
-}
-
-/* Rolling the same check yourself, to see how the degrees fall out. The
-   control sits quiet until the card is hovered — there is one on most cards,
-   and a column of buttons would read louder than the transcript does. */
-.gb-roll__try-btn,
-.gb-roll__try-reset {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 0;
-  border: none;
-  background: none;
-  color: var(--text-faint);
-  font-family: var(--font-sans);
-  font-size: var(--text-2xs);
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: color var(--dur-fast);
-}
-.gb-roll__try-btn {
-  margin-left: auto;
-}
-.gb-roll:hover .gb-roll__try-btn,
-.gb-roll__try-btn:hover,
-.gb-roll__try-reset:hover {
-  color: var(--text-gold);
-}
-.gb-roll__try-btn:focus-visible,
-.gb-roll__try-reset:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 3px;
-  border-radius: var(--radius-xs);
-}
-.gb-roll__try {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--space-2);
-  margin: var(--space-3) 0 0;
-  padding-top: var(--space-3);
-  border-top: 1px dashed var(--hairline);
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  color: var(--text-muted);
-}
-.gb-roll__try-label {
-  font-family: var(--font-sans);
-  font-size: var(--text-2xs);
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
-  color: var(--text-faint);
-}
-.gb-roll__try-total {
-  font-size: var(--text-md);
-  color: var(--text-strong);
-}
-.gb-roll__try-verdict {
-  font-family: var(--font-sans);
-  font-size: var(--text-2xs);
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
-  color: var(--text-body);
-}
-.gb-roll__try-reset {
-  margin-left: auto;
 }
 
 /* ---- Hover detail ---- */
@@ -1111,7 +1002,7 @@ html {
 }
 .gb-tip__bubble {
   position: absolute;
-  left: 50%;
+  left: 0;
   bottom: calc(100% + 8px);
   z-index: 6;
   width: max-content;
@@ -1141,16 +1032,15 @@ html {
   visibility: visible;
   transform: translateY(0);
 }
+.gb-tip:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
 /* Anything sitting at the right edge of a card hangs its bubble the other way,
    so neither end of a roll card pushes one off the page. */
 .gb-roll__target > .gb-tip__bubble {
   left: auto;
   right: 0;
-}
-.gb-tip:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 2px;
-  border-radius: var(--radius-xs);
 }
 
 /* ---- Pull quote --------------------------------------------------------- */
@@ -1677,6 +1567,9 @@ html {
   .gb-msg__token {
     width: 22px;
     height: 22px;
+  }
+  .gb-scene__role {
+    display: none;
   }
   .gb-tip__bubble {
     max-width: min(240px, 68vw);

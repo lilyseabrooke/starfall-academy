@@ -14,15 +14,13 @@ when these shipped.
   retired; the Markdown under `src/gamebook/content` is now the source of
   truth.
 - Rebuild the "at the table" examples of play as transcript panels: a feed of
-  message blocks, one colour per voice, that light up on hover, with a cast
-  strip in the header that follows a single voice through a scene (click to
-  pin the rest back).
+  message blocks, one colour per voice, each lighting up under the pointer,
+  behind a **See example** toggle so a rules page isn't mostly transcript.
 - Draw the dice instead of describing them. The parentheticals that used to
   spell out "(Ahmed rolls 2d10 and gets a 2 and a 4, and adds his character
-  Carlos's Logic, 0…)" are now roll cards — faces, modifiers, total, and the
-  verdict, with criticals and Inflection Points marked on the die that caused
-  them. Every number explains itself on hover, and where a card knows the
-  whole sum you can roll the same check yourself to see how the degrees fall.
+  Carlos's Logic, 0…)" are now roll cards laid out like the character sheet's:
+  every number in its own square, the total, then the degrees, with a natural
+  10 green and a natural 1 red. Hovering a number says what it is.
 
 ## v1.9.3 — 2026-09-05
 - Fix the Compendium drawer briefly showing baked-in seed spells (like
