@@ -14,8 +14,10 @@ when these shipped.
   retired; the Markdown under `src/gamebook/content` is now the source of
   truth.
 - Rebuild the "at the table" examples of play as transcript panels: a feed of
-  message blocks, one colour per voice, each lighting up under the pointer,
-  behind a **See example** toggle so a rules page isn't mostly transcript.
+  message blocks, one colour per voice, each lighting up under the pointer.
+  Closed, an example is just a mark out at the left of the column, so a rules
+  page isn't mostly transcript; opening one plays the scene in a line at a
+  time.
 - Draw the dice instead of describing them. The parentheticals that used to
   spell out "(Ahmed rolls 2d10 and gets a 2 and a 4, and adds his character
   Carlos's Logic, 0…)" are now roll cards laid out like the character sheet's:

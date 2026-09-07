@@ -21,6 +21,11 @@ import Tip from "./Tip";
 
 const signed = (n: number) => `${n < 0 ? "−" : "+"}${Math.abs(n)}`;
 
+/** The operator between two squares. The sign lives here, not in the square. */
+function Op({ children }: { children: React.ReactNode }) {
+  return <span className="gb-roll__op">{children}</span>;
+}
+
 /** The sum spelled back out, for the total's hover. */
 function sumDetail(roll: Roll, r: Resolved): string {
   const parts: string[] = [];
@@ -60,13 +65,15 @@ export default function DiceRoll({ roll, tone, opponent }: { roll: Roll; tone: T
       <div className="gb-roll__sum">
         {shape.kind === "faces" ? (
           shape.dice.map((face, i) => (
-            <Tip
-              key={i}
-              className={`gb-num gb-num--die${face === 10 ? " is-ten" : face === 1 ? " is-one" : ""}`}
-              detail={faceMeaning(face, shape.dice)}
-            >
-              {face}
-            </Tip>
+            <React.Fragment key={i}>
+              {i > 0 && <Op>+</Op>}
+              <Tip
+                className={`gb-num gb-num--die${face === 10 ? " is-ten" : face === 1 ? " is-one" : ""}`}
+                detail={faceMeaning(face, shape.dice)}
+              >
+                {face}
+              </Tip>
+            </React.Fragment>
           ))
         ) : shape.kind === "pool" ? (
           <Tip
@@ -85,14 +92,15 @@ export default function DiceRoll({ roll, tone, opponent }: { roll: Roll; tone: T
         )}
 
         {roll.mods.map((m, i) => (
-          <Tip key={i} className="gb-num gb-num--mod" detail={m.label}>
-            {signed(m.value)}
-          </Tip>
+          <React.Fragment key={i}>
+            <Op>{m.value < 0 ? "−" : "+"}</Op>
+            <Tip className="gb-num gb-num--mod" detail={m.label}>
+              {Math.abs(m.value)}
+            </Tip>
+          </React.Fragment>
         ))}
 
-        <span className="gb-roll__eq" aria-hidden="true">
-          =
-        </span>
+        <Op>=</Op>
         <Tip className="gb-num gb-num--total" detail={sumDetail(roll, resolved)}>
           {resolved.total}
         </Tip>

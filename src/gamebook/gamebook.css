@@ -551,13 +551,27 @@ html {
    want rather than reading a rules page that is mostly transcript. */
 .gb-scene {
   margin: var(--space-7) 0;
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+}
+/* Closed, a scene is only its mark and a few words, sitting out at the left of
+   the column — enough of a shape to break a run of paragraphs. */
+.gb-scene:not([open]) {
+  width: fit-content;
+}
+.gb-scene[open] {
   width: min(100%, calc(var(--width-prose) + 12ch));
   border: 1px solid var(--border-default);
   border-radius: var(--radius-lg);
   background: linear-gradient(180deg, var(--ink-850) 0%, var(--ink-900) 100%);
   box-shadow: var(--shadow-md);
-  font-family: var(--font-sans);
-  font-size: var(--text-sm);
+  animation: gb-scene-in var(--dur-slow) var(--ease-out);
+}
+@keyframes gb-scene-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
 }
 
 /* One accent per voice, set on the element and inherited by everything in it —
@@ -584,10 +598,7 @@ html {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2) var(--space-4);
-  padding: var(--space-3) var(--space-4);
-  border-radius: calc(var(--radius-lg) - 1px);
-  background: var(--brand-subtle);
+  gap: var(--space-2) var(--space-3);
   cursor: pointer;
   list-style: none;
   transition: background var(--dur-fast);
@@ -595,22 +606,65 @@ html {
 .gb-scene__head::-webkit-details-marker {
   display: none;
 }
-.gb-scene__head:hover {
-  background: color-mix(in oklab, var(--gold-500) 22%, var(--ink-900));
-}
 .gb-scene__head:focus-visible {
   outline: 2px solid var(--focus-ring);
-  outline-offset: -2px;
+  outline-offset: 3px;
+  border-radius: var(--radius-md);
 }
 .gb-scene[open] .gb-scene__head {
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-3) var(--space-4);
   border-radius: calc(var(--radius-lg) - 1px) calc(var(--radius-lg) - 1px) 0 0;
   border-bottom: 1px solid var(--hairline);
+  background: var(--brand-subtle);
+  outline-offset: -3px;
 }
+.gb-scene[open] .gb-scene__head:hover {
+  background: color-mix(in oklab, var(--gold-500) 22%, var(--ink-900));
+}
+
+/* The mark: a plate that stays put through the toggle, shrinking into the
+   header of the opened panel. */
+.gb-scene__mark {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, color-mix(in oklab, var(--gold-600) 34%, var(--ink-800)) 0%, var(--ink-850) 100%);
+  box-shadow: var(--inset-hi), var(--shadow-sm);
+  color: var(--gold-200);
+  transition: width var(--dur-base) var(--ease-out), height var(--dur-base) var(--ease-out),
+    border-color var(--dur-fast), color var(--dur-fast), transform var(--dur-fast);
+}
+.gb-scene:not([open]) .gb-scene__head:hover .gb-scene__mark {
+  border-color: var(--border-strong);
+  color: var(--gold-200);
+  transform: translateY(-1px);
+}
+.gb-scene[open] .gb-scene__mark {
+  width: 26px;
+  height: 26px;
+  border-color: var(--border-default);
+  border-radius: var(--radius-sm);
+  box-shadow: none;
+}
+.gb-scene[open] .gb-scene__mark svg {
+  width: 14px;
+  height: 14px;
+}
+
 .gb-scene__label {
   font-size: var(--text-2xs);
   letter-spacing: var(--tracking-widest);
   text-transform: uppercase;
   color: var(--text-gold);
+  transition: color var(--dur-fast);
+}
+.gb-scene:not([open]) .gb-scene__head:hover .gb-scene__label {
+  color: var(--gold-200);
 }
 .gb-scene__cast {
   display: flex;
@@ -666,9 +720,6 @@ html {
   color: var(--text-gold);
 }
 .gb-scene__toggle svg {
-  transition: transform var(--dur-base) var(--ease-standard);
-}
-.gb-scene[open] .gb-scene__toggle svg {
   transform: rotate(180deg);
 }
 
@@ -679,8 +730,16 @@ html {
   padding: var(--space-4) var(--space-4) var(--space-5);
   list-style: none;
 }
+/* Entries mount one at a time, so each animates as it lands. */
 .gb-scene__feed > li {
   margin-top: var(--space-2);
+  animation: gb-entry-in var(--dur-base) var(--ease-out) both;
+}
+@keyframes gb-entry-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
 }
 .gb-scene__feed > li:first-child {
   margin-top: 0;
@@ -861,10 +920,9 @@ html {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
 }
-.gb-roll__eq {
-  margin: 0 3px;
+.gb-roll__op {
   font-family: var(--font-mono);
   font-size: var(--text-sm);
   color: var(--text-faint);
@@ -992,6 +1050,16 @@ html {
   font-style: italic;
   line-height: var(--leading-normal);
   color: var(--text-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gb-scene[open],
+  .gb-scene__feed > li {
+    animation: none;
+  }
+  .gb-scene__mark {
+    transition: none;
+  }
 }
 
 /* ---- Hover detail ---- */

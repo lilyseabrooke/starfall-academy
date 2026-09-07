@@ -55,10 +55,13 @@ the same colour from the first example on a page to the last. The GM is
 always gold.
 
 The panel opens on request. A page of rules with nine full transcripts
-inlined reads as mostly transcript, so a closed one shows only its header —
-the label and who is at the table — behind a **See example** toggle. It is a
-`<details>`, so it works before hydration and browsers can still find text
-inside it.
+inlined reads as mostly transcript, so a closed one is nothing but its mark
+sitting out at the left of the column — a gilded plate and the words *See an
+example*, enough of a shape to break a run of paragraphs. Opening it plays
+the scene in a line at a time, so the panel grows as the transcript lands
+instead of jumping to full height and filling itself in; long scenes step
+faster so no transcript outstays the gesture. `prefers-reduced-motion` shows
+the whole thing at once.
 
 Three kinds of line go inside the fence:
 
@@ -76,9 +79,10 @@ sigh)` — becomes a stage-direction chip. Anything longer stays prose.
     @roll Ahmed as Carlos | dice 2, 4 | add Logic 0, Analyze 0 | dc 14 | note …
 
 which draws the way the character sheet's roll card does: every number in its
-own square, the total after them, then the degrees. Only the numbers are on
-the card — what each one *is* comes on hover, so a reader who already knows
-how a check works just reads the arithmetic.
+own square with the operators between them, the total at the end, then the
+degrees. Only the numbers are on the card — what each one *is* comes on
+hover, so a reader who already knows how a check works just reads the
+arithmetic.
 
 The first segment is who rolled and who for; every later segment is a keyword
 and its value, all optional and order-free:

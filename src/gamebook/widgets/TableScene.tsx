@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, MessagesSquare } from "lucide-react";
 import type { DialogEntry, Inline, Roll } from "../markdown";
 import { type Cast, initials } from "../cast";
 import { resolveTotal } from "../rolls";
@@ -16,9 +16,10 @@ import DiceRoll from "./DiceRoll";
    in its speaker's colour, it is nearly free.
 
    They open on request rather than by default: a page of rules with nine
-   full transcripts inlined reads as mostly transcript, so the header — the
-   label and who is at the table — stands in for a closed one, and the reader
-   decides when an example is worth the room.
+   full transcripts inlined reads as mostly transcript. Closed, a transcript
+   is just its mark sitting out at the left of the column — enough to break
+   the run of paragraphs and say an example is here — and opening it plays
+   the scene in, a line at a time, the way it happened.
    =========================================================================== */
 
 interface Member {
@@ -78,38 +79,63 @@ export default function TableScene({
 }) {
   const members = React.useMemo(() => castOf(entries, cast), [entries, cast]);
   const [open, setOpen] = React.useState(false);
+  const [shown, setShown] = React.useState(0);
+
+  /**
+   * An opened scene plays in rather than appearing whole: one entry, then the
+   * next, fast enough to read as a scene arriving and not as a loading bar.
+   * The panel grows as they land, so the page settles once instead of jumping
+   * to full height and filling itself in.
+   *
+   * Long scenes step faster, so a transcript never outstays the gesture.
+   */
+  React.useEffect(() => {
+    if (!open || shown >= entries.length) return;
+    const step = Math.max(18, Math.min(55, 900 / entries.length));
+    const id = window.setTimeout(() => setShown((n) => n + 1), step);
+    return () => window.clearTimeout(id);
+  }, [open, shown, entries.length]);
+
+  const toggle = (e: React.SyntheticEvent<HTMLDetailsElement>) => {
+    const isOpen = e.currentTarget.open;
+    setOpen(isOpen);
+    if (!isOpen) setShown(0);
+    else setShown(window.matchMedia("(prefers-reduced-motion: reduce)").matches ? entries.length : 1);
+  };
 
   return (
-    <details
-      className="gb-scene"
-      open={open}
-      onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}
-    >
+    <details className="gb-scene" open={open} onToggle={toggle}>
       <summary className="gb-scene__head">
-        <span className="gb-scene__label">At the table</span>
-
-        <ul className="gb-scene__cast">
-          {members.map((m) => (
-            <li key={m.speaker} className="gb-scene__member" data-tone={cast.tone[m.speaker]}>
-              <span className="gb-scene__token" aria-hidden="true">
-                {initials(m.speaker)}
-              </span>
-              <span className="gb-scene__player">{m.speaker}</span>
-              {m.character && (
-                <span className="gb-scene__role">{m.gm ? m.character : `as ${m.character}`}</span>
-              )}
-            </li>
-          ))}
-        </ul>
-
-        <span className="gb-scene__toggle">
-          {open ? "Hide" : "See example"}
-          <ChevronDown size={14} aria-hidden="true" />
+        <span className="gb-scene__mark" aria-hidden="true">
+          <MessagesSquare size={18} />
         </span>
+        <span className="gb-scene__label">{open ? "At the table" : "See an example"}</span>
+
+        {open && (
+          <>
+            <ul className="gb-scene__cast">
+              {members.map((m) => (
+                <li key={m.speaker} className="gb-scene__member" data-tone={cast.tone[m.speaker]}>
+                  <span className="gb-scene__token" aria-hidden="true">
+                    {initials(m.speaker)}
+                  </span>
+                  <span className="gb-scene__player">{m.speaker}</span>
+                  {m.character && (
+                    <span className="gb-scene__role">{m.gm ? m.character : `as ${m.character}`}</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+            <span className="gb-scene__toggle">
+              Hide
+              <ChevronDown size={14} aria-hidden="true" />
+            </span>
+          </>
+        )}
       </summary>
 
       <ol className="gb-scene__feed">
-        {entries.map((entry, i) => {
+        {entries.slice(0, shown).map((entry, i) => {
           if (entry.kind === "beat") {
             return (
               <li key={i} className="gb-beat">
