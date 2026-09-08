@@ -110,12 +110,16 @@ function buildStatGraph(D: ForgeData): StatGraph {
  *  capped before a second, equally-eligible item in the same slot ever gets
  *  a look in — a step function (max, then max, then whatever's left),
  *  not a T. This tempers that so a build's few chosen things fill out at
- *  different, overlapping levels instead of each in turn slamming to cap. */
-function selfTaper(nd: Draft, D: ForgeData, map: MapKey, key: string): number {
+ *  different, overlapping levels instead of each in turn slamming to cap.
+ *  `softness` lets a caller weaken the taper for something that's supposed
+ *  to race ahead of its slot-mates on purpose — a major subject is the
+ *  build's actual declared specialty, so it should be freer to run all the
+ *  way to its (raised) cap than an ordinary secondary pick. */
+function selfTaper(nd: Draft, D: ForgeData, map: MapKey, key: string, softness = 0.6): number {
   const cap = F.rankCap(nd, D, map, key);
   if (cap <= 0) return 1;
   const rank = nd[map][key] || 0;
-  return Math.pow(Math.max(0, 1 - rank / cap), 0.6);
+  return Math.pow(Math.max(0, 1 - rank / cap), softness);
 }
 
 /** Recompute one map's weights fresh from `cfg`'s static base weights plus
@@ -144,7 +148,8 @@ function dynamicWeights(nd: Draft, D: ForgeData, cfg: ArchetypeConfig, map: MapK
     const w: Weights = {};
     F.flatSubjects(D).forEach((s) => {
       const base = cfg.subjectWeights[s.key] || 0;
-      w[s.key] = base <= 0 ? 0 : base * (1 + 0.3 * (nd.stats[s.stat.toLowerCase()] || 0)) * selfTaper(nd, D, map, s.key);
+      const softness = nd.major.includes(s.key) ? 0.2 : 0.6;
+      w[s.key] = base <= 0 ? 0 : base * (1 + 0.3 * (nd.stats[s.stat.toLowerCase()] || 0)) * selfTaper(nd, D, map, s.key, softness);
     });
     return w;
   }
