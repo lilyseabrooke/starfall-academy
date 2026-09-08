@@ -160,7 +160,20 @@ function dynamicWeights(nd: Draft, D: ForgeData, cfg: ArchetypeConfig, map: MapK
   const w: Weights = {};
   F.flatSkills(D).forEach((s) => {
     const base = cfg.skillWeights[s.id] || 0;
-    w[s.id] = base <= 0 ? 0 : base * (1 + 0.3 * (nd.stats[s.fac.id] || 0)) * selfTaper(nd, D, map, s.id) * (cfg.skillJitter[s.id] ?? 1);
+    if (base <= 0) { w[s.id] = 0; return; }
+    // A stat's 4 skills sharing one governing stat (and often one archetype
+    // weight) have nothing else to tell them apart — jitter and selfTaper
+    // only affect fill *order*, so given enough budget (a high year, a
+    // dedicated specialist) they still all eventually reach the same cap.
+    // skillTierCap is a hard per-character ceiling instead: every skill
+    // under a stat gets its own fraction of the true cap (see
+    // buildSkillTierCaps), so at most one can ever reach it in full. A
+    // skill a class move or artifact already guarantees is exempted
+    // (tier 1) when that floor is applied, so this never fights a
+    // deliberate promise.
+    const tierCap = Math.max(1, Math.floor(F.rankCap(nd, D, map, s.id) * (cfg.skillTierCap[s.id] ?? 1)));
+    if ((nd.skills[s.id] || 0) >= tierCap) { w[s.id] = 0; return; }
+    w[s.id] = base * (1 + 0.3 * (nd.stats[s.fac.id] || 0)) * selfTaper(nd, D, map, s.id) * (cfg.skillJitter[s.id] ?? 1);
   });
   return w;
 }
@@ -352,6 +365,18 @@ interface ArchetypeConfig {
   statJitter: Weights;
   subjectJitter: Weights;
   skillJitter: Weights;
+  /** Per-skill hard ceiling, as a fraction of that skill's true rank cap —
+   *  drawn once per character so every stat's 4 skills get their own
+   *  distinct fraction (1.0 down to ~0.15, strictly decreasing within a
+   *  stat — see buildSkillTierCaps). Unlike jitter (a soft bias on fill
+   *  order), this is a hard stop dynamicWeights enforces, because jitter
+   *  alone still lets an abundant budget cap all of a stat's skills evenly
+   *  — only one skill per stat may ever reach the true cap this way, so a
+   *  specialist keeps texture within their own best stat instead of
+   *  maxing every skill under it identically. A skill a class move or
+   *  artifact already guarantees is exempted (set to 1) when that floor
+   *  is applied. */
+  skillTierCap: Weights;
   majorCount: number;
   classModeBias?: "single" | "double";
   preferStatWand?: boolean;
@@ -363,7 +388,7 @@ const ARCHETYPE_IDS = [
   "arcane-scholar",
 ];
 
-type ArchetypeCore = Omit<ArchetypeConfig, "statJitter" | "subjectJitter" | "skillJitter">;
+type ArchetypeCore = Omit<ArchetypeConfig, "statJitter" | "subjectJitter" | "skillJitter" | "skillTierCap">;
 
 function jitterFor(keys: string[], min = 0.65, max = 1.35): Weights {
   const w: Weights = {};
@@ -371,15 +396,34 @@ function jitterFor(keys: string[], min = 0.65, max = 1.35): Weights {
   return w;
 }
 
-/** Wraps buildArchetypeCore with a fresh random jitter map per character —
- *  kept separate so the archetype-selection logic above stays free of the
- *  jitter bookkeeping. */
+/** One random, strictly-decreasing tier sequence per stat, assigned to that
+ *  stat's 4 skills in a random order: the top tier is always exactly 1 (the
+ *  stat's "favorite" skill may still reach the true cap), each next tier
+ *  drops by a further random 18-40%, floored at 0.15 so the lowest tier
+ *  stays meaningfully trainable rather than reading as untouchable. */
+function buildSkillTierCaps(D: ForgeData): Weights {
+  const out: Weights = {};
+  D.stats.forEach((f) => {
+    const ids = shuffle(f.skills.map((s) => s.id));
+    let frac = 1;
+    ids.forEach((id) => {
+      out[id] = frac;
+      frac = Math.max(0.15, frac - (0.18 + Math.random() * 0.22));
+    });
+  });
+  return out;
+}
+
+/** Wraps buildArchetypeCore with fresh random jitter + skill-tier-cap maps
+ *  per character — kept separate so the archetype-selection logic above
+ *  stays free of the bookkeeping. */
 function buildArchetypeConfig(id: string, D: ForgeData): ArchetypeConfig {
   return {
     ...buildArchetypeCore(id, D),
     statJitter: jitterFor(D.stats.map((s) => s.id)),
     subjectJitter: jitterFor(F.flatSubjects(D).map((s) => s.key)),
     skillJitter: jitterFor(F.flatSkills(D).map((s) => s.id)),
+    skillTierCap: buildSkillTierCaps(D),
   };
 }
 
@@ -864,7 +908,10 @@ export function randomizeDraft(draft: Draft, D: ForgeData, classData: { classes:
   // move keyed to Agility means at least 1 rank in Agility, not a coin flip.
   Object.keys(statHits).forEach((id) => guaranteeFloor(nd, D, "stats", id, 1));
   Object.keys(subjectHits).forEach((key) => guaranteeFloor(nd, D, "subjects", key, 1));
-  Object.keys(skillHits).forEach((id) => guaranteeFloor(nd, D, "skills", id, 1));
+  // A skill a class move actually rolls with is exempt from the per-stat
+  // tier ceiling below — that's a deliberate promise, not the generic
+  // texture-by-construction the ceiling exists to enforce.
+  Object.keys(skillHits).forEach((id) => { guaranteeFloor(nd, D, "skills", id, 1); cfg.skillTierCap[id] = 1; });
   // And bias further spending toward the same — but only where the archetype
   // hadn't already ruled the slot out entirely (base weight of exactly 0).
   Object.entries(statHits).forEach(([id, n]) => { if (cfg.statWeights[id] > 0) cfg.statWeights[id] *= 1 + 1.5 * n; });
@@ -903,7 +950,7 @@ export function randomizeDraft(draft: Draft, D: ForgeData, classData: { classes:
   const { statHits: ambStatHits, subjectHits: ambSubjectHits, skillHits: ambSkillHits } = resolveAbilityMentions(ambiguousWinners, D);
   Object.keys(ambStatHits).forEach((id) => guaranteeFloor(nd, D, "stats", id, 1));
   Object.keys(ambSubjectHits).forEach((key) => guaranteeFloor(nd, D, "subjects", key, 1));
-  Object.keys(ambSkillHits).forEach((id) => guaranteeFloor(nd, D, "skills", id, 1));
+  Object.keys(ambSkillHits).forEach((id) => { guaranteeFloor(nd, D, "skills", id, 1); cfg.skillTierCap[id] = 1; });
   Object.entries(ambStatHits).forEach(([id, n]) => { if (cfg.statWeights[id] > 0) cfg.statWeights[id] *= 1 + 1.5 * n; });
   Object.entries(ambSubjectHits).forEach(([key, n]) => { if (cfg.subjectWeights[key] > 0) cfg.subjectWeights[key] *= 1 + 2 * n; });
   Object.entries(ambSkillHits).forEach(([id, n]) => { if (cfg.skillWeights[id] > 0) cfg.skillWeights[id] *= 1 + 2.5 * n; });
