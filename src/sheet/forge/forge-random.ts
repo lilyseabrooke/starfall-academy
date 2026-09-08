@@ -146,9 +146,13 @@ function dynamicWeights(nd: Draft, D: ForgeData, cfg: ArchetypeConfig, map: MapK
   }
   if (map === "subjects") {
     const w: Weights = {};
+    // A declared major should be freer to run ahead of an ordinary secondary
+    // pick — and freer still when it's the *only* major (one deep specialty)
+    // than when there are two splitting the spotlight.
+    const majorSoftness = nd.major.length >= 2 ? 0.4 : 0.2;
     F.flatSubjects(D).forEach((s) => {
       const base = cfg.subjectWeights[s.key] || 0;
-      const softness = nd.major.includes(s.key) ? 0.2 : 0.6;
+      const softness = nd.major.includes(s.key) ? majorSoftness : 0.6;
       w[s.key] = base <= 0 ? 0 : base * (1 + 0.3 * (nd.stats[s.stat.toLowerCase()] || 0)) * selfTaper(nd, D, map, s.key, softness);
     });
     return w;
@@ -453,10 +457,20 @@ function pickStartWand(nd: Draft, D: ForgeData, cfg: ArchetypeConfig) {
 }
 
 /* --------------------------------- spells -------------------------------- */
+/** Pick the year's spell quota so it reads like it came from the character's
+ *  actual training, not a flat random draw across every field they dabble
+ *  in: a subject with real rank should pull noticeably more of the quota
+ *  (not just a mild edge) *and* pull toward the harder end of that level's
+ *  DCs, while a subject the character barely touched stays confined to a
+ *  couple of the level's easiest spells. */
 function pickSpells(nd: Draft, D: ForgeData) {
   const quota = F.yearById(D, nd.yearId).spells as Record<string, number>;
   const levels: Array<"Basic" | "Standard" | "Advanced"> = ["Basic", "Standard", "Advanced"];
   const minRank: Record<string, number> = { Basic: 0, Standard: 1, Advanced: 3 };
+  // Normalize "how ambitious a DC this subject can reach" against the
+  // character's own best-trained subject — their strongest field should
+  // reach for the hardest spells in a level, relative to their own range.
+  const maxRank = Math.max(1, ...Object.values(nd.subjects), 0);
   levels.forEach((level) => {
     const need = quota[level] || 0;
     if (!need) return;
@@ -465,10 +479,28 @@ function pickSpells(nd: Draft, D: ForgeData) {
     // spells are common-knowledge cantrips, but Standard+ need at least a
     // rank in the governing subject, and Advanced needs real depth in it.
     pool = pool.filter((e) => !e.subjectKey || (nd.subjects[e.subjectKey] || 0) >= minRank[level]);
+    if (!pool.length) return;
+    const dcs = pool.map((e) => e.dc).filter((d): d is number => d != null);
+    const dcMin = dcs.length ? Math.min(...dcs) : 0;
+    const dcSpan = dcs.length ? Math.max(1, Math.max(...dcs) - dcMin) : 1;
     const chosen: string[] = [];
     let guard = 0;
     while (chosen.length < need && pool.length && guard++ < 500) {
-      const weights = pool.map((e) => 1 + (e.subjectKey ? (nd.subjects[e.subjectKey] || 0) : 0));
+      const weights = pool.map((e) => {
+        const rank = e.subjectKey ? (nd.subjects[e.subjectKey] || 0) : 0;
+        // Sharper than a flat "1 + rank": a well-trained subject should
+        // dominate the draw, not just edge out an untrained one.
+        const subjectBias = Math.pow(1 + rank, 1.6);
+        let dcBias = 1;
+        if (e.dc != null) {
+          const appetite = Math.min(1, rank / maxRank); // 0 = barely trained, 1 = this build's best
+          const dcPosition = (e.dc - dcMin) / dcSpan; // 0 = easiest in this level, 1 = hardest
+          // Reward a close match; never fully rule anything out, so a modest
+          // subject occasionally still reaches a touch high (and vice versa).
+          dcBias = 0.25 + Math.pow(1 - Math.abs(appetite - dcPosition), 2);
+        }
+        return subjectBias * dcBias;
+      });
       let r = Math.random() * weights.reduce((s, w) => s + w, 0), idx = 0;
       for (; idx < weights.length; idx++) { r -= weights[idx]; if (r <= 0) break; }
       if (idx >= pool.length) idx = pool.length - 1;
