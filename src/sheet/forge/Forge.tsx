@@ -92,26 +92,6 @@ function IdentityStep({ D, draft, set, onRandomize, randomizeNeedsConfirm }: { D
         </div>
       </div>
 
-      {onRandomize ? (
-        <div className="sf-frandom">
-          {confirming ? (
-            <React.Fragment>
-              <Icon name="triangle-alert" />
-              <span className="sf-fhint">This will overwrite the classes, stats, spells, and gear you&apos;ve already set for this character. Continue?</span>
-              <span className="sf-frandom__confirm">
-                <Button variant="primary" onClick={() => { setConfirming(false); onRandomize(); }}>Yes, overwrite</Button>
-                <Button variant="ghost" onClick={() => setConfirming(false)}>Cancel</Button>
-              </span>
-            </React.Fragment>
-          ) : (
-            <React.Fragment>
-              <Button variant="secondary" iconLeft={<Icon name="dices" />} onClick={clickRandomize}>Random Character</Button>
-              <span className="sf-fhint sf-fhint--mut">Builds a full character for your Year &amp; Build above — classes, stats, spells, gear, all of it — then drops you at Review to tweak anything you like.</span>
-            </React.Fragment>
-          )}
-        </div>
-      ) : null}
-
       <div className="sf-ffield">
         <span className="sf-flabel">House <span className="sf-flabel__opt">· flavor, and your sheet&apos;s color</span></span>
         <div className="sf-fhouses">
@@ -132,6 +112,26 @@ function IdentityStep({ D, draft, set, onRandomize, randomizeNeedsConfirm }: { D
         <span className="sf-flabel">Background <span className="sf-flabel__opt">· optional</span></span>
         <textarea className="sf-ftextarea" rows={3} placeholder="Who are you, and where did you come from?" value={draft.bio} onChange={(e) => set({ bio: e.target.value })} />
       </label>
+
+      {onRandomize ? (
+        <div className="sf-frandom">
+          {confirming ? (
+            <React.Fragment>
+              <Icon name="triangle-alert" />
+              <span className="sf-fhint">Randomizing this character will erase all your current progress outside the Identity page. Continue?</span>
+              <span className="sf-frandom__confirm">
+                <Button variant="primary" onClick={() => { setConfirming(false); onRandomize(); }}>Yes, overwrite</Button>
+                <Button variant="ghost" onClick={() => setConfirming(false)}>Cancel</Button>
+              </span>
+            </React.Fragment>
+          ) : (
+            <React.Fragment>
+              <Button variant="secondary" iconLeft={<Icon name="dices" />} onClick={clickRandomize}>Random Character</Button>
+              <span className="sf-fhint sf-fhint--mut">Randomly build your character using the year and build type chosen above.</span>
+            </React.Fragment>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }
