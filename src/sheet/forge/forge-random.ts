@@ -528,11 +528,31 @@ export function randomizeDraft(draft: Draft, D: ForgeData, classData: { classes:
     skills: Math.min(F.flatSkills(D).length, cfg.skillSlots + extraAbilitySlots),
   };
   if (nd.buildType === "quick") {
-    spendCorrelated(nd, D, cfg, graph, {
-      stats: Math.round(cfg.shareStat * year.quick.stat),
-      subjects: Math.round(cfg.shareSubject * year.quick.subject),
-      skills: Math.round(cfg.shareSkill * year.quick.skill),
-    }, slots);
+    // Quick's three pools are independent budgets, not three-way splits of
+    // one — shareStat/shareSubject/shareSkill only mean something as a split
+    // of a single shared pool (custom's), so applying them here would just
+    // cap each pool at a fraction of itself for no reason. Aim to use each
+    // pool up to what slots + rank caps allow (a target of Infinity is
+    // naturally bounded by canIncPoint's own pool-size check).
+    spendCorrelated(nd, D, cfg, graph, { stats: Infinity, subjects: Infinity, skills: Infinity }, slots);
+    // If everything touched is already at its rank cap and a pool still has
+    // real budget sitting unspent, open a couple more slots for just that
+    // pool rather than leave it stranded.
+    const b = F.budgets(nd, D);
+    if (b.mode === "quick") {
+      const leftoverStat = b.stat.pool - b.stat.spent;
+      const leftoverSubject = b.subject.pool - b.subject.spent;
+      const leftoverSkill = b.skill.pool - b.skill.spent;
+      const threshold = 2;
+      if (leftoverStat > threshold || leftoverSubject > threshold || leftoverSkill > threshold) {
+        const openSlots: Record<MapKey, number> = {
+          stats: leftoverStat > threshold ? slots.stats + 1 : slots.stats,
+          subjects: leftoverSubject > threshold ? slots.subjects + 2 : slots.subjects,
+          skills: leftoverSkill > threshold ? slots.skills + 2 : slots.skills,
+        };
+        spendCorrelated(nd, D, cfg, graph, { stats: Infinity, subjects: Infinity, skills: Infinity }, openSlots);
+      }
+    }
   } else {
     const total = year.custom;
     spendCorrelated(nd, D, cfg, graph, {
