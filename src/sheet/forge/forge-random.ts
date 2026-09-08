@@ -471,28 +471,47 @@ function buildArchetypeCore(id: string, D: ForgeData): ArchetypeCore {
 }
 
 /* --------------------------------- classes ------------------------------ */
+/** What pickClassesAndChoices found among the *chosen* options: certain
+ *  mentions (a move or artifact that names exactly one ability) plus a list
+ *  of ambiguous groups — each the several candidate abilities one move or
+ *  artifact grant *could* roll with (e.g. Technician's Wandcracker: Improvise
+ *  or Wandcrafting), still undecided. */
+interface ClassMentionResult {
+  mentions: Map<string, number>;
+  ambiguousGroups: string[][];
+}
+
 /** Pick class(es), rank, and — for every rank — which of the two options to
  *  take, *before* anything else is decided. The option side is picked from a
  *  per-class "lean" (mostly one path, occasionally the other) since there's
  *  no investment yet to weigh it against; what matters is that this runs
  *  first, so the character's stats/subjects/skills get built to support
- *  whatever the class actually rolls with, not the other way around.
- *  Returns how many times each ability name got named by a *chosen*
- *  option's move() tag — or by the skill an item()-granted artifact rolls
- *  with, which counts exactly the same way — so the caller can turn that
- *  into training. */
-function pickClassesAndChoices(nd: Draft, D: ForgeData, classData: { classes: ClassDef[] }, cfg: ArchetypeConfig): Map<string, number> {
+ *  whatever the class actually rolls with, not the other way around. */
+function pickClassesAndChoices(nd: Draft, D: ForgeData, classData: { classes: ClassDef[] }, cfg: ArchetypeConfig): ClassMentionResult {
   const mode = cfg.classModeBias ?? (Math.random() < 0.5 ? "single" : "double");
   nd.classMode = mode;
   const pool = shuffle([...classData.classes]);
   const n = mode === "single" ? 1 : Math.min(2, pool.length);
   const rank = mode === "single" ? 4 : 2;
   const mentions = new Map<string, number>();
+  const ambiguousGroups: string[][] = [];
   const classes: Draft["classes"] = {};
   const classArtifacts: Record<string, string[]> = {};
   const mention = (name: string) => {
     const key = name.trim().toLowerCase();
     if (key) mentions.set(key, (mentions.get(key) || 0) + 1);
+  };
+  // A move or artifact naming several candidate abilities (Technician's
+  // Wandcracker: "Improvise" or "Wandcrafting") is offering a *choice* of
+  // what it rolls with, not asking for training in all of them — recording
+  // every candidate as a hit would be redundant and defeat the point of the
+  // flexibility. A single candidate is certain and recorded right away;
+  // anything with more than one is queued to resolve later, once the major
+  // is known and can help decide (see resolveAmbiguousAbilityGroups).
+  const recordCandidates = (names: string[]) => {
+    const clean = names.map((s) => s.trim()).filter(Boolean);
+    if (clean.length === 1) mention(clean[0]);
+    else if (clean.length > 1) ambiguousGroups.push(clean);
   };
   pool.slice(0, n).forEach((k) => {
     const baseSide = Math.random() < 0.5 ? 0 : 1;
@@ -502,7 +521,7 @@ function pickClassesAndChoices(nd: Draft, D: ForgeData, classData: { classes: Cl
       const rung = k.ranks[L - 1];
       const opt = rung && rung.options[side];
       choices[L] = side;
-      if (opt && opt.move) opt.move.abilities.forEach(mention);
+      if (opt && opt.move) recordCandidates(opt.move.abilities);
       if (opt && opt.item && opt.item.kind === "artifact") {
         const levelSet = new Set(opt.item.levels.map((l) => l.toLowerCase()));
         const eligible = D.compendium.filter((e) => e.cat === "artifact" && levelSet.has(e.level.toLowerCase()) && (!opt.item!.matCap || (e.mat || 0) <= opt.item!.matCap));
@@ -511,10 +530,11 @@ function pickClassesAndChoices(nd: Draft, D: ForgeData, classData: { classes: Cl
           classArtifacts[`${k.id}:${L}`] = picked.map((e) => e.id);
           // Treat the skill(s) the granted artifact rolls with exactly like
           // a class move's abilities — a build should train what its own
-          // gear actually uses.
+          // gear actually uses. A multi-skill artifact is the same kind of
+          // choice as a multi-ability move.
           picked.forEach((e) => {
-            const skillNames = (e.skillOptions && e.skillOptions.length ? e.skillOptions.map((o) => o.skill) : e.skills) || [];
-            skillNames.forEach((s) => { if (s && s !== "—") mention(s); });
+            const skillNames = ((e.skillOptions && e.skillOptions.length ? e.skillOptions.map((o) => o.skill) : e.skills) || []).filter((s) => s && s !== "—");
+            recordCandidates(skillNames);
           });
         }
       }
@@ -523,23 +543,94 @@ function pickClassesAndChoices(nd: Draft, D: ForgeData, classData: { classes: Cl
   });
   nd.classes = classes;
   nd.classArtifacts = classArtifacts;
-  return mentions;
+  return { mentions, ambiguousGroups };
+}
+
+/** A move() tag's ability text doesn't always match the canonical
+ *  stat/subject/skill name exactly (the data has "recall information" for
+ *  the skill "Recall Info", "investigation" for "Investigate") — an exact
+ *  match wins first, but if none exists, fall back to either name being a
+ *  prefix of the other. The length floor keeps that fallback from matching
+ *  on a handful of shared leading letters between two unrelated names. */
+function fuzzyNameKey<T>(map: Map<string, T>, name: string): string | null {
+  const key = name.trim().toLowerCase();
+  if (map.has(key)) return key;
+  for (const k of map.keys()) {
+    if (k.length >= 5 && key.length >= 5 && (k.startsWith(key) || key.startsWith(k))) return k;
+  }
+  return null;
 }
 
 /** Resolve move() ability names (e.g. "Agility", "Alchemy") against the
- *  actual stat/subject/skill lists, case-insensitively, so a class's chosen
- *  moves can be turned into training targets. */
+ *  actual stat/subject/skill lists, case-insensitively (and tolerant of the
+ *  odd phrasing mismatch — see fuzzyNameKey), so a class's chosen moves can
+ *  be turned into training targets. */
 function resolveAbilityMentions(mentions: Map<string, number>, D: ForgeData) {
   const statByName = new Map(D.stats.map((f) => [f.name.toLowerCase(), f.id]));
   const subjByName = new Map(F.flatSubjects(D).map((s) => [s.name.toLowerCase(), s.key]));
   const skillByName = new Map(F.flatSkills(D).map((s) => [s.name.toLowerCase(), s.id]));
   const statHits: Weights = {}, subjectHits: Weights = {}, skillHits: Weights = {};
   mentions.forEach((count, name) => {
-    if (statByName.has(name)) { const id = statByName.get(name)!; statHits[id] = (statHits[id] || 0) + count; }
-    else if (subjByName.has(name)) { const key = subjByName.get(name)!; subjectHits[key] = (subjectHits[key] || 0) + count; }
-    else if (skillByName.has(name)) { const id = skillByName.get(name)!; skillHits[id] = (skillHits[id] || 0) + count; }
+    const sKey = fuzzyNameKey(statByName, name);
+    const subKey = fuzzyNameKey(subjByName, name);
+    const skKey = fuzzyNameKey(skillByName, name);
+    if (sKey) { const id = statByName.get(sKey)!; statHits[id] = (statHits[id] || 0) + count; }
+    else if (subKey) { const key = subjByName.get(subKey)!; subjectHits[key] = (subjectHits[key] || 0) + count; }
+    else if (skKey) { const id = skillByName.get(skKey)!; skillHits[id] = (skillHits[id] || 0) + count; }
   });
   return { statHits, subjectHits, skillHits };
+}
+
+/** Pick one ability out of each ambiguous "rolls with A or B" group — real
+ *  pressure toward a sensible choice, never a certainty. Every candidate
+ *  starts with a baseline weight (so a coin-flip choice really can go
+ *  either way), then gets a boost if it shares a stat/subject/skill another
+ *  chosen move or artifact already committed to (Technician picking up two
+ *  separate Improvise-adjacent moves should lean into Improvise together),
+ *  a further boost if its governing stat matches a declared major's
+ *  (Wandcrafting shares Focus with an Evocation major), and the strongest
+ *  boost if the candidate *is* a declared major outright. Resolved one
+ *  group at a time (in random order) so earlier winners can also feed later
+ *  ones — returns only the newly-decided mentions (the caller applies the
+ *  same floor+bias treatment as any other class-move hit). */
+function resolveAmbiguousAbilityGroups(nd: Draft, D: ForgeData, groups: string[][], mentionsSoFar: Map<string, number>): Map<string, number> {
+  const statByName = new Map(D.stats.map((f) => [f.name.toLowerCase(), f.id]));
+  const subjByName = new Map(F.flatSubjects(D).map((s) => [s.name.toLowerCase(), s.key]));
+  const skillByName = new Map(F.flatSkills(D).map((s) => [s.name.toLowerCase(), s.id]));
+  const subjStatOf = (key: string) => F.flatSubjects(D).find((s) => s.key === key)?.stat.toLowerCase();
+  const skillStatOf = (id: string) => F.flatSkills(D).find((s) => s.id === id)?.fac.id;
+  const governingStatOf = (name: string): string | null => {
+    const sKey = fuzzyNameKey(statByName, name);
+    if (sKey) return statByName.get(sKey)!;
+    const subKey = fuzzyNameKey(subjByName, name);
+    if (subKey) return subjStatOf(subjByName.get(subKey)!) || null;
+    const skKey = fuzzyNameKey(skillByName, name);
+    if (skKey) return skillStatOf(skillByName.get(skKey)!) || null;
+    return null;
+  };
+  const majorStatIds = new Set(nd.major.map((key) => subjStatOf(key)).filter((x): x is string => !!x));
+
+  const lookup = new Map(mentionsSoFar); // for synergy checks; grows as groups resolve
+  const winners = new Map<string, number>(); // only the newly-decided picks
+  shuffle([...groups]).forEach((group) => {
+    const weights = group.map((name) => {
+      const key = name.trim().toLowerCase();
+      let w = 1; // baseline — a real coin flip is still possible
+      w += (lookup.get(key) || 0) * 2; // another chosen move/artifact already leans this way
+      const statId = governingStatOf(name);
+      if (statId && majorStatIds.has(statId)) w += 2; // shares a stat with a major
+      const subKey = fuzzyNameKey(subjByName, name);
+      if (subKey && nd.major.includes(subjByName.get(subKey)!)) w += 4; // *is* a major
+      return w;
+    });
+    let r = Math.random() * weights.reduce((s, w) => s + w, 0), idx = 0;
+    for (; idx < weights.length; idx++) { r -= weights[idx]; if (r <= 0) break; }
+    if (idx >= group.length) idx = group.length - 1;
+    const winner = group[idx].trim().toLowerCase();
+    lookup.set(winner, (lookup.get(winner) || 0) + 1);
+    winners.set(winner, (winners.get(winner) || 0) + 1);
+  });
+  return winners;
 }
 
 /* ---------------------------------- wand --------------------------------- */
@@ -766,7 +857,7 @@ export function randomizeDraft(draft: Draft, D: ForgeData, classData: { classes:
 
   // Classes and their rank choices first — nothing to weigh them against
   // yet, so the option side comes from the class's own per-rank lean.
-  const mentions = pickClassesAndChoices(nd, D, classData, cfg);
+  const { mentions, ambiguousGroups } = pickClassesAndChoices(nd, D, classData, cfg);
   const { statHits, subjectHits, skillHits } = resolveAbilityMentions(mentions, D);
 
   // Guarantee actual training in whatever the chosen moves roll with — a
@@ -803,6 +894,20 @@ export function randomizeDraft(draft: Draft, D: ForgeData, classData: { classes:
       if (cfg.statWeights[statId] > 0) cfg.statWeights[statId] *= 1.8;
     }
   });
+
+  // Now that the major is settled, resolve every "rolls with A or B" move
+  // or artifact choice — some pressure toward whatever the rest of the
+  // build already supports, never a certainty — and give the winners the
+  // same floor+bias treatment as any other class-move hit.
+  const ambiguousWinners = resolveAmbiguousAbilityGroups(nd, D, ambiguousGroups, mentions);
+  const { statHits: ambStatHits, subjectHits: ambSubjectHits, skillHits: ambSkillHits } = resolveAbilityMentions(ambiguousWinners, D);
+  Object.keys(ambStatHits).forEach((id) => guaranteeFloor(nd, D, "stats", id, 1));
+  Object.keys(ambSubjectHits).forEach((key) => guaranteeFloor(nd, D, "subjects", key, 1));
+  Object.keys(ambSkillHits).forEach((id) => guaranteeFloor(nd, D, "skills", id, 1));
+  Object.entries(ambStatHits).forEach(([id, n]) => { if (cfg.statWeights[id] > 0) cfg.statWeights[id] *= 1 + 1.5 * n; });
+  Object.entries(ambSubjectHits).forEach(([key, n]) => { if (cfg.subjectWeights[key] > 0) cfg.subjectWeights[key] *= 1 + 2 * n; });
+  Object.entries(ambSkillHits).forEach(([id, n]) => { if (cfg.skillWeights[id] > 0) cfg.skillWeights[id] *= 1 + 2.5 * n; });
+
   // Some stats (Charm, Body — whichever ones no magic subject ever rolls
   // with, going by the live data rather than a hardcoded list) can only ever
   // be reinforced by skills, never by a subject pulling them up. Give them a
@@ -901,9 +1006,9 @@ export function randomizeDraft(draft: Draft, D: ForgeData, classData: { classes:
   // clean 0s or 2s/3s instead of a smear of disconnected single ranks.
   // Majors and anything a class move/artifact grant guaranteed are exempt —
   // those 1s are a promise, not noise.
-  consolidateOnes(nd, D, "stats", new Set(Object.keys(statHits)));
-  consolidateOnes(nd, D, "subjects", new Set([...Object.keys(subjectHits), ...nd.major]));
-  consolidateOnes(nd, D, "skills", new Set(Object.keys(skillHits)));
+  consolidateOnes(nd, D, "stats", new Set([...Object.keys(statHits), ...Object.keys(ambStatHits)]));
+  consolidateOnes(nd, D, "subjects", new Set([...Object.keys(subjectHits), ...Object.keys(ambSubjectHits), ...nd.major]));
+  consolidateOnes(nd, D, "skills", new Set([...Object.keys(skillHits), ...Object.keys(ambSkillHits)]));
 
   pickStartWand(nd, D, cfg);
   pickSpells(nd, D);
