@@ -652,7 +652,7 @@ function AdmissionArtifacts({ D, draft, set, classData }: { D: ForgeData; draft:
   return (
     <InventorySection icon="gem" title="Artifacts" note={`Class abilities grant ${totalSlots} · ${totalChosen} chosen`}>
       {totalSlots === 0 ? (
-        <p className="sf-fhint sf-fhint--mut">Take a class rank option that grants an artifact outright to fill this in — no roll, no cost.</p>
+        <p className="sf-fhint sf-fhint--mut">If your character has access to any artifacts, pick them here.</p>
       ) : (
         grants.map((g) => {
           const chosen = draft.classArtifacts[g.id] || [];
