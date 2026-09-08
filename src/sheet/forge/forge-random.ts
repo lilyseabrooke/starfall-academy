@@ -138,6 +138,39 @@ function dynamicWeights(nd: Draft, D: ForgeData, cfg: ArchetypeConfig, map: MapK
 function nonZeroCount(o: Record<string, number>): number {
   return Object.values(o).filter((v) => (v || 0) > 0).length;
 }
+function allKeysFor(map: MapKey, D: ForgeData): string[] {
+  if (map === "stats") return D.stats.map((s) => s.id);
+  if (map === "subjects") return F.flatSubjects(D).map((s) => s.key);
+  return F.flatSkills(D).map((s) => s.id);
+}
+/** Quick build has nowhere else to put unspent points — unlike custom, which
+ *  can always sink leftovers into a wand or artifact, a quick pool that
+ *  isn't fully spent is just wasted. The thematic passes above land within a
+ *  point or two of full most of the time, but "close" isn't the bar here:
+ *  force whatever's left into anything still under its rank cap, picked
+ *  uniformly and ignoring archetype weighting entirely, until each pool
+ *  reads exactly 100% spent. (Every quick pool is small enough, and the
+ *  rank caps loose enough, that this always has somewhere legal to land.) */
+function forceFillQuickPools(nd: Draft, D: ForgeData) {
+  const maps: MapKey[] = ["stats", "subjects", "skills"];
+  const allKeys: Record<MapKey, string[]> = { stats: allKeysFor("stats", D), subjects: allKeysFor("subjects", D), skills: allKeysFor("skills", D) };
+  let iter = 0;
+  while (iter++ < 6000) {
+    const b = F.budgets(nd, D);
+    if (b.mode !== "quick") break;
+    let anyRoom = false;
+    for (const map of maps) {
+      const pool = b[poolKeyFor(map)];
+      if (pool.spent >= pool.pool) continue;
+      const keys = allKeys[map].filter((k) => canIncPoint(nd, D, map, k));
+      if (!keys.length) continue;
+      anyRoom = true;
+      const key = keys[Math.floor(Math.random() * keys.length)];
+      nd[map] = { ...nd[map], [key]: (nd[map][key] || 0) + 1 };
+    }
+    if (!anyRoom) break;
+  }
+}
 
 /** Spend weighted-random points across stats/subjects/skills *together* —
  *  one point at a time, re-weighted after every point — until each map hits
@@ -553,6 +586,10 @@ export function randomizeDraft(draft: Draft, D: ForgeData, classData: { classes:
         spendCorrelated(nd, D, cfg, graph, { stats: Infinity, subjects: Infinity, skills: Infinity }, openSlots);
       }
     }
+    // Guarantee: whatever's still unspent after the thematic passes above
+    // (there's rarely more than a point or two left) gets forced in — a
+    // quick build should read 100% spent every time, not "close enough".
+    forceFillQuickPools(nd, D);
   } else {
     const total = year.custom;
     spendCorrelated(nd, D, cfg, graph, {
