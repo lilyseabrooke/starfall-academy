@@ -8,6 +8,14 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.10.1 — 2026-09-08
+- The Forge Inventory step's Artifacts section (class-granted artifacts)
+  now always shows, alongside Potions/Plants/Glyphs/Wands, instead of
+  disappearing when the character's class choices don't currently grant
+  one.
+- Support a combined `move(); item()` tag on a single class rank option,
+  for options that both name a skill and grant an artifact outright.
+
 ## v1.10.0 — 2026-09-08
 - Add a Random Character generator to the Forge: builds a full character
   (classes, stats, subjects, skills, wand, spells, and gear) for the Year
