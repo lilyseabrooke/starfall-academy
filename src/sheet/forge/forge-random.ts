@@ -191,6 +191,63 @@ function sprinkleStray(nd: Draft, D: ForgeData, chance: number) {
     }
   });
 }
+
+/** How many of a group of same-rank-1 items get merged together in one
+ *  consolidation step — with the group capped at how many "1"s are still
+ *  left to place, so it naturally varies with the count on hand. Roughly:
+ *  a fifth of the time leave it alone, just over half of the time pair two
+ *  into a 2, and the rest agglutinate three into a 3. */
+function pickConsolidationGroupSize(remaining: number): number {
+  if (remaining <= 1) return 1;
+  if (remaining === 2) return Math.random() < 0.7 ? 2 : 1;
+  const r = Math.random();
+  if (r < 0.2) return 1;
+  if (r < 0.75) return 2;
+  return 3;
+}
+
+/** Real allocation tends not to leave a pile of untied-together +1s lying
+ *  around — someone who ends up with 1 rank each in Analyze, Divination,
+ *  Chronomancy, and Persuasion more plausibly has 0/0/2/2 or 0/2/3/0, not
+ *  four disconnected fields dabbled in equally. This is a pure
+ *  redistribution *within* one map's current 1-ranked items (never changes
+ *  the total spent, so it can run after everything else without touching
+ *  budgets): group them at random (mostly pairs, sometimes trios, sometimes
+ *  left alone — see pickConsolidationGroupSize), then in each group of 2+
+ *  hand the whole group's points to one winner and zero the rest.
+ *
+ *  `protected` — majors and anything a class move or class-granted artifact
+ *  guaranteed — is left out entirely: those 1s are a deliberate promise,
+ *  not diffuse noise, and consolidation must never be the thing that quietly
+ *  breaks it back down to 0. */
+function consolidateOnes(nd: Draft, D: ForgeData, map: MapKey, protectedKeys: Set<string>) {
+  const ones = shuffle(allKeysFor(map, D).filter((k) => (nd[map][k] || 0) === 1 && !protectedKeys.has(k)));
+  let i = 0;
+  while (i < ones.length) {
+    const remaining = ones.length - i;
+    const size = Math.min(remaining, pickConsolidationGroupSize(remaining));
+    const group = ones.slice(i, i + size);
+    i += size;
+    if (group.length < 2) continue; // stays at 1, untouched
+
+    // Distribute the group's points (1 each, so `group.length` total) onto
+    // as few members as it takes, respecting each one's own rank cap —
+    // almost always just the first, since 1-ranked items are nowhere near
+    // capped, but this keeps the total exactly conserved even on the rare
+    // item whose cap is unusually low.
+    let pointsLeft = group.length;
+    const order = shuffle([...group]);
+    const next: Record<string, number> = {};
+    order.forEach((key) => {
+      if (pointsLeft <= 0) { next[key] = 0; return; }
+      const cap = F.rankCap(nd, D, map, key);
+      const give = Math.min(pointsLeft, cap);
+      next[key] = give;
+      pointsLeft -= give;
+    });
+    order.forEach((key) => { nd[map] = { ...nd[map], [key]: next[key] }; });
+  }
+}
 /** Quick build has nowhere else to put unspent points — unlike custom, which
  *  can always sink leftovers into a wand or artifact, a quick pool that
  *  isn't fully spent is just wasted. The thematic passes above land within a
@@ -838,6 +895,15 @@ export function randomizeDraft(draft: Draft, D: ForgeData, classData: { classes:
       spendCorrelated(nd, D, cfg, graph, { stats: Infinity, subjects: Infinity, skills: Infinity }, openSlots);
     }
   }
+
+  // Clean up the "everything's a stray +1" look: fold together same-map 1s
+  // that have no reason to stay separate, at random, leaving the rest as
+  // clean 0s or 2s/3s instead of a smear of disconnected single ranks.
+  // Majors and anything a class move/artifact grant guaranteed are exempt —
+  // those 1s are a promise, not noise.
+  consolidateOnes(nd, D, "stats", new Set(Object.keys(statHits)));
+  consolidateOnes(nd, D, "subjects", new Set([...Object.keys(subjectHits), ...nd.major]));
+  consolidateOnes(nd, D, "skills", new Set(Object.keys(skillHits)));
 
   pickStartWand(nd, D, cfg);
   pickSpells(nd, D);
