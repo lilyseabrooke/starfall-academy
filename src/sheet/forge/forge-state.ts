@@ -16,6 +16,7 @@ import type {
 } from "../types";
 import type { CreationRules, House } from "../data/seed";
 import type { SerializedSheet } from "../types";
+import type { ClassDef } from "../data/classes";
 
 export const ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
 
@@ -56,6 +57,11 @@ export interface Draft {
   craftWands: string[];
   extraWands: string[];
   artifacts: string[];
+  /** Artifacts granted free by a class option's item() tag (e.g. Artificer's
+   *  "Take a Basic artifact when you take this ability"), keyed by grant id
+   *  (`${classId}:${rank}`) — separate from `artifacts` (custom-build
+   *  purchases) since these never cost budget. See classArtifactGrants(). */
+  classArtifacts: Record<string, string[]>;
   spells: string[];
 }
 
@@ -110,9 +116,53 @@ export function blankDraft(): Draft {
     stats: {}, skills: {}, subjects: {},
     major: [],
     potions: [], plants: [], glyphs: [], craftWands: [],
-    extraWands: [], artifacts: [],
+    extraWands: [], artifacts: [], classArtifacts: {},
     spells: [],
   };
+}
+
+export interface ClassArtifactGrant {
+  /** `${classId}:${rank}` — stable per class-rank, survives re-renders. */
+  id: string;
+  classId: string;
+  rank: number;
+  title: string;
+  /** Compendium `level` values this grant may draw from (case-insensitive). */
+  levels: string[];
+  count: number;
+  matCap?: number;
+}
+/** Every free-artifact grant currently active from the draft's *chosen*
+ *  class rank options (an option's item() tag) — recomputed fresh from
+ *  current classes/choices each call, so switching a rank's choice away
+ *  from a granting option naturally drops it here (and, via
+ *  classArtifactIds, from what actually gets built). */
+export function classArtifactGrants(draft: Draft, classData: { classes: ClassDef[] }): ClassArtifactGrant[] {
+  const out: ClassArtifactGrant[] = [];
+  ownedClasses(draft).forEach((classId) => {
+    const k = classData.classes.find((c) => c.id === classId);
+    const cur = draft.classes[classId];
+    if (!k || !cur) return;
+    for (let L = 1; L <= cur.rank; L++) {
+      const rung = k.ranks[L - 1];
+      const opt = rung && rung.options[cur.choices[L]];
+      if (opt && opt.item) {
+        out.push({ id: `${classId}:${L}`, classId, rank: L, title: opt.title, levels: opt.item.levels, count: opt.item.count, matCap: opt.item.matCap });
+      }
+    }
+  });
+  return out;
+}
+/** The compendium ids actually granted — only for grants still active
+ *  (see classArtifactGrants), so a stale choice change can't smuggle a
+ *  no-longer-granted artifact into the built character. */
+export function classArtifactIds(draft: Draft, classData: { classes: ClassDef[] }): string[] {
+  const activeIds = new Set(classArtifactGrants(draft, classData).map((g) => g.id));
+  const out: string[] = [];
+  Object.entries(draft.classArtifacts || {}).forEach(([grantId, ids]) => {
+    if (activeIds.has(grantId)) out.push(...ids);
+  });
+  return out;
 }
 
 /* ---- Cost engine ---- */
@@ -319,13 +369,14 @@ export interface ForgeArtifact {
   desc: string;
   move: { name: string; stat: string; skill: string; bonus: number; dc: number | null; desc: string };
 }
-export function buildArtifacts(draft: Draft, D: ForgeData): ForgeArtifact[] {
+export function buildArtifacts(draft: Draft, D: ForgeData, classData: { classes: ClassDef[] }): ForgeArtifact[] {
   const m = compById(D);
-  return draft.artifacts
-    .map((id): ForgeArtifact | null => {
+  const ids = [...draft.artifacts, ...classArtifactIds(draft, classData)];
+  return ids
+    .map((id, i): ForgeArtifact | null => {
       const e = m[id];
       if (!e) return null;
-      return { id: "art-start-" + id, name: e.name, level: e.level, tone: e.tone, subject: e.subject || "—", intensity: 0, attuned: true, condition: "stable", desc: e.desc, move: { name: e.name + " — Boon", stat: "Insight", skill: "—", bonus: 0, dc: null, desc: e.desc } };
+      return { id: "art-start-" + i + "-" + id, name: e.name, level: e.level, tone: e.tone, subject: e.subject || "—", intensity: 0, attuned: true, condition: "stable", desc: e.desc, move: { name: e.name + " — Boon", stat: "Insight", skill: "—", bonus: 0, dc: null, desc: e.desc } };
     })
     .filter((x): x is ForgeArtifact => !!x);
 }

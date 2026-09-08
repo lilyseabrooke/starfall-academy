@@ -240,7 +240,7 @@ function ReviewStep({ D, classData, draft, missing }: { D: ForgeData; classData:
         <Line k="Top stats">{topStats.length ? topStats.slice(0, 4).map((x) => `${x.n} ${x.v}`).join(" · ") : <em className="sf-rev__none">none</em>}</Line>
         <Line k="Top subjects">{topSubs.length ? topSubs.slice(0, 4).map((x) => `${x.n} ${x.v}`).join(" · ") : <em className="sf-rev__none">none</em>}</Line>
         <Line k="Spells">{draft.spells.length ? draft.spells.length + " chosen" : <em className="sf-rev__none">none</em>}</Line>
-        <Line k="Loadout">{D.creation.startingMaterials} mat · {draft.potions.length} potion(s) · {draft.glyphs.length} glyph(s) · {draft.craftWands.length + draft.extraWands.length} extra wand(s) · {draft.artifacts.length} artifact(s)</Line>
+        <Line k="Loadout">{D.creation.startingMaterials} mat · {draft.potions.length} potion(s) · {draft.glyphs.length} glyph(s) · {draft.craftWands.length + draft.extraWands.length} extra wand(s) · {draft.artifacts.length + F.classArtifactIds(draft, classData).length} artifact(s)</Line>
       </div>
     </div>
   );
@@ -351,7 +351,7 @@ export function Admission({ mode, initial, data, classData, onCommit, onClose }:
             {step.id === "classes" && <AdmissionClasses D={D} classData={classData} draft={draft} set={set} />}
             {step.id === "wand" && <WandStep D={D} draft={draft} set={set} />}
             {step.id === "allocation" && <AdmissionAllocation D={D} draft={draft} set={set} />}
-            {step.id === "inventory" && <AdmissionInventory D={D} draft={draft} set={set} />}
+            {step.id === "inventory" && <AdmissionInventory D={D} draft={draft} set={set} classData={classData} />}
             {step.id === "spells" && <AdmissionSpells D={D} draft={draft} set={set} />}
             {step.id === "review" && <ReviewStep D={D} classData={classData} draft={draft} missing={missing} />}
           </div>

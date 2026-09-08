@@ -420,9 +420,11 @@ function buildArchetypeCore(id: string, D: ForgeData): ArchetypeCore {
  *  no investment yet to weigh it against; what matters is that this runs
  *  first, so the character's stats/subjects/skills get built to support
  *  whatever the class actually rolls with, not the other way around.
- *  Returns how many times each ability name got named by a *chosen* option's
- *  move() tag, so the caller can turn that into training. */
-function pickClassesAndChoices(nd: Draft, classData: { classes: ClassDef[] }, cfg: ArchetypeConfig): Map<string, number> {
+ *  Returns how many times each ability name got named by a *chosen*
+ *  option's move() tag — or by the skill an item()-granted artifact rolls
+ *  with, which counts exactly the same way — so the caller can turn that
+ *  into training. */
+function pickClassesAndChoices(nd: Draft, D: ForgeData, classData: { classes: ClassDef[] }, cfg: ArchetypeConfig): Map<string, number> {
   const mode = cfg.classModeBias ?? (Math.random() < 0.5 ? "single" : "double");
   nd.classMode = mode;
   const pool = shuffle([...classData.classes]);
@@ -430,6 +432,11 @@ function pickClassesAndChoices(nd: Draft, classData: { classes: ClassDef[] }, cf
   const rank = mode === "single" ? 4 : 2;
   const mentions = new Map<string, number>();
   const classes: Draft["classes"] = {};
+  const classArtifacts: Record<string, string[]> = {};
+  const mention = (name: string) => {
+    const key = name.trim().toLowerCase();
+    if (key) mentions.set(key, (mentions.get(key) || 0) + 1);
+  };
   pool.slice(0, n).forEach((k) => {
     const baseSide = Math.random() < 0.5 ? 0 : 1;
     const choices: Record<string, number> = {};
@@ -438,16 +445,27 @@ function pickClassesAndChoices(nd: Draft, classData: { classes: ClassDef[] }, cf
       const rung = k.ranks[L - 1];
       const opt = rung && rung.options[side];
       choices[L] = side;
-      if (opt && opt.move) {
-        opt.move.abilities.forEach((a) => {
-          const key = a.trim().toLowerCase();
-          if (key) mentions.set(key, (mentions.get(key) || 0) + 1);
-        });
+      if (opt && opt.move) opt.move.abilities.forEach(mention);
+      if (opt && opt.item && opt.item.kind === "artifact") {
+        const levelSet = new Set(opt.item.levels.map((l) => l.toLowerCase()));
+        const eligible = D.compendium.filter((e) => e.cat === "artifact" && levelSet.has(e.level.toLowerCase()) && (!opt.item!.matCap || (e.mat || 0) <= opt.item!.matCap));
+        const picked = shuffle([...eligible]).slice(0, opt.item.count);
+        if (picked.length) {
+          classArtifacts[`${k.id}:${L}`] = picked.map((e) => e.id);
+          // Treat the skill(s) the granted artifact rolls with exactly like
+          // a class move's abilities — a build should train what its own
+          // gear actually uses.
+          picked.forEach((e) => {
+            const skillNames = (e.skillOptions && e.skillOptions.length ? e.skillOptions.map((o) => o.skill) : e.skills) || [];
+            skillNames.forEach((s) => { if (s && s !== "—") mention(s); });
+          });
+        }
       }
     }
     classes[k.id] = { rank, choices };
   });
   nd.classes = classes;
+  nd.classArtifacts = classArtifacts;
   return mentions;
 }
 
@@ -691,7 +709,7 @@ export function randomizeDraft(draft: Draft, D: ForgeData, classData: { classes:
 
   // Classes and their rank choices first — nothing to weigh them against
   // yet, so the option side comes from the class's own per-rank lean.
-  const mentions = pickClassesAndChoices(nd, classData, cfg);
+  const mentions = pickClassesAndChoices(nd, D, classData, cfg);
   const { statHits, subjectHits, skillHits } = resolveAbilityMentions(mentions, D);
 
   // Guarantee actual training in whatever the chosen moves roll with — a
