@@ -14,6 +14,7 @@
    editable from the Review step onward.
    =========================================================================== */
 import type { ClassDef } from "../data/classes";
+import type { CompendiumEntry } from "../types";
 import * as F from "./forge-state";
 import type { Draft, ForgeData } from "./forge-state";
 
@@ -489,16 +490,34 @@ function pickStartWand(nd: Draft, D: ForgeData, cfg: ArchetypeConfig) {
 }
 
 /* --------------------------------- spells -------------------------------- */
+/** Weighted draw-without-replacement: pull up to `need` ids from `pool`
+ *  (mutated — drawn entries are removed) using `weightOf`, recomputed fresh
+ *  each draw since it depends on nothing that changes mid-draw here. */
+function weightedDraw(pool: CompendiumEntry[], need: number, weightOf: (e: CompendiumEntry) => number, into: string[]) {
+  let guard = 0;
+  while (into.length < need && pool.length && guard++ < 500) {
+    const weights = pool.map(weightOf);
+    let r = Math.random() * weights.reduce((s, w) => s + w, 0), idx = 0;
+    for (; idx < weights.length; idx++) { r -= weights[idx]; if (r <= 0) break; }
+    if (idx >= pool.length) idx = pool.length - 1;
+    into.push(pool[idx].id);
+    pool.splice(idx, 1);
+  }
+}
+
 /** Pick the year's spell quota so it reads like it came from the character's
  *  actual training, not a flat random draw across every field they dabble
  *  in: a subject with real rank should pull noticeably more of the quota
  *  (not just a mild edge) *and* pull toward the harder end of that level's
  *  DCs, while a subject the character barely touched stays confined to a
- *  couple of the level's easiest spells. */
+ *  couple of the level's easiest spells — and the declared major(s) get
+ *  first crack at the quota entirely, spilling into other trained subjects
+ *  only once the major's own eligible spells at that level run out. */
 function pickSpells(nd: Draft, D: ForgeData) {
   const quota = F.yearById(D, nd.yearId).spells as Record<string, number>;
   const levels: Array<"Basic" | "Standard" | "Advanced"> = ["Basic", "Standard", "Advanced"];
   const minRank: Record<string, number> = { Basic: 0, Standard: 1, Advanced: 3 };
+  const majorSet = new Set(nd.major);
   // Normalize "how ambitious a DC this subject can reach" against the
   // character's own best-trained subject — their strongest field should
   // reach for the hardest spells in a level, relative to their own range.
@@ -506,38 +525,43 @@ function pickSpells(nd: Draft, D: ForgeData) {
   levels.forEach((level) => {
     const need = quota[level] || 0;
     if (!need) return;
-    let pool = D.compendium.filter((e) => e.cat === "spell" && e.level === level);
     // Don't hand out a spell in a field you haven't actually studied — Basic
     // spells are common-knowledge cantrips, but Standard+ need at least a
     // rank in the governing subject, and Advanced needs real depth in it.
-    pool = pool.filter((e) => !e.subjectKey || (nd.subjects[e.subjectKey] || 0) >= minRank[level]);
-    if (!pool.length) return;
-    const dcs = pool.map((e) => e.dc).filter((d): d is number => d != null);
+    const eligible = D.compendium.filter((e) => e.cat === "spell" && e.level === level && (!e.subjectKey || (nd.subjects[e.subjectKey] || 0) >= minRank[level]));
+    if (!eligible.length) return;
+    const dcs = eligible.map((e) => e.dc).filter((d): d is number => d != null);
     const dcMin = dcs.length ? Math.min(...dcs) : 0;
     const dcSpan = dcs.length ? Math.max(1, Math.max(...dcs) - dcMin) : 1;
+    const weightOf = (e: CompendiumEntry) => {
+      const rank = e.subjectKey ? (nd.subjects[e.subjectKey] || 0) : 0;
+      // Sharper than a flat "1 + rank": a well-trained subject should
+      // dominate the draw, not just edge out an untrained one.
+      const subjectBias = Math.pow(1 + rank, 1.6);
+      let dcBias = 1;
+      if (e.dc != null) {
+        const appetite = Math.min(1, rank / maxRank); // 0 = barely trained, 1 = this build's best
+        const dcPosition = (e.dc - dcMin) / dcSpan; // 0 = easiest in this level, 1 = hardest
+        // Reward a close match; never fully rule anything out, so a modest
+        // subject occasionally still reaches a touch high (and vice versa).
+        dcBias = 0.25 + Math.pow(1 - Math.abs(appetite - dcPosition), 2);
+      }
+      return subjectBias * dcBias;
+    };
+
     const chosen: string[] = [];
-    let guard = 0;
-    while (chosen.length < need && pool.length && guard++ < 500) {
-      const weights = pool.map((e) => {
-        const rank = e.subjectKey ? (nd.subjects[e.subjectKey] || 0) : 0;
-        // Sharper than a flat "1 + rank": a well-trained subject should
-        // dominate the draw, not just edge out an untrained one.
-        const subjectBias = Math.pow(1 + rank, 1.6);
-        let dcBias = 1;
-        if (e.dc != null) {
-          const appetite = Math.min(1, rank / maxRank); // 0 = barely trained, 1 = this build's best
-          const dcPosition = (e.dc - dcMin) / dcSpan; // 0 = easiest in this level, 1 = hardest
-          // Reward a close match; never fully rule anything out, so a modest
-          // subject occasionally still reaches a touch high (and vice versa).
-          dcBias = 0.25 + Math.pow(1 - Math.abs(appetite - dcPosition), 2);
-        }
-        return subjectBias * dcBias;
-      });
-      let r = Math.random() * weights.reduce((s, w) => s + w, 0), idx = 0;
-      for (; idx < weights.length; idx++) { r -= weights[idx]; if (r <= 0) break; }
-      if (idx >= pool.length) idx = pool.length - 1;
-      chosen.push(pool[idx].id);
-      pool.splice(idx, 1);
+    // Phase 1: the major(s) get first pull at the quota — draws only among
+    // their own eligible spells, so a major with several options at this
+    // level fills most or all of the quota from itself before anything else
+    // is even considered.
+    const majorPool = eligible.filter((e) => e.subjectKey && majorSet.has(e.subjectKey));
+    weightedDraw(majorPool, need, weightOf, chosen);
+    // Phase 2: only the remainder spills into everything else eligible
+    // (still weighted the same way, so among non-major subjects the
+    // better-trained one still wins out).
+    if (chosen.length < need) {
+      const restPool = eligible.filter((e) => !chosen.includes(e.id));
+      weightedDraw(restPool, need, weightOf, chosen);
     }
     nd.spells.push(...chosen);
   });
