@@ -8,6 +8,13 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.10.0 — 2026-09-08
+- Add a Random Character generator to the Forge: builds a full character
+  (classes, stats, subjects, skills, wand, spells, and gear) for the Year
+  and Build type chosen on the Identity page, in one of nine archetypes,
+  then drops you at Review to tweak anything you like. Confirms before
+  overwriting an already-started character's progress.
+
 ## v1.9.3 — 2026-09-05
 - Fix the Compendium drawer briefly showing baked-in seed spells (like
   "Kindle the Hearth-Ward") while the live data was still loading; it now
