@@ -642,41 +642,44 @@ function InventorySection({ icon, title, note, children }: { icon: string; title
 /** The free artifact(s) certain class rank options grant outright (an
  *  item() tag — e.g. Artificer's "Take a Basic artifact when you take this
  *  ability", or Renegade's Twisted trinket up to a material cost). Shown
- *  regardless of build type — these never cost budget — and only for
- *  grants the player's *current* class choices actually produce. */
-function ClassArtifactGrants({ D, draft, set, classData }: { D: ForgeData; draft: Draft; set: SetFn; classData: { classes: ClassDef[] } }) {
+ *  regardless of build type — these never cost budget — alongside the
+ *  other yield-driven sections (Potions, Plants, Glyphs, Wands) even when
+ *  the player's current class choices don't grant any yet, same as those. */
+function AdmissionArtifacts({ D, draft, set, classData }: { D: ForgeData; draft: Draft; set: SetFn; classData: { classes: ClassDef[] } }) {
   const grants = F.classArtifactGrants(draft, classData);
-  if (!grants.length) return null;
   const totalChosen = grants.reduce((s, g) => s + (draft.classArtifacts[g.id] || []).length, 0);
   const totalSlots = grants.reduce((s, g) => s + g.count, 0);
   return (
-    <InventorySection icon="gem" title="Class-Granted Artifacts" note={`${totalChosen}/${totalSlots} chosen`}>
-      <p className="sf-fhint sf-fhint--mut">Some class options grant an artifact outright, pre-attuned — no roll, no cost. Pick one for each below.</p>
-      {grants.map((g) => {
-        const chosen = draft.classArtifacts[g.id] || [];
-        const levelSet = new Set(g.levels.map((l) => l.toLowerCase()));
-        const eligible = (e: CompendiumEntry) => levelSet.has(e.level.toLowerCase()) && (!g.matCap || (e.mat || 0) <= g.matCap);
-        return (
-          <div key={g.id} className="sf-iclassgrant">
-            <div className="sf-idiv">
-              <span>{g.title} <span className="sf-flabel__opt">· {g.levels.join(" or ")}{g.matCap ? `, up to ${g.matCap} mat` : ""}</span></span>
-              <span className="sf-idiv__pts">{chosen.length}/{g.count}</span>
+    <InventorySection icon="gem" title="Artifacts" note={`Class abilities grant ${totalSlots} · ${totalChosen} chosen`}>
+      {totalSlots === 0 ? (
+        <p className="sf-fhint sf-fhint--mut">Take a class rank option that grants an artifact outright to fill this in — no roll, no cost.</p>
+      ) : (
+        grants.map((g) => {
+          const chosen = draft.classArtifacts[g.id] || [];
+          const levelSet = new Set(g.levels.map((l) => l.toLowerCase()));
+          const eligible = (e: CompendiumEntry) => levelSet.has(e.level.toLowerCase()) && (!g.matCap || (e.mat || 0) <= g.matCap);
+          return (
+            <div key={g.id} className="sf-iclassgrant">
+              <div className="sf-idiv">
+                <span>{g.title} <span className="sf-flabel__opt">· {g.levels.join(" or ")}{g.matCap ? `, up to ${g.matCap} mat` : ""}</span></span>
+                <span className="sf-idiv__pts">{chosen.length}/{g.count}</span>
+              </div>
+              <PickList
+                D={D} cat="artifact" selected={chosen}
+                onToggle={(id) => {
+                  const on = chosen.includes(id);
+                  const e = D.compendium.find((x) => x.id === id);
+                  if (!on && (!e || !eligible(e) || chosen.length >= g.count)) return;
+                  const next = on ? chosen.filter((x) => x !== id) : [...chosen, id];
+                  set({ classArtifacts: { ...draft.classArtifacts, [g.id]: next } });
+                }}
+                can={(e) => eligible(e) && chosen.length < g.count}
+                emptyHint="No artifacts in the archive yet."
+              />
             </div>
-            <PickList
-              D={D} cat="artifact" selected={chosen}
-              onToggle={(id) => {
-                const on = chosen.includes(id);
-                const e = D.compendium.find((x) => x.id === id);
-                if (!on && (!e || !eligible(e) || chosen.length >= g.count)) return;
-                const next = on ? chosen.filter((x) => x !== id) : [...chosen, id];
-                set({ classArtifacts: { ...draft.classArtifacts, [g.id]: next } });
-              }}
-              can={(e) => eligible(e) && chosen.length < g.count}
-              emptyHint="No artifacts in the archive yet."
-            />
-          </div>
-        );
-      })}
+          );
+        })
+      )}
     </InventorySection>
   );
 }
@@ -736,7 +739,7 @@ export function AdmissionInventory({ D, draft, set, classData }: { D: ForgeData;
         )}
       </InventorySection>
 
-      <ClassArtifactGrants D={D} draft={draft} set={set} classData={classData} />
+      <AdmissionArtifacts D={D} draft={draft} set={set} classData={classData} />
 
       {custom ? (
         <React.Fragment>
