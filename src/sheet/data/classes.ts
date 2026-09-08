@@ -140,6 +140,17 @@ export function parseMoveTag(raw: string): MoveSpec | null {
 // item(kind, level[/level...], [count], [matCap=N])
 // e.g. item(artifact, standard, 1) · item(artifact, basic/standard, 1) ·
 //      item(artifact, twisted, 1, matCap=3000)
+//
+// `kind` is the compendium category to draw from — only "artifact" is
+// wired up today. `level` values are matched case-insensitively against
+// that category's own LEVEL column (Basic, Standard, Advanced, etc. for
+// artifacts); "/"-join several to offer a choice ("Basic or Standard").
+// `count` (default 1) is how many the option grants; `matCap`, if given,
+// additionally caps the material cost of what can be taken.
+//
+// An option can carry both a move() and an item() tag — put both in the
+// TAG cell separated by ";", either order:
+//   move("artificy", +rank, DC=30); item(artifact, legendary/twisted, 1)
 export function parseItemTag(raw: string): ItemSpec | null {
   const s = String(raw || "").trim();
   if (!/^item\s*\(/i.test(s)) return null;
@@ -194,11 +205,15 @@ export function buildClasses(db: ClassesDb): ClassDef[] {
         const title = (r[base] || "").trim();
         const desc = (r[base + 1] || "").trim();
         const tag = (r[base + 2] || "").trim();
-        const move = parseMoveTag(tag);
-        if (move) return { title, desc, tag, move };
-        const item = parseItemTag(tag);
-        if (item) return { title, desc, tag, item };
-        return { title, desc, tag };
+        // Usually one tag per cell, but an option can need both — e.g.
+        // Artificer's "Chosen Wielder" both grants a Legendary/Twisted
+        // artifact outright *and* names the skill its channeling check
+        // rolls with. Segments are ";"-separated so either order works:
+        // move("artificy", +rank, DC=30); item(artifact, legendary/twisted, 1)
+        const segments = tag.split(";").map((t) => t.trim()).filter(Boolean);
+        const move = segments.map(parseMoveTag).find((m): m is MoveSpec => !!m);
+        const item = segments.map(parseItemTag).find((i): i is ItemSpec => !!i);
+        return { title, desc, tag, ...(move ? { move } : {}), ...(item ? { item } : {}) };
       });
       ranks.push({ options: opts });
     }
