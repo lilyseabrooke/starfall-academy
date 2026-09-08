@@ -489,6 +489,39 @@ function pickStartWand(nd: Draft, D: ForgeData, cfg: ArchetypeConfig) {
 }
 
 /* --------------------------------- spells -------------------------------- */
+// A spell check is 2d10 + statRank + subjectRank vs DC (see spellMod in
+// useMagicState.ts). Precompute P(2d10 >= n) for every possible "roll
+// needed" (2d10 sums 2-20 with a triangular distribution, 100 equally
+// likely (die1,die2) pairs) once, so picking spells can weigh a spell by
+// how realistic it actually is to land, not just its DC's position within
+// the level's range.
+const CUM_2D10: number[] = (() => {
+  const ways = (s: number) => (s <= 11 ? s - 1 : 21 - s); // # of (d1,d2) pairs summing to s
+  const table: number[] = [];
+  for (let n = 0; n <= 22; n++) {
+    let sum = 0;
+    for (let s = Math.max(2, n); s <= 20; s++) sum += ways(s);
+    table[n] = sum / 100;
+  }
+  return table;
+})();
+/** Chance of clearing `dc` with a flat `mod` on 2d10. */
+function spellSuccessChance(dc: number, mod: number): number {
+  const needed = Math.round(dc - mod);
+  return CUM_2D10[Math.max(0, Math.min(22, needed))];
+}
+/** How much a spell's real success odds should discourage picking it — 1
+ *  (no penalty) at 75%+, falling off sharply below that. A needed roll of
+ *  17 is exactly a 10% shot; by then this is down near 1% of full weight,
+ *  matching "probably shouldn't be taken" rather than "never" (a
+ *  character occasionally does reach for something out of their depth). */
+function spellFeasibility(dc: number | undefined, mod: number): number {
+  if (dc == null) return 1;
+  const chance = spellSuccessChance(dc, mod);
+  if (chance >= 0.75) return 1;
+  return Math.pow(chance / 0.75, 2.2);
+}
+
 /** Pick the year's spell quota so it reads like it came from the character's
  *  actual training, not a flat random draw across every field they dabble
  *  in: a subject with real rank should pull noticeably more of the quota
@@ -529,6 +562,7 @@ function pickSpells(nd: Draft, D: ForgeData) {
   // character's own best-trained subject — their strongest field should
   // reach for the hardest spells in a level, relative to their own range.
   const maxRank = Math.max(1, ...Object.values(nd.subjects), 0);
+  const statIdByName = new Map(D.stats.map((f) => [f.name.toLowerCase(), f.id]));
   levels.forEach((level) => {
     const need = quota[level] || 0;
     if (!need) return;
@@ -565,7 +599,12 @@ function pickSpells(nd: Draft, D: ForgeData) {
         // needs, without capping anything outright.
         const already = drawnFromSubject[e.subjectKey || ""] || 0;
         const diminish = 1 / Math.pow(1 + already, 0.85);
-        return subjectBias * majorBias * dcBias * diminish;
+        // A spell nobody could realistically land shouldn't get taken just
+        // because it's technically eligible — weigh by the character's
+        // actual odds on the roll (2d10 + stat + subject vs DC).
+        const statRank = e.stat ? (nd.stats[statIdByName.get(e.stat.toLowerCase()) || ""] || 0) : 0;
+        const feasibility = spellFeasibility(e.dc, statRank + rank);
+        return subjectBias * majorBias * dcBias * diminish * feasibility;
       });
       let r = Math.random() * weights.reduce((s, w) => s + w, 0), idx = 0;
       for (; idx < weights.length; idx++) { r -= weights[idx]; if (r <= 0) break; }
