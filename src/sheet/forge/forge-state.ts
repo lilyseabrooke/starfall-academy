@@ -121,6 +121,31 @@ export function blankDraft(): Draft {
   };
 }
 
+/** Whether the draft has any real character-building progress beyond the
+ *  bio fields (name/pronouns/house/title/bio) and the year/build choice —
+ *  the fields Random Character preserves. Used to gate a confirmation
+ *  before randomizing overwrites it: a blank slate needs no warning, but
+ *  a class picked, a stat spent, or a spell chosen by hand is progress a
+ *  reroll would silently discard. */
+export function hasDraftProgress(draft: Draft): boolean {
+  return (
+    Object.keys(draft.classes).length > 0 ||
+    (draft.wandTargets || []).some(Boolean) ||
+    sumVals(draft.stats) > 0 ||
+    sumVals(draft.skills) > 0 ||
+    sumVals(draft.subjects) > 0 ||
+    draft.major.length > 0 ||
+    draft.potions.length > 0 ||
+    (draft.plants || []).length > 0 ||
+    draft.glyphs.length > 0 ||
+    draft.craftWands.length > 0 ||
+    draft.extraWands.length > 0 ||
+    draft.artifacts.length > 0 ||
+    Object.keys(draft.classArtifacts || {}).length > 0 ||
+    draft.spells.length > 0
+  );
+}
+
 export interface ClassArtifactGrant {
   /** `${classId}:${rank}` — stable per class-rank, survives re-renders. */
   id: string;

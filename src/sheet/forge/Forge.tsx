@@ -45,7 +45,12 @@ const RESPEC_STEPS = STEPS.filter((s) => ["identity", "allocation"].includes(s.i
 const DRAFT_KEY = "sf-admission-draft";
 
 /* ------------------------------- Identity ----------------------------- */
-function IdentityStep({ D, draft, set, onRandomize }: { D: ForgeData; draft: Draft; set: SetFn; onRandomize?: () => void }) {
+function IdentityStep({ D, draft, set, onRandomize, randomizeNeedsConfirm }: { D: ForgeData; draft: Draft; set: SetFn; onRandomize?: () => void; randomizeNeedsConfirm?: boolean }) {
+  const [confirming, setConfirming] = React.useState(false);
+  const clickRandomize = () => {
+    if (randomizeNeedsConfirm) setConfirming(true);
+    else onRandomize?.();
+  };
   const builds: ["quick" | "custom", string, string][] = (() => {
     const yr = D.creation.years.find((y) => y.id === draft.yearId) || D.creation.years[0];
     const q = yr.quick;
@@ -89,8 +94,21 @@ function IdentityStep({ D, draft, set, onRandomize }: { D: ForgeData; draft: Dra
 
       {onRandomize ? (
         <div className="sf-frandom">
-          <Button variant="secondary" iconLeft={<Icon name="dices" />} onClick={onRandomize}>Random Character</Button>
-          <span className="sf-fhint sf-fhint--mut">Builds a full character for your Year &amp; Build above — classes, stats, spells, gear, all of it — then drops you at Review to tweak anything you like.</span>
+          {confirming ? (
+            <React.Fragment>
+              <Icon name="triangle-alert" />
+              <span className="sf-fhint">This will overwrite the classes, stats, spells, and gear you&apos;ve already set for this character. Continue?</span>
+              <span className="sf-frandom__confirm">
+                <Button variant="primary" onClick={() => { setConfirming(false); onRandomize(); }}>Yes, overwrite</Button>
+                <Button variant="ghost" onClick={() => setConfirming(false)}>Cancel</Button>
+              </span>
+            </React.Fragment>
+          ) : (
+            <React.Fragment>
+              <Button variant="secondary" iconLeft={<Icon name="dices" />} onClick={clickRandomize}>Random Character</Button>
+              <span className="sf-fhint sf-fhint--mut">Builds a full character for your Year &amp; Build above — classes, stats, spells, gear, all of it — then drops you at Review to tweak anything you like.</span>
+            </React.Fragment>
+          )}
         </div>
       ) : null}
 
@@ -347,7 +365,7 @@ export function Admission({ mode, initial, data, classData, onCommit, onClose }:
         {/* content */}
         <div className="sf-admission__main">
           <div className="sf-admission__scroll">
-            {step.id === "identity" && <IdentityStep D={D} draft={draft} set={set} onRandomize={mode === "new" ? randomize : undefined} />}
+            {step.id === "identity" && <IdentityStep D={D} draft={draft} set={set} onRandomize={mode === "new" ? randomize : undefined} randomizeNeedsConfirm={F.hasDraftProgress(draft)} />}
             {step.id === "classes" && <AdmissionClasses D={D} classData={classData} draft={draft} set={set} />}
             {step.id === "wand" && <WandStep D={D} draft={draft} set={set} />}
             {step.id === "allocation" && <AdmissionAllocation D={D} draft={draft} set={set} />}
