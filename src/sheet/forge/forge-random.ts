@@ -140,7 +140,7 @@ function dynamicWeights(nd: Draft, D: ForgeData, cfg: ArchetypeConfig, map: MapK
       if (base <= 0) { w[f.id] = 0; return; }
       const subjRanks = (graph.subjectsByStat.get(f.id) || []).reduce((s, su) => s + (nd.subjects[su.key] || 0), 0);
       const skillRanks = (graph.skillsByStat.get(f.id) || []).reduce((s, sk) => s + (nd.skills[sk.id] || 0), 0);
-      w[f.id] = base * (1 + 0.25 * subjRanks + 0.15 * skillRanks) * selfTaper(nd, D, map, f.id);
+      w[f.id] = base * (1 + 0.25 * subjRanks + 0.15 * skillRanks) * selfTaper(nd, D, map, f.id) * (cfg.statJitter[f.id] ?? 1);
     });
     return w;
   }
@@ -153,14 +153,14 @@ function dynamicWeights(nd: Draft, D: ForgeData, cfg: ArchetypeConfig, map: MapK
     F.flatSubjects(D).forEach((s) => {
       const base = cfg.subjectWeights[s.key] || 0;
       const softness = nd.major.includes(s.key) ? majorSoftness : 0.6;
-      w[s.key] = base <= 0 ? 0 : base * (1 + 0.3 * (nd.stats[s.stat.toLowerCase()] || 0)) * selfTaper(nd, D, map, s.key, softness);
+      w[s.key] = base <= 0 ? 0 : base * (1 + 0.3 * (nd.stats[s.stat.toLowerCase()] || 0)) * selfTaper(nd, D, map, s.key, softness) * (cfg.subjectJitter[s.key] ?? 1);
     });
     return w;
   }
   const w: Weights = {};
   F.flatSkills(D).forEach((s) => {
     const base = cfg.skillWeights[s.id] || 0;
-    w[s.id] = base <= 0 ? 0 : base * (1 + 0.3 * (nd.stats[s.fac.id] || 0)) * selfTaper(nd, D, map, s.id);
+    w[s.id] = base <= 0 ? 0 : base * (1 + 0.3 * (nd.stats[s.fac.id] || 0)) * selfTaper(nd, D, map, s.id) * (cfg.skillJitter[s.id] ?? 1);
   });
   return w;
 }
@@ -283,6 +283,18 @@ interface ArchetypeConfig {
   statSlots: number;
   subjectSlots: number;
   skillSlots: number;
+  /** A fixed, per-character random multiplier for every stat/subject/skill,
+   *  drawn once and reused on every re-weigh. Several skills under the same
+   *  stat (or several subjects in the same school) often carry the exact
+   *  same base weight and the exact same correlation term — with nothing
+   *  else to tell them apart, they trend toward filling out identically
+   *  once there's enough budget to go around, which reads as flat rather
+   *  than like a person with actual preferences. Jitter gives each one a
+   *  standing, persistent edge or disadvantage, so ties resolve the same
+   *  way every time instead of averaging out into a uniform result. */
+  statJitter: Weights;
+  subjectJitter: Weights;
+  skillJitter: Weights;
   majorCount: number;
   classModeBias?: "single" | "double";
   preferStatWand?: boolean;
@@ -294,7 +306,27 @@ const ARCHETYPE_IDS = [
   "arcane-scholar",
 ];
 
+type ArchetypeCore = Omit<ArchetypeConfig, "statJitter" | "subjectJitter" | "skillJitter">;
+
+function jitterFor(keys: string[], min = 0.65, max = 1.35): Weights {
+  const w: Weights = {};
+  keys.forEach((k) => { w[k] = min + Math.random() * (max - min); });
+  return w;
+}
+
+/** Wraps buildArchetypeCore with a fresh random jitter map per character —
+ *  kept separate so the archetype-selection logic above stays free of the
+ *  jitter bookkeeping. */
 function buildArchetypeConfig(id: string, D: ForgeData): ArchetypeConfig {
+  return {
+    ...buildArchetypeCore(id, D),
+    statJitter: jitterFor(D.stats.map((s) => s.id)),
+    subjectJitter: jitterFor(F.flatSubjects(D).map((s) => s.key)),
+    skillJitter: jitterFor(F.flatSkills(D).map((s) => s.id)),
+  };
+}
+
+function buildArchetypeCore(id: string, D: ForgeData): ArchetypeCore {
   const stats = D.stats;
   const subjects = F.flatSubjects(D);
   const skills = F.flatSkills(D);
@@ -607,12 +639,19 @@ export function randomizeDraft(draft: Draft, D: ForgeData, classData: { classes:
   // A major is a strong statement of intent — guarantee it's actually
   // trained, and heavily bias spending toward it and its governing stat (an
   // Evocation major should mean an Evocation-heavy build *and* a Focus-heavy
-  // one).
+  // one). The stat floor is unconditional — unlike the ongoing weight boost
+  // below, which still respects a slot the archetype deliberately zeroed
+  // out, a major's own governing stat should never end up at literal zero;
+  // a demonologist with no Logic at all reads as a mistake, not a build.
   nd.major.forEach((key) => {
     guaranteeFloor(nd, D, "subjects", key, 1);
     cfg.subjectWeights[key] *= 4;
     const subj = F.flatSubjects(D).find((s) => s.key === key);
-    if (subj && cfg.statWeights[subj.stat.toLowerCase()] > 0) cfg.statWeights[subj.stat.toLowerCase()] *= 1.8;
+    if (subj) {
+      const statId = subj.stat.toLowerCase();
+      guaranteeFloor(nd, D, "stats", statId, 1);
+      if (cfg.statWeights[statId] > 0) cfg.statWeights[statId] *= 1.8;
+    }
   });
   // Some stats (Charm, Body — whichever ones no magic subject ever rolls
   // with, going by the live data rather than a hardcoded list) can only ever
@@ -684,15 +723,25 @@ export function randomizeDraft(draft: Draft, D: ForgeData, classData: { classes:
       skills: Math.round(cfg.shareSkill * total),
     }, slots);
     sprinkleStray(nd, D, 0.4);
-    // Mop up leftover budget within the same slots first — this mostly tops
-    // already-touched things up toward their caps, not new ones.
-    spendCorrelated(nd, D, cfg, graph, { stats: Infinity, subjects: Infinity, skills: Infinity }, slots);
-    // If there's still a meaningful chunk of budget left (everything touched
-    // is capped out), let a couple more things in rather than waste it —
-    // still nowhere near "everything gets a +1".
+    // Mopping up leftover budget *within the original slots* was the bug
+    // behind flat, texture-less skill groups: a target of Infinity only
+    // stops once every eligible key is either capped or unaffordable, so if
+    // the leftover happens to cover the original slots' full capacity, it
+    // saturates every one of them identically — jitter/taper only affect
+    // draw *order*, not the end state, once nothing stops the loop short of
+    // full. So size the slots generously *before* mopping up: give leftover
+    // budget roughly double the room it needs, so weighted/jittered
+    // competition runs out of budget partway through and leaves an actual
+    // gradient instead of maxing everything it touches.
     const leftover = F.budgets(nd, D);
-    if (leftover.mode === "custom" && leftover.remaining >= D.creation.custom.abilityCost * 3) {
-      const openSlots: Record<MapKey, number> = { stats: slots.stats + 1, subjects: slots.subjects + 2, skills: slots.skills + 2 };
+    if (leftover.mode === "custom" && leftover.remaining > 0) {
+      const cap = Math.max(1, year.limit);
+      const extra = Math.max(2, Math.ceil((leftover.remaining * 2) / cap));
+      const openSlots: Record<MapKey, number> = {
+        stats: slots.stats,
+        subjects: Math.min(F.flatSubjects(D).length, slots.subjects + Math.ceil(extra / 2)),
+        skills: Math.min(F.flatSkills(D).length, slots.skills + Math.ceil(extra / 2)),
+      };
       spendCorrelated(nd, D, cfg, graph, { stats: Infinity, subjects: Infinity, skills: Infinity }, openSlots);
     }
   }
