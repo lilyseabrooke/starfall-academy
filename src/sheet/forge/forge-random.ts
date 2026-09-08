@@ -132,6 +132,25 @@ function selfTaper(nd: Draft, D: ForgeData, map: MapKey, key: string, softness =
  *  never resurrects one the archetype ruled out. `selfTaper` softens the
  *  item's own runaway growth so correlation doesn't just crown one winner
  *  per slot. */
+/** How many of a stat's other skills are already sitting at *their* rank
+ *  cap — two capped together within a stat reads as a genuine specialty,
+ *  but three or four all maxed reads as flat rather than like someone
+ *  with actual preferences, so this is the basis for discouraging a
+ *  skill from becoming a 3rd or 4th tie under the same stat. */
+function atCapSiblingCount(nd: Draft, D: ForgeData, graph: StatGraph, s: F.FlatSkill): number {
+  const siblings = graph.skillsByStat.get(s.fac.id) || [];
+  return siblings.filter((sib) => sib.id !== s.id && (nd.skills[sib.id] || 0) >= F.rankCap(nd, D, "skills", sib.id)).length;
+}
+/** Soft version for the forced-fill passes (forceFillQuickPools, custom's
+ *  leftover mop): those exist specifically to guarantee every last point
+ *  lands *somewhere*, so a 3rd/4th tie must stay possible there — just
+ *  heavily disfavored — rather than a hard zero that could strand points
+ *  with nowhere else legal to go. */
+function skillCrowdMult(nd: Draft, D: ForgeData, graph: StatGraph, s: F.FlatSkill): number {
+  const n = atCapSiblingCount(nd, D, graph, s);
+  return n >= 3 ? 0.004 : n >= 2 ? 0.2 : 1;
+}
+
 function dynamicWeights(nd: Draft, D: ForgeData, cfg: ArchetypeConfig, map: MapKey, graph: StatGraph): Weights {
   if (map === "stats") {
     const w: Weights = {};
@@ -161,19 +180,20 @@ function dynamicWeights(nd: Draft, D: ForgeData, cfg: ArchetypeConfig, map: MapK
   F.flatSkills(D).forEach((s) => {
     const base = cfg.skillWeights[s.id] || 0;
     if (base <= 0) { w[s.id] = 0; return; }
-    // A stat's 4 skills sharing one governing stat (and often one archetype
+    // A stat's skills sharing one governing stat (and often one archetype
     // weight) have nothing else to tell them apart — jitter and selfTaper
     // only affect fill *order*, so given enough budget (a high year, a
     // dedicated specialist) they still all eventually reach the same cap.
-    // skillTierCap is a hard per-character ceiling instead: every skill
-    // under a stat gets its own fraction of the true cap (see
-    // buildSkillTierCaps), so at most one can ever reach it in full. A
-    // skill a class move or artifact already guarantees is exempted
-    // (tier 1) when that floor is applied, so this never fights a
-    // deliberate promise.
-    const tierCap = Math.max(1, Math.floor(F.rankCap(nd, D, map, s.id) * (cfg.skillTierCap[s.id] ?? 1)));
-    if ((nd.skills[s.id] || 0) >= tierCap) { w[s.id] = 0; return; }
-    w[s.id] = base * (1 + 0.3 * (nd.stats[s.fac.id] || 0)) * selfTaper(nd, D, map, s.id) * (cfg.skillJitter[s.id] ?? 1);
+    // Two skills capped together within a stat reads fine (a genuine
+    // specialty), but three or four all maxed reads as flat rather than
+    // like someone with actual preferences — so once other skills under
+    // this same stat are already sitting at *their* cap, further growth
+    // here is discouraged, harder the more of them there already are (see
+    // skillCrowdMult). This is a steep multiplier rather than a hard stop
+    // so a class move or artifact guarantee (a single floor(1) call,
+    // nowhere near a rank cap) never collides with it, and so a 3rd or
+    // 4th tie stays a rare possibility instead of an impossibility.
+    w[s.id] = base * (1 + 0.3 * (nd.stats[s.fac.id] || 0)) * selfTaper(nd, D, map, s.id) * (cfg.skillJitter[s.id] ?? 1) * skillCrowdMult(nd, D, graph, s);
   });
   return w;
 }
@@ -269,9 +289,10 @@ function consolidateOnes(nd: Draft, D: ForgeData, map: MapKey, protectedKeys: Se
  *  uniformly and ignoring archetype weighting entirely, until each pool
  *  reads exactly 100% spent. (Every quick pool is small enough, and the
  *  rank caps loose enough, that this always has somewhere legal to land.) */
-function forceFillQuickPools(nd: Draft, D: ForgeData) {
+function forceFillQuickPools(nd: Draft, D: ForgeData, graph: StatGraph) {
   const maps: MapKey[] = ["stats", "subjects", "skills"];
   const allKeys: Record<MapKey, string[]> = { stats: allKeysFor("stats", D), subjects: allKeysFor("subjects", D), skills: allKeysFor("skills", D) };
+  const flatSkillsById = new Map(F.flatSkills(D).map((s) => [s.id, s]));
   let iter = 0;
   while (iter++ < 6000) {
     const b = F.budgets(nd, D);
@@ -283,7 +304,20 @@ function forceFillQuickPools(nd: Draft, D: ForgeData) {
       const keys = allKeys[map].filter((k) => canIncPoint(nd, D, map, k));
       if (!keys.length) continue;
       anyRoom = true;
-      const key = keys[Math.floor(Math.random() * keys.length)];
+      let key: string;
+      if (map === "skills") {
+        // Uniform-random here would routinely pick the 3rd or 4th skill
+        // to cap out under the same stat just because it's still legal —
+        // weight the choice by the same crowd discouragement the weighted
+        // spend pass uses instead.
+        const weighted = keys.map((k) => ({ key: k, weight: skillCrowdMult(nd, D, graph, flatSkillsById.get(k)!) }));
+        const total = weighted.reduce((s, o) => s + o.weight, 0);
+        let r = Math.random() * total;
+        key = weighted[weighted.length - 1].key;
+        for (const o of weighted) { r -= o.weight; if (r <= 0) { key = o.key; break; } }
+      } else {
+        key = keys[Math.floor(Math.random() * keys.length)];
+      }
       nd[map] = { ...nd[map], [key]: (nd[map][key] || 0) + 1 };
     }
     if (!anyRoom) break;
@@ -365,18 +399,6 @@ interface ArchetypeConfig {
   statJitter: Weights;
   subjectJitter: Weights;
   skillJitter: Weights;
-  /** Per-skill hard ceiling, as a fraction of that skill's true rank cap —
-   *  drawn once per character so every stat's 4 skills get their own
-   *  distinct fraction (1.0 down to ~0.15, strictly decreasing within a
-   *  stat — see buildSkillTierCaps). Unlike jitter (a soft bias on fill
-   *  order), this is a hard stop dynamicWeights enforces, because jitter
-   *  alone still lets an abundant budget cap all of a stat's skills evenly
-   *  — only one skill per stat may ever reach the true cap this way, so a
-   *  specialist keeps texture within their own best stat instead of
-   *  maxing every skill under it identically. A skill a class move or
-   *  artifact already guarantees is exempted (set to 1) when that floor
-   *  is applied. */
-  skillTierCap: Weights;
   majorCount: number;
   classModeBias?: "single" | "double";
   preferStatWand?: boolean;
@@ -388,7 +410,7 @@ const ARCHETYPE_IDS = [
   "arcane-scholar",
 ];
 
-type ArchetypeCore = Omit<ArchetypeConfig, "statJitter" | "subjectJitter" | "skillJitter" | "skillTierCap">;
+type ArchetypeCore = Omit<ArchetypeConfig, "statJitter" | "subjectJitter" | "skillJitter">;
 
 function jitterFor(keys: string[], min = 0.65, max = 1.35): Weights {
   const w: Weights = {};
@@ -396,34 +418,15 @@ function jitterFor(keys: string[], min = 0.65, max = 1.35): Weights {
   return w;
 }
 
-/** One random, strictly-decreasing tier sequence per stat, assigned to that
- *  stat's 4 skills in a random order: the top tier is always exactly 1 (the
- *  stat's "favorite" skill may still reach the true cap), each next tier
- *  drops by a further random 18-40%, floored at 0.15 so the lowest tier
- *  stays meaningfully trainable rather than reading as untouchable. */
-function buildSkillTierCaps(D: ForgeData): Weights {
-  const out: Weights = {};
-  D.stats.forEach((f) => {
-    const ids = shuffle(f.skills.map((s) => s.id));
-    let frac = 1;
-    ids.forEach((id) => {
-      out[id] = frac;
-      frac = Math.max(0.15, frac - (0.18 + Math.random() * 0.22));
-    });
-  });
-  return out;
-}
-
-/** Wraps buildArchetypeCore with fresh random jitter + skill-tier-cap maps
- *  per character — kept separate so the archetype-selection logic above
- *  stays free of the bookkeeping. */
+/** Wraps buildArchetypeCore with fresh random jitter maps per character —
+ *  kept separate so the archetype-selection logic above stays free of the
+ *  bookkeeping. */
 function buildArchetypeConfig(id: string, D: ForgeData): ArchetypeConfig {
   return {
     ...buildArchetypeCore(id, D),
     statJitter: jitterFor(D.stats.map((s) => s.id)),
     subjectJitter: jitterFor(F.flatSubjects(D).map((s) => s.key)),
     skillJitter: jitterFor(F.flatSkills(D).map((s) => s.id)),
-    skillTierCap: buildSkillTierCaps(D),
   };
 }
 
@@ -908,10 +911,7 @@ export function randomizeDraft(draft: Draft, D: ForgeData, classData: { classes:
   // move keyed to Agility means at least 1 rank in Agility, not a coin flip.
   Object.keys(statHits).forEach((id) => guaranteeFloor(nd, D, "stats", id, 1));
   Object.keys(subjectHits).forEach((key) => guaranteeFloor(nd, D, "subjects", key, 1));
-  // A skill a class move actually rolls with is exempt from the per-stat
-  // tier ceiling below — that's a deliberate promise, not the generic
-  // texture-by-construction the ceiling exists to enforce.
-  Object.keys(skillHits).forEach((id) => { guaranteeFloor(nd, D, "skills", id, 1); cfg.skillTierCap[id] = 1; });
+  Object.keys(skillHits).forEach((id) => guaranteeFloor(nd, D, "skills", id, 1));
   // And bias further spending toward the same — but only where the archetype
   // hadn't already ruled the slot out entirely (base weight of exactly 0).
   Object.entries(statHits).forEach(([id, n]) => { if (cfg.statWeights[id] > 0) cfg.statWeights[id] *= 1 + 1.5 * n; });
@@ -950,7 +950,7 @@ export function randomizeDraft(draft: Draft, D: ForgeData, classData: { classes:
   const { statHits: ambStatHits, subjectHits: ambSubjectHits, skillHits: ambSkillHits } = resolveAbilityMentions(ambiguousWinners, D);
   Object.keys(ambStatHits).forEach((id) => guaranteeFloor(nd, D, "stats", id, 1));
   Object.keys(ambSubjectHits).forEach((key) => guaranteeFloor(nd, D, "subjects", key, 1));
-  Object.keys(ambSkillHits).forEach((id) => { guaranteeFloor(nd, D, "skills", id, 1); cfg.skillTierCap[id] = 1; });
+  Object.keys(ambSkillHits).forEach((id) => guaranteeFloor(nd, D, "skills", id, 1));
   Object.entries(ambStatHits).forEach(([id, n]) => { if (cfg.statWeights[id] > 0) cfg.statWeights[id] *= 1 + 1.5 * n; });
   Object.entries(ambSubjectHits).forEach(([key, n]) => { if (cfg.subjectWeights[key] > 0) cfg.subjectWeights[key] *= 1 + 2 * n; });
   Object.entries(ambSkillHits).forEach(([id, n]) => { if (cfg.skillWeights[id] > 0) cfg.skillWeights[id] *= 1 + 2.5 * n; });
@@ -1016,7 +1016,7 @@ export function randomizeDraft(draft: Draft, D: ForgeData, classData: { classes:
     // Guarantee: whatever's still unspent after the thematic passes above
     // (there's rarely more than a point or two left) gets forced in — a
     // quick build should read 100% spent every time, not "close enough".
-    forceFillQuickPools(nd, D);
+    forceFillQuickPools(nd, D, graph);
   } else {
     const total = year.custom;
     spendCorrelated(nd, D, cfg, graph, {
