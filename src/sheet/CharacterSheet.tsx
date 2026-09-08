@@ -1124,7 +1124,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       setPlants(F.buildPlants(draft, forgeData) as Plant[]);
       setItems([]);
       setGlyphs(F.buildGlyphs(draft, forgeData) as Glyph[]);
-      setArtifacts(F.buildArtifacts(draft, forgeData) as unknown as Artifact[]);
+      setArtifacts(F.buildArtifacts(draft, forgeData, CL) as unknown as Artifact[]);
       setWands([F.buildStartingWand(draft, forgeData) as unknown as Wand, ...(F.buildExtraWands(draft, forgeData) as unknown as Wand[])]);
       setRuneStack([]);
     }

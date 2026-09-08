@@ -20,11 +20,27 @@ export interface MoveSpec {
   backfire: boolean;
 }
 
+/** An item() tag parsed into its spec — a class option that grants a free
+ *  compendium item outright (e.g. Artificer's "Take a Basic artifact when
+ *  you take this ability"). `kind` is the compendium category to draw from;
+ *  only "artifact" is wired up today. `levels` lists which of that
+ *  category's `level` values are eligible (a class option offering "Basic
+ *  or Standard" becomes two entries here); `count` is how many the option
+ *  grants; `matCap`, when set, additionally caps the material cost of what
+ *  can be taken (Renegade's "up to 3000 materials cost" twisted artifact). */
+export interface ItemSpec {
+  kind: "artifact";
+  levels: string[];
+  count: number;
+  matCap?: number;
+}
+
 export interface ClassOption {
   title: string;
   desc: string;
   tag: string;
   move?: MoveSpec;
+  item?: ItemSpec;
 }
 
 export interface ClassRank {
@@ -120,6 +136,35 @@ export function parseMoveTag(raw: string): MoveSpec | null {
   return spec;
 }
 
+/* --------------------------- item() tag parser ------------------------ */
+// item(kind, level[/level...], [count], [matCap=N])
+// e.g. item(artifact, standard, 1) · item(artifact, basic/standard, 1) ·
+//      item(artifact, twisted, 1, matCap=3000)
+export function parseItemTag(raw: string): ItemSpec | null {
+  const s = String(raw || "").trim();
+  if (!/^item\s*\(/i.test(s)) return null;
+  const open = s.indexOf("(");
+  const close = s.lastIndexOf(")");
+  if (open < 0 || close < 0) return null;
+  const tokens = s.slice(open + 1, close).split(",").map((t) => t.trim()).filter(Boolean);
+  if (!tokens.length) return null;
+
+  const kind = tokens[0].toLowerCase();
+  if (kind !== "artifact") return null; // only artifact grants supported today
+
+  let levels: string[] = [];
+  let count = 1;
+  let matCap: number | undefined;
+  for (const tk of tokens.slice(1)) {
+    let m: RegExpExecArray | null;
+    if ((m = /^matCap\s*=\s*(\d+)$/i.exec(tk))) matCap = parseInt(m[1], 10);
+    else if (/^\d+$/.test(tk)) count = parseInt(tk, 10);
+    else levels = tk.split("/").map((l) => l.trim()).filter(Boolean);
+  }
+  if (!levels.length) return null;
+  return { kind: "artifact", levels, count, matCap };
+}
+
 /* ----------------------- Build classes from the DB -------------------- */
 const slug = (name: string) =>
   String(name || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -150,7 +195,10 @@ export function buildClasses(db: ClassesDb): ClassDef[] {
         const desc = (r[base + 1] || "").trim();
         const tag = (r[base + 2] || "").trim();
         const move = parseMoveTag(tag);
-        return move ? { title, desc, tag, move } : { title, desc, tag };
+        if (move) return { title, desc, tag, move };
+        const item = parseItemTag(tag);
+        if (item) return { title, desc, tag, item };
+        return { title, desc, tag };
       });
       ranks.push({ options: opts });
     }
@@ -164,6 +212,7 @@ export interface ClassesModule {
   classes: ClassDef[];
   parseCSV: typeof parseCSV;
   parseMoveTag: typeof parseMoveTag;
+  parseItemTag: typeof parseItemTag;
   buildClasses: typeof buildClasses;
   /** Cost in RP to acquire `targetRank` (1 = purchase the class). */
   cost: (targetRank: number) => number;
@@ -179,6 +228,7 @@ export const CLASSES: ClassesModule = {
   classes: buildClasses(CLASSES_DB),
   parseCSV,
   parseMoveTag,
+  parseItemTag,
   buildClasses,
   cost: (targetRank) => (targetRank <= 1 ? 5 : targetRank),
   start: {

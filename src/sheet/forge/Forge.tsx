@@ -13,6 +13,7 @@ import { TONE_500, TONE_FG } from "../data/shared";
 import type { ClassDef } from "../data/classes";
 import * as F from "./forge-state";
 import type { Draft, ForgeData } from "./forge-state";
+import { randomizeDraft } from "./forge-random";
 import {
   AdmissionAllocation,
   AdmissionClasses,
@@ -44,7 +45,12 @@ const RESPEC_STEPS = STEPS.filter((s) => ["identity", "allocation"].includes(s.i
 const DRAFT_KEY = "sf-admission-draft";
 
 /* ------------------------------- Identity ----------------------------- */
-function IdentityStep({ D, draft, set }: { D: ForgeData; draft: Draft; set: SetFn }) {
+function IdentityStep({ D, draft, set, onRandomize, randomizeNeedsConfirm }: { D: ForgeData; draft: Draft; set: SetFn; onRandomize?: () => void; randomizeNeedsConfirm?: boolean }) {
+  const [confirming, setConfirming] = React.useState(false);
+  const clickRandomize = () => {
+    if (randomizeNeedsConfirm) setConfirming(true);
+    else onRandomize?.();
+  };
   const builds: ["quick" | "custom", string, string][] = (() => {
     const yr = D.creation.years.find((y) => y.id === draft.yearId) || D.creation.years[0];
     const q = yr.quick;
@@ -106,6 +112,26 @@ function IdentityStep({ D, draft, set }: { D: ForgeData; draft: Draft; set: SetF
         <span className="sf-flabel">Background <span className="sf-flabel__opt">· optional</span></span>
         <textarea className="sf-ftextarea" rows={3} placeholder="Who are you, and where did you come from?" value={draft.bio} onChange={(e) => set({ bio: e.target.value })} />
       </label>
+
+      {onRandomize ? (
+        <div className="sf-frandom">
+          {confirming ? (
+            <React.Fragment>
+              <Icon name="triangle-alert" />
+              <span className="sf-fhint">Randomizing this character will erase all your current progress outside the Identity page. Continue?</span>
+              <span className="sf-frandom__confirm">
+                <Button variant="primary" onClick={() => { setConfirming(false); onRandomize(); }}>Yes, overwrite</Button>
+                <Button variant="ghost" onClick={() => setConfirming(false)}>Cancel</Button>
+              </span>
+            </React.Fragment>
+          ) : (
+            <React.Fragment>
+              <Button variant="secondary" iconLeft={<Icon name="dices" />} onClick={clickRandomize}>Random Character</Button>
+              <span className="sf-fhint sf-fhint--mut">Randomly build your character using the year and build type chosen above.</span>
+            </React.Fragment>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -232,7 +258,7 @@ function ReviewStep({ D, classData, draft, missing }: { D: ForgeData; classData:
         <Line k="Top stats">{topStats.length ? topStats.slice(0, 4).map((x) => `${x.n} ${x.v}`).join(" · ") : <em className="sf-rev__none">none</em>}</Line>
         <Line k="Top subjects">{topSubs.length ? topSubs.slice(0, 4).map((x) => `${x.n} ${x.v}`).join(" · ") : <em className="sf-rev__none">none</em>}</Line>
         <Line k="Spells">{draft.spells.length ? draft.spells.length + " chosen" : <em className="sf-rev__none">none</em>}</Line>
-        <Line k="Loadout">{D.creation.startingMaterials} mat · {draft.potions.length} potion(s) · {draft.glyphs.length} glyph(s) · {draft.craftWands.length + draft.extraWands.length} extra wand(s) · {draft.artifacts.length} artifact(s)</Line>
+        <Line k="Loadout">{D.creation.startingMaterials} mat · {draft.potions.length} potion(s) · {draft.glyphs.length} glyph(s) · {draft.craftWands.length + draft.extraWands.length} extra wand(s) · {draft.artifacts.length + F.classArtifactIds(draft, classData).length} artifact(s)</Line>
       </div>
     </div>
   );
@@ -305,6 +331,10 @@ export function Admission({ mode, initial, data, classData, onCommit, onClose }:
 
   const begin = () => { if (ready) { try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ } onCommit(draft); } };
   const cancel = () => { if (draft.mode === "new") { try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ } } onClose(); };
+  const randomize = () => {
+    setDraft(randomizeDraft(draft, D, classData));
+    setIdx(STEPS.length - 1);
+  };
 
   const showHUD = draft.mode !== "edit" && ["classes", "allocation", "inventory"].includes(step.id);
 
@@ -335,11 +365,11 @@ export function Admission({ mode, initial, data, classData, onCommit, onClose }:
         {/* content */}
         <div className="sf-admission__main">
           <div className="sf-admission__scroll">
-            {step.id === "identity" && <IdentityStep D={D} draft={draft} set={set} />}
+            {step.id === "identity" && <IdentityStep D={D} draft={draft} set={set} onRandomize={mode === "new" ? randomize : undefined} randomizeNeedsConfirm={F.hasDraftProgress(draft)} />}
             {step.id === "classes" && <AdmissionClasses D={D} classData={classData} draft={draft} set={set} />}
             {step.id === "wand" && <WandStep D={D} draft={draft} set={set} />}
             {step.id === "allocation" && <AdmissionAllocation D={D} draft={draft} set={set} />}
-            {step.id === "inventory" && <AdmissionInventory D={D} draft={draft} set={set} />}
+            {step.id === "inventory" && <AdmissionInventory D={D} draft={draft} set={set} classData={classData} />}
             {step.id === "spells" && <AdmissionSpells D={D} draft={draft} set={set} />}
             {step.id === "review" && <ReviewStep D={D} classData={classData} draft={draft} missing={missing} />}
           </div>
