@@ -20,6 +20,8 @@ import {
   AdmissionInventory,
   AdmissionSpells,
 } from "./forge-steps";
+import { CharacterOverview } from "../overview/CharacterOverview";
+import { overviewFromDraft, type OverviewLive } from "../overview/overview-data";
 
 type SetFn = (patch: Partial<Draft>) => void;
 
@@ -218,7 +220,7 @@ function WandStep({ D, draft, set }: { D: ForgeData; draft: Draft; set: SetFn })
 }
 
 /* -------------------------------- Review ------------------------------ */
-function ReviewStep({ D, classData, draft, missing }: { D: ForgeData; classData: ClassData; draft: Draft; missing: string[] }) {
+function ReviewStep({ D, classData, draft, missing, onOverview }: { D: ForgeData; classData: ClassData; draft: Draft; missing: string[]; onOverview: () => void }) {
   const year = F.yearById(D, draft.yearId), house = F.houseById(D, draft.houseId), wand = F.wandById(D, draft.wandId);
   const b = F.budgets(draft, D);
   const subjName = (k: string) => { const s = F.flatSubjects(D).find((x) => x.key === k); return s ? s.name : k; };
@@ -259,6 +261,11 @@ function ReviewStep({ D, classData, draft, missing }: { D: ForgeData; classData:
         <Line k="Top subjects">{topSubs.length ? topSubs.slice(0, 4).map((x) => `${x.n} ${x.v}`).join(" · ") : <em className="sf-rev__none">none</em>}</Line>
         <Line k="Spells">{draft.spells.length ? draft.spells.length + " chosen" : <em className="sf-rev__none">none</em>}</Line>
         <Line k="Loadout">{D.creation.startingMaterials} mat · {draft.potions.length} potion(s) · {draft.glyphs.length} glyph(s) · {draft.craftWands.length + draft.extraWands.length} extra wand(s) · {draft.artifacts.length + F.classArtifactIds(draft, classData).length} artifact(s)</Line>
+      </div>
+
+      <div className="sf-cso-cta">
+        <Button variant="secondary" iconLeft={<Icon name="scroll" />} onClick={onOverview}>Character sheet overview</Button>
+        <span className="sf-fhint sf-fhint--mut">Your whole sheet on one page — ready to screenshot and share.</span>
       </div>
     </div>
   );
@@ -301,12 +308,17 @@ export interface AdmissionProps {
   classData: ClassData;
   onCommit: (draft: Draft) => void;
   onClose: () => void;
+  /** The live character behind an edit-mode ("respec") session. A respec never
+   *  edits classes, spells, or gear, so the overview card reads those off the
+   *  character the player walked in with rather than off the draft. */
+  live?: OverviewLive | null;
 }
 
-export function Admission({ mode, initial, data, classData, onCommit, onClose }: AdmissionProps) {
+export function Admission({ mode, initial, data, classData, onCommit, onClose, live }: AdmissionProps) {
   const D = data;
   const [draft, setDraft] = React.useState<Draft>(initial);
   const [idx, setIdx] = React.useState(0);
+  const [overview, setOverview] = React.useState(false);
   const set = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
   const steps = mode === "edit" ? RESPEC_STEPS : STEPS;
   const step = steps[idx];
@@ -336,6 +348,13 @@ export function Admission({ mode, initial, data, classData, onCommit, onClose }:
     setIdx(STEPS.length - 1);
   };
 
+  // Compiled only while the card is up: it walks every payload builder, and
+  // the draft changes on every keystroke.
+  const overviewModel = React.useMemo(
+    () => (overview ? overviewFromDraft(draft, D, classData, live) : null),
+    [overview, draft, D, classData, live],
+  );
+
   const showHUD = draft.mode !== "edit" && ["classes", "allocation", "inventory"].includes(step.id);
 
   return (
@@ -359,7 +378,14 @@ export function Admission({ mode, initial, data, classData, onCommit, onClose }:
               </button>
             ))}
           </nav>
-          <button className="sf-admission__cancel" onClick={cancel} type="button"><Icon name="x" /> {mode === "edit" ? "Discard changes" : "Cancel"}</button>
+          <div className="sf-cso-railfoot">
+            {/* The respec has no Review step (see RESPEC_STEPS), so this is
+                where a character back from gameplay reaches the overview. */}
+            {mode === "edit" ? (
+              <button className="sf-cso-railbtn" onClick={() => setOverview(true)} type="button"><Icon name="scroll" /> Character overview</button>
+            ) : null}
+            <button className="sf-admission__cancel" onClick={cancel} type="button"><Icon name="x" /> {mode === "edit" ? "Discard changes" : "Cancel"}</button>
+          </div>
         </aside>
 
         {/* content */}
@@ -371,7 +397,7 @@ export function Admission({ mode, initial, data, classData, onCommit, onClose }:
             {step.id === "allocation" && <AdmissionAllocation D={D} draft={draft} set={set} />}
             {step.id === "inventory" && <AdmissionInventory D={D} draft={draft} set={set} classData={classData} />}
             {step.id === "spells" && <AdmissionSpells D={D} draft={draft} set={set} />}
-            {step.id === "review" && <ReviewStep D={D} classData={classData} draft={draft} missing={missing} />}
+            {step.id === "review" && <ReviewStep D={D} classData={classData} draft={draft} missing={missing} onOverview={() => setOverview(true)} />}
           </div>
 
           <footer className="sf-admission__foot">
@@ -390,6 +416,8 @@ export function Admission({ mode, initial, data, classData, onCommit, onClose }:
           </footer>
         </div>
       </div>
+
+      <CharacterOverview open={overview} model={overviewModel} onClose={() => setOverview(false)} />
     </div>
   );
 }

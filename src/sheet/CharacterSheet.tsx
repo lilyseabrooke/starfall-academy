@@ -69,6 +69,7 @@ import { RollPrompt } from "./components/rolls/RollPrompt";
 import { Admission } from "./forge/Forge";
 import * as F from "./forge/forge-state";
 import type { Draft } from "./forge/forge-state";
+import type { OverviewLive } from "./overview/overview-data";
 
 import type { RosterMember } from "@/app/(app)/characters/roster";
 import type { RollRosterMember } from "./state/useRollState";
@@ -1080,6 +1081,13 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   // ---- The Admission (character creation / respec) ----
   const [admission, setForge] = React.useState<{ open: boolean; mode: "new" | "edit"; draft: Draft | null }>({ open: false, mode: "new", draft: null });
   const forgeData = React.useMemo(() => ({ creation: SEED.creation, houses: SEED.houses, stats, magicSchools: schools, compendium: D.compendium }), [stats, schools, D.compendium]);
+  // What a respec can't rebuild from its own draft — classes, spells, and gear
+  // as they stand in play. The Forge's overview card reads these so a character
+  // back from gameplay summarises in full, not just the two respec steps.
+  const forgeLive = React.useMemo<OverviewLive>(
+    () => ({ classState, spells, inventory: { wands, artifacts, potions, plants, glyphs, items } }),
+    [classState, spells, wands, artifacts, potions, plants, glyphs, items],
+  );
   const openForgeNew = () => {
     
     let draft = F.blankDraft();
@@ -1438,7 +1446,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       <ManualModal open={!!manualKind} kind={manualKind} subjects={allSubjects} skills={stats.flatMap((st) => st.skills)} stats={stats} schools={schools} compendiumSpells={D.compendium.filter((e) => e.cat === "spell")} attuneFull={attunedCount >= caps.attuneCap} sheafFull={heldCount >= caps.potionCap} editSubject={manualKind === "recipe" ? editRecipe : manualKind === "artifact" ? editArtifact : manualKind === "wand" ? editWand : manualKind === "plant" ? editPlant : manualKind === "glyph" ? editGlyph : null} cultivationCap={caps.plantCap} cultivationUsed={plantSum} onSave={saveManual} onClose={() => { setManualKind(null); setEditRecipe(null); setEditArtifact(null); setEditWand(null); setEditPlant(null); setEditGlyph(null); }} />
       <GiveModal open={!!givePayload} payload={givePayload as GivePayload | null} roster={ROSTER} activeChar={activeChar} onConfirm={onGiveConfirm} onClose={() => setGivePayload(null)} />
       <ChoosePlantModal open={!!choosePlant} plant={choosePlant ? choosePlant.pl : null} onRoll={() => { const ctx = choosePlant; setChoosePlant(null); if (ctx) invH.rollPlant(ctx.pl, ctx.anchor); }} onJustUse={() => { const ctx = choosePlant; setChoosePlant(null); if (ctx) invH.markPlantUsed(ctx.pl); }} onClose={() => setChoosePlant(null)} />
-      {admission.open && admission.draft ? <Admission mode={admission.mode} initial={admission.draft} data={forgeData} classData={CL} onCommit={commitForge} onClose={closeForge} /> : null}
+      {admission.open && admission.draft ? <Admission mode={admission.mode} initial={admission.draft} data={forgeData} classData={CL} live={forgeLive} onCommit={commitForge} onClose={closeForge} /> : null}
       <BonusEditor open={bonusEdit.open} bonus={bonusEdit.bonus} mode={bonusEdit.mode} ctx={{ stats, schools, moves, spells, conditions }} classes={bonusClasses} onSave={saveBonus} onDelete={removeBonus} onClose={closeBonusEdit} />
       <div className={"sf-inv-toast" + (invToast ? " show" : "")} role="status">
         {invToast && <span><Icon name="check-circle" /> {invToast}</span>}
