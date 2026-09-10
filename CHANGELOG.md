@@ -8,6 +8,19 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.12.0 — 2026-09-10
+- Add a character sheet overview: a one-page summary card of a character —
+  name, pronouns, title, House and year, major(s), every stat, subject and
+  skill with points in it, each class rank with the abilities chosen along the
+  way, and the names of every spell known and everything carried. It opens
+  from a button on the Forge's Review step, and — for a character that's
+  already built, where there is no Review step — from the bottom of the
+  Identity page, in the slot Random Character occupies for a new one. Editing
+  an existing character, the card reads classes, spells and gear off the live
+  character rather than the respec draft. "Copy card" puts the whole thing on
+  the clipboard as an image, ready to paste and share, and the card scales
+  itself down to stay one page on a short window.
+
 ## v1.11.1 — 2026-09-10
 - Fix Random Character forcing a multiclass build for two archetypes
   (Skill Specialist, Battle Skirmisher) instead of leaving them to the

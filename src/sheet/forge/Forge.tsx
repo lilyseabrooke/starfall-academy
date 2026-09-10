@@ -20,6 +20,8 @@ import {
   AdmissionInventory,
   AdmissionSpells,
 } from "./forge-steps";
+import { CharacterOverview } from "../overview/CharacterOverview";
+import { overviewFromDraft, type OverviewLive } from "../overview/overview-data";
 
 type SetFn = (patch: Partial<Draft>) => void;
 
@@ -44,8 +46,18 @@ const STEPS = [
 const RESPEC_STEPS = STEPS.filter((s) => ["identity", "allocation"].includes(s.id));
 const DRAFT_KEY = "sf-admission-draft";
 
+/* ---------------------------- Overview CTA ---------------------------- */
+function OverviewCta({ onClick }: { onClick: () => void }) {
+  return (
+    <div className="sf-cso-cta">
+      <Button variant="secondary" iconLeft={<Icon name="scroll" />} onClick={onClick}>Character sheet overview</Button>
+      <span className="sf-fhint sf-fhint--mut">See your sheet all in one sharable card.</span>
+    </div>
+  );
+}
+
 /* ------------------------------- Identity ----------------------------- */
-function IdentityStep({ D, draft, set, onRandomize, randomizeNeedsConfirm }: { D: ForgeData; draft: Draft; set: SetFn; onRandomize?: () => void; randomizeNeedsConfirm?: boolean }) {
+function IdentityStep({ D, draft, set, onRandomize, randomizeNeedsConfirm, onOverview }: { D: ForgeData; draft: Draft; set: SetFn; onRandomize?: () => void; randomizeNeedsConfirm?: boolean; onOverview?: () => void }) {
   const [confirming, setConfirming] = React.useState(false);
   const clickRandomize = () => {
     if (randomizeNeedsConfirm) setConfirming(true);
@@ -131,6 +143,11 @@ function IdentityStep({ D, draft, set, onRandomize, randomizeNeedsConfirm }: { D
             </React.Fragment>
           )}
         </div>
+      ) : onOverview ? (
+        // A respec has no Review step to hang this off (see RESPEC_STEPS), and
+        // no Random Character either — an already-built character isn't one to
+        // reroll — so the overview takes that slot.
+        <OverviewCta onClick={onOverview} />
       ) : null}
     </div>
   );
@@ -218,7 +235,7 @@ function WandStep({ D, draft, set }: { D: ForgeData; draft: Draft; set: SetFn })
 }
 
 /* -------------------------------- Review ------------------------------ */
-function ReviewStep({ D, classData, draft, missing }: { D: ForgeData; classData: ClassData; draft: Draft; missing: string[] }) {
+function ReviewStep({ D, classData, draft, missing, onOverview }: { D: ForgeData; classData: ClassData; draft: Draft; missing: string[]; onOverview: () => void }) {
   const year = F.yearById(D, draft.yearId), house = F.houseById(D, draft.houseId), wand = F.wandById(D, draft.wandId);
   const b = F.budgets(draft, D);
   const subjName = (k: string) => { const s = F.flatSubjects(D).find((x) => x.key === k); return s ? s.name : k; };
@@ -260,6 +277,8 @@ function ReviewStep({ D, classData, draft, missing }: { D: ForgeData; classData:
         <Line k="Spells">{draft.spells.length ? draft.spells.length + " chosen" : <em className="sf-rev__none">none</em>}</Line>
         <Line k="Loadout">{D.creation.startingMaterials} mat · {draft.potions.length} potion(s) · {draft.glyphs.length} glyph(s) · {draft.craftWands.length + draft.extraWands.length} extra wand(s) · {draft.artifacts.length + F.classArtifactIds(draft, classData).length} artifact(s)</Line>
       </div>
+
+      <OverviewCta onClick={onOverview} />
     </div>
   );
 }
@@ -301,12 +320,17 @@ export interface AdmissionProps {
   classData: ClassData;
   onCommit: (draft: Draft) => void;
   onClose: () => void;
+  /** The live character behind an edit-mode ("respec") session. A respec never
+   *  edits classes, spells, or gear, so the overview card reads those off the
+   *  character the player walked in with rather than off the draft. */
+  live?: OverviewLive | null;
 }
 
-export function Admission({ mode, initial, data, classData, onCommit, onClose }: AdmissionProps) {
+export function Admission({ mode, initial, data, classData, onCommit, onClose, live }: AdmissionProps) {
   const D = data;
   const [draft, setDraft] = React.useState<Draft>(initial);
   const [idx, setIdx] = React.useState(0);
+  const [overview, setOverview] = React.useState(false);
   const set = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
   const steps = mode === "edit" ? RESPEC_STEPS : STEPS;
   const step = steps[idx];
@@ -335,6 +359,13 @@ export function Admission({ mode, initial, data, classData, onCommit, onClose }:
     setDraft(randomizeDraft(draft, D, classData));
     setIdx(STEPS.length - 1);
   };
+
+  // Compiled only while the card is up: it walks every payload builder, and
+  // the draft changes on every keystroke.
+  const overviewModel = React.useMemo(
+    () => (overview ? overviewFromDraft(draft, D, classData, live) : null),
+    [overview, draft, D, classData, live],
+  );
 
   const showHUD = draft.mode !== "edit" && ["classes", "allocation", "inventory"].includes(step.id);
 
@@ -365,13 +396,13 @@ export function Admission({ mode, initial, data, classData, onCommit, onClose }:
         {/* content */}
         <div className="sf-admission__main">
           <div className="sf-admission__scroll">
-            {step.id === "identity" && <IdentityStep D={D} draft={draft} set={set} onRandomize={mode === "new" ? randomize : undefined} randomizeNeedsConfirm={F.hasDraftProgress(draft)} />}
+            {step.id === "identity" && <IdentityStep D={D} draft={draft} set={set} onRandomize={mode === "new" ? randomize : undefined} randomizeNeedsConfirm={F.hasDraftProgress(draft)} onOverview={mode === "edit" ? () => setOverview(true) : undefined} />}
             {step.id === "classes" && <AdmissionClasses D={D} classData={classData} draft={draft} set={set} />}
             {step.id === "wand" && <WandStep D={D} draft={draft} set={set} />}
             {step.id === "allocation" && <AdmissionAllocation D={D} draft={draft} set={set} />}
             {step.id === "inventory" && <AdmissionInventory D={D} draft={draft} set={set} classData={classData} />}
             {step.id === "spells" && <AdmissionSpells D={D} draft={draft} set={set} />}
-            {step.id === "review" && <ReviewStep D={D} classData={classData} draft={draft} missing={missing} />}
+            {step.id === "review" && <ReviewStep D={D} classData={classData} draft={draft} missing={missing} onOverview={() => setOverview(true)} />}
           </div>
 
           <footer className="sf-admission__foot">
@@ -390,6 +421,8 @@ export function Admission({ mode, initial, data, classData, onCommit, onClose }:
           </footer>
         </div>
       </div>
+
+      <CharacterOverview open={overview} model={overviewModel} onClose={() => setOverview(false)} />
     </div>
   );
 }
