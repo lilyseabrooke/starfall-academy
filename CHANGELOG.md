@@ -8,7 +8,7 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
-## v1.11.0 — 2026-09-10
+## v1.12.0 — 2026-09-10
 - Add a character sheet overview: a one-page summary card of a character —
   name, pronouns, title, House and year, major(s), every stat, subject and
   skill with points in it, each class rank with the abilities chosen along the
@@ -20,6 +20,11 @@ when these shipped.
   character rather than the respec draft. "Copy card" puts the whole thing on
   the clipboard as an image, ready to paste and share, and the card scales
   itself down to stay one page on a short window.
+
+## v1.11.0 — 2026-09-10
+- Add a "View Character" button to campaign-less characters on the
+  character dashboard, opening the same standalone sheet view shown when
+  finishing character creation.
 
 ## v1.10.1 — 2026-09-08
 - The Forge Inventory step's Artifacts section (class-granted artifacts)
