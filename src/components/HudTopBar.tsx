@@ -48,7 +48,7 @@ const MY_CHARACTERS_LINK: NavLink = {
   href: "/characters",
 };
 
-const DISCORD_INVITE_URL = "https://discord.gg/JgYPJGF7DE";
+export const DISCORD_INVITE_URL = "https://discord.gg/JgYPJGF7DE";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

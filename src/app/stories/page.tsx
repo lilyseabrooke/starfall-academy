@@ -1,50 +1,72 @@
 import { createClient } from "@/lib/supabase/server";
+import StoriesView, { type StoryCard } from "./StoriesView";
 
-// Not linked from anywhere yet — reachable only by going straight to
-// /stories. Lists user-submitted stories (title + author) as buttons out to
-// their Google Doc. Rows come from the Discord bot via POST /api/stories;
-// this page just reads what's there. UI is a placeholder pending a real pass.
+// Not linked from anywhere — reachable only by going straight to /stories.
+// Lists user-submitted stories (title + author) as links out to their Google
+// Doc. Rows come from the Discord bot via POST /api/stories; this page just
+// reads what's there and hands it to the client view for search / sort.
 export const dynamic = "force-dynamic";
 
-type Story = {
+export const metadata = {
+  title: "Stories — Starfall Academy",
+};
+
+type StoryRow = {
   id: string;
   title: string;
   author: string;
   doc_url: string;
+  created_at: string;
 };
+
+// "Filed 10 Sep 2026" — fixed to UTC so the server render matches the client.
+const DATE_FMT = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
+// The illuminated capital on each card: the title's first letter, ignoring
+// leading quotes / brackets ("The Basilisk Incident" → T).
+function initialOf(title: string) {
+  const letter = title.trim().replace(/^[^\p{L}\p{N}]+/u, "")[0];
+  return (letter || "?").toUpperCase();
+}
 
 export default async function StoriesPage() {
   const supabase = await createClient();
-  const { data: stories, error } = await supabase
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data, error } = await supabase
     .from("stories")
-    .select("id, title, author, doc_url")
+    .select("id, title, author, doc_url, created_at")
     .order("created_at", { ascending: false });
 
+  const rows = (data ?? []) as StoryRow[];
+
+  // Accession numbers are assigned oldest-first, so a tale keeps the same
+  // number as the archive grows — however the reader sorts the shelf.
+  const accessions = new Map(
+    [...rows]
+      .sort((a, b) => a.created_at.localeCompare(b.created_at))
+      .map((row, i) => [row.id, String(i + 1).padStart(3, "0")])
+  );
+
+  const stories: StoryCard[] = rows.map((row) => ({
+    id: row.id,
+    title: row.title,
+    author: row.author,
+    docUrl: row.doc_url,
+    createdAt: row.created_at,
+    dateLabel: DATE_FMT.format(new Date(row.created_at)),
+    accession: accessions.get(row.id) ?? "000",
+    initial: initialOf(row.title),
+  }));
+
   return (
-    <main className="mx-auto max-w-2xl px-4 py-10">
-      <h1 className="mb-6 text-2xl font-semibold">Stories</h1>
-
-      {error && <p className="text-red-600">Couldn&apos;t load stories.</p>}
-
-      {!error && stories?.length === 0 && (
-        <p className="text-gray-500">No stories submitted yet.</p>
-      )}
-
-      <ul className="flex flex-col gap-2">
-        {stories?.map((story: Story) => (
-          <li key={story.id}>
-            <a
-              href={story.doc_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block rounded border border-gray-300 px-4 py-3 hover:bg-gray-50"
-            >
-              <div className="font-medium">{story.title}</div>
-              <div className="text-sm text-gray-500">by {story.author}</div>
-            </a>
-          </li>
-        ))}
-      </ul>
-    </main>
+    <StoriesView stories={stories} failed={!!error} signedIn={!!user} />
   );
 }
