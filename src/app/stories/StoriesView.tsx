@@ -78,7 +78,7 @@ export default function StoriesView({
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortKey>("newest");
 
-  const chroniclers = useMemo(
+  const authors = useMemo(
     () => new Set(stories.map((s) => s.author.trim().toLowerCase())).size,
     [stories]
   );
@@ -111,20 +111,26 @@ export default function StoriesView({
               <div className="sf-eyebrow">
                 <span className="sf-eyebrow__rule" />
                 The Archive · {stories.length}{" "}
-                {stories.length === 1 ? "tale" : "tales"} catalogued
-                {chroniclers > 0 && (
+                {stories.length === 1 ? "story" : "stories"} catalogued
+                {authors > 0 && (
                   <>
                     {" · "}
-                    {chroniclers}{" "}
-                    {chroniclers === 1 ? "chronicler" : "chroniclers"}
+                    {authors} {authors === 1 ? "author" : "authors"}
                   </>
                 )}
               </div>
               <h1 className="sf-title">Stories</h1>
               <p className="sf-lede">
-                Tales, journals, and misadventures set down by the students of
-                Starfall Academy. Every entry opens the writer&apos;s own
-                manuscript — pull one off the shelf and read.
+                Stories of love, magic, and getting into trouble told by the
+                Starfall community. Click a link to open a story, or{" "}
+                <a
+                  href={DISCORD_INVITE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  submit your own here
+                </a>
+                .
               </p>
             </div>
             {/* An empty archive gets its call to action from the panel below,
@@ -137,7 +143,7 @@ export default function StoriesView({
                 rel="noopener noreferrer"
               >
                 <Feather size={17} aria-hidden="true" />
-                Submit a Tale
+                Submit a Story
               </a>
             )}
           </div>
@@ -146,8 +152,7 @@ export default function StoriesView({
 
           {failed && (
             <p className="sf-error">
-              The archive doors are stuck — we couldn&apos;t load the
-              catalogue. Try again in a moment.
+              We&apos;re sorry. The fetch hound is sleeping. Try again later.
             </p>
           )}
 
@@ -203,11 +208,11 @@ export default function StoriesView({
               <span className="sf-empty__icon">
                 <Library size={26} aria-hidden="true" />
               </span>
-              <h2 className="sf-empty__title">The Shelves Await</h2>
+              <h2 className="sf-empty__title">Not Much Here</h2>
               <p className="sf-empty__copy">
-                Nothing has been catalogued yet. Stories are submitted through
-                the Academy&apos;s Discord — share your Google Doc there and it
-                will be filed here for everyone to read.
+                What a strange twist of magic. The fetch hound has found
+                nothing. Assuredly, a rascal has stolen the stories from the
+                shelves. The Enforcers are on the case.
               </p>
               <a
                 className="sa-btn-primary"
@@ -216,7 +221,7 @@ export default function StoriesView({
                 rel="noopener noreferrer"
               >
                 <Feather size={17} aria-hidden="true" />
-                Submit the First Tale
+                Submit a Story
               </a>
             </div>
           ) : shelf.length === 0 ? (
@@ -224,9 +229,10 @@ export default function StoriesView({
               <span className="sf-empty__icon">
                 <ScrollText size={22} aria-hidden="true" />
               </span>
-              <h2 className="sf-empty__title">Nothing Under That Name</h2>
+              <h2 className="sf-empty__title">Nothing Found</h2>
               <p className="sf-empty__copy">
-                No tale in the catalogue matches “{query.trim()}”.
+                The fetch hound couldn&apos;t find anything to match “
+                {query.trim()}”.
               </p>
               <button className="sa-btn-ghost" onClick={() => setQuery("")}>
                 <X size={15} aria-hidden="true" />
@@ -290,9 +296,10 @@ export default function StoriesView({
                   <span className="sf-newcard__icon">
                     <Feather size={24} aria-hidden="true" />
                   </span>
-                  <span className="sf-newcard__label">Submit a Tale</span>
+                  <span className="sf-newcard__label">Submit a Story</span>
                   <span className="sf-newcard__sub">
-                    Share your Google Doc in the Discord and it lands here.
+                    Join the Discord community and share your stories with the
+                    fetch hound.
                   </span>
                 </a>
               )}
