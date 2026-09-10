@@ -11,6 +11,7 @@ import {
   Compass,
   Copy,
   Crown,
+  Eye,
   Feather,
   KeyRound,
   Pencil,
@@ -272,29 +273,40 @@ export default function CharactersView({
                         </button>
                       </>
                     ) : (
-                      <button
-                        className="sa-join"
-                        onClick={() =>
-                          openManage({ kind: "character", id: ch.id })
-                        }
-                      >
-                        <Compass
-                          className="sa-join__icon"
-                          size={18}
-                          aria-hidden="true"
-                        />
-                        <span className="sa-join__text">
-                          <span className="sa-join__title">Join a Campaign</span>
-                          <span className="sa-join__sub">
-                            Still waiting for the next adventure.
+                      <>
+                        <button
+                          className="sa-join"
+                          onClick={() =>
+                            openManage({ kind: "character", id: ch.id })
+                          }
+                        >
+                          <Compass
+                            className="sa-join__icon"
+                            size={18}
+                            aria-hidden="true"
+                          />
+                          <span className="sa-join__text">
+                            <span className="sa-join__title">
+                              Join a Campaign
+                            </span>
+                            <span className="sa-join__sub">
+                              Still waiting for the next adventure.
+                            </span>
                           </span>
-                        </span>
-                        <ArrowRight
-                          className="sa-join-chev"
-                          size={15}
-                          aria-hidden="true"
-                        />
-                      </button>
+                          <ArrowRight
+                            className="sa-join-chev"
+                            size={15}
+                            aria-hidden="true"
+                          />
+                        </button>
+                        <Link
+                          className="sa-manage"
+                          href={`/characters/${ch.id}`}
+                        >
+                          <Eye size={15} aria-hidden="true" />
+                          View Character
+                        </Link>
+                      </>
                     )}
                   </div>
                 </article>
