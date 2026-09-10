@@ -21,6 +21,12 @@ when these shipped.
   the clipboard as an image, ready to paste and share, and the card scales
   itself down to stay one page on a short window.
 
+## v1.11.1 — 2026-09-10
+- Fix Random Character forcing a multiclass build for two archetypes
+  (Skill Specialist, Battle Skirmisher) instead of leaving them to the
+  normal single/double coin flip — was pushing the overall multiclass
+  rate to ~62% instead of the intended 50%.
+
 ## v1.11.0 — 2026-09-10
 - Add a "View Character" button to campaign-less characters on the
   character dashboard, opening the same standalone sheet view shown when
