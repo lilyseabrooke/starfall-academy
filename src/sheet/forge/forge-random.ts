@@ -400,7 +400,6 @@ interface ArchetypeConfig {
   subjectJitter: Weights;
   skillJitter: Weights;
   majorCount: number;
-  classModeBias?: "single" | "double";
   preferStatWand?: boolean;
 }
 
@@ -463,7 +462,7 @@ function buildArchetypeCore(id: string, D: ForgeData): ArchetypeCore {
       const sw = evenStats(); sw[focus.id] = 2;
       return { id, label: `Skill Specialist (${focus.name})`, statWeights: sw, subjectWeights: evenSubjects(), skillWeights: skw,
         shareStat: 0.25, shareSubject: 0.15, shareSkill: 0.6, statSlots: randInt(1, 3), subjectSlots: randInt(1, 3), skillSlots: randInt(4, 6),
-        majorCount: Math.random() < 0.5 ? 1 : 2, classModeBias: "double", preferStatWand: false };
+        majorCount: Math.random() < 0.5 ? 1 : 2, preferStatWand: false };
     }
     case "broad-caster":
       // The one archetype meant to genuinely spread wide — still capped well
@@ -496,7 +495,7 @@ function buildArchetypeCore(id: string, D: ForgeData): ArchetypeCore {
       const skw = zeroSkills(); skills.forEach((s) => { skw[s.id] = (s.fac.id === "body" || s.fac.id === "focus") ? 3 : 0.5; });
       return { id, label: "Battle Skirmisher", statWeights: sw, subjectWeights: evenSubjects(), skillWeights: skw,
         shareStat: 0.4, shareSubject: 0.1, shareSkill: 0.5, statSlots: randInt(1, 3), subjectSlots: randInt(1, 3), skillSlots: randInt(3, 5),
-        majorCount: 1, classModeBias: "double", preferStatWand: true };
+        majorCount: 1, preferStatWand: true };
     }
     case "arcane-scholar": {
       const sw = zeroStats(); stats.forEach((s) => { sw[s.id] = (s.id === "logic" || s.id === "insight") ? 3 : 0.6; });
@@ -534,8 +533,8 @@ interface ClassMentionResult {
  *  no investment yet to weigh it against; what matters is that this runs
  *  first, so the character's stats/subjects/skills get built to support
  *  whatever the class actually rolls with, not the other way around. */
-function pickClassesAndChoices(nd: Draft, D: ForgeData, classData: { classes: ClassDef[] }, cfg: ArchetypeConfig): ClassMentionResult {
-  const mode = cfg.classModeBias ?? (Math.random() < 0.5 ? "single" : "double");
+function pickClassesAndChoices(nd: Draft, D: ForgeData, classData: { classes: ClassDef[] }): ClassMentionResult {
+  const mode = Math.random() < 0.5 ? "single" : "double";
   nd.classMode = mode;
   const pool = shuffle([...classData.classes]);
   const n = mode === "single" ? 1 : Math.min(2, pool.length);
@@ -904,7 +903,7 @@ export function randomizeDraft(draft: Draft, D: ForgeData, classData: { classes:
 
   // Classes and their rank choices first — nothing to weigh them against
   // yet, so the option side comes from the class's own per-rank lean.
-  const { mentions, ambiguousGroups } = pickClassesAndChoices(nd, D, classData, cfg);
+  const { mentions, ambiguousGroups } = pickClassesAndChoices(nd, D, classData);
   const { statHits, subjectHits, skillHits } = resolveAbilityMentions(mentions, D);
 
   // Guarantee actual training in whatever the chosen moves roll with — a
