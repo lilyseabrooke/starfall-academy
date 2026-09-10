@@ -265,7 +265,7 @@ function ReviewStep({ D, classData, draft, missing, onOverview }: { D: ForgeData
 
       <div className="sf-cso-cta">
         <Button variant="secondary" iconLeft={<Icon name="scroll" />} onClick={onOverview}>Character sheet overview</Button>
-        <span className="sf-fhint sf-fhint--mut">Your whole sheet on one page — ready to screenshot and share.</span>
+        <span className="sf-fhint sf-fhint--mut">See your sheet all in one sharable card.</span>
       </div>
     </div>
   );

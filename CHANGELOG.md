@@ -9,13 +9,14 @@ history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
 ## v1.11.0 — 2026-09-10
-- Add a character sheet overview: a one-page, screenshot-ready summary of a
-  character — name, pronouns, title, House and year, major(s), every stat,
-  subject and skill with points in it, each class rank with the abilities
-  chosen along the way, and the names of every spell known and everything
-  carried. It opens from a button on the Forge's Review step, and from the
-  rail when editing an existing character, where it reads classes, spells and
-  gear off the live character rather than the respec draft. The card scales
+- Add a character sheet overview: a one-page summary card of a character —
+  name, pronouns, title, House and year, major(s), every stat, subject and
+  skill with points in it, each class rank with the abilities chosen along the
+  way, and the names of every spell known and everything carried. It opens
+  from a button on the Forge's Review step, and from the rail when editing an
+  existing character, where it reads classes, spells and gear off the live
+  character rather than the respec draft. "Copy card" puts the whole thing on
+  the clipboard as an image, ready to paste and share, and the card scales
   itself down to stay one page on a short window.
 
 ## v1.10.1 — 2026-09-08

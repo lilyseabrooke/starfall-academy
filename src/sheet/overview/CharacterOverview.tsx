@@ -73,9 +73,67 @@ export interface CharacterOverviewProps {
  *  can read isn't one page, it's a thumbnail. */
 const MIN_FIT = 0.68;
 
+type CopyState = "idle" | "working" | "done" | "error";
+
+const COPY_LABEL: Record<CopyState, { icon: string; text: string }> = {
+  idle: { icon: "copy", text: "Copy card" },
+  working: { icon: "loader", text: "Copying…" },
+  done: { icon: "check", text: "Copied" },
+  error: { icon: "triangle-alert", text: "Couldn't copy" },
+};
+
+/** Writing an image to the clipboard needs both halves of the API. */
+const canCopyImage = () =>
+  typeof window !== "undefined" && typeof ClipboardItem !== "undefined" && !!navigator.clipboard?.write;
+const noSubscribe = () => () => {};
+const notOnServer = () => false;
+
+/** Render the card to a PNG. Captured from an off-screen copy rather than the
+ *  card itself so the fit-to-window zoom and the scroll clamp can be undone —
+ *  what gets copied is the whole card at full size — without the live one
+ *  visibly jumping while the image is produced. The copy is mounted in the
+ *  card's own parent so it keeps the sheet's scoped styles and tokens. */
+async function cardPng(card: HTMLElement): Promise<Blob> {
+  const host = card.parentElement || document.body;
+  // A wrapper does the hiding, not the copy itself: html-to-image re-renders
+  // the captured node with its own styles, so an off-screen `position` on it
+  // would move it out of the frame and yield a blank image.
+  const stage = document.createElement("div");
+  Object.assign(stage.style, {
+    position: "fixed", top: "0", left: "-20000px", zIndex: "-1",
+    width: card.offsetWidth + "px", pointerEvents: "none",
+  });
+  const shot = card.cloneNode(true) as HTMLElement;
+  Object.assign(shot.style, {
+    zoom: "1", width: "100%", maxHeight: "none", overflow: "visible", animation: "none",
+  });
+  stage.appendChild(shot);
+  host.appendChild(stage);
+  try {
+    // Loaded on demand: the renderer is only needed by whoever clicks Copy.
+    const { toBlob } = await import("html-to-image");
+    const blob = await toBlob(shot, {
+      pixelRatio: 2,
+      // The card paints its own ground, but a gradient that fails to inline
+      // shouldn't leave a transparent PNG behind.
+      backgroundColor: "#0b0c11",
+    });
+    if (!blob) throw new Error("character overview produced no image");
+    return blob;
+  } finally {
+    stage.remove();
+  }
+}
+
 export function CharacterOverview({ open, model, onClose }: CharacterOverviewProps) {
   const cardRef = React.useRef<HTMLElement | null>(null);
   const fitRef = React.useRef<HTMLDivElement | null>(null);
+  const [copy, setCopy] = React.useState<CopyState>("idle");
+  // Server-render as unsupported, then settle on the real answer after
+  // hydration — reading the clipboard API during render would mismatch.
+  const canCopy = React.useSyncExternalStore(noSubscribe, canCopyImage, notOnServer);
+  const resetRef = React.useRef<number | null>(null);
+  React.useEffect(() => () => { if (resetRef.current) window.clearTimeout(resetRef.current); }, []);
 
   React.useEffect(() => {
     if (!open) return;
@@ -121,6 +179,21 @@ export function CharacterOverview({ open, model, onClose }: CharacterOverviewPro
     return () => window.removeEventListener("resize", measure);
   }, [open, model]);
 
+  const copyCard = () => {
+    const card = cardRef.current;
+    if (!card || copy === "working") return;
+    setCopy("working");
+    const settle = (next: CopyState) => {
+      setCopy(next);
+      if (resetRef.current) window.clearTimeout(resetRef.current);
+      resetRef.current = window.setTimeout(() => setCopy("idle"), 2600);
+    };
+    // The blob is handed over as a promise rather than awaited first: Safari
+    // only allows a clipboard write from the click's own task.
+    const item = new ClipboardItem({ "image/png": cardPng(card) });
+    navigator.clipboard.write([item]).then(() => settle("done"), () => settle("error"));
+  };
+
   if (!open || !model) return null;
   const m = model;
   const spellCount = m.spells.length;
@@ -131,7 +204,11 @@ export function CharacterOverview({ open, model, onClose }: CharacterOverviewPro
       <div className="sf-cso__scrim" onClick={onClose} />
       <div className="sf-cso__stage">
         <div className="sf-cso__chrome">
-          <span className="sf-cso__hint"><Icon name="camera" /> Screenshot to share</span>
+          {canCopy ? (
+            <button type="button" className={"sf-cso__copy is-" + copy} onClick={copyCard} disabled={copy === "working"}>
+              <Icon name={COPY_LABEL[copy].icon} /> {COPY_LABEL[copy].text}
+            </button>
+          ) : null}
           <IconButton label="Close overview" variant="ghost" onClick={onClose}><Icon name="x" /></IconButton>
         </div>
 

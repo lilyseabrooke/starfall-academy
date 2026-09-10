@@ -26,12 +26,22 @@
 
 /* Chrome sits OUTSIDE the card, so a screenshot cropped to the card is clean. */
 .sf-sheet .sf-cso__chrome { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-3); }
-.sf-sheet .sf-cso__hint {
-  display: inline-flex; align-items: center; gap: 7px;
+.sf-sheet .sf-cso__copy {
+  display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
+  padding: 6px 12px; border-radius: var(--radius-pill);
+  background: none; border: 1px solid var(--border-subtle); color: var(--text-muted);
   font-family: var(--font-sans); font-size: var(--text-2xs); letter-spacing: var(--tracking-wider);
-  text-transform: uppercase; color: var(--text-faint);
+  text-transform: uppercase;
+  transition: color var(--dur-base), border-color var(--dur-base), background var(--dur-base);
 }
-.sf-sheet .sf-cso__hint svg { width: 13px; height: 13px; color: var(--gold-500); }
+.sf-sheet .sf-cso__copy svg { width: 13px; height: 13px; color: var(--gold-500); }
+.sf-sheet .sf-cso__copy:hover { color: var(--gold-200); border-color: var(--border-default); background: var(--brand-subtle); }
+.sf-sheet .sf-cso__copy.is-working { cursor: progress; }
+.sf-sheet .sf-cso__copy.is-working svg { animation: sf-cso-spin 900ms linear infinite; }
+.sf-sheet .sf-cso__copy.is-done { color: var(--forest-300); border-color: color-mix(in oklab, var(--forest-500) 50%, transparent); }
+.sf-sheet .sf-cso__copy.is-done svg { color: var(--forest-300); }
+.sf-sheet .sf-cso__copy.is-error { color: var(--crimson-300); border-color: color-mix(in oklab, var(--crimson-500) 50%, transparent); }
+.sf-sheet .sf-cso__copy.is-error svg { color: var(--crimson-300); }
 
 /* -------------------------------- card --------------------------------- */
 .sf-sheet .sf-cso__card {
@@ -177,6 +187,7 @@
   text-transform: uppercase; letter-spacing: var(--tracking-wider); color: var(--text-faint);
 }
 
+@keyframes sf-cso-spin { to { transform: rotate(360deg); } }
 @keyframes sf-cso-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes sf-cso-rise { from { opacity: 0; transform: translateY(10px) scale(.99); } to { opacity: 1; transform: none; } }
 
