@@ -122,15 +122,8 @@ export default function StoriesView({
               <h1 className="sf-title">Stories</h1>
               <p className="sf-lede">
                 Stories of love, magic, and getting into trouble told by the
-                Starfall community. Click a link to open a story, or{" "}
-                <a
-                  href={DISCORD_INVITE_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  submit your own here
-                </a>
-                .
+                Starfall community. Click a link to open a story, or join the
+                Discord to submit your own.
               </p>
             </div>
             {/* An empty archive gets its call to action from the panel below,
