@@ -8,6 +8,11 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.11.0 — 2026-09-10
+- Add a "View Character" button to campaign-less characters on the
+  character dashboard, opening the same standalone sheet view shown when
+  finishing character creation.
+
 ## v1.10.1 — 2026-09-08
 - The Forge Inventory step's Artifacts section (class-granted artifacts)
   now always shows, alongside Potions/Plants/Glyphs/Wands, instead of
