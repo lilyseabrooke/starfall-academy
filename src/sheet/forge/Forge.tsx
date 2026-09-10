@@ -46,8 +46,18 @@ const STEPS = [
 const RESPEC_STEPS = STEPS.filter((s) => ["identity", "allocation"].includes(s.id));
 const DRAFT_KEY = "sf-admission-draft";
 
+/* ---------------------------- Overview CTA ---------------------------- */
+function OverviewCta({ onClick }: { onClick: () => void }) {
+  return (
+    <div className="sf-cso-cta">
+      <Button variant="secondary" iconLeft={<Icon name="scroll" />} onClick={onClick}>Character sheet overview</Button>
+      <span className="sf-fhint sf-fhint--mut">See your sheet all in one sharable card.</span>
+    </div>
+  );
+}
+
 /* ------------------------------- Identity ----------------------------- */
-function IdentityStep({ D, draft, set, onRandomize, randomizeNeedsConfirm }: { D: ForgeData; draft: Draft; set: SetFn; onRandomize?: () => void; randomizeNeedsConfirm?: boolean }) {
+function IdentityStep({ D, draft, set, onRandomize, randomizeNeedsConfirm, onOverview }: { D: ForgeData; draft: Draft; set: SetFn; onRandomize?: () => void; randomizeNeedsConfirm?: boolean; onOverview?: () => void }) {
   const [confirming, setConfirming] = React.useState(false);
   const clickRandomize = () => {
     if (randomizeNeedsConfirm) setConfirming(true);
@@ -133,6 +143,11 @@ function IdentityStep({ D, draft, set, onRandomize, randomizeNeedsConfirm }: { D
             </React.Fragment>
           )}
         </div>
+      ) : onOverview ? (
+        // A respec has no Review step to hang this off (see RESPEC_STEPS), and
+        // no Random Character either — an already-built character isn't one to
+        // reroll — so the overview takes that slot.
+        <OverviewCta onClick={onOverview} />
       ) : null}
     </div>
   );
@@ -263,10 +278,7 @@ function ReviewStep({ D, classData, draft, missing, onOverview }: { D: ForgeData
         <Line k="Loadout">{D.creation.startingMaterials} mat · {draft.potions.length} potion(s) · {draft.glyphs.length} glyph(s) · {draft.craftWands.length + draft.extraWands.length} extra wand(s) · {draft.artifacts.length + F.classArtifactIds(draft, classData).length} artifact(s)</Line>
       </div>
 
-      <div className="sf-cso-cta">
-        <Button variant="secondary" iconLeft={<Icon name="scroll" />} onClick={onOverview}>Character sheet overview</Button>
-        <span className="sf-fhint sf-fhint--mut">See your sheet all in one sharable card.</span>
-      </div>
+      <OverviewCta onClick={onOverview} />
     </div>
   );
 }
@@ -378,20 +390,13 @@ export function Admission({ mode, initial, data, classData, onCommit, onClose, l
               </button>
             ))}
           </nav>
-          <div className="sf-cso-railfoot">
-            {/* The respec has no Review step (see RESPEC_STEPS), so this is
-                where a character back from gameplay reaches the overview. */}
-            {mode === "edit" ? (
-              <button className="sf-cso-railbtn" onClick={() => setOverview(true)} type="button"><Icon name="scroll" /> Character overview</button>
-            ) : null}
-            <button className="sf-admission__cancel" onClick={cancel} type="button"><Icon name="x" /> {mode === "edit" ? "Discard changes" : "Cancel"}</button>
-          </div>
+          <button className="sf-admission__cancel" onClick={cancel} type="button"><Icon name="x" /> {mode === "edit" ? "Discard changes" : "Cancel"}</button>
         </aside>
 
         {/* content */}
         <div className="sf-admission__main">
           <div className="sf-admission__scroll">
-            {step.id === "identity" && <IdentityStep D={D} draft={draft} set={set} onRandomize={mode === "new" ? randomize : undefined} randomizeNeedsConfirm={F.hasDraftProgress(draft)} />}
+            {step.id === "identity" && <IdentityStep D={D} draft={draft} set={set} onRandomize={mode === "new" ? randomize : undefined} randomizeNeedsConfirm={F.hasDraftProgress(draft)} onOverview={mode === "edit" ? () => setOverview(true) : undefined} />}
             {step.id === "classes" && <AdmissionClasses D={D} classData={classData} draft={draft} set={set} />}
             {step.id === "wand" && <WandStep D={D} draft={draft} set={set} />}
             {step.id === "allocation" && <AdmissionAllocation D={D} draft={draft} set={set} />}

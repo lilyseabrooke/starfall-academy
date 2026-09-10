@@ -210,14 +210,3 @@
   background: color-mix(in oklab, var(--gold-500) 6%, transparent);
 }
 .sf-sheet .sf-cso-cta .sf-fhint { flex: 1 1 240px; margin: 0; }
-.sf-sheet .sf-cso-railfoot { margin-top: auto; display: flex; flex-direction: column; gap: var(--space-2); }
-.sf-sheet .sf-cso-railbtn {
-  display: flex; align-items: center; gap: var(--space-2); justify-content: center;
-  padding: 9px; border-radius: var(--radius-sm); cursor: pointer;
-  background: color-mix(in oklab, var(--gold-500) 10%, transparent);
-  border: 1px solid var(--border-default); color: var(--gold-200);
-  font-family: var(--font-sans); font-size: var(--text-xs); letter-spacing: var(--tracking-wide);
-  transition: color var(--dur-base), border-color var(--dur-base), background var(--dur-base);
-}
-.sf-sheet .sf-cso-railbtn svg { width: 14px; height: 14px; }
-.sf-sheet .sf-cso-railbtn:hover { color: var(--gold-100); border-color: var(--border-strong); background: var(--brand-subtle); }

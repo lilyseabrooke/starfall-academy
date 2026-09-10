@@ -13,8 +13,10 @@ when these shipped.
   name, pronouns, title, House and year, major(s), every stat, subject and
   skill with points in it, each class rank with the abilities chosen along the
   way, and the names of every spell known and everything carried. It opens
-  from a button on the Forge's Review step, and from the rail when editing an
-  existing character, where it reads classes, spells and gear off the live
+  from a button on the Forge's Review step, and — for a character that's
+  already built, where there is no Review step — from the bottom of the
+  Identity page, in the slot Random Character occupies for a new one. Editing
+  an existing character, the card reads classes, spells and gear off the live
   character rather than the respec draft. "Copy card" puts the whole thing on
   the clipboard as an image, ready to paste and share, and the card scales
   itself down to stay one page on a short window.
