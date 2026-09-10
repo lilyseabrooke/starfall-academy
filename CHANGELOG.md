@@ -8,6 +8,20 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.13.0 — 2026-09-10
+- Add Stories, a catalogue of stories written by the Starfall community, each
+  one a link out to the writer's own Google Doc. The page lives at `/stories`
+  and is deliberately unlinked from the nav — it's reachable by URL only.
+  Stories are submitted through the Discord bot, which posts them to a new
+  `POST /api/stories` endpoint gated by a shared secret; the page itself is
+  public and read-only, backed by a new `stories` table whose RLS grants
+  read to everyone and writes to nobody but the service role.
+- The catalogue is laid out as a shelf of cards in the house style: an
+  illuminated capital tinted to its author, an accession number that stays
+  put as the archive grows, the title, the author, the date it was filed,
+  and a Read link out to the doc. Readers can search by title or author and
+  sort by newest, oldest, title, or author.
+
 ## v1.12.0 — 2026-09-10
 - Add a character sheet overview: a one-page summary card of a character —
   name, pronouns, title, House and year, major(s), every stat, subject and
