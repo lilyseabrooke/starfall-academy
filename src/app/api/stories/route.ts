@@ -35,6 +35,20 @@ export async function POST(request: Request) {
 
   const auth = request.headers.get("authorization");
   if (auth !== `Bearer ${expected}`) {
+    // TEMPORARY — debugging a STORIES_BOT_SECRET mismatch with the bot.
+    // Never logs either full secret: just enough (length, masked preview,
+    // whitespace) to compare the two sides. Remove once the 401 is sorted.
+    const received = auth?.replace(/^Bearer /, "") ?? "";
+    const describe = (s: string) => ({
+      length: s.length,
+      preview: s.length >= 8 ? `${s.slice(0, 4)}...${s.slice(-4)}` : "(too short to preview safely)",
+      hasLeadingWhitespace: /^\s/.test(s),
+      hasTrailingWhitespace: /\s$/.test(s),
+    });
+    console.error(
+      "POST /api/stories: secret mismatch",
+      JSON.stringify({ expected: describe(expected), received: describe(received) })
+    );
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
