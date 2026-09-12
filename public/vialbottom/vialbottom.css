@@ -1,0 +1,416 @@
+/* ===========================================================================
+   The Vialbottom Board — bonus investigation corkboard
+   Standalone static app (React + Babel, vendored like /character-map and /map).
+   Palette, type and motion lifted from the Starfall Academy design tokens
+   (ink / gold / parchment, Spectral + Jost). This page is intentionally not
+   linked from anywhere in the site nav — reachable only by direct URL.
+   =========================================================================== */
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #0b0c11;
+}
+* {
+  box-sizing: border-box;
+}
+a {
+  color: #c9ae63;
+  text-decoration: none;
+}
+a:hover {
+  color: #ddc983;
+}
+input, textarea {
+  font: inherit;
+}
+::selection {
+  background: #745e2c;
+  color: #f7f3e7;
+}
+
+.vb-page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(120% 90% at 50% -10%, #181a26 0%, #0f1118 45%, #0b0c11 100%);
+  font-family: "Jost", sans-serif;
+  color: #d7d1c0;
+  overflow: hidden;
+}
+
+/* ---------------------------------------------------------------- header */
+.vb-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 16px 24px 12px;
+  background: rgba(17, 18, 25, 0.82);
+  border-bottom: 1px solid rgba(185, 157, 83, 0.26);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  position: relative;
+  z-index: 5;
+  flex-wrap: wrap;
+}
+.vb-header-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.vb-eyebrow {
+  font-family: "Jost", sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #968f7c;
+}
+.vb-title {
+  margin: 0;
+  font-family: "Spectral", serif;
+  font-weight: 700;
+  font-size: 28px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: linear-gradient(150deg, #e8d49a 0%, #c9ae63 38%, #b99d53 60%, #8c7438 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.vb-subtitle {
+  margin: 1px 0 0;
+  font-family: "Spectral", serif;
+  font-style: italic;
+  font-size: 14px;
+  color: #968f7c;
+}
+.vb-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Names toggle */
+.vb-toggle-group {
+  display: flex;
+  padding: 6px;
+  background: #161822;
+  border: 1px solid rgba(185, 157, 83, 0.2);
+  border-radius: 6px;
+}
+.vb-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 13px;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  color: #968f7c;
+  font-family: "Jost", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.vb-toggle-btn:hover {
+  background: #262a38;
+  color: #d7d1c0;
+}
+.vb-toggle-track {
+  position: relative;
+  width: 28px;
+  height: 15px;
+  border-radius: 999px;
+  background: #262a38;
+  border: 1px solid rgba(185, 157, 83, 0.3);
+}
+.vb-toggle-knob {
+  position: absolute;
+  top: 1px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  transition: left 140ms ease, background 140ms ease;
+}
+
+/* Tool group */
+.vb-tool-group {
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+  background: #161822;
+  border: 1px solid rgba(185, 157, 83, 0.2);
+  border-radius: 6px;
+}
+.vb-tool-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 13px;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  color: #d7d1c0;
+  font-family: "Jost", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.vb-tool-btn:hover {
+  background: #262a38;
+  color: #f7f3e7;
+}
+.vb-tool-underline {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 3px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #c9ae63, transparent);
+}
+.vb-tool-underline--string {
+  background: linear-gradient(90deg, transparent, #a8322b, transparent);
+}
+
+.vb-btn-export {
+  padding: 10px 16px;
+  background: linear-gradient(150deg, #d2bb74 0%, #b99d53 70%, #9a7f3d 100%);
+  border: 0;
+  border-radius: 5px;
+  color: #0b0c11;
+  font-family: "Jost", sans-serif;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.vb-btn-export:hover {
+  box-shadow: 0 0 0 1px rgba(185, 157, 83, 0.4), 0 8px 30px rgba(154, 127, 61, 0.35);
+}
+.vb-btn-reset {
+  padding: 10px 14px;
+  background: transparent;
+  border: 1px solid rgba(185, 157, 83, 0.26);
+  border-radius: 5px;
+  color: #968f7c;
+  font-family: "Jost", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.vb-btn-reset:hover {
+  background: #262a38;
+  color: #d7d1c0;
+}
+
+/* ---------------------------------------------------------------- board */
+.vb-board-area {
+  flex: 1;
+  min-height: 0;
+  padding: 16px 20px 14px;
+  display: flex;
+  flex-direction: column;
+}
+.vb-board {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #14161f 0%, #101219 100%);
+  border: 1px solid rgba(185, 157, 83, 0.3);
+  border-radius: 8px;
+  box-shadow: inset 0 1px 0 rgba(236, 221, 174, 0.12), 0 28px 70px rgba(0, 0, 0, 0.6);
+  touch-action: none;
+  cursor: crosshair;
+}
+.vb-board-grid {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(rgba(185, 157, 83, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(185, 157, 83, 0.05) 1px, transparent 1px);
+  background-size: 64px 64px;
+  pointer-events: none;
+}
+.vb-board-crest {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 44%;
+  max-width: 560px;
+  transform: translate(-50%, -50%);
+  opacity: 0.07;
+  pointer-events: none;
+  user-select: none;
+}
+.vb-board-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(80% 70% at 50% 40%, transparent 40%, rgba(8, 9, 13, 0.55) 100%);
+  pointer-events: none;
+}
+.vb-board-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* Shapes drawn on the board */
+.vb-shape-ellipse {
+  cursor: move;
+}
+.vb-shape-arrow-hit {
+  cursor: move;
+}
+
+/* Remove (×) chips shared by strings / shapes / notes */
+.vb-remove-btn {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  background: #1c1f2b;
+  border: 1px solid rgba(194, 113, 111, 0.6);
+  border-radius: 50%;
+  color: #c2716f;
+  font-family: "Jost", sans-serif;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+.vb-remove-btn:hover {
+  background: #4d1f1f;
+  color: #f7f3e7;
+}
+
+/* String labels */
+.vb-string-label {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transform: translate(-50%, -50%);
+  z-index: 4;
+}
+.vb-string-label-input {
+  width: 116px;
+  padding: 4px 8px;
+  text-align: center;
+  background: rgba(11, 12, 17, 0.86);
+  border: 1px solid rgba(168, 50, 43, 0.55);
+  border-radius: 3px;
+  color: #f4ecd2;
+  font-family: "Jost", sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  outline: none;
+}
+.vb-string-label-input:focus {
+  border-color: #c9ae63;
+  box-shadow: 0 0 0 2px rgba(201, 174, 99, 0.35);
+}
+
+/* Notes */
+.vb-note {
+  position: absolute;
+  padding: 14px 13px 12px;
+  background: linear-gradient(180deg, #f7f3e7 0%, #efead8 100%);
+  border-radius: 2px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55);
+  z-index: 7;
+  cursor: move;
+}
+.vb-note-pin {
+  position: absolute;
+  left: 50%;
+  top: -7px;
+  width: 14px;
+  height: 14px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: linear-gradient(150deg, #e8d49a, #8c7438);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+.vb-note-text {
+  width: 100%;
+  min-height: 84px;
+  resize: none;
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: #20222c;
+  font-family: "Spectral", serif;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.vb-note-remove {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+}
+
+/* Tokens */
+.vb-token {
+  position: absolute;
+  cursor: move;
+  user-select: none;
+  border-radius: 50%;
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55);
+}
+.vb-token:hover {
+  box-shadow: 0 0 0 2px rgba(201, 174, 99, 0.6), 0 8px 30px rgba(154, 127, 61, 0.4);
+}
+.vb-token-ring {
+  position: absolute;
+  inset: -6px;
+  border: 2px solid #c9ae63;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(185, 157, 83, 0.4), 0 8px 30px rgba(154, 127, 61, 0.22);
+  pointer-events: none;
+}
+.vb-token-label {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 3px 8px;
+  background: rgba(11, 12, 17, 0.92);
+  border: 1px solid rgba(185, 157, 83, 0.35);
+  border-radius: 3px;
+  color: #f4ecd2;
+  font-family: "Jost", sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Hint row */
+.vb-hint-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 4px 0;
+}
+.vb-hint-label {
+  font-family: "Jost", sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #6b6757;
+}
+.vb-hint-text {
+  font-family: "Spectral", serif;
+  font-size: 13px;
+  color: #968f7c;
+}
