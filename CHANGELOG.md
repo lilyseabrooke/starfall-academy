@@ -8,6 +8,18 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.14.1 — 2026-09-12
+- The Vialbottom Board: notes and string labels now grow to fit whatever's
+  typed into them instead of clipping it, and "Export" renders their full,
+  wrapped text instead of squashing it onto one line.
+- String anchors (the bend points you drop by clicking a string) are now
+  individually removable — double-click one, select it and press
+  Delete/Backspace, or use its × chip — without cutting the whole string.
+- Strings can now start and end in empty space, not just on a suspect
+  token: the String tool pins a free anchor point wherever you click, and
+  clicking an existing anchor point continues a string from it, so
+  multiple strings can meet at a shared joint off to the side of the board.
+
 ## v1.14.0 — 2026-09-12
 - Add The Vialbottom Board, a hidden bonus dossier page at `/vialbottom` —
   deliberately unlinked from the nav, reachable by URL only. A drag-and-drop
