@@ -8,6 +8,18 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.14.0 — 2026-09-12
+- Add The Vialbottom Board, a hidden bonus dossier page at `/vialbottom` —
+  deliberately unlinked from the nav, reachable by URL only. A drag-and-drop
+  investigation corkboard: pin the twelve suspect tokens anywhere on the
+  board, run red string between two of them (click a string to drop an
+  anchor and bend its path), ring a group of suspects, point an arrow, or
+  pin a note. Names can be toggled on as labels, the whole board resets to
+  its starting layout, and "Export" saves it as a PNG. Layout persists to
+  the browser's local storage. Built in the site's dark-academia palette and
+  type, vendored as a standalone React app the same way `/character-map` and
+  `/map` are — but without the top bar the rest of the site carries.
+
 ## v1.13.0 — 2026-09-10
 - Add Stories, a catalogue of stories written by the Starfall community, each
   one a link out to the writer's own Google Doc. The page lives at `/stories`
