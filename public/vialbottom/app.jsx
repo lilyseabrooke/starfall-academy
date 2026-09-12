@@ -1,8 +1,9 @@
 /* ===========================================================================
    The Vialbottom Board — bonus investigation corkboard (React, Babel)
    A drag-and-drop corkboard: pin the twelve suspects, run red string between
-   them, ring groups, point arrows, pin notes. Everything persists locally
-   and can be exported as a PNG.
+   them (tokens or free anchor points pinned in empty space), ring groups,
+   point arrows, pin notes. Everything persists locally and can be exported
+   as a PNG.
    =========================================================================== */
 (function () {
   /* Geometry is stored as 0–1 fractions of the board, so any resize rescales
@@ -12,15 +13,18 @@
     ["Helen", 0.02, 0.46], ["Emily", 0.27, 0.42], ["Echo", 0.52, 0.48], ["Aster", 0.79, 0.44],
     ["Cath", 0.09, 0.96], ["BK", 0.35, 0.90], ["Soojin", 0.61, 0.98], ["Popcorn", 0.88, 0.92]
   ];
-  const KEY = "vialbottom-board-v2";
+  // v3: string endpoints became {type, ...} refs (token or free node) instead
+  // of bare token indices, and a "nodes" list of free anchor points was
+  // added — bump the storage key so an old v2 blob is never misread.
+  const KEY = "vialbottom-board-v3";
   const TOKEN_SIZE = 84;
   const STRING_COLOR = "#a8322b";
   const NW = 186, NH = 140;
   const cl = (v) => Math.max(0, Math.min(1, v));
 
   const HINTS = {
-    select: "Drag a token, note or shape. Click a string to drop an anchor and bend its path — drag anchors to steer, double-click to remove.",
-    string: "Click one token, then another, to run string between them.",
+    select: "Drag a token, note, shape or anchor point. Click a string to drop an anchor and bend its path — drag anchors to steer, double-click or press Delete to remove one.",
+    string: "Click a token, or an empty spot on the board, to start a string — then click another token or spot to finish it. Clicking an existing anchor point continues a string from there.",
     note: "Click anywhere on the board to pin a note.",
     ellipse: "Drag to ring a group of suspects.",
     arrow: "Drag to point one thing at another."
@@ -37,7 +41,7 @@
       this.state = Object.assign({
         tool: "select", bw: 0, bh: 0, showNames: false,
         tokens: ROSTER.map(([name, fx, fy]) => ({ name, fx, fy })),
-        links: [], shapes: [], notes: [],
+        links: [], shapes: [], notes: [], nodes: [],
         sel: null, pending: null, hover: null, draft: null, drag: null, seq: 1
       }, this.load());
 
@@ -61,14 +65,18 @@
         const fix = (o) => Object.assign({}, o, { fx: cl(o.fx), fy: cl(o.fy) });
         return {
           tokens: d.tokens.map(fix), links: d.links || [],
-          shapes: d.shapes || [], notes: (d.notes || []).map(fix), seq: d.seq || 1
+          shapes: d.shapes || [], notes: (d.notes || []).map(fix),
+          nodes: (d.nodes || []).map(fix), seq: d.seq || 1
         };
       } catch (e) { return {}; }
     }
     save() {
       const s = this.state;
       try {
-        localStorage.setItem(KEY, JSON.stringify({ tokens: s.tokens, links: s.links, shapes: s.shapes, notes: s.notes, seq: s.seq }));
+        localStorage.setItem(KEY, JSON.stringify({
+          tokens: s.tokens, links: s.links, shapes: s.shapes,
+          notes: s.notes, nodes: s.nodes, seq: s.seq
+        }));
       } catch (e) {}
     }
     componentDidUpdate() { this.save(); }
@@ -114,6 +122,14 @@
     d() { return TOKEN_SIZE; }
     stringColor() { return STRING_COLOR; }
 
+    // Auto-grow a note or string-label textarea to fit its content instead of
+    // clipping or scrolling it.
+    autosize(el) {
+      if (!el) return;
+      el.style.height = "auto";
+      el.style.height = el.scrollHeight + "px";
+    }
+
     pt(e) {
       const r = this.boardEl.getBoundingClientRect();
       return { x: e.clientX - r.left, y: e.clientY - r.top };
@@ -134,9 +150,62 @@
     }
     nextId(pfx) { const n = this.state.seq; this.setState({ seq: n + 1 }); return pfx + n; }
 
+    // A string endpoint is either a token ({type:"token", i}) or a free
+    // anchor point pinned in empty space ({type:"node", id}).
+    endpointCenter(ref) {
+      if (!ref) return null;
+      const s = this.state;
+      if (ref.type === "node") {
+        const n = s.nodes.find((x) => x.id === ref.id);
+        return n ? { x: cl(n.fx) * s.bw, y: cl(n.fy) * s.bh } : null;
+      }
+      const t = s.tokens[ref.i];
+      return t ? this.tokenCenter(t) : null;
+    }
+    endpointsEqual(a, b) {
+      if (!a || !b || a.type !== b.type) return false;
+      return a.type === "token" ? a.i === b.i : a.id === b.id;
+    }
+    refIsNode(ref, id) { return !!ref && ref.type === "node" && ref.id === id; }
+
+    // Shared by tokens and free anchor points: first click starts a pending
+    // string from this endpoint, a second click on a different endpoint
+    // finishes it, and clicking the same endpoint again cancels it.
+    pickEndpoint(ref, e) {
+      e.stopPropagation();
+      const s = this.state;
+      if (s.pending == null) { this.setState({ pending: ref, hover: this.pt(e) }); return; }
+      if (this.endpointsEqual(s.pending, ref)) { this.setState({ pending: null }); return; }
+      const id = this.nextId("l"), a = s.pending;
+      this.setState((st) => ({ links: st.links.concat([{ id, a, b: ref, label: "", anchors: [], labelSeg: 0 }]), pending: null, sel: null, tool: "select" }));
+    }
+
+    // Removes one bend anchor from a string (keeping the string itself).
+    removeAnchor(linkId, i) {
+      this.setState((st) => ({
+        links: st.links.map((x) => {
+          if (x.id !== linkId) return x;
+          const seg = Math.max(0, Math.min(x.labelSeg || 0, (x.anchors || []).length));
+          return Object.assign({}, x, {
+            anchors: (x.anchors || []).filter((_, k) => k !== i),
+            labelSeg: seg > i ? seg - 1 : seg
+          });
+        }),
+        sel: null
+      }));
+    }
+
     onBoardDown(e) {
       if (e.button !== 0 || !this.boardEl || !this.state.bw || !this.state.bh) return;
       const p = this.pt(e), s = this.state;
+      if (s.tool === "string") {
+        // Clicking empty space with the String tool pins a free anchor point
+        // right there, and uses it as a string endpoint like a token.
+        const id = this.nextId("v");
+        this.setState((st) => ({ nodes: st.nodes.concat([{ id, fx: cl(p.x / st.bw), fy: cl(p.y / st.bh) }]) }));
+        this.pickEndpoint({ type: "node", id }, e);
+        return;
+      }
       if (s.tool === "note") {
         const id = this.nextId("n");
         this.setState((st) => ({
@@ -162,6 +231,9 @@
         } else if (g.kind === "note") {
           const fx = this.px2fx(p.x - g.dx, NW, s.bw), fy = this.px2fx(p.y - g.dy, NH, s.bh);
           this.setState((st) => ({ notes: st.notes.map((n) => n.id === g.id ? Object.assign({}, n, { fx, fy }) : n) }));
+        } else if (g.kind === "node") {
+          const fx = cl((p.x - g.dx) / s.bw), fy = cl((p.y - g.dy) / s.bh);
+          this.setState((st) => ({ nodes: st.nodes.map((n) => n.id === g.id ? Object.assign({}, n, { fx, fy }) : n) }));
         } else if (g.kind === "anchor") {
           const fx = cl(p.x / s.bw), fy = cl(p.y / s.bh);
           this.setState((st) => ({ links: st.links.map((l) => l.id === g.id ? Object.assign({}, l, { anchors: (l.anchors || []).map((a, i) => i === g.i ? { fx, fy } : a) }) : l) }));
@@ -195,26 +267,47 @@
     removeSel() {
       const sel = this.state.sel;
       if (!sel) return;
-      if (sel.kind === "note") this.setState((s) => ({ notes: s.notes.filter((n) => n.id !== sel.id), sel: null }));
-      if (sel.kind === "shape") this.setState((s) => ({ shapes: s.shapes.filter((x) => x.id !== sel.id), sel: null }));
-      if (sel.kind === "link") this.setState((s) => ({ links: s.links.filter((l) => l.id !== sel.id), sel: null }));
+      if (sel.kind === "note") { this.setState((s) => ({ notes: s.notes.filter((n) => n.id !== sel.id), sel: null })); return; }
+      if (sel.kind === "shape") { this.setState((s) => ({ shapes: s.shapes.filter((x) => x.id !== sel.id), sel: null })); return; }
+      if (sel.kind === "node") {
+        this.setState((s) => ({
+          nodes: s.nodes.filter((n) => n.id !== sel.id),
+          links: s.links.filter((l) => !this.refIsNode(l.a, sel.id) && !this.refIsNode(l.b, sel.id)),
+          sel: null
+        }));
+        return;
+      }
+      if (sel.kind === "link") {
+        // A specific anchor was focused (clicked, or just dropped): remove
+        // just that anchor. Otherwise remove the whole string.
+        if (sel.anchorIndex != null) { this.removeAnchor(sel.id, sel.anchorIndex); return; }
+        this.setState((s) => ({ links: s.links.filter((l) => l.id !== sel.id), sel: null }));
+      }
     }
 
     tapToken(i, e) {
       e.stopPropagation();
       if (!this.state.bw) this.measure();
       const s = this.state;
-      if (s.tool === "string") {
-        if (s.pending == null) { this.setState({ pending: i, hover: this.pt(e) }); return; }
-        if (s.pending === i) { this.setState({ pending: null }); return; }
-        const id = this.nextId("l"), a = s.pending;
-        this.setState((st) => ({ links: st.links.concat([{ id, a, b: i, label: "", anchors: [], labelSeg: 0 }]), pending: null, sel: null, tool: "select" }));
-        return;
-      }
+      if (s.tool === "string") { this.pickEndpoint({ type: "token", i }, e); return; }
       const p = this.pt(e), t = s.tokens[i], d = this.d();
       this.setState({
         sel: { kind: "token", i },
         drag: { kind: "token", i, dx: p.x - this.fx2px(t.fx, d, s.bw), dy: p.y - this.fx2px(t.fy, d, s.bh) }
+      });
+    }
+
+    tapNode(id, e) {
+      e.stopPropagation();
+      if (!this.state.bw) this.measure();
+      const s = this.state;
+      if (s.tool === "string") { this.pickEndpoint({ type: "node", id }, e); return; }
+      const node = s.nodes.find((n) => n.id === id);
+      if (!node) return;
+      const p = this.pt(e);
+      this.setState({
+        sel: { kind: "node", id },
+        drag: { kind: "node", id, dx: p.x - cl(node.fx) * s.bw, dy: p.y - cl(node.fy) * s.bh }
       });
     }
 
@@ -223,7 +316,34 @@
       if (!el || !window.html2canvas) return;
       this.setState({ sel: null, pending: null });
       setTimeout(() => {
-        window.html2canvas(el, { backgroundColor: "#0b0c11", scale: 2, useCORS: true }).then((cv) => {
+        window.html2canvas(el, {
+          backgroundColor: "#0b0c11", scale: 2, useCORS: true,
+          // html2canvas can't render a <textarea>'s wrapped, multi-line
+          // value — it flattens it to one line. Swap each one for a plain
+          // div with the same text and styling in the cloned document that's
+          // actually rasterized, so notes and string labels export correctly.
+          onclone: (doc) => {
+            doc.querySelectorAll("textarea").forEach((ta) => {
+              const view = ta.ownerDocument.defaultView || window;
+              const cs = view.getComputedStyle(ta);
+              const div = doc.createElement("div");
+              div.className = ta.className;
+              div.textContent = ta.value;
+              div.style.cssText = ta.style.cssText;
+              div.style.whiteSpace = "pre-wrap";
+              div.style.wordBreak = "break-word";
+              div.style.overflow = "hidden";
+              div.style.font = cs.font;
+              div.style.color = cs.color;
+              div.style.textAlign = cs.textAlign;
+              div.style.padding = cs.padding;
+              div.style.lineHeight = cs.lineHeight;
+              div.style.width = cs.width;
+              div.style.minHeight = cs.minHeight;
+              ta.replaceWith(div);
+            });
+          }
+        }).then((cv) => {
           const a = document.createElement("a");
           a.download = "vialbottom-board.png";
           a.href = cv.toDataURL("image/png");
@@ -234,7 +354,7 @@
 
     resetBoard() {
       this.setState({
-        links: [], shapes: [], notes: [], sel: null, pending: null, draft: null,
+        links: [], shapes: [], notes: [], nodes: [], sel: null, pending: null, draft: null,
         tokens: ROSTER.map(([name, fx, fy]) => ({ name, fx, fy }))
       });
     }
@@ -248,7 +368,7 @@
         // (the board clips overflow). Z-order favours the side the label points to.
         const flip = cl(t.fy) > 0.82;
         const lift = s.showNames ? Math.round((flip ? cl(t.fy) : 1 - cl(t.fy)) * 20) : 0;
-        const ringed = (sel.kind === "token" && sel.i === i) || s.pending === i;
+        const ringed = (sel.kind === "token" && sel.i === i) || (s.pending && s.pending.type === "token" && s.pending.i === i);
         return (
           <div
             key={t.name}
@@ -278,9 +398,26 @@
         );
       });
 
+      const nodeEls = s.nodes.map((n) => {
+        const pending = !!(s.pending && s.pending.type === "node" && s.pending.id === n.id);
+        const selected = sel.kind === "node" && sel.id === n.id;
+        return (
+          <div
+            key={n.id}
+            className="vb-node"
+            title="Anchor point"
+            onPointerDown={(e) => this.tapNode(n.id, e)}
+            style={{ left: cl(n.fx) * 100 + "%", top: cl(n.fy) * 100 + "%", zIndex: 8 }}
+          >
+            {(selected || pending) && <span className="vb-node-ring" />}
+          </div>
+        );
+      });
+
       const anchorDots = [];
-      const strings = !ready ? [] : s.links.filter((l) => s.tokens[l.a] && s.tokens[l.b]).map((l) => {
-        const A = this.tokenCenter(s.tokens[l.a]), B = this.tokenCenter(s.tokens[l.b]);
+      const anchorChips = [];
+      const strings = !ready ? [] : s.links.filter((l) => this.endpointCenter(l.a) && this.endpointCenter(l.b)).map((l) => {
+        const A = this.endpointCenter(l.a), B = this.endpointCenter(l.b);
         const anchors = (l.anchors || []);
         const pts = [A].concat(anchors.map((a) => ({ x: cl(a.fx) * s.bw, y: cl(a.fy) * s.bh }))).concat([B]);
         const isSel = sel.kind === "link" && sel.id === l.id;
@@ -299,28 +436,27 @@
         const lp = segs[li];
 
         anchors.forEach((a, i) => {
+          const anchorSel = isSel && sel.anchorIndex === i;
           anchorDots.push({
             id: l.id + ":" + i,
             cx: cl(a.fx) * s.bw, cy: cl(a.fy) * s.bh, r: isSel ? 6 : 4.5,
             fill: isSel ? "#f4ecd2" : sc,
             down: (e) => {
               e.stopPropagation();
-              this.setState({ sel: { kind: "link", id: l.id }, drag: { kind: "anchor", id: l.id, i } });
+              this.setState({ sel: { kind: "link", id: l.id, anchorIndex: i }, drag: { kind: "anchor", id: l.id, i } });
             },
-            remove: (e) => {
-              e.stopPropagation();
-              this.setState((st) => ({
-                links: st.links.map((x) => {
-                  if (x.id !== l.id) return x;
-                  const seg = Math.max(0, Math.min(x.labelSeg || 0, (x.anchors || []).length));
-                  return Object.assign({}, x, {
-                    anchors: (x.anchors || []).filter((_, k) => k !== i),
-                    labelSeg: seg > i ? seg - 1 : seg
-                  });
-                })
-              }));
-            }
+            remove: (e) => { e.stopPropagation(); this.removeAnchor(l.id, i); }
           });
+          // A focused anchor gets its own × chip, so it can be deleted
+          // without cutting the whole string (Delete/Backspace does the same).
+          if (anchorSel) {
+            anchorChips.push({
+              id: l.id + ":" + i,
+              chipPos: { left: (cl(a.fx) * s.bw + 9) + "px", top: (cl(a.fy) * s.bh - 20) + "px" },
+              stop: (e) => e.stopPropagation(),
+              remove: (e) => { e.stopPropagation(); this.removeAnchor(l.id, i); }
+            });
+          }
         });
 
         const addAnchor = (e) => {
@@ -340,7 +476,7 @@
             links: st.links.map((x) => x.id === l.id
               ? Object.assign({}, x, { anchors: (x.anchors || []).slice(0, best).concat([{ fx, fy }], (x.anchors || []).slice(best)), labelSeg: newSeg })
               : x),
-            sel: { kind: "link", id: l.id },
+            sel: { kind: "link", id: l.id, anchorIndex: best },
             drag: { kind: "anchor", id: l.id, i: best }
           }));
         };
@@ -413,13 +549,12 @@
         const dr = s.draft;
         draftIsEllipse = dr.kind === "ellipse"; draftIsArrow = dr.kind === "arrow";
         draft = { x1: dr.x1, y1: dr.y1, x2: dr.x2, y2: dr.y2, cx: (dr.x1 + dr.x2) / 2, cy: (dr.y1 + dr.y2) / 2, rx: Math.abs(dr.x2 - dr.x1) / 2, ry: Math.abs(dr.y2 - dr.y1) / 2 };
-      } else if (s.pending != null && s.hover && s.tokens[s.pending] && ready) {
-        const A = this.tokenCenter(s.tokens[s.pending]);
-        draftIsString = true;
-        draft = { x1: A.x, y1: A.y, x2: s.hover.x, y2: s.hover.y, stroke: sc };
+      } else if (s.pending && s.hover && ready) {
+        const A = this.endpointCenter(s.pending);
+        if (A) { draftIsString = true; draft = { x1: A.x, y1: A.y, x2: s.hover.x, y2: s.hover.y, stroke: sc }; }
       }
 
-      const hint = s.pending != null ? "Now click the second token — or press Escape to drop the string." : HINTS[s.tool];
+      const hint = s.pending != null ? "Now click a second token or empty spot — or press Escape to drop the string." : HINTS[s.tool];
 
       return (
         <div className="vb-page">
@@ -456,7 +591,7 @@
                   <span>Move</span>
                   {s.tool === "select" && <span className="vb-tool-underline" />}
                 </button>
-                <button type="button" className="vb-tool-btn" onClick={() => this.setState({ tool: "string", pending: null, draft: null, sel: null })} title="Draw red string between two tokens">
+                <button type="button" className="vb-tool-btn" onClick={() => this.setState({ tool: "string", pending: null, draft: null, sel: null })} title="Draw red string between two tokens or anchor points">
                   <span>String</span>
                   {s.tool === "string" && <span className="vb-tool-underline vb-tool-underline--string" />}
                 </button>
@@ -543,14 +678,22 @@
                 </div>
               ))}
 
+              {anchorChips.map((c) => (
+                <div key={c.id} style={{ position: "absolute", zIndex: 6, ...c.chipPos }} onPointerDown={c.stop}>
+                  <button type="button" className="vb-remove-btn" onClick={c.remove} onPointerDown={c.stop} title="Remove this anchor">×</button>
+                </div>
+              ))}
+
               {strings.map((l) => (
                 <div key={l.id} className="vb-string-label" style={l.labelPos} onPointerDown={l.stop}>
-                  <input
+                  <textarea
+                    ref={(el) => this.autosize(el)}
                     className="vb-string-label-input"
                     value={l.label}
                     onChange={l.setLabel}
                     onPointerDown={l.stop}
                     placeholder="label"
+                    rows={1}
                   />
                   {l.sel && <button type="button" className="vb-remove-btn" onClick={l.remove} onPointerDown={l.stop} title="Cut the string">×</button>}
                 </div>
@@ -559,12 +702,21 @@
               {notes.map((n) => (
                 <div key={n.id} className="vb-note" onPointerDown={n.down} style={n.pos}>
                   <span className="vb-note-pin" />
-                  <textarea className="vb-note-text" value={n.text} onChange={n.setText} onPointerDown={n.stop} placeholder="Note…" rows="4" />
+                  <textarea
+                    ref={(el) => this.autosize(el)}
+                    className="vb-note-text"
+                    value={n.text}
+                    onChange={n.setText}
+                    onPointerDown={n.stop}
+                    placeholder="Note…"
+                    rows={1}
+                  />
                   {n.sel && <button type="button" className="vb-remove-btn vb-note-remove" onClick={n.remove} onPointerDown={n.stop} title="Remove note">×</button>}
                 </div>
               ))}
 
               {tokens}
+              {nodeEls}
             </div>
 
             <div className="vb-hint-row">

@@ -301,6 +301,7 @@ input, textarea {
 }
 .vb-string-label-input {
   width: 116px;
+  min-height: 24px;
   padding: 4px 8px;
   text-align: center;
   background: rgba(11, 12, 17, 0.86);
@@ -311,7 +312,12 @@ input, textarea {
   font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+  line-height: 1.35;
   outline: none;
+  resize: none;
+  overflow: hidden;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 .vb-string-label-input:focus {
   border-color: #c9ae63;
@@ -340,9 +346,11 @@ input, textarea {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 .vb-note-text {
+  display: block;
   width: 100%;
   min-height: 84px;
   resize: none;
+  overflow: hidden;
   background: transparent;
   border: 0;
   outline: none;
@@ -350,6 +358,7 @@ input, textarea {
   font-family: "Spectral", serif;
   font-size: 14px;
   line-height: 1.45;
+  word-break: break-word;
 }
 .vb-note-remove {
   position: absolute;
@@ -392,6 +401,31 @@ input, textarea {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Free anchor points — string endpoints pinned in empty space, not tied to
+   a suspect token. */
+.vb-node {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: linear-gradient(150deg, #e8d49a, #8c7438);
+  border: 1.5px solid #0b0c11;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.55);
+  cursor: move;
+}
+.vb-node:hover {
+  box-shadow: 0 0 0 2px rgba(201, 174, 99, 0.6), 0 4px 14px rgba(154, 127, 61, 0.4);
+}
+.vb-node-ring {
+  position: absolute;
+  inset: -5px;
+  border: 2px solid #c9ae63;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(185, 157, 83, 0.4), 0 4px 14px rgba(154, 127, 61, 0.22);
   pointer-events: none;
 }
 
