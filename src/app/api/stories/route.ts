@@ -79,3 +79,53 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ story: data }, { status: 201 });
 }
+
+// Update endpoint for the Discord bot: when a member re-submits a doc link
+// that's already in the catalogue under a different title or author, the bot
+// updates that existing row in place instead of inserting a second one for
+// the same doc. Same auth and service-role write path as POST above.
+export async function PATCH(request: Request) {
+  const expected = process.env.STORIES_BOT_SECRET;
+  if (!expected) {
+    console.error("PATCH /api/stories: STORIES_BOT_SECRET is not configured");
+    return NextResponse.json({ error: "not configured" }, { status: 500 });
+  }
+
+  const auth = request.headers.get("authorization");
+  if (auth !== `Bearer ${expected}`) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  let body: { id?: unknown; title?: unknown; author?: unknown };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "invalid JSON body" }, { status: 400 });
+  }
+
+  const id = typeof body.id === "string" ? body.id.trim() : "";
+  const title = typeof body.title === "string" ? body.title.trim().slice(0, 200) : "";
+  const author = typeof body.author === "string" ? body.author.trim().slice(0, 120) : "";
+
+  if (!id || !title || !author) {
+    return NextResponse.json({ error: "id, title, and author are required" }, { status: 400 });
+  }
+
+  const supabase = createServiceClient();
+  const { data, error } = await supabase
+    .from("stories")
+    .update({ title, author })
+    .eq("id", id)
+    .select("id, title, author, doc_url, created_at")
+    .maybeSingle();
+
+  if (error) {
+    console.error("PATCH /api/stories", error);
+    return NextResponse.json({ error: "could not update story" }, { status: 500 });
+  }
+  if (!data) {
+    return NextResponse.json({ error: "story not found" }, { status: 404 });
+  }
+
+  return NextResponse.json({ story: data });
+}
