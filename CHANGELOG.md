@@ -8,6 +8,12 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.15.0 — 2026-09-13
+- `/api/stories` gains a `PATCH` endpoint: re-submitting a doc link that's
+  already in the Stories catalogue under a different title or author now
+  updates that existing row instead of leaving it untouched, so the Discord
+  bot can fix a listing without creating a duplicate entry for the same doc.
+
 ## v1.14.1 — 2026-09-12
 - The Vialbottom Board: notes and string labels now grow to fit whatever's
   typed into them instead of clipping it, and "Export" renders their full,
