@@ -8,7 +8,7 @@
    districts — same shape, same renderer (DistrictField + Dossier).
    =========================================================================== */
 import type { DistrictSeed, Region, SubArea } from "./types";
-import { ensureSubAreas } from "./citadelData";
+import { ensureSubAreas, seedSlug } from "./citadelData";
 import { shieldOutline, smoothClosed, toPts, voronoiCells } from "./geom";
 
 export const CAMPUS_OUTLINE =
@@ -76,6 +76,10 @@ export interface ZoneHost {
   cell: string | undefined;
   isRegion: boolean;
   backLabel: string;
+  /** Stable id used to build whereabouts pick ids — the region's own id, or
+   *  the Citadel district's slug (joined under "starfall-citadel/" by
+   *  pickPrefixForHost). */
+  slug: string;
 }
 
 /** Materialise a region's A–E zones from its authored submap.subs (parallel
@@ -99,7 +103,7 @@ export function regionHost(region: Region, cells: Record<string, string>): ZoneH
     name: region.name, house: region.house, house_color: region.house_color, hcOverride: null,
     sector: region.sector, coord: region.coord, blurb: region.blurb, facts: region.facts,
     sub: ensureRegionZones(region), cell: cells[region.id] || region.submap.outline,
-    isRegion: true, backLabel: "Campus",
+    isRegion: true, backLabel: "Campus", slug: region.id,
   };
 }
 
@@ -109,6 +113,43 @@ export function districtHost(seed: DistrictSeed, backLabel: string): ZoneHost {
     name: seed.name, house: "Citadel district", house_color: "gold", hcOverride: seed.color || null,
     sector: "District " + seed.tag, coord: "Starfall Citadel", blurb: seed.blurb || "",
     facts: [["Ledger no.", seed.tag], ["Within", "Starfall Citadel"]],
-    sub: seed.sub || [], cell: seed._cell, isRegion: false, backLabel,
+    sub: seed.sub || [], cell: seed._cell, isRegion: false, backLabel, slug: seedSlug(seed),
   };
+}
+
+/* ---- whereabouts pick ids --------------------------------------------------
+   A stable, host-facing identifier for "the exact thing that was clicked".
+   Top-level regions/Citadel use their bare id; anything nested joins
+   ancestor slugs with "/", e.g. "starfall-citadel/dragon_s_walk/C" for
+   La Avenida. */
+export function pickPrefixForHost(host: ZoneHost): string {
+  return host.isRegion ? host.slug : "starfall-citadel/" + host.slug;
+}
+
+export function zoneTagByName(zones: SubArea[], name: string): string | null {
+  const found = zones.find((a) => a.name === name);
+  return found ? found.tag : null;
+}
+
+/** Resolve a campus POI's link (a named zone inside a region or Citadel
+ *  district) to a pick id, for when the POI plaque is clicked in pick mode. */
+export function pickIdForZoneLink(
+  link: { region?: string; zone?: string; citadelDistrict?: string },
+  regions: Region[],
+): string | null {
+  if (link.citadelDistrict) {
+    const citadel = regions.find((r) => r.isCitadel);
+    const seed = citadel && (citadel.submap.seeds || []).find((s) => seedSlug(s) === link.citadelDistrict);
+    if (!seed) return null;
+    ensureSubAreas(seed);
+    const tag = link.zone ? zoneTagByName(seed.sub || [], link.zone) : null;
+    return "starfall-citadel/" + link.citadelDistrict + (tag ? "/" + tag : "");
+  }
+  if (link.region) {
+    const region = regions.find((r) => r.id === link.region);
+    const zones = region ? ensureRegionZones(region) : [];
+    const tag = link.zone ? zoneTagByName(zones, link.zone) : null;
+    return link.region + (tag ? "/" + tag : "");
+  }
+  return null;
 }

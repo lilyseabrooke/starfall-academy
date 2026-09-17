@@ -12,7 +12,7 @@ import { Dossier } from "./Dossier";
 import { DistrictField } from "./DistrictField";
 import { AtlasStage, type Crumb } from "./AtlasStage";
 import { REGIONS } from "../../data/map/regions";
-import { computeCampusCells, computeCitadelCells, districtHost, regionHost, type ZoneHost } from "../../data/map/hosts";
+import { computeCampusCells, computeCitadelCells, districtHost, pickPrefixForHost, regionHost, type ZoneHost } from "../../data/map/hosts";
 import type { SubArea } from "../../data/map/types";
 import type { MapRosterMember } from "./MapPage";
 
@@ -30,10 +30,11 @@ export interface AtlasMapProps {
   locations: Record<string, string | null | undefined>;
   picking: boolean;
   onPick: (regionId: string) => void;
+  onCancelPick: () => void;
   focusSignal: { regionId?: string; isCitadel?: boolean; districtName?: string } | null;
 }
 
-export function AtlasMap({ roster, activeChar, locations, picking, onPick, focusSignal }: AtlasMapProps) {
+export function AtlasMap({ roster, activeChar, locations, picking, onPick, onCancelPick, focusSignal }: AtlasMapProps) {
   const [nav, setNav] = React.useState<Nav>({ view: "world" });
 
   // Syncs nav to an external signal (the search menu's "jump to this
@@ -108,6 +109,21 @@ export function AtlasMap({ roster, activeChar, locations, picking, onPick, focus
 
   const [fieldHoverIdx, setFieldHoverIdx] = React.useState<number | null>(null);
 
+  // Clicking a level-4 zone tile/list row either sets your location (pick
+  // mode) or drills into that zone's own dossier (normal browsing).
+  const pickOrSelectZone = (idx: number) => {
+    if (picking && host) {
+      const sub = host.sub.filter((a) => a.on)[idx];
+      if (sub) onPick(pickPrefixForHost(host) + "/" + sub.tag);
+      return;
+    }
+    setNav((n) => (n.view === "region" ? { ...n, zoneIdx: idx } : n.view === "district" ? { ...n, zoneIdx: idx } : n));
+  };
+  const backgroundOrCancel = () => {
+    if (picking) { onCancelPick(); return; }
+    setNav((n) => (n.view === "region" ? { ...n, zoneIdx: null } : n.view === "district" ? { ...n, zoneIdx: null } : n));
+  };
+
   const crumbs: Crumb[] = React.useMemo(() => {
     if (nav.view === "world") return [{ label: "Campus" }];
     if (nav.view === "citadel") return [{ label: "Campus", onClick: goCampus }, { label: "Starfall Citadel" }];
@@ -171,6 +187,7 @@ export function AtlasMap({ roster, activeChar, locations, picking, onPick, focus
           onJumpToCitadelZone={jumpToCitadelDistrictZone}
           picking={picking}
           onPick={onPick}
+          onCancelPick={onCancelPick}
           party={nav.view === "world" ? { roster, locations, selfId: activeChar } : null}
         />
       ) : (
@@ -180,8 +197,8 @@ export function AtlasMap({ roster, activeChar, locations, picking, onPick, focus
             host={host!}
             zone={zone}
             onBack={nav.view === "district" ? enterCitadel : goCampus}
-            onZonePick={(idx) => setNav((n) => (n.view === "region" ? { ...n, zoneIdx: idx } : n.view === "district" ? { ...n, zoneIdx: idx } : n))}
-            onZoneBack={() => setNav((n) => (n.view === "region" ? { ...n, zoneIdx: null } : n.view === "district" ? { ...n, zoneIdx: null } : n))}
+            onZonePick={pickOrSelectZone}
+            onZoneBack={backgroundOrCancel}
             hoveredIdx={fieldHoverIdx}
             onHover={setFieldHoverIdx}
           />
@@ -193,8 +210,8 @@ export function AtlasMap({ roster, activeChar, locations, picking, onPick, focus
               hoveredIdx={fieldHoverIdx}
               selectedIdx={nav.view === "region" || nav.view === "district" ? nav.zoneIdx : null}
               onHover={setFieldHoverIdx}
-              onPick={(idx) => setNav((n) => (n.view === "region" ? { ...n, zoneIdx: idx } : n.view === "district" ? { ...n, zoneIdx: idx } : n))}
-              onBackgroundClick={() => setNav((n) => (n.view === "region" ? { ...n, zoneIdx: null } : n.view === "district" ? { ...n, zoneIdx: null } : n))}
+              onPick={pickOrSelectZone}
+              onBackgroundClick={backgroundOrCancel}
             />
           </div>
         </div>

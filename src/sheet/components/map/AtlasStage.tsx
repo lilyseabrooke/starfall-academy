@@ -12,6 +12,7 @@ import { Icon } from "../Icon";
 import { CitadelTessellation } from "./CitadelTessellation";
 import { PartyMarkers, type PartyMarkersProps } from "./PartyMarkers";
 import { WorldTessellation } from "./WorldTessellation";
+import { seedSlug } from "../../data/map/citadelData";
 import type { Region } from "../../data/map/types";
 
 export interface Crumb { label: string; onClick?: () => void; }
@@ -27,6 +28,7 @@ export interface AtlasStageProps {
   onJumpToCitadelZone: (districtSlug: string, zoneName: string) => void;
   picking: boolean;
   onPick: (id: string) => void;
+  onCancelPick: () => void;
   party: Omit<PartyMarkersProps, "regions"> | null;
 }
 
@@ -34,7 +36,7 @@ const MIN = 0.3, MAX = 3;
 
 export function AtlasStage({
   regions, mode, onEnterRegion, onEnterCitadel, onExitCitadel, onSelectDistrict,
-  onJumpToZone, onJumpToCitadelZone, picking, onPick, party,
+  onJumpToZone, onJumpToCitadelZone, picking, onPick, onCancelPick, party,
 }: AtlasStageProps) {
   const stageRef = React.useRef<HTMLDivElement>(null);
   const canvasRef = React.useRef<HTMLDivElement>(null);
@@ -167,7 +169,18 @@ export function AtlasStage({
 
   const enterRegion = (id: string) => { if (!dragMoved()) onEnterRegion(id); };
   const enterCitadel = () => { if (!dragMoved()) onEnterCitadel(); };
-  const pickDistrict = (idx: number) => { if (!dragMoved()) onSelectDistrict(idx); };
+  const pickDistrictId = (idx: number): string | null => {
+    const seed = (citadel.submap.seeds || [])[idx];
+    if (!seed) return null;
+    return seed.special && seed.link
+      ? `starfall-citadel/${seed.link[0]}/${seed.link[1]}`
+      : `starfall-citadel/${seedSlug(seed)}`;
+  };
+  const pickDistrict = (idx: number) => {
+    if (dragMoved()) return;
+    if (picking) { const id = pickDistrictId(idx); if (id) onPick(id); return; }
+    onSelectDistrict(idx);
+  };
 
   return (
     <div className="stage" ref={stageRef}>
@@ -175,6 +188,12 @@ export function AtlasStage({
         className="canvas" id="canvas" ref={canvasRef}
         onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endDrag} onPointerCancel={endDrag}
         onWheel={onWheel}
+        onClick={(e) => {
+          if (!picking || dragMoved()) return;
+          const t = e.target as Element;
+          if (t.closest(".region, .subdistrict, .location")) return;
+          onCancelPick();
+        }}
       >
         <div className="panner" ref={pannerRef}>
           <svg
@@ -210,7 +229,7 @@ export function AtlasStage({
               const idx = (citadel.submap.seeds || []).indexOf(s);
               return (
                 <button key={s.tag} type="button" className={"legend__item legend__item--compact" + (hoveredDistrict === idx ? " is-active" : "")}
-                        onClick={() => onSelectDistrict(idx)} onMouseEnter={() => setHoveredDistrict(idx)} onMouseLeave={() => setHoveredDistrict(null)}>
+                        onClick={() => pickDistrict(idx)} onMouseEnter={() => setHoveredDistrict(idx)} onMouseLeave={() => setHoveredDistrict(null)}>
                   <span className="legend__swatch" style={{ background: s.color, boxShadow: `0 0 5px ${s.color}` }} />
                   <span className="legend__name">{s.name}</span>
                   <span className="legend__sector">{s.tag}</span>
@@ -224,7 +243,7 @@ export function AtlasStage({
                   const idx = (citadel.submap.seeds || []).indexOf(s);
                   return (
                     <button key={s.name} type="button" className={"legend__item legend__item--compact legend__item--loc" + (hoveredDistrict === idx ? " is-active" : "")}
-                            onClick={() => onSelectDistrict(idx)} onMouseEnter={() => setHoveredDistrict(idx)} onMouseLeave={() => setHoveredDistrict(null)}>
+                            onClick={() => pickDistrict(idx)} onMouseEnter={() => setHoveredDistrict(idx)} onMouseLeave={() => setHoveredDistrict(null)}>
                       <span className="legend__swatch legend__swatch--gold" />
                       <span className="legend__name">{s.name}</span>
                       <span className="legend__sector">{s.tag}</span>
@@ -246,7 +265,7 @@ export function AtlasStage({
               <button
                 key={r.id} type="button" className={"legend__item" + (hoveredId === r.id ? " is-active" : "")}
                 data-house={r.house_color}
-                onClick={() => (r.isCitadel ? enterCitadel() : enterRegion(r.id))}
+                onClick={() => (picking ? onPick(r.isCitadel ? citadel.id : r.id) : (r.isCitadel ? enterCitadel() : enterRegion(r.id)))}
                 onMouseEnter={() => setHoveredId(r.id)} onMouseLeave={() => setHoveredId(null)}
               >
                 <span className={"legend__swatch" + (r.house_color === "gold" ? " legend__swatch--gold" : "")} />

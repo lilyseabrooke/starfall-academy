@@ -7,7 +7,7 @@
    =========================================================================== */
 import * as React from "react";
 import { bbox, polylabel, shieldPath, smoothClosed, splitLabel, tilePath, toPts, voronoiCells } from "../../data/map/geom";
-import { CAMPUS_OUTLINE, CAMPUS_POIS, CAMPUS_SEEDS, CITADEL_PLACE } from "../../data/map/hosts";
+import { CAMPUS_OUTLINE, CAMPUS_POIS, CAMPUS_SEEDS, CITADEL_PLACE, pickIdForZoneLink } from "../../data/map/hosts";
 import type { Region } from "../../data/map/types";
 
 const SHIELD_OPTS = { spike: 0.095, shoulder: -0.02, side: 0.4 };
@@ -106,6 +106,11 @@ export function WorldTessellation({
           const x = p.x - w / 2, y = p.y - hgt / 2;
           const topY = p.y - (lines.length - 1) * (fs * 0.6);
           const go = () => {
+            if (picking) {
+              const id = pickIdForZoneLink(p.link, regions);
+              if (id) onPick(id);
+              return;
+            }
             if (p.link.citadelDistrict) onJumpToCitadelZone(p.link.citadelDistrict, p.link.zone || "");
             else if (p.link.region) onJumpToZone(p.link.region, p.link.zone || "");
           };
