@@ -32,7 +32,7 @@ import { ENCHANT_MATERIAL_COST, enchantHL } from "./data/enchant";
 import { blank as blankBonus } from "./data/bonus";
 import { buildIndex, search as runSearch, type SearchResult } from "./data/search";
 import { useCompendium } from "./data/compendium";
-import { computeCompendiumGrant, computeAttunedArtifactGrant, computeLearningSpellGrant, computePotionSheafGrant, computePotionRecipeGrant, computeWandCraftGrant } from "./data/compendium-grant";
+import { computeCompendiumGrant, computeAttunedArtifactGrant, computeLearningSpellGrant, computePotionSheafGrant, computePotionRecipeGrant, computeWandCraftGrant, artifactBoonMove } from "./data/compendium-grant";
 import type { GmTime } from "./data/gm-seed";
 
 import { useClassState } from "./state/useClassState";
@@ -1125,14 +1125,15 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       classes.handlers.loadState(F.buildClassState(draft), 0);
       magic.setState.setBonuses(F.buildWandBonuses(draft, forgeData));
       magic.setState.setSpells(F.buildSpells(draft, forgeData));
-      magic.setState.setMoves([]);
+      const startArtifacts = F.buildArtifacts(draft, forgeData, CL) as unknown as Artifact[];
+      magic.setState.setMoves(startArtifacts.filter((a) => a.attuned).map(artifactBoonMove));
       const pots = F.buildPotions(draft, forgeData);
       setRecipes(pots.map((p) => p.recipe));
       setPotions(pots.map((p) => p.vial));
       setPlants(F.buildPlants(draft, forgeData) as Plant[]);
       setItems([]);
       setGlyphs(F.buildGlyphs(draft, forgeData) as Glyph[]);
-      setArtifacts(F.buildArtifacts(draft, forgeData, CL) as unknown as Artifact[]);
+      setArtifacts(startArtifacts);
       setWands([F.buildStartingWand(draft, forgeData) as unknown as Wand, ...(F.buildExtraWands(draft, forgeData) as unknown as Wand[])]);
       setRuneStack([]);
     }
