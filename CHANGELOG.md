@@ -8,6 +8,12 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.15.1 — 2026-09-17
+- Removed the "Map Studio" dev-authoring tooling (the edit-mode tweak
+  panels and their postMessage protocol) from the shipped campus map,
+  character-sheet map, family ledger, and compendium — those were
+  build-time tools for tuning layout, never meant to reach players.
+
 ## v1.15.0 — 2026-09-13
 - `/api/stories` gains a `PATCH` endpoint: re-submitting a doc link that's
   already in the Stories catalogue under a different title or author now
