@@ -12,9 +12,11 @@
 /* ---- map stage (the native atlas) --------------------------------------- */
 .sf-sheet .sf-map__stage { position: relative; flex: 1; min-width: 0; background: var(--ink-950); overflow: hidden; }
 
-/* ---- pin dock: set/clear your whereabouts, bottom-right of the stage --- */
+/* ---- pin dock: set/clear your whereabouts, bottom-right of the stage ---
+   Stacked above the .zoom control cluster (also bottom-right, ~130px tall
+   incl. its 3 buttons + padding) so the two never overlap. */
 .sf-sheet .sf-map__dock {
-  position: absolute; right: var(--space-5); bottom: var(--space-5); z-index: 6;
+  position: absolute; right: var(--space-5); bottom: 158px; z-index: 6;
   display: flex; align-items: center; gap: var(--space-2);
 }
 .sf-sheet .sf-map__dock-btn {
