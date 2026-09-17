@@ -8,6 +8,18 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.16.0 — 2026-09-17
+- The character sheet's Map tab no longer embeds the vendored vanilla-JS
+  atlas in an iframe: the whole campus map — world tessellation, pan/zoom,
+  the Citadel's 21-district shield tessellation, region/district/zone
+  drill-down with dossiers, and party-location markers — is now native
+  React/SVG (`src/sheet/components/map/`, typed geometry/data under
+  `src/sheet/data/map/`). The whereabouts panel's external contract to
+  `CharacterSheet.tsx` is unchanged. The search menu's "Map Location"
+  results now actually jump the map to that region or Citadel district
+  (previously a no-op stub). The standalone `/map` route keeps serving its
+  own separate vendored copy under `public/map/`, untouched by this port.
+
 ## v1.15.1 — 2026-09-17
 - Removed the "Map Studio" dev-authoring tooling (the edit-mode tweak
   panels and their postMessage protocol) from the shipped campus map,
