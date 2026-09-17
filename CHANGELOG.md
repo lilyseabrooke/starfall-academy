@@ -8,12 +8,18 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
-## v1.15.1 — 2026-09-17
+## v1.15.2 — 2026-09-17
 - Fix: an artifact picked in the Forge during character creation (from a
   class grant or bought directly in the Inventory step) was attuned but its
   linked Boon move never showed up on the sheet. Picking an artifact there
   now adds its move alongside it, same as attuning one after character
   creation already did.
+
+## v1.15.1 — 2026-09-17
+- Removed the "Map Studio" dev-authoring tooling (the edit-mode tweak
+  panels and their postMessage protocol) from the shipped campus map,
+  character-sheet map, family ledger, and compendium — those were
+  build-time tools for tuning layout, never meant to reach players.
 
 ## v1.15.0 — 2026-09-13
 - `/api/stories` gains a `PATCH` endpoint: re-submitting a doc link that's
