@@ -8,6 +8,13 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.15.1 — 2026-09-17
+- Fix: an artifact picked in the Forge during character creation (from a
+  class grant or bought directly in the Inventory step) was attuned but its
+  linked Boon move never showed up on the sheet. Picking an artifact there
+  now adds its move alongside it, same as attuning one after character
+  creation already did.
+
 ## v1.15.0 — 2026-09-13
 - `/api/stories` gains a `PATCH` endpoint: re-submitting a doc link that's
   already in the Stories catalogue under a different title or author now
