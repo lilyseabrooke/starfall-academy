@@ -31,6 +31,8 @@ import { spellCrit, spellMaterialCost, artifactBackfireDC, spellLevelKey } from 
 import { ENCHANT_MATERIAL_COST, enchantHL } from "./data/enchant";
 import { blank as blankBonus } from "./data/bonus";
 import { buildIndex, search as runSearch, type SearchResult } from "./data/search";
+import { REGIONS } from "./data/map/regions";
+import type { MapFocusSignal } from "./components/map/MapPage";
 import { useCompendium } from "./data/compendium";
 import { computeCompendiumGrant, computeAttunedArtifactGrant, computeLearningSpellGrant, computePotionSheafGrant, computePotionRecipeGrant, computeWandCraftGrant } from "./data/compendium-grant";
 import type { GmTime } from "./data/gm-seed";
@@ -138,6 +140,29 @@ export interface CharacterSheetProps {
   campaignId?: string | null;
 }
 
+/** A "Map Location" search result's `data` carries the matched region/seed
+ *  (see data/search.ts's location branch) — resolve it to the map's focus
+ *  signal. Mirrors the two cases the atlas can jump straight to: a region,
+ *  or a Citadel district (never a specific zone — the original iframe bridge
+ *  didn't support that either). */
+function mapFocusFromSearchResult(result: SearchResult): MapFocusSignal | null {
+  const data = result.data as { id?: string; isCitadel?: boolean; name?: string; parentRegion?: string; parentDistrict?: string; parentRegionId?: string } | null;
+  if (!data) return null;
+  if (result.id.startsWith("location-region-")) {
+    return data.isCitadel ? { isCitadel: true } : { regionId: data.id };
+  }
+  if (result.id.startsWith("location-seed-")) {
+    return { isCitadel: true, districtName: data.name };
+  }
+  if (result.id.startsWith("location-place-")) {
+    return { isCitadel: true, districtName: data.parentDistrict };
+  }
+  if (result.id.startsWith("location-sub-")) {
+    return data.parentRegionId ? { regionId: data.parentRegionId } : null;
+  }
+  return null;
+}
+
 export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roster, me, campaignId }: CharacterSheetProps) {
   const router = useRouter();
 
@@ -209,7 +234,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   // ---- Search menu state ----
   const [searchQuery, setSearchQuery] = React.useState("");
   const [searchMenuOpen, setSearchMenuOpen] = React.useState(false);
-  const [mapFocus, setMapFocus] = React.useState<unknown>(null);
+  const [mapFocus, setMapFocus] = React.useState<MapFocusSignal | null>(null);
 
   React.useLayoutEffect(() => {
     try { localStorage.setItem("sf-sidebar-collapsed", String(sidebarCollapsed)); } catch { /* ignore */ }
@@ -392,8 +417,8 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   const searchIndex = React.useMemo(() => buildIndex({
     stats, schools, spells, moves, artifacts, potions, recipes, plants,
     items, glyphs, wands, conditions, classState, bonuses,
+    locations: REGIONS,
     classes: CL.classes,
-    locations: [],
   }), [stats, schools, spells, moves, artifacts, potions, recipes, plants, items, glyphs, wands, conditions, classState, bonuses, CL.classes]);
   const searchResults = React.useMemo(() => runSearch(searchQuery, searchIndex), [searchQuery, searchIndex]);
 
@@ -1466,7 +1491,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     setSearchMenuOpen(false);
     setSearchQuery("");
     if (result.section) setNav(result.section);
-    if (result.type === "location") setMapFocus({ type: "sf-map-focus" });
+    if (result.type === "location") setMapFocus(mapFocusFromSearchResult(result));
   }
   function handleSearchRepair(result: SearchResult) { invH.repairArtifact(result.data as Artifact, "medium", document.body); }
   function handleSearchUse(result: SearchResult) {

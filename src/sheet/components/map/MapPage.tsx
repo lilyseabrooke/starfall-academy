@@ -2,27 +2,20 @@
 
 /* ===========================================================================
    Starfall Academy — Map tab
-   Ported from public/character-sheet/map-tab.jsx (window.SF_MapPage). Embeds the
-   standalone campus atlas (still a vendored asset under /public) and brokers
-   party whereabouts. The atlas itself is out of scope for F1.
+   Native React/SVG port of the vendored vanilla-JS atlas (see
+   design/MAP_PORT_ROADMAP.md). Owns the whereabouts panel; the atlas itself
+   is AtlasMap — no iframe/postMessage bridge.
    =========================================================================== */
 import * as React from "react";
 import { Icon } from "../Icon";
+import { AtlasMap } from "./AtlasMap";
+import { REGIONS } from "../../data/map/regions";
 
 interface Zone {
   id: string;
   name: string;
   house_color: string;
 }
-
-const FALLBACK_ZONES: Zone[] = [
-  { id: "amber-woods", name: "Amber Woods", house_color: "forest" },
-  { id: "jewelstone-hollow", name: "Jewelstone Hollow", house_color: "plum" },
-  { id: "ryker-cliffs", name: "Ryker Cliffs", house_color: "crimson" },
-  { id: "glimmerdeep-lake", name: "Glimmerdeep Lake", house_color: "teal" },
-  { id: "the-grounds", name: "The Grounds", house_color: "gold" },
-  { id: "starfall-citadel", name: "Starfall Citadel", house_color: "gold" },
-];
 
 const TONE_VAR: Record<string, string> = {
   plum: "var(--plum-500)", forest: "var(--forest-500)", teal: "var(--teal-500)",
@@ -37,75 +30,42 @@ export interface MapRosterMember {
   tone: string;
 }
 
+export interface MapFocusSignal {
+  regionId?: string;
+  isCitadel?: boolean;
+  districtName?: string;
+}
+
 export interface MapPageProps {
   roster: MapRosterMember[];
   activeChar: string;
   locations: Record<string, string | null | undefined>;
   onSetLocation: (id: string, regionId: string | null) => void;
-  focusLocation?: unknown;
+  focusLocation?: MapFocusSignal | null;
 }
 
 export function MapPage({ roster, activeChar, locations, onSetLocation, focusLocation }: MapPageProps) {
-  const frameRef = React.useRef<HTMLIFrameElement>(null);
-  const [ready, setReady] = React.useState(false);
-  const [zones, setZones] = React.useState<Zone[]>(FALLBACK_ZONES);
-  const [pickTarget, setPickTarget] = React.useState<string | null>(null);
-  const [panelOpen, setPanelOpen] = React.useState(false);
-
+  const zones: Zone[] = React.useMemo(
+    () => REGIONS.map((r) => ({ id: r.id, name: r.name, house_color: r.house_color })),
+    [],
+  );
   const zoneById = React.useMemo(() => {
     const m: Record<string, Zone> = {};
     zones.forEach((z) => (m[z.id] = z));
     return m;
   }, [zones]);
 
-  const pickRef = React.useRef<string | null>(null);
-  pickRef.current = pickTarget;
-
-  const post = React.useCallback((msg: unknown) => {
-    const w = frameRef.current && frameRef.current.contentWindow;
-    if (w) w.postMessage(msg, "*");
-  }, []);
-
-  const pushState = React.useCallback(() => {
-    post({
-      type: "sf-map-state",
-      selfId: activeChar,
-      pickId: pickTarget,
-      roster: roster.map((r) => ({ id: r.id, name: r.name, initials: r.initials, tone: r.tone })),
-      locations,
-      pick: !!pickTarget,
-    });
-  }, [post, activeChar, pickTarget, roster, locations]);
-
-  React.useEffect(() => {
-    if (ready) pushState();
-  }, [ready, pushState]);
-
-  React.useEffect(() => {
-    if (!focusLocation || !ready) return;
-    post(focusLocation);
-  }, [focusLocation, ready, post]);
-
-  React.useEffect(() => {
-    const onMsg = (e: MessageEvent) => {
-      const d = e && e.data;
-      if (!d || !d.type) return;
-      if (d.type === "sf-map-ready") {
-        if (Array.isArray(d.zones) && d.zones.length) setZones(d.zones);
-        setReady(true);
-      } else if (d.type === "sf-map-pick") {
-        const tgt = pickRef.current;
-        if (tgt && d.regionId) onSetLocation(tgt, d.regionId);
-        setPickTarget(null);
-      } else if (d.type === "sf-map-pick-cancel") {
-        setPickTarget(null);
-      }
-    };
-    window.addEventListener("message", onMsg);
-    return () => window.removeEventListener("message", onMsg);
-  }, [onSetLocation]);
+  const [pickTarget, setPickTarget] = React.useState<string | null>(null);
+  const [panelOpen, setPanelOpen] = React.useState(false);
 
   const startPick = (id: string) => setPickTarget((cur) => (cur === id ? null : id));
+
+  const handlePick = React.useCallback((regionId: string) => {
+    if (!pickTarget) return;
+    onSetLocation(pickTarget, regionId);
+    setPickTarget(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pickTarget, onSetLocation]);
 
   const ordered = React.useMemo(() => {
     const me = roster.filter((r) => r.id === activeChar);
@@ -121,8 +81,15 @@ export function MapPage({ roster, activeChar, locations, onSetLocation, focusLoc
 
   return (
     <div className={"sf-map" + (panelOpen ? " is-open" : "")}>
-      <div className="sf-map__stage">
-        <iframe ref={frameRef} className="sf-map__frame" src="/character-sheet/map/index.html" title="Starfall campus map" />
+      <div className={"sf-map__stage" + (pickTarget ? " is-picking" : "")}>
+        <AtlasMap
+          roster={roster}
+          activeChar={activeChar}
+          locations={locations}
+          picking={!!pickTarget}
+          onPick={handlePick}
+          focusSignal={focusLocation || null}
+        />
         {!panelOpen && (
           <button type="button" className="sf-map__peek" onClick={() => setPanelOpen(true)} title="Show party whereabouts">
             <Icon name="chevrons-left" />
