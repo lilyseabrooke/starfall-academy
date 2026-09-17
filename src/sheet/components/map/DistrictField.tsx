@@ -8,7 +8,7 @@
    fixed 1000×760 box regardless of the host's native coordinate space.
    =========================================================================== */
 import * as React from "react";
-import { bbox, polylabel, roundedPath, splitLabel, tilePath, toPts, voronoiCells } from "../../data/map/geom";
+import { polylabel, roundedPath, splitLabel, tilePath, toPts, voronoiCells } from "../../data/map/geom";
 import type { ZoneHost } from "../../data/map/hosts";
 
 const SUB_MIX = [46, 54, 62, 48, 56, 64];

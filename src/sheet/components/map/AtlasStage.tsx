@@ -145,7 +145,7 @@ export function AtlasStage({
     pointers.current.delete(e.pointerId);
     if (pointers.current.size < 2) pinchRef.current = null;
     if (pointers.current.size === 1) {
-      const [id, p] = [...pointers.current.entries()][0];
+      const [, p] = [...pointers.current.entries()][0];
       dragRef.current = { dragging: true, moved: dragRef.current.moved, sx: p.x, sy: p.y, stx: txRef.current, sty: tyRef.current };
       return;
     }
@@ -206,7 +206,7 @@ export function AtlasStage({
             </div>
           </div>
           <div className="legend__list">
-            {(citadel.submap.seeds || []).filter((s) => !s.special).map((s, i) => {
+            {(citadel.submap.seeds || []).filter((s) => !s.special).map((s) => {
               const idx = (citadel.submap.seeds || []).indexOf(s);
               return (
                 <button key={s.tag} type="button" className={"legend__item legend__item--compact" + (hoveredDistrict === idx ? " is-active" : "")}

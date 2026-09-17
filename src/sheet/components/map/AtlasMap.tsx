@@ -36,21 +36,26 @@ export interface AtlasMapProps {
 export function AtlasMap({ roster, activeChar, locations, picking, onPick, focusSignal }: AtlasMapProps) {
   const [nav, setNav] = React.useState<Nav>({ view: "world" });
 
+  // Syncs nav to an external signal (the search menu's "jump to this
+  // location" action) firing again each time, even to the same target —
+  // an external-event subscription, not state derived from props.
+  /* eslint-disable react-hooks/set-state-in-effect */
   React.useEffect(() => {
     if (!focusSignal) return;
     if (focusSignal.isCitadel) {
-      setNav({ view: "citadel" });
       if (focusSignal.districtName) {
         const idx = (CITADEL.submap.seeds || []).findIndex((s) => s.name === focusSignal.districtName);
-        if (idx >= 0) setNav({ view: "district", districtIdx: idx, zoneIdx: null });
+        setNav(idx >= 0 ? { view: "district", districtIdx: idx, zoneIdx: null } : { view: "citadel" });
+      } else {
+        setNav({ view: "citadel" });
       }
     } else if (focusSignal.regionId) {
       setNav({ view: "region", regionId: focusSignal.regionId, zoneIdx: null });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusSignal]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
-  const campusCells = React.useMemo(computeCampusCells, []);
+  const campusCells = React.useMemo(() => computeCampusCells(), []);
   const citadelCells = React.useMemo(() => computeCitadelCells(CITADEL), []);
 
   const goCampus = () => setNav({ view: "world" });
@@ -117,7 +122,6 @@ export function AtlasMap({ roster, activeChar, locations, picking, onPick, focus
     else base.push({ label: host!.name });
     return base;
     function exitCitadelToCitadel() { setNav({ view: "citadel" }); }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nav, host, zone]);
 
   const inSubmap = nav.view === "region" || nav.view === "district";
@@ -137,18 +141,23 @@ export function AtlasMap({ roster, activeChar, locations, picking, onPick, focus
         </defs>
       </svg>
 
-      <div className="float crumbs-bar">
-        <nav className="crumbs" aria-label="Breadcrumb">
-          {crumbs.map((c, i) => (
-            <React.Fragment key={i}>
-              {i > 0 && <span className="crumbs__sep">›</span>}
-              {i === crumbs.length - 1 || !c.onClick
-                ? <span className="crumbs__here">{c.label}</span>
-                : <button type="button" className="crumbs__link" onClick={c.onClick}>{c.label}</button>}
-            </React.Fragment>
-          ))}
-        </nav>
-      </div>
+      {/* In the submap view the dossier's own back button (labelled with its
+          parent) already gives one level of "breadcrumb" — a floating crumbs
+          pill there would sit right on top of it and steal its clicks. */}
+      {!inSubmap && (
+        <div className="float crumbs-bar">
+          <nav className="crumbs" aria-label="Breadcrumb">
+            {crumbs.map((c, i) => (
+              <React.Fragment key={i}>
+                {i > 0 && <span className="crumbs__sep">›</span>}
+                {i === crumbs.length - 1 || !c.onClick
+                  ? <span className="crumbs__here">{c.label}</span>
+                  : <button type="button" className="crumbs__link" onClick={c.onClick}>{c.label}</button>}
+              </React.Fragment>
+            ))}
+          </nav>
+        </div>
+      )}
 
       {!inSubmap ? (
         <AtlasStage

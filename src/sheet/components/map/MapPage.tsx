@@ -64,7 +64,6 @@ export function MapPage({ roster, activeChar, locations, onSetLocation, focusLoc
     if (!pickTarget) return;
     onSetLocation(pickTarget, regionId);
     setPickTarget(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pickTarget, onSetLocation]);
 
   const ordered = React.useMemo(() => {

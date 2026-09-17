@@ -25,8 +25,8 @@ import type { ClassDef } from "./classes";
 
 /** Map region shapes the index reads (full map types live with the map tab). */
 export interface MapPlace {
-  name: string;
-  [k: string]: unknown;
+  name?: string | null;
+  blurb?: string | null;
 }
 export interface MapSeed {
   name?: string;
@@ -182,12 +182,14 @@ export function buildIndex(ctx: SearchContext): SearchResult[] {
           results.push({ id: `location-seed-${region.id}-${seed.name}`, type: "location", name: seed.name, category: "Map Location", data: { ...seed, parentRegion: region.name }, section: "map", rollable: false, parent: region.name });
           if (seed.subs && Array.isArray(seed.subs)) {
             seed.subs.forEach((place) => {
+              if (!place.name) return;
               results.push({ id: `location-place-${region.id}-${seed.name}-${place.name}`, type: "location", name: place.name, category: "Map Location", data: { ...place, parentRegion: region.name, parentDistrict: seed.name }, section: "map", rollable: false, parent: seed.name });
             });
           }
         });
       } else if (submap.subs && Array.isArray(submap.subs)) {
         submap.subs.forEach((sub) => {
+          if (!sub.name) return;
           results.push({ id: `location-sub-${region.id}-${sub.name}`, type: "location", name: sub.name, category: "Map Location", data: { ...sub, parentRegion: region.name, parentRegionId: region.id }, section: "map", rollable: false, parent: region.name });
         });
       }
