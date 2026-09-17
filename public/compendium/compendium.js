@@ -5,16 +5,16 @@
    as the original compendium did; only the presentation has been reworked.
    =========================================================================== */
 
-/* ---- Tweak defaults (the host rewrites this block on disk when changed) --- */
-const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
-  "cardScale": 100,
-  "density": "regular",
-  "levelColors": true,
-  "categoryIcons": true,
-  "watermark": 50,
-  "rankShade": 13,
-  "rankBorder": 22
-}/*EDITMODE-END*/;
+/* ---- Authored display defaults --------------------------------------- */
+const DISPLAY_DEFAULTS = {
+  cardScale: 100,
+  density: "regular",
+  levelColors: true,
+  categoryIcons: true,
+  watermark: 50,
+  rankShade: 13,
+  rankBorder: 22
+};
 
 /* ---- Live data sources (published CSV, unchanged from the original) -------
    Split into two views so the page never crowds its tabs: every existing
@@ -872,9 +872,9 @@ function esc(s){ return (s == null ? "" : s.toString()).replace(/[&<>"]/g, m => 
 function refreshIcons(){ if (window.lucide) window.lucide.createIcons(); }
 
 /* ===========================================================================
-   Tweaks panel  (host-toggled — raw postMessage protocol, like the Map)
+   Display tweaks — authored presentation constants applied as CSS vars
    =========================================================================== */
-const tweaks = Object.assign({}, TWEAK_DEFAULTS);
+const tweaks = Object.assign({}, DISPLAY_DEFAULTS);
 
 function applyTweaks(){
   const root = document.documentElement;
@@ -890,128 +890,10 @@ function applyTweaks(){
   document.body.classList.toggle("no-icons", !tweaks.categoryIcons);
 }
 
-function setTweak(key, val){
-  tweaks[key] = val;
-  applyTweaks();
-  try { window.parent.postMessage({ type:"__edit_mode_set_keys", edits:{ [key]: val } }, "*"); } catch(e){}
-}
-
-function buildTweaksPanel(){
-  const panel = document.createElement("aside");
-  panel.className = "tweaks";
-  panel.id = "tweaks-panel";
-  panel.hidden = true;
-  panel.innerHTML = `
-    <div class="tweaks__head" id="tweaks-drag">
-      <div class="tweaks__titles">
-        <span class="tweaks__eyebrow">Starfall Academy</span>
-        <span class="tweaks__title">Tweaks</span>
-      </div>
-      <button class="tweaks__close" id="tweaks-close" aria-label="Close">✕</button>
-    </div>
-    <div class="tweaks__body">
-      <div class="tweaks__section">
-        <div class="tweaks__legend">Cards</div>
-        <div class="tweaks__row">
-          <span class="tweaks__label">Card size</span>
-          <span class="tweaks__val" id="tw-scale-val">${tweaks.cardScale}%</span>
-          <input type="range" class="tweaks__slider" id="tw-scale" min="85" max="125" step="5" value="${tweaks.cardScale}">
-        </div>
-        <div class="tweaks__row">
-          <span class="tweaks__label" style="grid-column:1 / -1">Density</span>
-          <div class="tweaks__seg" id="tw-density">
-            <button data-v="compact"${tweaks.density==="compact"?' class="is-active"':""}>Compact</button>
-            <button data-v="regular"${tweaks.density==="regular"?' class="is-active"':""}>Regular</button>
-            <button data-v="comfy"${tweaks.density==="comfy"?' class="is-active"':""}>Comfy</button>
-          </div>
-        </div>
-      </div>
-      <div class="tweaks__section">
-        <div class="tweaks__legend">Style</div>
-        <div class="tweaks__row">
-          <span class="tweaks__label">Colour-code levels</span>
-          <div class="tweaks__switch${tweaks.levelColors?" is-on":""}" id="tw-levels" role="switch"></div>
-        </div>
-        <div class="tweaks__row">
-          <span class="tweaks__label">Category icons</span>
-          <div class="tweaks__switch${tweaks.categoryIcons?" is-on":""}" id="tw-icons" role="switch"></div>
-        </div>
-        <div class="tweaks__row">
-          <span class="tweaks__label">Crest watermark</span>
-          <span class="tweaks__val" id="tw-wm-val">${tweaks.watermark}%</span>
-          <input type="range" class="tweaks__slider" id="tw-wm" min="0" max="80" step="5" value="${tweaks.watermark}">
-        </div>
-      </div>
-      <div class="tweaks__section">
-        <div class="tweaks__legend">Class rank rows</div>
-        <div class="tweaks__row">
-          <span class="tweaks__label">Alt-row shade</span>
-          <span class="tweaks__val" id="tw-rshade-val">${tweaks.rankShade}%</span>
-          <input type="range" class="tweaks__slider" id="tw-rshade" min="0" max="45" step="1" value="${tweaks.rankShade}">
-        </div>
-        <div class="tweaks__row">
-          <span class="tweaks__label">Alt-row border</span>
-          <span class="tweaks__val" id="tw-rborder-val">${tweaks.rankBorder}%</span>
-          <input type="range" class="tweaks__slider" id="tw-rborder" min="0" max="70" step="1" value="${tweaks.rankBorder}">
-        </div>
-      </div>
-    </div>`;
-  document.body.appendChild(panel);
-
-  const scale = panel.querySelector("#tw-scale");
-  scale.addEventListener("input", () => { panel.querySelector("#tw-scale-val").textContent = scale.value + "%"; setTweak("cardScale", +scale.value); });
-  const wm = panel.querySelector("#tw-wm");
-  wm.addEventListener("input", () => { panel.querySelector("#tw-wm-val").textContent = wm.value + "%"; setTweak("watermark", +wm.value); });
-  const rshade = panel.querySelector("#tw-rshade");
-  rshade.addEventListener("input", () => { panel.querySelector("#tw-rshade-val").textContent = rshade.value + "%"; setTweak("rankShade", +rshade.value); });
-  const rborder = panel.querySelector("#tw-rborder");
-  rborder.addEventListener("input", () => { panel.querySelector("#tw-rborder-val").textContent = rborder.value + "%"; setTweak("rankBorder", +rborder.value); });
-  panel.querySelector("#tw-density").addEventListener("click", e => {
-    const btn = e.target.closest("button"); if (!btn) return;
-    [...e.currentTarget.children].forEach(b => b.classList.toggle("is-active", b === btn));
-    setTweak("density", btn.dataset.v);
-  });
-  const lv = panel.querySelector("#tw-levels");
-  lv.addEventListener("click", () => { const on = !lv.classList.contains("is-on"); lv.classList.toggle("is-on", on); setTweak("levelColors", on); });
-  const ic = panel.querySelector("#tw-icons");
-  ic.addEventListener("click", () => { const on = !ic.classList.contains("is-on"); ic.classList.toggle("is-on", on); setTweak("categoryIcons", on); refreshIcons(); });
-
-  panel.querySelector("#tweaks-close").addEventListener("click", () => { panel.hidden = true; try { window.parent.postMessage({ type:"__edit_mode_dismissed" }, "*"); } catch(e){} });
-  makeDraggable(panel, panel.querySelector("#tweaks-drag"));
-
-  // host protocol
-  window.addEventListener("message", e => {
-    const t = e && e.data && e.data.type;
-    if (t === "__activate_edit_mode") panel.hidden = false;
-    else if (t === "__deactivate_edit_mode") panel.hidden = true;
-  });
-  try { window.parent.postMessage({ type:"__edit_mode_available" }, "*"); } catch(e){}
-}
-
-function makeDraggable(panel, handle){
-  let sx, sy, ox, oy, dragging = false;
-  handle.addEventListener("mousedown", e => {
-    if (e.target.closest(".tweaks__close")) return;
-    dragging = true;
-    const r = panel.getBoundingClientRect();
-    panel.style.right = "auto"; panel.style.bottom = "auto";
-    panel.style.left = r.left + "px"; panel.style.top = r.top + "px";
-    sx = e.clientX; sy = e.clientY; ox = r.left; oy = r.top;
-    e.preventDefault();
-  });
-  window.addEventListener("mousemove", e => {
-    if (!dragging) return;
-    panel.style.left = Math.max(8, Math.min(window.innerWidth - panel.offsetWidth - 8, ox + e.clientX - sx)) + "px";
-    panel.style.top  = Math.max(8, Math.min(window.innerHeight - 40, oy + e.clientY - sy)) + "px";
-  });
-  window.addEventListener("mouseup", () => { dragging = false; });
-}
-
 /* ===========================================================================
    Boot
    =========================================================================== */
 buildCats();
-buildTweaksPanel();
 applyTweaks();
 refreshIcons();
 setTopbarH();

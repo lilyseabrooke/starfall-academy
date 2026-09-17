@@ -23,60 +23,23 @@
     seedSlug, SUB_TAGS, SUB_DEFAULTS, GENERIC_BLURBS, ensureSubAreas, subAreaList,
   } = window.AtlasCitadelData;
 
-  /* ---- Tweakable shield parameters --------------------------------------
-     The host persists these by rewriting the block between the EDITMODE
-     markers on disk, so edits survive a reload. Sliders map 1:1 to the
-     fractions shieldPath() expects. */
-  const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
-    "shieldSpike": 0.095,
-    "shieldShoulder": -0.02,
-    "shieldSide": 0.4
-  }/*EDITMODE-END*/;
-  const TWEAKS = Object.assign({}, TWEAK_DEFAULTS);
+  /* ---- Authored shield parameters ---------------------------------------
+     Fractions shieldPath() expects. */
+  const SHIELD_PARAMS = { shieldSpike: 0.095, shieldShoulder: -0.02, shieldSide: 0.4 };
   function shieldOpts() {
-    return { spike: TWEAKS.shieldSpike, shoulder: TWEAKS.shieldShoulder, side: TWEAKS.shieldSide };
+    return { spike: SHIELD_PARAMS.shieldSpike, shoulder: SHIELD_PARAMS.shieldShoulder, side: SHIELD_PARAMS.shieldSide };
   }
   let citadel = null; // { shape, sheen, hatch, cx, top, hw, h } — set when drawn
 
-  /* ---- Citadel district position overrides ------------------------------
-     The edit panel exposes each district's x / y / weight live. Overrides are
-     persisted as flat keys (px_/py_/pw_ + slug) in the EDITMODE block, applied
-     over the authored regions.js values on load. Originals (_x0/_y0/_w0) are
-     captured so "reset" can restore the authored layout. */
   const CIT = REGIONS.find((r) => r.isCitadel);
   const CIT_SEEDS = CIT && CIT.submap ? CIT.submap.seeds : [];
-  CIT_SEEDS.forEach((s) => { s._slug = seedSlug(s); s._x0 = s.x; s._y0 = s.y; s._w0 = s.w || 0; s._ldx0 = s.labelDx || 0; s._ldy0 = s.labelDy || 0; });
+  CIT_SEEDS.forEach((s) => { s._slug = seedSlug(s); });
 
   /* ---- Sub-areas (level-4) ----------------------------------------------
      Each Citadel DISTRICT is sub-divided by its own Voronoi of up to 6 seeds
      (A–F). The data model (tags, defaults, generic blurbs, ensureSubAreas,
-     subAreaList) lives in atlas-citadel-data.js; tweaks persist as
-     sx_/sy_/sw_/son_/gen_ + slug + tag and are layered on by
-     applyCitadelOverrides() below. `_d0` keeps the authored default for reset. */
+     subAreaList) lives in atlas-citadel-data.js. */
   CIT_SEEDS.forEach(ensureSubAreas);
-
-  function applyCitadelOverrides() {
-    CIT_SEEDS.forEach((s) => {
-      const kx = "px_" + s._slug, ky = "py_" + s._slug, kw = "pw_" + s._slug;
-      s.x = (kx in TWEAKS) ? TWEAKS[kx] : s._x0;
-      s.y = (ky in TWEAKS) ? TWEAKS[ky] : s._y0;
-      if (!s.special) s.w = (kw in TWEAKS) ? TWEAKS[kw] : s._w0;
-      // label nudge (text only, doesn't move the cell)
-      s.labelDx = ("ldx_" + s._slug in TWEAKS) ? TWEAKS["ldx_" + s._slug] : s._ldx0;
-      s.labelDy = ("ldy_" + s._slug in TWEAKS) ? TWEAKS["ldy_" + s._slug] : s._ldy0;
-      if (s.sub) s.sub.forEach((a) => {
-        const base = "_" + s._slug + "_" + a.tag.toLowerCase();
-        a.x = ("sx" + base in TWEAKS) ? TWEAKS["sx" + base] : a._d0.x;
-        a.y = ("sy" + base in TWEAKS) ? TWEAKS["sy" + base] : a._d0.y;
-        a.w = ("sw" + base in TWEAKS) ? TWEAKS["sw" + base] : a._d0.w;
-        a.on = ("son" + base in TWEAKS) ? !!TWEAKS["son" + base] : a._d0.on;
-        a.generic = TWEAKS["gen" + base] || a._d0.generic || null;
-        a.lx = ("slx" + base in TWEAKS) ? TWEAKS["slx" + base] : (a._d0.lx || 0);
-        a.ly = ("sly" + base in TWEAKS) ? TWEAKS["sly" + base] : (a._d0.ly || 0);
-      });
-    });
-  }
-  let citSel = null; // index of the district currently selected in the edit panel
 
   /* ---- small helpers ----------------------------------------------------- */
   const LABEL_SIZE = {
@@ -92,9 +55,8 @@
   /* ---- Campus Voronoi layout --------------------------------------------
      The five outer regions tessellate (Laguerre/power Voronoi) inside the
      campus outline — the same engine the Citadel districts use — and the
-     Starfall Citadel rides on top as its tweakable heater-shield. Seeds carry
-     x/y, a friendly weight w (grow/shrink), and label nudges ldx/ldy. Tune
-     these freely; the layout is data, not hand-drawn polygons. */
+     Starfall Citadel rides on top as its heater-shield. Seeds carry x/y, a
+     friendly weight w (grow/shrink), and label nudges ldx/ldy. */
   const CAMPUS_OUTLINE =
     "120,250 440,150 820,112 1190,150 1466,345 1500,716 1330,1052 905,1132 470,1086 180,892 94,556";
   const CAMPUS_SEEDS = [
@@ -107,8 +69,7 @@
   const CITADEL_PLACE = { cx: 722, top: 736, hw: 118, h: 296 };
 
   /* House points-of-interest on the campus map — gold plaques (like the Citadel
-     POIs) marking the five Houses. Click jumps to that House's zone record;
-     positions are tweakable via Map Studio (hx_/hy_ keys). */
+     POIs) marking the five Houses. Click jumps to that House's zone record. */
   const CAMPUS_POIS = [
     { id: "boar-house",     name: "Boar House",     link: { region: "amber-woods",       zone: "Boar House" },    x: 530, y: 553 },
     { id: "dragon-house",   name: "Dragon House",   link: { region: "jewelstone-hollow", zone: "Dragon House" },  x: 968, y: 634 },
@@ -116,31 +77,6 @@
     { id: "dolphin-house",  name: "Dolphin House",  link: { region: "glimmerdeep-lake",  zone: "Dolphin House" }, x: 380, y: 855 },
     { id: "scorpion-house", name: "Scorpion House", link: { citadelDistrict: "crescent_district", zone: "Scorpion House" }, x: 747, y: 799 },
   ];
-  CAMPUS_POIS.forEach((p) => { p._d0 = { x: p.x, y: p.y }; });
-  function applyCampusPoiOverrides() {
-    CAMPUS_POIS.forEach((p) => {
-      p.x = ("hx_" + p.id in TWEAKS) ? TWEAKS["hx_" + p.id] : p._d0.x;
-      p.y = ("hy_" + p.id in TWEAKS) ? TWEAKS["hy_" + p.id] : p._d0.y;
-    });
-  }
-
-  // capture authored defaults + layer any persisted Region-editor overrides
-  CAMPUS_SEEDS.forEach((s) => { s._d0 = { x: s.x, y: s.y, w: s.w, ldx: s.ldx || 0, ldy: s.ldy || 0 }; });
-  CITADEL_PLACE._d0 = { cx: CITADEL_PLACE.cx, top: CITADEL_PLACE.top, hw: CITADEL_PLACE.hw, h: CITADEL_PLACE.h };
-  function applyCampusOverrides() {
-    CAMPUS_SEEDS.forEach((s) => {
-      s.x = ("rx_" + s.id in TWEAKS) ? TWEAKS["rx_" + s.id] : s._d0.x;
-      s.y = ("ry_" + s.id in TWEAKS) ? TWEAKS["ry_" + s.id] : s._d0.y;
-      s.w = ("rw_" + s.id in TWEAKS) ? TWEAKS["rw_" + s.id] : s._d0.w;
-      s.ldx = ("rlx_" + s.id in TWEAKS) ? TWEAKS["rlx_" + s.id] : s._d0.ldx;
-      s.ldy = ("rly_" + s.id in TWEAKS) ? TWEAKS["rly_" + s.id] : s._d0.ldy;
-    });
-    const c = CITADEL_PLACE;
-    c.cx = ("ccx" in TWEAKS) ? TWEAKS.ccx : c._d0.cx;
-    c.top = ("ctop" in TWEAKS) ? TWEAKS.ctop : c._d0.top;
-    c.hw = ("chw" in TWEAKS) ? TWEAKS.chw : c._d0.hw;
-    c.h = ("ch" in TWEAKS) ? TWEAKS.ch : c._d0.h;
-  }
 
   function regionLabel(parent, r, cx, cy, fs) {
     const lines = splitLabel(r.name, r.id === "jewelstone-hollow");
@@ -503,7 +439,7 @@
 
       // Label sits at the cell's pole of inaccessibility (its roomiest spot),
       // not the seed point — keeps names centred in irregular/edge cells.
-      // d.labelDx/labelDy nudge the text only (Map Studio label controls).
+      // d.labelDx/labelDy nudge the text only.
       const anchor = polylabel(cell);
       const cx = anchor[0] + (d.labelDx || 0), cy = anchor[1] + (d.labelDy || 0);
       let fs = 19, gap = 22, showTag = true;
@@ -569,7 +505,7 @@
 
   /* ---- Region zones: the 5 outer regions get the same zone treatment as a
      Citadel district — a Voronoi of named sub-areas inside the region outline,
-     each clickable for its description, all wired to Map Studio. ----------- */
+     each clickable for its description. ------------------------------------ */
   function ensureRegionZones(region) {
     const sm = region.submap;
     if (sm._zones) return sm._zones;
@@ -579,8 +515,7 @@
       const t = tags[i], p = pos[t];
       const x = p ? p[0] : 500, y = p ? p[1] : 380, w = p ? (p[2] || 0) : 0;
       const lx = lbl[t] ? lbl[t][0] : 0, ly = lbl[t] ? lbl[t][1] : 0;
-      return { tag: t, name: a.name, blurb: a.blurb, x, y, w, on: true, generic: null, lx, ly,
-        _d0: { x, y, w, on: true, lx, ly, generic: null } };
+      return { tag: t, name: a.name, blurb: a.blurb, x, y, w, on: true, generic: null, lx, ly };
     });
     return sm._zones;
   }
@@ -600,19 +535,6 @@
       _slug: region.id, _isRegion: true, _cell: cell || region.submap.outline,
       color: "var(--hc-500)", sub: ensureRegionZones(region), region,
     };
-  }
-  function applyRegionZoneOverrides() {
-    REGIONS.forEach((region) => {
-      if (region.isCitadel || !region.submap || !region.submap.outline) return;
-      ensureRegionZones(region).forEach((a) => {
-        const base = "_" + region.id + "_" + a.tag.toLowerCase();
-        a.x = ("sx" + base in TWEAKS) ? TWEAKS["sx" + base] : a._d0.x;
-        a.y = ("sy" + base in TWEAKS) ? TWEAKS["sy" + base] : a._d0.y;
-        a.w = ("sw" + base in TWEAKS) ? TWEAKS["sw" + base] : a._d0.w;
-        a.lx = ("slx" + base in TWEAKS) ? TWEAKS["slx" + base] : (a._d0.lx || 0);
-        a.ly = ("sly" + base in TWEAKS) ? TWEAKS["sly" + base] : (a._d0.ly || 0);
-      });
-    });
   }
   function renderDistrictField(svg, seed, interactive) {
     ensureSubAreas(seed);
@@ -677,7 +599,6 @@
   /* ---- the pan/zoom view can show either the world or the Citadel ---- */
   let curDistrictField = null;   // { seed, field, svg, subsOn } when a district dossier is open
   let curZone = null;            // selected sub-area object when in level-4 zone view
-  let tweaksOnDistrict = null;   // hook the editor registers to track the open district
   function refreshDistrictField() {
     if (!curDistrictField) return;
     const { seed, field } = curDistrictField;
@@ -945,13 +866,6 @@
       onPick: (idx) => { if (!dragMoved) openDistrict(CIT, idx); },
       onHover: highlightCitadelTile,
     });
-    markSelectedTile();
-  }
-  function markSelectedTile() {
-    gWorld.querySelectorAll(".subdistrict.is-sel, .location.is-sel").forEach((n) => n.classList.remove("is-sel"));
-    if (citSel == null) return;
-    const n = gWorld.querySelector(`.subdistrict[data-idx="${citSel}"], .location[data-idx="${citSel}"]`);
-    if (n) n.classList.add("is-sel");
   }
   function enterCitadel() { swapMap(showCitadelMap); }
   function exitCitadel() { swapMap(showWorldMap); }
@@ -1030,7 +944,6 @@
     }
     field.appendChild(svg);
     submap.appendChild(field);
-    if (tweaksOnDistrict) tweaksOnDistrict(zoneHost);
   }
 
   function toggleDistrict(i, on) {
@@ -1115,429 +1028,12 @@
     else if (mapMode === "citadel") exitCitadel();
   });
 
-  /* =======================================================================
-     TWEAKS  — host-protocol panel for the Citadel shield shape
-     ======================================================================= */
-  function updateShield() {
-    if (!citadel) return;
-    const d = shieldPath(citadel.cx, citadel.top, citadel.hw, citadel.h, shieldOpts());
-    citadel.shape.setAttribute("d", d);
-    citadel.sheen.setAttribute("d", d);
-    citadel.hatch.setAttribute("d", d);
-  }
-
-  function initTweaks() {
-    let editActive = false;
-    const SPECS = [
-      { key: "shieldSpike", label: "Top spike", min: 0, max: 0.18, step: 0.005 },
-      { key: "shieldShoulder", label: "Shoulder convexity", min: -0.02, max: 0.16, step: 0.005 },
-      { key: "shieldSide", label: "Side sweep height", min: 0.30, max: 0.62, step: 0.01, invert: true },
-    ];
-    // higher slider = higher sweep point feels natural, so invert that one
-    const toSlider = (s, v) => (s.invert ? s.min + s.max - v : v);
-    const fromSlider = (s, v) => (s.invert ? s.min + s.max - v : v);
-
-    const panel = h("div", "tweaks");
-    panel.hidden = true;
-    panel.innerHTML =
-      '<div class="tweaks__head">' +
-        '<div class="tweaks__titles"><span class="tweaks__eyebrow">Cartographer\u2019s Tools</span>' +
-        '<span class="tweaks__title">Map Studio</span></div>' +
-        '<button type="button" class="tweaks__close" aria-label="Close">\u2715</button>' +
-      '</div>' +
-      '<div class="tweaks__body">' +
-        '<div class="tweaks__section">' +
-          '<div class="tweaks__legend">Citadel shield</div>' +
-          '<div class="tweaks__rows" id="tw-shield"></div>' +
-          '<button type="button" class="tweaks__reset" id="tw-shield-reset">Reset shield</button>' +
-        '</div>' +
-        '<div class="tweaks__section">' +
-          '<div class="tweaks__legend">Region position</div>' +
-          '<select class="tweaks__select" id="tw-reg-sel" aria-label="Region"></select>' +
-          '<div class="tweaks__rows" id="tw-reg"></div>' +
-          '<button type="button" class="tweaks__reset" id="tw-reg-reset">Reset this region</button>' +
-        '</div>' +
-        '<div class="tweaks__section">' +
-          '<div class="tweaks__legend">District position</div>' +
-          '<select class="tweaks__select" id="tw-dist-sel" aria-label="District"></select>' +
-          '<div class="tweaks__rows" id="tw-dist"></div>' +
-          '<button type="button" class="tweaks__reset" id="tw-dist-reset">Reset this district</button>' +
-        '</div>' +
-        '<div class="tweaks__section">' +
-          '<div class="tweaks__legend">Sub-areas</div>' +
-          '<div class="tweaks__hint2" id="tw-suba-hint">Open a district to edit its sub-areas.</div>' +
-          '<div id="tw-suba-body" hidden>' +
-            '<div class="tweaks__subname" id="tw-suba-name"></div>' +
-            '<div class="tweaks__chips" id="tw-suba-chips"></div>' +
-            '<label class="tweaks__check"><input type="checkbox" id="tw-suba-on" /> <span>Enabled</span></label>' +
-            '<div class="tweaks__genwrap">' +
-              '<div class="tweaks__sublabel">Assign generic type</div>' +
-              '<div class="tweaks__genbtns" id="tw-suba-gen">' +
-                '<button type="button" class="tweaks__gen" data-gen="Residential">Residential</button>' +
-                '<button type="button" class="tweaks__gen" data-gen="Class Halls">Class Halls</button>' +
-                '<button type="button" class="tweaks__gen" data-gen="Commercial">Commercial</button>' +
-              '</div>' +
-            '</div>' +
-            '<div class="tweaks__rows" id="tw-suba-rows"></div>' +
-            '<button type="button" class="tweaks__reset" id="tw-suba-reset">Reset this sub-area</button>' +
-          '</div>' +
-        '</div>' +
-      '</div>';
-
-    /* ---- shield sliders ---- */
-    const shieldBody = panel.querySelector("#tw-shield");
-    SPECS.forEach((s) => {
-      const row = h("label", "tweaks__row");
-      row.innerHTML =
-        `<span class="tweaks__label">${s.label}</span>` +
-        `<input type="range" class="tweaks__slider" min="${s.min}" max="${s.max}" step="${s.step}" />` +
-        `<span class="tweaks__val mono"></span>`;
-      const input = row.querySelector("input");
-      const val = row.querySelector(".tweaks__val");
-      const sync = () => { input.value = toSlider(s, TWEAKS[s.key]); val.textContent = Math.round(TWEAKS[s.key] * 100); };
-      input.addEventListener("input", () => {
-        TWEAKS[s.key] = +fromSlider(s, +input.value).toFixed(3);
-        val.textContent = Math.round(TWEAKS[s.key] * 100);
-        updateShield();
-        window.parent.postMessage({ type: "__edit_mode_set_keys", edits: { [s.key]: TWEAKS[s.key] } }, "*");
-      });
-      s._sync = sync; sync();
-      shieldBody.appendChild(row);
-    });
-    panel.querySelector("#tw-shield-reset").addEventListener("click", () => {
-      const edits = {};
-      SPECS.forEach((s) => { TWEAKS[s.key] = TWEAK_DEFAULTS[s.key]; edits[s.key] = TWEAKS[s.key]; s._sync(); });
-      updateShield();
-      window.parent.postMessage({ type: "__edit_mode_set_keys", edits }, "*");
-    });
-
-    /* ---- region position editor (campus Voronoi seeds + Citadel shield) ---- */
-    const regSel = panel.querySelector("#tw-reg-sel");
-    CAMPUS_SEEDS.forEach((s) => {
-      const r = REGIONS.find((R) => R.id === s.id);
-      const o = document.createElement("option"); o.value = s.id; o.textContent = r ? r.name : s.id;
-      regSel.appendChild(o);
-    });
-    const citOpt = document.createElement("option"); citOpt.value = "__citadel"; citOpt.textContent = "Starfall Citadel (shield)";
-    regSel.appendChild(citOpt);
-    const gHouses = document.createElement("optgroup"); gHouses.label = "House plaques";
-    CAMPUS_POIS.forEach((p) => {
-      const o = document.createElement("option"); o.value = "house:" + p.id; o.textContent = p.name;
-      gHouses.appendChild(o);
-    });
-    regSel.appendChild(gHouses);
-
-    // Build the per-selection control spec: each row reads/writes live data and
-    // persists under its key; renderWorld() redraws (and rebuilds the shield).
-    function regionSpec(id) {
-      if (id.indexOf("house:") === 0) {
-        const p = CAMPUS_POIS.find((x) => x.id === id.slice(6));
-        return [
-          { label: "X", min: 60, max: 1540, get: () => p.x, set: (v) => (p.x = v), key: "hx_" + p.id },
-          { label: "Y", min: 80, max: 1160, get: () => p.y, set: (v) => (p.y = v), key: "hy_" + p.id },
-        ];
-      }
-      if (id === "__citadel") {
-        const c = CITADEL_PLACE;
-        return [
-          { label: "X", min: 200, max: 1400, get: () => c.cx, set: (v) => (c.cx = v), key: "ccx" },
-          { label: "Y (top)", min: 380, max: 1080, get: () => c.top, set: (v) => (c.top = v), key: "ctop" },
-          { label: "Width", min: 50, max: 280, get: () => c.hw, set: (v) => (c.hw = v), key: "chw" },
-          { label: "Height", min: 90, max: 420, get: () => c.h, set: (v) => (c.h = v), key: "ch" },
-        ];
-      }
-      const s = CAMPUS_SEEDS.find((x) => x.id === id);
-      return [
-        { label: "X", min: 60, max: 1540, get: () => s.x, set: (v) => (s.x = v), key: "rx_" + id },
-        { label: "Y", min: 80, max: 1160, get: () => s.y, set: (v) => (s.y = v), key: "ry_" + id },
-        { label: "Weight", min: -100, max: 100, get: () => s.w, set: (v) => (s.w = v), key: "rw_" + id },
-        { label: "Label X", min: -420, max: 420, get: () => s.ldx, set: (v) => (s.ldx = v), key: "rlx_" + id },
-        { label: "Label Y", min: -420, max: 420, get: () => s.ldy, set: (v) => (s.ldy = v), key: "rly_" + id },
-      ];
-    }
-    const regBody = panel.querySelector("#tw-reg");
-    let regSelId = CAMPUS_SEEDS[0].id;
-    function markSelectedRegion() {
-      gWorld.querySelectorAll(".region.is-sel, .campus-poi.is-sel").forEach((n) => n.classList.remove("is-sel"));
-      if (regSelId.indexOf("house:") === 0) {
-        const n = gWorld.querySelector(`.campus-poi[data-poi="${regSelId.slice(6)}"]`);
-        if (n) n.classList.add("is-sel");
-        return;
-      }
-      const id = regSelId === "__citadel" ? REGIONS.find((R) => R.isCitadel).id : regSelId;
-      const n = gWorld.querySelector(`.region[data-id="${id}"]`);
-      if (n) n.classList.add("is-sel");
-    }
-    function buildRegionRows() {
-      regBody.innerHTML = "";
-      const spec = regionSpec(regSelId);
-      spec.forEach((p) => {
-        const row = h("label", "tweaks__row");
-        row.innerHTML =
-          `<span class="tweaks__label">${p.label}</span>` +
-          `<input type="range" class="tweaks__slider" min="${p.min}" max="${p.max}" step="1" />` +
-          `<span class="tweaks__val mono"></span>`;
-        const input = row.querySelector("input");
-        const val = row.querySelector(".tweaks__val");
-        input.value = p.get(); val.textContent = Math.round(p.get());
-        input.addEventListener("input", () => {
-          const v = +input.value; val.textContent = v; p.set(v);
-          TWEAKS[p.key] = v;
-          renderWorld(); markSelectedRegion();
-          window.parent.postMessage({ type: "__edit_mode_set_keys", edits: { [p.key]: v } }, "*");
-        });
-        regBody.appendChild(row);
-      });
-    }
-    function selectRegion(id) {
-      regSelId = id; regSel.value = id;
-      if (mapMode !== "world") exitCitadel();
-      buildRegionRows(); markSelectedRegion();
-    }
-    regSel.addEventListener("change", () => selectRegion(regSel.value));
-    panel.querySelector("#tw-reg-reset").addEventListener("click", () => {
-      const edits = {};
-      if (regSelId.indexOf("house:") === 0) {
-        const p = CAMPUS_POIS.find((x) => x.id === regSelId.slice(6)), d = p._d0;
-        p.x = d.x; p.y = d.y;
-        [["hx_", d.x], ["hy_", d.y]].forEach(([k, v]) => { delete TWEAKS[k + p.id]; edits[k + p.id] = v; });
-      } else if (regSelId === "__citadel") {
-        const c = CITADEL_PLACE, d = c._d0;
-        c.cx = d.cx; c.top = d.top; c.hw = d.hw; c.h = d.h;
-        ["ccx", "ctop", "chw", "ch"].forEach((k, i) => { delete TWEAKS[k]; edits[k] = [d.cx, d.top, d.hw, d.h][i]; });
-      } else {
-        const s = CAMPUS_SEEDS.find((x) => x.id === regSelId), d = s._d0;
-        s.x = d.x; s.y = d.y; s.w = d.w; s.ldx = d.ldx; s.ldy = d.ldy;
-        [["rx_", d.x], ["ry_", d.y], ["rw_", d.w], ["rlx_", d.ldx], ["rly_", d.ldy]].forEach(([p, v]) => { delete TWEAKS[p + regSelId]; edits[p + regSelId] = v; });
-      }
-      renderWorld(); buildRegionRows(); markSelectedRegion();
-      window.parent.postMessage({ type: "__edit_mode_set_keys", edits }, "*");
-    });
-    buildRegionRows();
-
-    /* ---- district position editor ---- */
-    const sel = panel.querySelector("#tw-dist-sel");
-    const gD = document.createElement("optgroup"); gD.label = "Districts";
-    const gP = document.createElement("optgroup"); gP.label = "Points of Interest";
-    let firstDistrict = null;
-    CIT_SEEDS.forEach((s, i) => {
-      const o = document.createElement("option"); o.value = String(i); o.textContent = s.name;
-      (s.special ? gP : gD).appendChild(o);
-      if (!s.special && firstDistrict == null) firstDistrict = i;
-    });
-    sel.appendChild(gD); sel.appendChild(gP);
-
-    const POS = [
-      { axis: "x", label: "X", min: 0, max: 1000, step: 1, prop: "x", key: (s) => "px_" + s._slug },
-      { axis: "y", label: "Y", min: 0, max: 1200, step: 1, prop: "y", key: (s) => "py_" + s._slug },
-      { axis: "w", label: "Weight", min: -100, max: 100, step: 1, prop: "w", key: (s) => "pw_" + s._slug },
-      { axis: "ldx", label: "Label X", min: -260, max: 260, step: 1, prop: "labelDx", key: (s) => "ldx_" + s._slug, labelOnly: true },
-      { axis: "ldy", label: "Label Y", min: -260, max: 260, step: 1, prop: "labelDy", key: (s) => "ldy_" + s._slug, labelOnly: true },
-    ];
-    const distBody = panel.querySelector("#tw-dist");
-    const ctrls = POS.map((p) => {
-      const row = h("label", "tweaks__row");
-      row.innerHTML =
-        `<span class="tweaks__label">${p.label}</span>` +
-        `<input type="range" class="tweaks__slider" min="${p.min}" max="${p.max}" step="${p.step}" />` +
-        `<span class="tweaks__val mono"></span>`;
-      const input = row.querySelector("input");
-      const val = row.querySelector(".tweaks__val");
-      input.addEventListener("input", () => {
-        const seed = CIT_SEEDS[citSel]; if (!seed) return;
-        const v = +input.value; val.textContent = v;
-        seed[p.prop] = v;
-        const k = p.key(seed); TWEAKS[k] = v;
-        redrawCitadelTiles();
-        window.parent.postMessage({ type: "__edit_mode_set_keys", edits: { [k]: v } }, "*");
-      });
-      distBody.appendChild(row);
-      return { p, input, val };
-    });
-
-    function syncDistControls() {
-      const seed = CIT_SEEDS[citSel]; if (!seed) return;
-      ctrls.forEach((c) => {
-        // weight and label-nudge don't apply to floating POIs
-        const na = (c.p.axis === "w" || c.p.labelOnly) && seed.special;
-        if (na) { c.input.disabled = true; c.input.value = 0; c.val.textContent = "—"; c.input.closest(".tweaks__row").style.opacity = ".4"; }
-        else { c.input.disabled = false; c.input.value = seed[c.p.prop] || 0; c.val.textContent = Math.round(seed[c.p.prop] || 0); c.input.closest(".tweaks__row").style.opacity = "1"; }
-      });
-    }
-    function focusTile(seed) {
-      if (!seed) return;
-      scale = clampScale(1.3);
-      tx = -(seed.x - 500) * scale - 150;
-      ty = -(seed.y - 600) * scale;
-      apply();
-    }
-    function selectDistrict(i, doFocus) {
-      citSel = i; sel.value = String(i);
-      if (mapMode !== "citadel") showCitadelMap();
-      syncDistControls(); markSelectedTile();
-      if (doFocus) focusTile(CIT_SEEDS[i]);
-    }
-    sel.addEventListener("change", () => selectDistrict(+sel.value, true));
-    panel.querySelector("#tw-dist-reset").addEventListener("click", () => {
-      const seed = CIT_SEEDS[citSel]; if (!seed) return;
-      const edits = {};
-      ["x", "y", "w"].forEach((a) => {
-        if (a === "w" && seed.special) return;
-        seed[a] = seed["_" + a + "0"];
-        const k = "p" + a + "_" + seed._slug; delete TWEAKS[k]; edits[k] = seed["_" + a + "0"];
-      });
-      if (!seed.special) {
-        seed.labelDx = seed._ldx0; seed.labelDy = seed._ldy0;
-        delete TWEAKS["ldx_" + seed._slug]; edits["ldx_" + seed._slug] = seed._ldx0;
-        delete TWEAKS["ldy_" + seed._slug]; edits["ldy_" + seed._slug] = seed._ldy0;
-      }
-      redrawCitadelTiles(); syncDistControls();
-      window.parent.postMessage({ type: "__edit_mode_set_keys", edits }, "*");
-    });
-    if (firstDistrict != null) { citSel = firstDistrict; sel.value = String(firstDistrict); syncDistControls(); }
-
-    /* ---- sub-area editor (operates on the open district dossier) ---- */
-    const subBody = panel.querySelector("#tw-suba-body");
-    const subHint = panel.querySelector("#tw-suba-hint");
-    const subNameEl = panel.querySelector("#tw-suba-name");
-    const subChips = panel.querySelector("#tw-suba-chips");
-    const subOn = panel.querySelector("#tw-suba-on");
-    const subRowsEl = panel.querySelector("#tw-suba-rows");
-    let subSeed = null, subSel = 0;
-    const SUBPOS = [
-      { axis: "x", label: "X", min: 0, max: 1000, step: 1 },
-      { axis: "y", label: "Y", min: 0, max: 760, step: 1 },
-      { axis: "w", label: "Weight", min: -100, max: 100, step: 1 },
-      { axis: "lx", label: "Label X", min: -240, max: 240, step: 1 },
-      { axis: "ly", label: "Label Y", min: -240, max: 240, step: 1 },
-    ];
-    const subCtrls = SUBPOS.map((p) => {
-      const row = h("label", "tweaks__row");
-      row.innerHTML =
-        `<span class="tweaks__label">${p.label}</span>` +
-        `<input type="range" class="tweaks__slider" min="${p.min}" max="${p.max}" step="${p.step}" />` +
-        `<span class="tweaks__val mono"></span>`;
-      const input = row.querySelector("input");
-      const val = row.querySelector(".tweaks__val");
-      input.addEventListener("input", () => {
-        if (!subSeed) return;
-        const a = subSeed.sub[subSel]; if (!a) return;
-        const v = +input.value; val.textContent = v; a[p.axis] = v;
-        const k = "s" + p.axis + "_" + subSeed._slug + "_" + a.tag.toLowerCase();
-        TWEAKS[k] = v;
-        refreshDistrictField();
-        window.parent.postMessage({ type: "__edit_mode_set_keys", edits: { [k]: v } }, "*");
-      });
-      subRowsEl.appendChild(row);
-      return { p, input, val };
-    });
-    function syncSubControls() {
-      if (!subSeed) return;
-      const a = subSeed.sub[subSel]; if (!a) return;
-      subOn.checked = !!a.on;
-      subCtrls.forEach((c) => {
-        const off = !a.on;
-        c.input.disabled = off; c.input.value = a[c.p.axis] || 0;
-        c.val.textContent = Math.round(a[c.p.axis] || 0);
-        c.input.closest(".tweaks__row").style.opacity = off ? ".4" : "1";
-      });
-      genBtns.forEach((b) => b.classList.toggle("is-active", a.generic === b.getAttribute("data-gen")));
-    }
-    function renderSubChips() {
-      subChips.innerHTML = "";
-      if (!subSeed) return;
-      subSeed.sub.forEach((a, i) => {
-        const c = h("button", "tweaks__chip" + (i === subSel ? " is-sel" : "") + (a.on ? "" : " is-off"));
-        c.type = "button"; c.textContent = a.tag;
-        c.addEventListener("click", () => { subSel = i; renderSubChips(); syncSubControls(); });
-        subChips.appendChild(c);
-      });
-    }
-    const genBtns = [...panel.querySelectorAll("#tw-suba-gen .tweaks__gen")];
-    genBtns.forEach((btn) => btn.addEventListener("click", () => {
-      if (!subSeed) return;
-      const a = subSeed.sub[subSel]; if (!a) return;
-      const type = btn.getAttribute("data-gen");
-      const base = "_" + subSeed._slug + "_" + a.tag.toLowerCase();
-      if (a.generic === type) { a.generic = null; TWEAKS["gen" + base] = ""; }
-      else { a.generic = type; TWEAKS["gen" + base] = type; }
-      refreshDistrictField();
-      syncSubControls();
-      window.parent.postMessage({ type: "__edit_mode_set_keys", edits: { ["gen" + base]: TWEAKS["gen" + base] } }, "*");
-    }));
-    subOn.addEventListener("change", () => {
-      if (!subSeed) return;
-      const a = subSeed.sub[subSel]; if (!a) return;
-      a.on = subOn.checked;
-      const k = "son_" + subSeed._slug + "_" + a.tag.toLowerCase();
-      TWEAKS[k] = a.on ? 1 : 0;
-      // toggling changes the enabled set → re-render the field in place
-      refreshDistrictField();
-      renderSubChips(); syncSubControls();
-      window.parent.postMessage({ type: "__edit_mode_set_keys", edits: { [k]: TWEAKS[k] } }, "*");
-    });
-    panel.querySelector("#tw-suba-reset").addEventListener("click", () => {
-      if (!subSeed) return;
-      const a = subSeed.sub[subSel]; if (!a) return;
-      const edits = {};
-      ["x", "y", "w", "lx", "ly"].forEach((ax) => { a[ax] = a._d0[ax]; const k = "s" + ax + "_" + subSeed._slug + "_" + a.tag.toLowerCase(); delete TWEAKS[k]; edits[k] = a._d0[ax]; });
-      a.on = a._d0.on; const ko = "son_" + subSeed._slug + "_" + a.tag.toLowerCase(); delete TWEAKS[ko]; edits[ko] = a._d0.on ? 1 : 0;
-      a.generic = a._d0.generic || null; const kg = "gen_" + subSeed._slug + "_" + a.tag.toLowerCase(); delete TWEAKS[kg]; edits[kg] = a._d0.generic || "";
-      refreshDistrictField();
-      renderSubChips(); syncSubControls();
-      window.parent.postMessage({ type: "__edit_mode_set_keys", edits }, "*");
-    });
-    // hook called by buildSubmap whenever a district dossier opens/closes
-    tweaksOnDistrict = function (seed) {
-      subSeed = seed; subSel = 0;
-      if (seed) {
-        subHint.hidden = true; subBody.hidden = false;
-        subNameEl.textContent = seed.name;
-        // Regions have no generics / enable toggle — hide those controls for them.
-        const isReg = !!seed._isRegion;
-        const gw = panel.querySelector(".tweaks__genwrap"); if (gw) gw.style.display = isReg ? "none" : "";
-        const ck = subOn.closest(".tweaks__check"); if (ck) ck.style.display = isReg ? "none" : "";
-        renderSubChips(); syncSubControls();
-        if (editActive) submap.classList.add("is-subediting");
-      } else {
-        subBody.hidden = true; subHint.hidden = false;
-        submap.classList.remove("is-subediting");
-      }
-    };
-
-    // drift the world-map citadel into view (left of the panel) on first open
-    function focusCitadel() {
-      if (!citadel || mapMode !== "world") return;
-      scale = clampScale(1.15);
-      const cy = citadel.top + citadel.h / 2;
-      tx = -(citadel.cx - 800) * scale - 160;
-      ty = -(cy - 600) * scale;
-      apply();
-    }
-
-    const clearRegionSel = () => gWorld.querySelectorAll(".region.is-sel").forEach((n) => n.classList.remove("is-sel"));
-    const dismiss = () => { panel.hidden = true; editActive = false; submap.classList.remove("is-subediting"); clearRegionSel(); window.parent.postMessage({ type: "__edit_mode_dismissed" }, "*"); };
-    panel.querySelector(".tweaks__close").addEventListener("click", dismiss);
-    window.addEventListener("message", (e) => {
-      const t = e && e.data && e.data.type;
-      if (t === "__activate_edit_mode") { editActive = true; SPECS.forEach((s) => s._sync()); syncDistControls(); panel.hidden = false; if (curDistrictField) submap.classList.add("is-subediting"); else focusCitadel(); }
-      else if (t === "__deactivate_edit_mode") { editActive = false; panel.hidden = true; submap.classList.remove("is-subediting"); clearRegionSel(); }
-    });
-    byId("atlas").appendChild(panel);
-    window.parent.postMessage({ type: "__edit_mode_available" }, "*");
-  }
-
   /* ---- boot ---- */
-  applyCitadelOverrides();
-  applyCampusOverrides();
-  applyCampusPoiOverrides();
-  applyRegionZoneOverrides();
   renderWorld();
   renderLegend();
   renderCitadelLegend();
   fitWorld();
   setCrumbs([{ label: "Campus" }]);
-  initTweaks();
   var cBack = byId("citadel-back"); if (cBack) cBack.addEventListener("click", exitCitadel);
   var mBack = byId("mobile-citadel-back"); if (mBack) mBack.addEventListener("click", exitCitadel);
   if (window.lucide) lucide.createIcons();
