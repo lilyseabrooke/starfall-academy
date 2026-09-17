@@ -19,7 +19,6 @@ export interface Crumb { label: string; onClick?: () => void; }
 export interface AtlasStageProps {
   regions: Region[];
   mode: "world" | "citadel";
-  crumbs: Crumb[];
   onEnterRegion: (id: string) => void;
   onEnterCitadel: () => void;
   onExitCitadel: () => void;
@@ -34,7 +33,7 @@ export interface AtlasStageProps {
 const MIN = 0.3, MAX = 3;
 
 export function AtlasStage({
-  regions, mode, crumbs, onEnterRegion, onEnterCitadel, onExitCitadel, onSelectDistrict,
+  regions, mode, onEnterRegion, onEnterCitadel, onExitCitadel, onSelectDistrict,
   onJumpToZone, onJumpToCitadelZone, picking, onPick, party,
 }: AtlasStageProps) {
   const stageRef = React.useRef<HTMLDivElement>(null);
@@ -172,19 +171,6 @@ export function AtlasStage({
 
   return (
     <div className="stage" ref={stageRef}>
-      <div className="crumbs-bar float">
-        <nav className="crumbs" aria-label="Breadcrumb">
-          {crumbs.map((c, i) => (
-            <React.Fragment key={i}>
-              {i > 0 && <span className="crumbs__sep">›</span>}
-              {i === crumbs.length - 1 || !c.onClick
-                ? <span className="crumbs__here">{c.label}</span>
-                : <button type="button" className="crumbs__link" onClick={c.onClick}>{c.label}</button>}
-            </React.Fragment>
-          ))}
-        </nav>
-      </div>
-
       <div
         className="canvas" id="canvas" ref={canvasRef}
         onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endDrag} onPointerCancel={endDrag}

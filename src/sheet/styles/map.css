@@ -10,9 +10,8 @@
 }
 .sf-sheet .sf-map.is-open { grid-template-columns: 1fr 340px; }
 
-/* ---- map stage (the embedded atlas) ------------------------------------ */
-.sf-sheet .sf-map__stage { position: relative; min-width: 0; background: var(--ink-950); }
-.sf-sheet .sf-map__frame { width: 100%; height: 100%; border: 0; display: block; }
+/* ---- map stage (the native atlas) --------------------------------------- */
+.sf-sheet .sf-map__stage { position: relative; min-width: 0; background: var(--ink-950); overflow: hidden; }
 
 /* edge peek tab to reveal the whereabouts panel (shown when collapsed) */
 .sf-sheet .sf-map__peek {
@@ -142,3 +141,304 @@
 @media (max-width: 1100px) {
   .sf-sheet .sf-map.is-open { grid-template-columns: 1fr 300px; }
 }
+
+/* ===========================================================================
+   Native atlas — ported from the vendored public/character-sheet/map/{styles,
+   party}.css (see design/MAP_PORT_ROADMAP.md Phase 5). Class names match the
+   AtlasMap/AtlasStage/DistrictField/Dossier/CitadelTessellation/WorldTessellation
+   /PartyMarkers components exactly, so this is the same visual language, just
+   scoped to live inside .sf-map__stage instead of owning the whole page.
+   =========================================================================== */
+.sf-sheet {
+  /* "The Grounds" meadow green — the one house tint not in the DS palette */
+  --meadow-300: #9cc49a; --meadow-500: #5f8f63; --meadow-700: #33502f;
+}
+
+/* House → colour map (each region/tile carries data-house) */
+.sf-sheet [data-house="forest"]  { --hc-300: var(--forest-300); --hc-500: var(--forest-500); --hc-700: var(--forest-700); }
+.sf-sheet [data-house="crimson"] { --hc-300: var(--crimson-300); --hc-500: var(--crimson-500); --hc-700: var(--crimson-700); }
+.sf-sheet [data-house="plum"]    { --hc-300: var(--plum-300); --hc-500: var(--plum-500); --hc-700: var(--plum-700); }
+.sf-sheet [data-house="teal"]    { --hc-300: var(--teal-300); --hc-500: var(--teal-500); --hc-700: var(--teal-700); }
+.sf-sheet [data-house="meadow"]  { --hc-300: var(--meadow-300); --hc-500: var(--meadow-500); --hc-700: var(--meadow-700); }
+.sf-sheet [data-house="gold"]    { --hc-300: var(--gold-300); --hc-500: var(--gold-500); --hc-700: var(--gold-700); }
+
+.sf-sheet .atlas-shell { position: absolute; inset: 0; background: var(--grad-vignette); isolation: isolate; }
+.sf-sheet .atlas-shell button { font-family: inherit; color: inherit; cursor: pointer; background: none; border: none; }
+
+.sf-sheet .stage, .sf-sheet .submap { position: absolute; inset: 0; overflow: hidden; }
+.sf-sheet .stage::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(58% 52% at 50% 42%, color-mix(in oklab, var(--gold-500) 5%, transparent), transparent 70%),
+    url("/character-sheet/map/assets/crest-lines.png") no-repeat center 46% / min(640px, 52vw);
+  filter: saturate(0.2);
+  opacity: .5; mix-blend-mode: screen;
+}
+
+/* Floating chrome + breadcrumb pill */
+.sf-sheet .float { position: absolute; z-index: 5; }
+.sf-sheet .crumbs-bar { top: 16px; left: 16px; z-index: 6; }
+.sf-sheet .crumbs {
+  display: flex; align-items: center; gap: 8px; font-family: var(--font-sans);
+  font-size: 11px; letter-spacing: .08em; color: var(--text-muted); text-transform: uppercase;
+  background: color-mix(in oklab, var(--ink-850) 92%, transparent);
+  border: 1px solid var(--border-default); border-radius: var(--radius-sm);
+  padding: 8px 14px; backdrop-filter: blur(8px); box-shadow: var(--shadow-md);
+}
+.sf-sheet .crumbs__link { color: var(--text-muted); letter-spacing: .08em; text-transform: uppercase; transition: color var(--dur-base); }
+.sf-sheet .crumbs__link:hover { color: var(--text-gold); }
+.sf-sheet .crumbs__sep { color: var(--gold-700); }
+.sf-sheet .crumbs__here { color: var(--text-strong); }
+
+/* Pan/zoom transform wrapper */
+.sf-sheet .canvas { position: absolute; inset: 0; cursor: grab; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: none; }
+.sf-sheet .panner { position: absolute; top: 50%; left: 50%; transform-origin: center; will-change: transform; }
+.sf-sheet .world-svg { display: block; overflow: visible; }
+.sf-sheet .dragging { cursor: grabbing !important; }
+.sf-sheet .world-svg text { -webkit-user-select: none; user-select: none; }
+
+/* Pick-mode cursor (whereabouts "place on the map") */
+.sf-sheet .sf-map__stage.is-picking .region { cursor: crosshair; }
+.sf-sheet .sf-map__stage.is-picking .region__shape { transition: filter .15s ease; }
+.sf-sheet .sf-map__stage.is-picking .region:hover .region__shape {
+  filter: brightness(1.18) drop-shadow(0 0 10px color-mix(in oklab, var(--gold-400) 60%, transparent));
+}
+
+/* =========================================================================
+   Region blocks (shared by world map + submaps)
+   ========================================================================= */
+.sf-sheet .region { cursor: pointer; outline: none; }
+.sf-sheet .region__shape {
+  fill: color-mix(in oklab, var(--hc-500) 52%, var(--ink-900));
+  stroke: color-mix(in oklab, var(--gold-400) 50%, transparent); stroke-width: 2;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 7px 12px rgba(0,0,0,.5));
+  transition: fill .3s var(--ease-standard), stroke .3s var(--ease-standard), filter .3s var(--ease-standard);
+}
+.sf-sheet .region__sheen { fill: url(#sheen); mix-blend-mode: soft-light; opacity: .55; pointer-events: none; transition: opacity .3s var(--ease-standard); }
+.sf-sheet .region:hover .region__shape, .sf-sheet .region.is-active .region__shape {
+  fill: color-mix(in oklab, var(--hc-500) 92%, var(--ink-900));
+  stroke: var(--gold-200); stroke-width: 2.5;
+  filter: drop-shadow(0 0 26px color-mix(in oklab, var(--hc-300) 48%, transparent)) drop-shadow(0 8px 14px rgba(0,0,0,.5));
+}
+.sf-sheet .region:hover .region__sheen, .sf-sheet .region.is-active .region__sheen { opacity: .75; }
+.sf-sheet .region__hatch { fill: url(#hatch); opacity: 0; transition: opacity .3s; pointer-events: none; }
+.sf-sheet .region:hover .region__hatch { opacity: .5; }
+
+.sf-sheet .region__label { pointer-events: none; text-anchor: middle; }
+.sf-sheet .region__name {
+  font-family: var(--font-serif); font-weight: 700;
+  fill: var(--parchment-50); letter-spacing: .06em; text-transform: uppercase;
+  paint-order: stroke; stroke: rgba(8,9,13,.55); stroke-width: 4px;
+}
+
+.sf-sheet .region--citadel .region__shape {
+  fill: color-mix(in oklab, var(--gold-600) 52%, var(--ink-900));
+  stroke: var(--gold-200); stroke-width: 2.5;
+  filter: drop-shadow(0 8px 16px rgba(0,0,0,.55));
+}
+.sf-sheet .region--citadel .region__sheen { opacity: .72; }
+.sf-sheet .region--citadel:hover .region__shape, .sf-sheet .region--citadel.is-active .region__shape {
+  fill: var(--gold-500);
+  filter: drop-shadow(0 0 30px color-mix(in oklab, var(--gold-300) 58%, transparent)) drop-shadow(0 8px 16px rgba(0,0,0,.5));
+}
+.sf-sheet .region--citadel .region__name { fill: var(--parchment-50); paint-order: stroke; stroke: rgba(8,9,13,.7); stroke-width: 4px; }
+
+/* =========================================================================
+   Legend / index, compass, zoom controls, hint
+   ========================================================================= */
+.sf-sheet .legend {
+  top: 64px; left: 16px; width: 244px;
+  display: flex; flex-direction: column; max-height: calc(100% - 88px);
+  background: color-mix(in oklab, var(--ink-850) 92%, transparent);
+  border: 1px solid var(--border-default); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg), var(--inset-hi); backdrop-filter: blur(8px); overflow: hidden;
+}
+.sf-sheet .legend__head { padding: var(--space-4) var(--space-4) var(--space-3); flex: none; }
+.sf-sheet .legend__eyebrow { font-family: var(--font-sans); font-size: 10px; letter-spacing: var(--tracking-widest); text-transform: uppercase; color: var(--text-gold); }
+.sf-sheet .legend__title { font-family: var(--font-display); font-weight: 700; font-size: 15px; letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--text-strong); margin-top: 4px; }
+.sf-sheet .legend__list {
+  padding: 0 var(--space-2) var(--space-2); display: flex; flex-direction: column; gap: 1px;
+  min-height: 0; max-height: calc(100vh - 240px); overflow-y: auto;
+  scrollbar-width: thin; scrollbar-color: color-mix(in oklab, var(--gold-600) 40%, transparent) transparent;
+}
+.sf-sheet .legend__list::-webkit-scrollbar { width: 8px; }
+.sf-sheet .legend__list::-webkit-scrollbar-thumb { background: color-mix(in oklab, var(--gold-600) 36%, transparent); border-radius: var(--radius-pill); border: 2px solid transparent; background-clip: padding-box; }
+.sf-sheet .legend__item { display: flex; align-items: center; gap: 11px; width: 100%; padding: 8px 10px; border-radius: var(--radius-sm); text-align: left; transition: background var(--dur-base); }
+.sf-sheet .legend__item:hover, .sf-sheet .legend__item.is-active { background: var(--ink-700); }
+.sf-sheet .legend__swatch { width: 10px; height: 10px; flex: none; border-radius: 50%; background: var(--hc-500); box-shadow: 0 0 6px var(--hc-300); }
+.sf-sheet .legend__swatch--gold { background: var(--grad-gold); box-shadow: 0 0 6px var(--gold-400); }
+.sf-sheet .legend__labels { display: flex; flex-direction: column; line-height: 1.18; min-width: 0; }
+.sf-sheet .legend__name { font-family: var(--font-serif); font-size: 14px; color: var(--text-strong); letter-spacing: .01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sf-sheet .legend__item:hover .legend__name, .sf-sheet .legend__item.is-active .legend__name { color: var(--gold-200); }
+.sf-sheet .legend__sub { font-family: var(--font-sans); font-size: 11px; color: var(--text-muted); letter-spacing: .02em; }
+.sf-sheet .legend__sector { margin-left: auto; font-family: var(--font-mono); font-size: 10px; color: var(--text-faint); letter-spacing: .04em; flex: none; }
+.sf-sheet .legend__hint { padding: 0 var(--space-4) var(--space-4); flex: none; font-family: var(--font-serif); font-style: italic; font-size: 11.5px; color: var(--text-faint); }
+
+.sf-sheet .legend--citadel { display: flex; flex-direction: column; max-height: calc(100% - 88px); }
+.sf-sheet .legend__head--citadel { display: flex; flex-direction: column; gap: 12px; }
+.sf-sheet .legend__titles { display: flex; flex-direction: column; line-height: 1.08; }
+.sf-sheet .citadel-back {
+  align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px;
+  background: var(--ink-850); border: 1px solid var(--border-default); border-radius: var(--radius-sm);
+  color: var(--text-muted); font-family: var(--font-sans); font-size: 11px;
+  letter-spacing: var(--tracking-wide); text-transform: uppercase;
+  transition: border-color var(--dur-base), color var(--dur-base), box-shadow var(--dur-base);
+}
+.sf-sheet .citadel-back:hover { color: var(--gold-200); border-color: var(--gold-600); box-shadow: var(--glow-gold); }
+.sf-sheet .legend--citadel .legend__list { overflow-y: auto; min-height: 0; padding: var(--space-1) var(--space-2) var(--space-2); }
+.sf-sheet .legend__item--loc .legend__name { color: var(--gold-200); }
+.sf-sheet .legend__item--compact { gap: 9px; padding: 5px 9px; }
+.sf-sheet .legend__item--compact .legend__name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sf-sheet .legend__item--compact .legend__swatch { width: 9px; height: 9px; }
+.sf-sheet .legend__subhead {
+  margin: 8px 9px 3px; padding-top: 8px; border-top: 1px solid var(--border-subtle);
+  font-family: var(--font-sans); font-size: 9.5px; letter-spacing: var(--tracking-widest); text-transform: uppercase; color: var(--text-gold);
+}
+
+.sf-sheet .compass { top: 16px; right: 16px; width: 84px; height: 84px; opacity: .92; filter: drop-shadow(0 6px 14px rgba(0,0,0,.5)); }
+.sf-sheet .compass text { font-family: var(--font-serif); font-weight: 700; }
+
+.sf-sheet .zoom {
+  right: 16px; bottom: 16px; display: flex; flex-direction: column; padding: var(--space-1); gap: var(--space-1);
+  border: 1px solid var(--border-default); border-radius: var(--radius-md);
+  background: color-mix(in oklab, var(--ink-850) 92%, transparent); box-shadow: var(--shadow-lg); backdrop-filter: blur(8px);
+}
+.sf-sheet .zoom-btn { width: 38px; height: 38px; display: grid; place-items: center; color: var(--text-body); border-radius: var(--radius-sm); transition: background var(--dur-base), color var(--dur-base); }
+.sf-sheet .zoom-btn:hover { background: var(--ink-700); color: var(--gold-300); }
+.sf-sheet .zoom-btn svg { width: 18px; height: 18px; }
+
+.sf-sheet .hint {
+  left: 50%; bottom: 14px; transform: translateX(-50%);
+  font-family: var(--font-sans); font-size: 11px; letter-spacing: .14em; color: var(--text-faint);
+  text-transform: uppercase; text-align: center; pointer-events: none; transition: opacity .4s;
+}
+.sf-sheet .hint b { color: var(--gold-500); font-weight: 500; }
+
+/* =========================================================================
+   Submap view — dossier panel + district/zone field
+   ========================================================================= */
+.sf-sheet .submap { display: grid; grid-template-columns: 340px 1fr; grid-template-rows: 100%; }
+
+.sf-sheet .dossier {
+  position: relative; z-index: 2;
+  border-right: 1px solid var(--border-default);
+  border-top: 2px solid var(--hc-500);
+  background: color-mix(in oklab, var(--ink-850) 96%, transparent);
+  box-shadow: 18px 0 50px rgba(0,0,0,.4), var(--inset-hi);
+  padding: var(--space-5) var(--space-6); display: flex; flex-direction: column; gap: var(--space-5);
+  overflow-y: auto; min-height: 0;
+  scrollbar-width: thin; scrollbar-color: color-mix(in oklab, var(--gold-600) 40%, transparent) transparent;
+}
+.sf-sheet .dossier::-webkit-scrollbar { width: 9px; }
+.sf-sheet .dossier::-webkit-scrollbar-thumb { background: color-mix(in oklab, var(--gold-600) 36%, transparent); border-radius: var(--radius-pill); border: 2px solid transparent; background-clip: padding-box; }
+.sf-sheet .dossier__back {
+  display: inline-flex; align-items: center; gap: 9px; align-self: flex-start;
+  font-family: var(--font-sans); font-size: 11px; letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--text-muted);
+  padding: 8px 14px; border: 1px solid var(--border-default); border-radius: var(--radius-sm);
+  transition: border-color var(--dur-base), color var(--dur-base), box-shadow var(--dur-base);
+}
+.sf-sheet .dossier__back:hover { color: var(--gold-200); border-color: var(--gold-600); box-shadow: var(--glow-gold); }
+.sf-sheet .dossier__sector { display: inline-flex; align-items: center; gap: 7px; font-family: var(--font-sans); font-size: 10px; letter-spacing: var(--tracking-widest); color: var(--text-gold); text-transform: uppercase; }
+.sf-sheet .dossier__sector::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--hc-500); box-shadow: 0 0 6px var(--hc-300); flex: none; }
+.sf-sheet .dossier__name { font-family: var(--font-display); font-weight: 700; font-size: var(--text-2xl); line-height: 1.04; letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--text-strong); margin-top: 6px; }
+.sf-sheet .dossier__house { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; font-family: var(--font-sans); font-size: 12px; letter-spacing: .04em; color: var(--hc-300); }
+.sf-sheet .dossier__house .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--hc-500); box-shadow: 0 0 10px var(--hc-300); }
+.sf-sheet .dossier__rule { height: 1px; background: var(--rule-gold); opacity: .7; }
+.sf-sheet .dossier__blurb { font-family: var(--font-serif); font-size: var(--text-md); line-height: var(--leading-relaxed); color: var(--text-body); text-wrap: pretty; }
+.sf-sheet .dossier__facts { display: flex; flex-direction: column; gap: 0; }
+.sf-sheet .fact { display: flex; justify-content: space-between; gap: 14px; padding: 10px 0; border-bottom: 1px solid var(--hairline); font-family: var(--font-serif); font-size: var(--text-sm); }
+.sf-sheet .fact:first-child { border-top: 1px solid var(--hairline); }
+.sf-sheet .fact__k { font-family: var(--font-sans); font-size: 10px; letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--text-gold); }
+.sf-sheet .fact__v { color: var(--text-strong); text-align: right; }
+.sf-sheet .dossier__districtsHead { font-family: var(--font-sans); font-size: 10px; letter-spacing: var(--tracking-widest); text-transform: uppercase; color: var(--text-gold); }
+.sf-sheet .dossier__zoneList { display: flex; flex-direction: column; gap: 1px; }
+.sf-sheet .zoneRow { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 9px 11px; border-radius: var(--radius-sm); border: 1px solid transparent; transition: background var(--dur-base), border-color var(--dur-base); }
+.sf-sheet .zoneRow:hover, .sf-sheet .zoneRow.is-active { background: var(--ink-700); border-color: var(--border-subtle); }
+.sf-sheet .zoneRow__name { flex: 1; min-width: 0; font-family: var(--font-serif); font-size: 14px; color: var(--text-strong); transition: color var(--dur-base); }
+.sf-sheet .zoneRow:hover .zoneRow__name { color: var(--gold-200); }
+.sf-sheet .zoneRow__chev { flex: none; font-family: var(--font-mono); font-size: 13px; color: var(--gold-700); transition: color var(--dur-base), transform var(--dur-base); }
+.sf-sheet .zoneRow:hover .zoneRow__chev { color: var(--gold-300); transform: translateX(2px); }
+.sf-sheet .dossier__decree {
+  margin-top: auto; padding-top: var(--space-5); text-align: center;
+  font-family: var(--font-sans); font-weight: 600; font-size: 12px;
+  letter-spacing: var(--tracking-widest); text-transform: uppercase;
+  color: color-mix(in oklab, var(--gold-700) 42%, var(--ink-700));
+  text-shadow: 0 -1px 0 rgba(0,0,0,.55), 0 1px 0 color-mix(in oklab, var(--gold-500) 16%, transparent);
+  user-select: none;
+}
+.sf-sheet .dossier__hint { font-family: var(--font-serif); font-style: italic; font-size: 12.5px; color: var(--text-faint); }
+.sf-sheet .dossier__name--zone { font-size: var(--text-xl); }
+.sf-sheet .dossier__blurb--empty { color: var(--text-faint); font-style: italic; }
+
+/* Right: submap field */
+.sf-sheet .submap__field { position: relative; min-height: 0; }
+.sf-sheet .subdistrict__shape {
+  fill: color-mix(in oklab, var(--cell, var(--hc-500)) 48%, var(--ink-900));
+  stroke: color-mix(in oklab, var(--gold-400) 42%, transparent); stroke-width: 2; stroke-linejoin: round;
+  filter: drop-shadow(0 5px 10px rgba(0,0,0,.45));
+  transition: fill .25s, stroke .25s, filter .25s;
+}
+.sf-sheet .subdistrict__sheen { fill: url(#sheen); mix-blend-mode: soft-light; opacity: .42; pointer-events: none; transition: opacity .25s; }
+.sf-sheet .subdistrict { cursor: pointer; }
+.sf-sheet .subdistrict:hover .subdistrict__shape, .sf-sheet .subdistrict.is-active .subdistrict__shape {
+  fill: color-mix(in oklab, var(--cell, var(--hc-500)) 74%, var(--ink-900));
+  stroke: var(--gold-200);
+  filter: drop-shadow(0 0 16px color-mix(in oklab, var(--cell, var(--hc-300)) 40%, transparent)) drop-shadow(0 6px 12px rgba(0,0,0,.45));
+}
+.sf-sheet .subdistrict:hover .subdistrict__sheen, .sf-sheet .subdistrict.is-active .subdistrict__sheen { opacity: .6; }
+
+.sf-sheet .subarea .subdistrict__shape { fill: color-mix(in oklab, var(--cell, var(--hc-500)) var(--mix, 52%), var(--ink-900)); }
+.sf-sheet .subarea:hover .subdistrict__shape, .sf-sheet .subarea.is-active .subdistrict__shape { fill: color-mix(in oklab, var(--cell, var(--hc-500)) calc(var(--mix, 52%) + 24%), var(--ink-900)); }
+.sf-sheet .districtfield__outline { fill: none; stroke: color-mix(in oklab, var(--gold-400) 30%, transparent); stroke-width: 2; stroke-dasharray: 3 9; stroke-linecap: round; opacity: .7; }
+
+.sf-sheet .subdistrict-labels { pointer-events: none; }
+.sf-sheet .subarea.is-zonesel .subdistrict__shape { stroke: var(--gold-100); stroke-width: 3; filter: drop-shadow(0 0 22px color-mix(in oklab, var(--cell, var(--gold-300)) 50%, transparent)); }
+.sf-sheet .subdistrict__label { pointer-events: none; text-anchor: middle; }
+.sf-sheet .subdistrict__name { font-family: var(--font-serif); font-weight: 700; fill: var(--parchment-50); letter-spacing: .04em; text-transform: uppercase; paint-order: stroke; stroke: rgba(8,9,13,.55); stroke-width: 3.5px; }
+.sf-sheet .subdistrict__tag { font-family: var(--font-mono); fill: var(--gold-300); letter-spacing: .1em; paint-order: stroke; stroke: rgba(8,9,13,.5); stroke-width: 2.5px; }
+
+/* Special locations float ON TOP of the district tiles, gilded like the Citadel */
+.sf-sheet .location { cursor: pointer; filter: drop-shadow(0 9px 18px rgba(0,0,0,.62)); }
+.sf-sheet .location__plate { fill: var(--gold-500); stroke: var(--gold-200); stroke-width: 2; transition: fill .25s, stroke .25s; }
+.sf-sheet .location__sheen { fill: url(#sheen); mix-blend-mode: soft-light; opacity: .7; pointer-events: none; }
+.sf-sheet .location:hover .location__plate, .sf-sheet .location.is-active .location__plate { fill: var(--gold-400); stroke: var(--gold-100); }
+.sf-sheet .location__label { pointer-events: none; text-anchor: middle; }
+.sf-sheet .location__name { font-family: var(--font-display); font-weight: 700; fill: var(--ink-950); letter-spacing: .04em; text-transform: uppercase; }
+
+.sf-sheet .watermark { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; z-index: 0; opacity: .05; }
+.sf-sheet .watermark img { width: min(58%, 540px); height: auto; filter: saturate(0.2); }
+
+/* Mobile: dock the dossier as a bottom sheet, map fills the top half */
+@media (max-width: 760px) {
+  .sf-sheet .crumbs-bar { display: none; }
+  .sf-sheet .legend, .sf-sheet .legend--citadel { display: none; }
+  .sf-sheet .submap { display: block; overflow: hidden; }
+  .sf-sheet .submap__field { position: absolute; top: 0; left: 0; right: 0; bottom: 48%; overflow: hidden; }
+  .sf-sheet .dossier {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 48%;
+    border-right: none; border-top: 2px solid var(--hc-500);
+    border-radius: 14px 14px 0 0;
+    box-shadow: 0 -14px 34px rgba(0,0,0,.5), var(--inset-hi);
+    padding: var(--space-4) var(--space-5);
+    width: auto; max-width: 100%; box-sizing: border-box; overflow-x: hidden;
+  }
+  .sf-sheet .dossier__name { font-size: var(--text-xl); }
+}
+
+/* ===========================================================================
+   Party-location overlay — markers + pick-mode (ported from party.css)
+   =========================================================================== */
+.sf-sheet .party-layer, .sf-sheet .party-layer * { pointer-events: none; }
+.sf-sheet .pm-stem { stroke: var(--gold-500); stroke-width: 2; stroke-dasharray: 3 4; opacity: 0.7; }
+.sf-sheet .pm-dot { fill: var(--gold-400); stroke: var(--ink-950); stroke-width: 1.5; }
+.sf-sheet .pm-av .pm-ring { fill: var(--ink-950); stroke: var(--gold-500); stroke-width: 2; }
+.sf-sheet .pm-av .pm-fill { fill: var(--ink-700); }
+.sf-sheet .pm-av.t-plum    .pm-fill { fill: var(--plum-500); }
+.sf-sheet .pm-av.t-forest  .pm-fill { fill: var(--forest-500); }
+.sf-sheet .pm-av.t-teal    .pm-fill { fill: var(--teal-500); }
+.sf-sheet .pm-av.t-crimson .pm-fill { fill: var(--crimson-500); }
+.sf-sheet .pm-av.t-gold    .pm-fill { fill: var(--gold-600); }
+.sf-sheet .pm-initials { fill: var(--parchment-50); font-family: var(--font-mono, "JetBrains Mono", monospace); font-size: 14px; font-weight: 700; letter-spacing: 0.02em; }
+.sf-sheet .pm-av.is-self .pm-ring { stroke: var(--gold-300); stroke-width: 3; filter: drop-shadow(0 0 6px color-mix(in oklab, var(--gold-400) 70%, transparent)); }
+.sf-sheet .pm-av { filter: drop-shadow(0 3px 5px rgba(0,0,0,0.45)); }

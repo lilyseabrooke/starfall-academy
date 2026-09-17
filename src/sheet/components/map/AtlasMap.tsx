@@ -137,11 +137,23 @@ export function AtlasMap({ roster, activeChar, locations, picking, onPick, focus
         </defs>
       </svg>
 
+      <div className="float crumbs-bar">
+        <nav className="crumbs" aria-label="Breadcrumb">
+          {crumbs.map((c, i) => (
+            <React.Fragment key={i}>
+              {i > 0 && <span className="crumbs__sep">›</span>}
+              {i === crumbs.length - 1 || !c.onClick
+                ? <span className="crumbs__here">{c.label}</span>
+                : <button type="button" className="crumbs__link" onClick={c.onClick}>{c.label}</button>}
+            </React.Fragment>
+          ))}
+        </nav>
+      </div>
+
       {!inSubmap ? (
         <AtlasStage
           regions={REGIONS}
           mode={nav.view === "citadel" ? "citadel" : "world"}
-          crumbs={crumbs}
           onEnterRegion={openRegion}
           onEnterCitadel={enterCitadel}
           onExitCitadel={exitCitadel}
