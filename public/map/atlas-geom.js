@@ -123,7 +123,7 @@
      convex shoulders curving up to rounded top corners, straight sides, then a
      smooth sweep down to a soft point at the bottom. cx = centre x, top = top
      edge y, hw = half-width, h = full height to the bottom point. The three
-     `o` factors are user-tweakable (see TWEAK_DEFAULTS):
+     `o` factors are the authored shield fractions:
        o.spike    – top-point height as a fraction of h
        o.shoulder – convex bow of the shoulder sweeps (fraction of h)
        o.side     – how far down the sides run before sweeping in (fraction) */
