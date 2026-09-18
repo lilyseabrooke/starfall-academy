@@ -56,6 +56,18 @@ const CATEGORY_ICONS = {
   "Events": "calendar-days", "Archetypes": "shapes", "Subcultures": "users"
 };
 
+/* Tab name → the ID prefix buildCard()/headerFields expect (entry.ID's first
+   "_"-separated segment). Used to synthesize an ID for rows whose sheet ID
+   cell is blank, so a row missing that cell doesn't just disappear — the
+   character-creator's loader (src/sheet/data/classes.ts) never required an
+   ID for Classes rows in the first place, deriving it from NAME instead. */
+const CATEGORY_PREFIX = {
+  "Spells": "spell", "Potions": "potion", "Glyphs": "glyph", "Wands": "wand",
+  "Artifacts": "artifact", "Plants": "plant", "Items": "item", "Classes": "class",
+  "Events": "event", "Archetypes": "archetype", "Subcultures": "subculture"
+};
+function slug(s){ return (s || "").toString().trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); }
+
 /* header meta line per category (unchanged formats, rendered as badges below) */
 const headerFields = {
   spell:    e => ({ level: e.LEVEL, txt: e.SUBJECT }),
@@ -276,7 +288,13 @@ function loadSheet(name){
     download: true,
     header: true,
     complete: results => {
-      currentData = (results.data || []).filter(r => r && r.ID && (r.NAME || "").trim());
+      const prefix = CATEGORY_PREFIX[name] || name.toLowerCase();
+      currentData = (results.data || [])
+        .filter(r => r && (r.NAME || "").trim())
+        .map(r => {
+          if (!r.ID || !r.ID.toString().trim()) r.ID = prefix + "_" + slug(r.NAME);
+          return r;
+        });
       if (!currentData.length){ showState("empty"); return; }
       renderFilters(name);
       setupFilterListeners();
