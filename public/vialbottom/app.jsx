@@ -11,12 +11,18 @@
   const ROSTER = [
     ["Vex", 0.06, 0.04], ["Sasha", 0.31, 0.00], ["Kyn", 0.56, 0.05], ["Aspen", 0.86, 0.02],
     ["Helen", 0.02, 0.46], ["Emily", 0.27, 0.42], ["Echo", 0.52, 0.48], ["Aster", 0.79, 0.44],
-    ["Cath", 0.09, 0.96], ["BK", 0.35, 0.90], ["Soojin", 0.61, 0.98], ["Popcorn", 0.88, 0.92]
+    ["Cath", 0.09, 0.96], ["BK", 0.35, 0.90], ["Soojin", 0.61, 0.98], ["Popcorn", 0.88, 0.92],
+    ["The Blue-Eyed Man", 0.44, 0.70, "Blue-Eyed-Man"]
   ];
   // v3: string endpoints became {type, ...} refs (token or free node) instead
   // of bare token indices, and a "nodes" list of free anchor points was
   // added — bump the storage key so an old v2 blob is never misread.
-  const KEY = "vialbottom-board-v3";
+  const BOARD_KEY = "vialbottom-board-v3";
+  // Board tabs: each tab is a fully independent board, saved under its own
+  // suffixed storage key. The first tab reuses the legacy unsuffixed key so
+  // boards saved before tabs existed keep loading as "Board 1".
+  const TABS_KEY = "vialbottom-tabs-v1";
+  const boardKey = (id) => (id === "b1" ? BOARD_KEY : BOARD_KEY + ":" + id);
   const TOKEN_SIZE = 84;
   const STRING_COLOR = "#a8322b";
   const NW = 186, NH = 140;
@@ -40,7 +46,7 @@
 
       this.state = Object.assign({
         tool: "select", bw: 0, bh: 0, showNames: false,
-        tokens: ROSTER.map(([name, fx, fy]) => ({ name, fx, fy })),
+        tokens: ROSTER.map(([name, fx, fy, img]) => ({ name, fx, fy, img: img || name })),
         links: [], shapes: [], notes: [], nodes: [],
         sel: null, pending: null, hover: null, draft: null, drag: null, seq: 1
       }, this.load());
@@ -60,11 +66,18 @@
 
     load() {
       try {
-        const d = JSON.parse(localStorage.getItem(KEY) || "null");
+        const d = JSON.parse(localStorage.getItem(this.props.storageKey) || "null");
         if (!d || !Array.isArray(d.tokens) || !d.tokens.length || d.tokens[0].fx === undefined) return {};
         const fix = (o) => Object.assign({}, o, { fx: cl(o.fx), fy: cl(o.fy) });
+        const savedNames = new Set(d.tokens.map((t) => t.name));
+        // Merge in any roster suspect added after this board was last saved,
+        // so an existing board picks up new tokens instead of losing them.
+        const tokens = d.tokens.map(fix).map((t) => ({ name: t.name, fx: t.fx, fy: t.fy, img: t.img || t.name }));
+        ROSTER.forEach(([name, fx, fy, img]) => {
+          if (!savedNames.has(name)) tokens.push({ name, fx, fy, img: img || name });
+        });
         return {
-          tokens: d.tokens.map(fix), links: d.links || [],
+          tokens, links: d.links || [],
           shapes: d.shapes || [], notes: (d.notes || []).map(fix),
           nodes: (d.nodes || []).map(fix), seq: d.seq || 1
         };
@@ -73,7 +86,7 @@
     save() {
       const s = this.state;
       try {
-        localStorage.setItem(KEY, JSON.stringify({
+        localStorage.setItem(this.props.storageKey, JSON.stringify({
           tokens: s.tokens, links: s.links, shapes: s.shapes,
           notes: s.notes, nodes: s.nodes, seq: s.seq
         }));
@@ -227,7 +240,7 @@
         const g = s.drag;
         if (g.kind === "token") {
           const fx = this.px2fx(p.x - g.dx, this.d(), s.bw), fy = this.px2fx(p.y - g.dy, this.d(), s.bh);
-          this.setState((st) => ({ tokens: st.tokens.map((t, i) => i === g.i ? { name: t.name, fx, fy } : t) }));
+          this.setState((st) => ({ tokens: st.tokens.map((t, i) => i === g.i ? Object.assign({}, t, { fx, fy }) : t) }));
         } else if (g.kind === "note") {
           const fx = this.px2fx(p.x - g.dx, NW, s.bw), fy = this.px2fx(p.y - g.dy, NH, s.bh);
           this.setState((st) => ({ notes: st.notes.map((n) => n.id === g.id ? Object.assign({}, n, { fx, fy }) : n) }));
@@ -355,7 +368,7 @@
     resetBoard() {
       this.setState({
         links: [], shapes: [], notes: [], nodes: [], sel: null, pending: null, draft: null,
-        tokens: ROSTER.map(([name, fx, fy]) => ({ name, fx, fy }))
+        tokens: ROSTER.map(([name, fx, fy, img]) => ({ name, fx, fy, img: img || name }))
       });
     }
 
@@ -379,7 +392,7 @@
               left: "calc(" + cl(t.fx) + " * (100% - " + d + "px))",
               top: "calc(" + cl(t.fy) + " * (100% - " + d + "px))",
               width: d + "px", height: d + "px", zIndex: 9 + lift,
-              backgroundImage: 'url("tokens/' + t.name + '.png")'
+              backgroundImage: 'url("tokens/' + t.img + '.png")'
             }}
           >
             {ringed && <span className="vb-token-ring" />}
@@ -614,6 +627,39 @@
             </div>
           </header>
 
+          <div className="vb-tabs-row">
+            {this.props.tabs.map((t) => (
+              <div
+                key={t.id}
+                className={"vb-tab" + (t.id === this.props.activeTab ? " vb-tab--active" : "")}
+                onClick={() => this.props.onSwitchTab(t.id)}
+                title="Switch board"
+              >
+                <input
+                  className="vb-tab-input"
+                  value={t.name}
+                  readOnly={t.id !== this.props.activeTab}
+                  onChange={(e) => this.props.onRenameTab(t.id, e.target.value)}
+                  onClick={(e) => { if (t.id === this.props.activeTab) e.stopPropagation(); }}
+                  onPointerDown={(e) => { if (t.id === this.props.activeTab) e.stopPropagation(); }}
+                />
+                {this.props.tabs.length > 1 && (
+                  <button
+                    type="button"
+                    className="vb-tab-close"
+                    onClick={(e) => { e.stopPropagation(); this.props.onCloseTab(t.id); }}
+                    title="Close this board"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            ))}
+            <button type="button" className="vb-tab-add" onClick={this.props.onAddTab} title="Start a fresh board">
+              + New Board
+            </button>
+          </div>
+
           <div className="vb-board-area">
             <div
               ref={this.setBoard}
@@ -729,6 +775,58 @@
     }
   }
 
+  // Board tabs: each is a wholly independent board (own tokens, strings,
+  // notes, seq) persisted under its own storage key. Switching tabs remounts
+  // <Board> (via key=) so it re-runs its own constructor/load() against the
+  // newly-active tab's key, instead of resetting the tab being left.
+  function loadTabs() {
+    try {
+      const d = JSON.parse(localStorage.getItem(TABS_KEY) || "null");
+      if (d && Array.isArray(d.tabs) && d.tabs.length && d.active && d.seq) return d;
+    } catch (e) {}
+    return { tabs: [{ id: "b1", name: "Board 1" }], active: "b1", seq: 2 };
+  }
+  function saveTabs(d) {
+    try { localStorage.setItem(TABS_KEY, JSON.stringify(d)); } catch (e) {}
+  }
+
+  function App() {
+    const [tabsData, setTabsData] = React.useState(loadTabs);
+    React.useEffect(() => saveTabs(tabsData), [tabsData]);
+
+    const onAddTab = () => {
+      setTabsData((d) => {
+        const id = "b" + d.seq;
+        return { tabs: d.tabs.concat([{ id, name: "Board " + d.seq }]), active: id, seq: d.seq + 1 };
+      });
+    };
+    const onSwitchTab = (id) => setTabsData((d) => Object.assign({}, d, { active: id }));
+    const onRenameTab = (id, name) => {
+      setTabsData((d) => ({ tabs: d.tabs.map((t) => t.id === id ? { id, name } : t), active: d.active, seq: d.seq }));
+    };
+    const onCloseTab = (id) => {
+      setTabsData((d) => {
+        if (d.tabs.length <= 1) return d;
+        const tabs = d.tabs.filter((t) => t.id !== id);
+        try { localStorage.removeItem(boardKey(id)); } catch (e) {}
+        return { tabs, active: d.active === id ? tabs[0].id : d.active, seq: d.seq };
+      });
+    };
+
+    return (
+      <Board
+        key={tabsData.active}
+        storageKey={boardKey(tabsData.active)}
+        tabs={tabsData.tabs}
+        activeTab={tabsData.active}
+        onAddTab={onAddTab}
+        onSwitchTab={onSwitchTab}
+        onRenameTab={onRenameTab}
+        onCloseTab={onCloseTab}
+      />
+    );
+  }
+
   const root = ReactDOM.createRoot(document.getElementById("root"));
-  root.render(<Board />);
+  root.render(<App />);
 })();

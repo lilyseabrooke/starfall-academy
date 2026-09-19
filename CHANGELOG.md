@@ -8,6 +8,13 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.16.0 — 2026-09-19
+- The Vialbottom Board: added a new suspect token, The Blue-Eyed Man.
+- The Vialbottom Board now supports multiple boards via tabs — start a
+  fresh board without losing or resetting an existing one. Each tab is a
+  fully independent board (its own tokens, strings, notes, and shapes),
+  and boards can be added, renamed, switched between, and closed.
+
 ## v1.15.2 — 2026-09-17
 - Fix: an artifact picked in the Forge during character creation (from a
   class grant or bought directly in the Inventory step) was attuned but its
