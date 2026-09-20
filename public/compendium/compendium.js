@@ -243,13 +243,32 @@ catsNextBtn.addEventListener("click", () => nudgeCats(1));
    wheels) can still reach every tab this way instead of needing the nudge
    buttons or a drag. Only takes over when there's somewhere to scroll to,
    and only for the dominant vertical component so a natural horizontal
-   swipe still passes through untouched. */
+   swipe still passes through untouched.
+   Raw wheel deltas arrive in discrete, uneven steps, which reads as jerky
+   against the rest of the site's eased motion — so instead of jumping
+   scrollLeft straight to each delta, wheel events nudge a target and a
+   rAF loop eases scrollLeft toward it every frame. */
+let catsScrollTarget = null;
+let catsScrollRaf = null;
+function stepCatsScroll(){
+  const diff = catsScrollTarget - catsEl.scrollLeft;
+  if (Math.abs(diff) < 0.5){
+    catsEl.scrollLeft = catsScrollTarget;
+    catsScrollRaf = null;
+    catsScrollTarget = null; // let the next wheel event start fresh from wherever scrollLeft ends up
+    return;
+  }
+  catsEl.scrollLeft += diff * 0.18;
+  catsScrollRaf = requestAnimationFrame(stepCatsScroll);
+}
 catsEl.addEventListener("wheel", (e) => {
   if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
   const max = catsEl.scrollWidth - catsEl.clientWidth;
   if (max <= 4) return;
   e.preventDefault();
-  catsEl.scrollLeft += e.deltaY;
+  const base = catsScrollTarget == null ? catsEl.scrollLeft : catsScrollTarget;
+  catsScrollTarget = Math.max(0, Math.min(max, base + e.deltaY));
+  if (!catsScrollRaf) catsScrollRaf = requestAnimationFrame(stepCatsScroll);
 }, { passive: false });
 
 function selectCategory(name){
