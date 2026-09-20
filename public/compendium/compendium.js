@@ -137,6 +137,8 @@ function timingRank(raw, mode){
 /* ---- DOM refs ------------------------------------------------------------ */
 const viewToggleEl = document.getElementById("view-toggle");
 const catsEl   = document.getElementById("cats");
+const catsPrevBtn = document.getElementById("cats-prev");
+const catsNextBtn = document.getElementById("cats-next");
 const list     = document.getElementById("list");
 const searchWrap = document.querySelector(".search");
 const searchBar= document.getElementById("search-bar");
@@ -220,11 +222,54 @@ function updateCatsFade(){
   const max = catsEl.scrollWidth - catsEl.clientWidth;
   const atStart = catsEl.scrollLeft <= 2;
   const atEnd = catsEl.scrollLeft >= max - 2;
-  catsEl.style.setProperty("--fade-l", (max > 4 && !atStart) ? "28px" : "0px");
-  catsEl.style.setProperty("--fade-r", (max > 4 && !atEnd) ? "28px" : "0px");
+  const canScroll = max > 4;
+  catsEl.style.setProperty("--fade-l", (canScroll && !atStart) ? "28px" : "0px");
+  catsEl.style.setProperty("--fade-r", (canScroll && !atEnd) ? "28px" : "0px");
+  catsPrevBtn.classList.toggle("is-visible", canScroll && !atStart);
+  catsNextBtn.classList.toggle("is-visible", canScroll && !atEnd);
 }
 catsEl.addEventListener("scroll", updateCatsFade, { passive: true });
 window.addEventListener("resize", updateCatsFade);
+
+/* ---- Category-bar nudge buttons: step by ~1.5 tabs' worth at a time ------ */
+function nudgeCats(dir){
+  catsEl.scrollBy({ left: dir * catsEl.clientWidth * 0.6, behavior: "smooth" });
+}
+catsPrevBtn.addEventListener("click", () => nudgeCats(-1));
+catsNextBtn.addEventListener("click", () => nudgeCats(1));
+
+/* ---- Vertical wheel scroll → horizontal, while hovering the tab bar ------
+   Devices without horizontal scroll (most trackpads aside, plain mouse
+   wheels) can still reach every tab this way instead of needing the nudge
+   buttons or a drag. Only takes over when there's somewhere to scroll to,
+   and only for the dominant vertical component so a natural horizontal
+   swipe still passes through untouched.
+   Raw wheel deltas arrive in discrete, uneven steps, which reads as jerky
+   against the rest of the site's eased motion — so instead of jumping
+   scrollLeft straight to each delta, wheel events nudge a target and a
+   rAF loop eases scrollLeft toward it every frame. */
+let catsScrollTarget = null;
+let catsScrollRaf = null;
+function stepCatsScroll(){
+  const diff = catsScrollTarget - catsEl.scrollLeft;
+  if (Math.abs(diff) < 0.5){
+    catsEl.scrollLeft = catsScrollTarget;
+    catsScrollRaf = null;
+    catsScrollTarget = null; // let the next wheel event start fresh from wherever scrollLeft ends up
+    return;
+  }
+  catsEl.scrollLeft += diff * 0.18;
+  catsScrollRaf = requestAnimationFrame(stepCatsScroll);
+}
+catsEl.addEventListener("wheel", (e) => {
+  if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+  const max = catsEl.scrollWidth - catsEl.clientWidth;
+  if (max <= 4) return;
+  e.preventDefault();
+  const base = catsScrollTarget == null ? catsEl.scrollLeft : catsScrollTarget;
+  catsScrollTarget = Math.max(0, Math.min(max, base + e.deltaY));
+  if (!catsScrollRaf) catsScrollRaf = requestAnimationFrame(stepCatsScroll);
+}, { passive: false });
 
 function selectCategory(name){
   if (name === currentCategory && currentData.length) return;

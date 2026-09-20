@@ -8,6 +8,12 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.16.1 — 2026-09-20
+- The standalone Compendium's category tab bar now has small nudge
+  buttons and eases a vertical scroll-wheel gesture into a smooth
+  horizontal scroll while the bar is hovered, so every tab stays reachable
+  on devices without horizontal scroll input.
+
 ## v1.16.0 — 2026-09-19
 - The Vialbottom Board: added a new suspect token, The Blue-Eyed Man.
 - The Vialbottom Board now supports multiple boards via tabs — start a
