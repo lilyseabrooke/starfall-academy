@@ -36,7 +36,11 @@
     <button type="button" class="view-toggle__btn is-active" data-view="assets" role="tab" aria-selected="true">Assets</button>
     <button type="button" class="view-toggle__btn" data-view="lore" role="tab" aria-selected="false">Lore</button>
   </div>
-  <nav class="cats" id="cats" aria-label="Compendium categories"></nav>
+  <div class="cats-wrap">
+    <button type="button" class="cats-nav cats-nav--prev" id="cats-prev" aria-label="Scroll categories left"><i data-lucide="chevron-left"></i></button>
+    <nav class="cats" id="cats" aria-label="Compendium categories"></nav>
+    <button type="button" class="cats-nav cats-nav--next" id="cats-next" aria-label="Scroll categories right"><i data-lucide="chevron-right"></i></button>
+  </div>
   <div class="sort">
     <button type="button" class="sort-btn" id="sort-button" aria-label="Sort entries">
       <i data-lucide="arrow-up-down"></i>
