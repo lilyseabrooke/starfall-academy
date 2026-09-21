@@ -212,13 +212,15 @@ export function AdmissionClasses({ D, classData, draft, set }: { D: ForgeData; c
     set({ classes: { ...draft.classes, [id]: { rank, choices } } });
   };
   const remaining = b.mode === "custom" ? b.remaining : 0;
-  const canRaise = (id: string) => custom && draft.classes[id].rank < 10 && remaining >= 2;
+  const classRankCost = D.creation.custom.classRankCost;
+  const nextRankCost = (id: string) => classRankCost * (draft.classes[id].rank + 1);
+  const canRaise = (id: string) => custom && draft.classes[id].rank < 10 && remaining >= nextRankCost(id);
 
   return (
     <div className="sf-fstep-body">
       <div className="sf-fhead">
         <h3>Choose Your Class</h3>
-        <p className="sf-fhint">Your class defines your abilities and how you engage with the world of Starfall. You can pick 1 class at rank 4 or two classes at rank 2. For each rank you take, choose between the two rank options. {custom ? "Custom build may rank a class higher (2 pts / level)." : "Switch to a Custom build to rank higher at creation."}</p>
+        <p className="sf-fhint">Your class defines your abilities and how you engage with the world of Starfall. You can pick 1 class at rank 4 or two classes at rank 2. For each rank you take, choose between the two rank options. {custom ? `Custom build may rank a class higher (${classRankCost} × level pts).` : "Switch to a Custom build to rank higher at creation."}</p>
       </div>
 
       <div className="sf-seg" role="tablist">
@@ -260,7 +262,7 @@ export function AdmissionClasses({ D, classData, draft, set }: { D: ForgeData; c
               {custom ? (
                 <span className="sf-fladder__rankctl">
                   <button className="sf-step" disabled={cur.rank <= defaultRank} onClick={() => setRank(id, cur.rank - 1)} type="button">−</button>
-                  <button className="sf-step" disabled={!canRaise(id)} onClick={() => setRank(id, cur.rank + 1)} type="button" title="Rank up · 2 pts">+</button>
+                  <button className="sf-step" disabled={!canRaise(id)} onClick={() => setRank(id, cur.rank + 1)} type="button" title={`Rank up · ${nextRankCost(id)} pts`}>+</button>
                 </span>
               ) : null}
             </div>

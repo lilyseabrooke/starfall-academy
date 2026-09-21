@@ -57,7 +57,6 @@ export interface CreationRules {
     statCost: number;
     abilityCost: number;
     classRankCost: number;
-    freeClassPoints: number;
     wandPer: number;
     artifactPer: number;
   };
@@ -161,7 +160,6 @@ export const SEED: SeedData = {
       statCost: 3,
       abilityCost: 1,
       classRankCost: 2,
-      freeClassPoints: 8,
       wandPer: 400,
       artifactPer: 400,
     },

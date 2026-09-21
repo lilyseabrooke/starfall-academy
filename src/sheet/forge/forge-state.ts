@@ -191,7 +191,16 @@ export function classArtifactIds(draft: Draft, classData: { classes: ClassDef[] 
 }
 
 /* ---- Cost engine ---- */
-export const classPoints = (draft: Draft) => Object.values(draft.classes).reduce((s, c) => s + 2 * (c.rank || 0), 0);
+export const classPoints = (draft: Draft, D: ForgeData) => {
+  const cc = D.creation.custom;
+  const base = draft.classMode === "single" ? D.creation.classDefault.single : D.creation.classDefault.double;
+  return Object.values(draft.classes).reduce((s, c) => {
+    const rank = c.rank || 0;
+    let cost = 0;
+    for (let L = base + 1; L <= rank; L++) cost += cc.classRankCost * L;
+    return s + cost;
+  }, 0);
+};
 const matPoints = (D: ForgeData, ids: string[], per: number) => {
   const m = compById(D);
   return ids.reduce((s, id) => s + Math.ceil(((m[id] && m[id].mat) || 0) / per), 0);
@@ -218,7 +227,7 @@ export function budgets(draft: Draft, D: ForgeData): Budgets {
   const year = yearById(D, draft.yearId);
   const cc = D.creation.custom;
   const statSpent = sumVals(draft.stats), subjSpent = sumVals(draft.subjects), skillSpent = sumVals(draft.skills);
-  const classExtra = Math.max(0, classPoints(draft) - cc.freeClassPoints);
+  const classExtra = classPoints(draft, D);
   const wandPts = matPoints(D, draft.extraWands, cc.wandPer);
   const artiPts = matPoints(D, draft.artifacts, cc.artifactPer);
 
