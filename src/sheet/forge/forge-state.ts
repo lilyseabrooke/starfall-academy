@@ -7,6 +7,7 @@
    (seed creation rules/houses/stats/schools + the live compendium).
    =========================================================================== */
 import type {
+  ArtifactMove,
   Bonus,
   CharacterVitals,
   CompendiumEntry,
@@ -18,6 +19,7 @@ import type {
 import type { CreationRules, House } from "../data/seed";
 import type { SerializedSheet } from "../types";
 import type { ClassDef } from "../data/classes";
+import { artifactMoveFrom } from "../data/compendium-grant";
 
 export const ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
 
@@ -426,7 +428,7 @@ export interface ForgeArtifact {
   attuned: boolean;
   condition: "stable";
   desc: string;
-  move: { name: string; stat: string; skill: string; bonus: number; dc: number | null; desc: string };
+  move: ArtifactMove;
 }
 export function buildArtifacts(draft: Draft, D: ForgeData, classData: { classes: ClassDef[] }): ForgeArtifact[] {
   const m = compById(D);
@@ -435,7 +437,7 @@ export function buildArtifacts(draft: Draft, D: ForgeData, classData: { classes:
     .map((id, i): ForgeArtifact | null => {
       const e = m[id];
       if (!e) return null;
-      return { id: "art-start-" + i + "-" + id, name: e.name, level: e.level, tone: e.tone, subject: e.subject || "—", intensity: 0, attuned: true, condition: "stable", desc: e.desc, move: { name: e.name + " — Boon", stat: "Insight", skill: "—", bonus: 0, dc: null, desc: e.desc } };
+      return { id: "art-start-" + i + "-" + id, name: e.name, level: e.level, tone: e.tone, subject: e.subject || "—", intensity: 0, attuned: true, condition: "stable", desc: e.desc, move: artifactMoveFrom(e) };
     })
     .filter((x): x is ForgeArtifact => !!x);
 }
