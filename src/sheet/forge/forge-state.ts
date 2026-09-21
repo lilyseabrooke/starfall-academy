@@ -210,19 +210,25 @@ export const classPoints = (draft: Draft, D: ForgeData) => {
 /** An entry's material cost — wands/artifacts carry it as `mat`, items as
  *  `cost` (both mats). */
 const matOf = (e: CompendiumEntry | undefined) => (e ? (e.mat != null ? e.mat : typeof e.cost === "number" ? e.cost : 0) : 0);
+/** Basket-wide points for a set of custom-build purchases: the whole
+ *  basket's mat total is rounded up once, not per-purchase — a 50-mat
+ *  basket costs 1 point at 400 mat/point, and so does a 390-mat one, but a
+ *  basket of eight 50-mat items (400 mat total) still costs exactly 1. */
 const matPoints = (D: ForgeData, ids: string[], per: number) => {
   const m = compById(D);
-  return ids.reduce((s, id) => s + Math.ceil(matOf(m[id]) / per), 0);
+  const totalMat = ids.reduce((s, id) => s + matOf(m[id]), 0);
+  return Math.ceil(totalMat / per);
 };
-/** Custom-build item points: unlike wands/artifacts (bought one at a time,
- *  each rounded up to the point above), items are bought in bulk, so the
- *  whole basket's mat total is rounded once — 720 Pigtures at 50 mat each
- *  costs exactly 90 points at 400 mat/point, not 720 individually-rounded ones. */
+/** Custom-build item points — same basket-wide rounding as matPoints, but
+ *  over an id→quantity map (items can be bought many at once, e.g. 720
+ *  Pigtures at 50 mat each costs exactly 90 points at 400 mat/point). */
 export const itemPoints = (draft: Draft, D: ForgeData) => {
   const m = compById(D);
   const totalMat = Object.entries(draft.items || {}).reduce((s, [id, qty]) => s + matOf(m[id]) * (qty || 0), 0);
   return Math.ceil(totalMat / D.creation.custom.itemPer);
 };
+export const wandPoints = (draft: Draft, D: ForgeData) => matPoints(D, draft.extraWands, D.creation.custom.wandPer);
+export const artifactPoints = (draft: Draft, D: ForgeData) => matPoints(D, draft.artifacts, D.creation.custom.artifactPer);
 
 export type Budgets =
   | {
@@ -246,8 +252,8 @@ export function budgets(draft: Draft, D: ForgeData): Budgets {
   const cc = D.creation.custom;
   const statSpent = sumVals(draft.stats), subjSpent = sumVals(draft.subjects), skillSpent = sumVals(draft.skills);
   const classExtra = classPoints(draft, D);
-  const wandPts = matPoints(D, draft.extraWands, cc.wandPer);
-  const artiPts = matPoints(D, draft.artifacts, cc.artifactPer);
+  const wandPts = wandPoints(draft, D);
+  const artiPts = artifactPoints(draft, D);
   const itemPts = itemPoints(draft, D);
 
   if (draft.buildType === "quick") {

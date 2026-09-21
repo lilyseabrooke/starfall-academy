@@ -833,6 +833,14 @@ export function AdmissionInventory({ D, draft, set, classData }: { D: ForgeData;
   const craftSpent = draft.craftWands.reduce((s, id) => s + compMat(id), 0);
   const plantSpent = (draft.plants || []).reduce((s, id) => s + compVal(id), 0);
 
+  /** Marginal cost of adding one more id to a basket-priced list (wands,
+   *  artifacts) — the basket's mat total is rounded once, so the price of
+   *  the next purchase depends on what's already in the basket. */
+  const curWandPts = F.wandPoints(draft, D);
+  const wandAddCost = (id: string) => F.wandPoints({ ...draft, extraWands: [...draft.extraWands, id] }, D) - curWandPts;
+  const curArtiPts = F.artifactPoints(draft, D);
+  const artiAddCost = (id: string) => F.artifactPoints({ ...draft, artifacts: [...draft.artifacts, id] }, D) - curArtiPts;
+
   return (
     <div className="sf-fstep-body">
       <div className="sf-fhead">
@@ -879,11 +887,11 @@ export function AdmissionInventory({ D, draft, set, classData }: { D: ForgeData;
           <div className="sf-idiv"><span>Custom-build purchases</span><span className="sf-idiv__pts">{remaining} pts left</span></div>
 
           <InventorySection icon="wand-sparkles" title="Buy wands" note="1 pt / 400 mat">
-            <PickList D={D} cat="wand" selected={draft.extraWands} onToggle={(id) => toggleIn("extraWands", id, () => remaining >= Math.ceil(compMat(id) / D.creation.custom.wandPer))} can={(e) => remaining >= Math.ceil((e.mat || 0) / D.creation.custom.wandPer)} costOf={(e) => Math.ceil((e.mat || 0) / D.creation.custom.wandPer) + " pt"} emptyHint="No wands in the archive yet." />
+            <PickList D={D} cat="wand" selected={draft.extraWands} onToggle={(id) => toggleIn("extraWands", id, () => remaining >= wandAddCost(id))} can={(e) => remaining >= wandAddCost(e.id)} costOf={(e) => wandAddCost(e.id) + " pt"} emptyHint="No wands in the archive yet." />
           </InventorySection>
 
           <InventorySection icon="gem" title="Buy artifacts" note="1 pt / 400 mat · auto-attuned">
-            <PickList D={D} cat="artifact" selected={draft.artifacts} onToggle={(id) => toggleIn("artifacts", id, () => remaining >= Math.ceil(compMat(id) / D.creation.custom.artifactPer))} can={(e) => remaining >= Math.ceil((e.mat || 0) / D.creation.custom.artifactPer)} costOf={(e) => Math.ceil((e.mat || 0) / D.creation.custom.artifactPer) + " pt"} emptyHint="No artifacts in the archive yet." />
+            <PickList D={D} cat="artifact" selected={draft.artifacts} onToggle={(id) => toggleIn("artifacts", id, () => remaining >= artiAddCost(id))} can={(e) => remaining >= artiAddCost(e.id)} costOf={(e) => artiAddCost(e.id) + " pt"} emptyHint="No artifacts in the archive yet." />
           </InventorySection>
 
           <InventorySection icon="package" title="Buy items" note="1 pt / 400 mat · any quantity">
