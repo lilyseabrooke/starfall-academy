@@ -8,6 +8,18 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.17.0 — 2026-09-21
+- Fix: custom-build class ranks bought past the free base rank cost a flat
+  2 points per level instead of scaling with the level bought (rank 5 now
+  costs 10 points, rank 3 costs 6, etc).
+- Custom build can now buy Items with points, the same way it already buys
+  Wands and Artifacts, at the same 400-mat-per-point ratio — and unlike
+  Wands/Artifacts, the same Item can be bought in any quantity.
+- Fix: custom-build Wand/Artifact/Item purchases each rounded their own mat
+  cost up to the next point individually, so several cheap purchases could
+  cost far more than their combined mat value. The whole basket's mat total
+  is now rounded up once instead.
+
 ## v1.16.1 — 2026-09-20
 - The standalone Compendium's category tab bar now has small nudge
   buttons and eases a vertical scroll-wheel gesture into a smooth

@@ -866,8 +866,9 @@ function pickInventory(nd: Draft, D: ForgeData) {
     while (guard++ < 12) {
       const b = F.budgets(nd, D);
       if (b.mode !== "custom" || b.remaining < 1) break;
-      const wandPool = D.compendium.filter((e) => e.cat === "wand" && !nd.craftWands.includes(e.id) && !nd.extraWands.includes(e.id) && Math.ceil((e.mat || 0) / D.creation.custom.wandPer) <= b.remaining);
-      const artiPool = D.compendium.filter((e) => e.cat === "artifact" && !nd.artifacts.includes(e.id) && Math.ceil((e.mat || 0) / D.creation.custom.artifactPer) <= b.remaining);
+      const curWandPts = F.wandPoints(nd, D), curArtiPts = F.artifactPoints(nd, D);
+      const wandPool = D.compendium.filter((e) => e.cat === "wand" && !nd.craftWands.includes(e.id) && !nd.extraWands.includes(e.id) && F.wandPoints({ ...nd, extraWands: [...nd.extraWands, e.id] }, D) - curWandPts <= b.remaining);
+      const artiPool = D.compendium.filter((e) => e.cat === "artifact" && !nd.artifacts.includes(e.id) && F.artifactPoints({ ...nd, artifacts: [...nd.artifacts, e.id] }, D) - curArtiPts <= b.remaining);
       const combined: Array<{ id: string; key: "extraWands" | "artifacts" }> = [
         ...wandPool.map((e) => ({ id: e.id, key: "extraWands" as const })),
         ...artiPool.map((e) => ({ id: e.id, key: "artifacts" as const })),
