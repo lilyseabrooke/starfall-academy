@@ -8,6 +8,13 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.17.1 — 2026-09-21
+- Fix: an Artifact bought directly with points in the Forge's custom build
+  (rather than granted by a class) always got its move's Boon roll stat/skill
+  hardcoded to Insight/none, ignoring the artifact's own skill(s). It now
+  gets the same stat/skill (and multiple roll options, for a multi-skill
+  artifact) the sheet already uses when an artifact is granted during play.
+
 ## v1.17.0 — 2026-09-21
 - Fix: custom-build class ranks bought past the free base rank cost a flat
   2 points per level instead of scaling with the level bought (rank 5 now
