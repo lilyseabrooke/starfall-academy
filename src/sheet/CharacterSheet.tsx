@@ -900,7 +900,9 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       const primStat = skillsArr.length ? statForSkill(primSkill) : fs("subject") ? subjStat(fs("subject")) : "Insight";
       if (editArtifact) {
         const artMove = { ...editArtifact.move, name: fs("name") + " — Boon", stat: primStat, skill: primSkill, dc: fs("dc") ? num(fs("dc")) : null, desc: fs("desc"), rollOptions };
-        setArtifacts((prev) => prev.map((x) => x.id === editArtifact.id ? { ...x, name: fs("name"), level: fs("level") || x.level, tone: fs("subject") ? subjTone(fs("subject")) : x.tone, subject: subjName(fs("subject")) || x.subject, intensity: num(fs("intensity"), 1), desc: fs("desc"), skills: skillsArr, dc: fs("dc") ? num(fs("dc")) : 0, move: artMove } : x));
+        const nextCondition = (fs("condition") || editArtifact.condition) as Artifact["condition"];
+        setArtifacts((prev) => prev.map((x) => x.id === editArtifact.id ? { ...x, name: fs("name"), level: fs("level") || x.level, tone: fs("subject") ? subjTone(fs("subject")) : x.tone, subject: subjName(fs("subject")) || x.subject, intensity: num(fs("intensity"), 1), desc: fs("desc"), skills: skillsArr, dc: fs("dc") ? num(fs("dc")) : 0, condition: nextCondition, move: artMove } : x));
+        if (nextCondition !== editArtifact.condition) magic.handlers.setMoveCond(editArtifact.id, nextCondition);
         toast("Artifact updated"); setEditArtifact(null); return;
       }
       const artMove = { name: fs("name") + " — Boon", stat: primStat, skill: primSkill, bonus: 0, dc: fs("dc") ? num(fs("dc")) : null, desc: fs("desc"), rollOptions };

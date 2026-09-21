@@ -8,6 +8,14 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.18.0 — 2026-09-21
+- Fix: the artifact Repair popup rendered as unstyled, unusable overlapping
+  text — its CSS was scoped to a container the popup no longer lived inside
+  once it opened, since it's positioned via a portal to stay on-screen.
+- The artifact edit panel now has a Condition field, so a GM/player can set
+  an artifact to Stable/Damaged/Broken directly instead of only through a
+  repair roll.
+
 ## v1.17.1 — 2026-09-21
 - Fix: an Artifact bought directly with points in the Forge's custom build
   (rather than granted by a class) always got its move's Boon roll stat/skill
