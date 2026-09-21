@@ -10,6 +10,7 @@ import type {
   Bonus,
   CharacterVitals,
   CompendiumEntry,
+  Item,
   MagicSchool,
   Stat,
   Tone,
@@ -57,6 +58,9 @@ export interface Draft {
   craftWands: string[];
   extraWands: string[];
   artifacts: string[];
+  /** Custom-build item purchases — compendium item id → quantity bought,
+   *  since (unlike wands/artifacts) the same item can be bought many times. */
+  items: Record<string, number>;
   /** Artifacts granted free by a class option's item() tag (e.g. Artificer's
    *  "Take a Basic artifact when you take this ability"), keyed by grant id
    *  (`${classId}:${rank}`) — separate from `artifacts` (custom-build
@@ -117,6 +121,7 @@ export function blankDraft(): Draft {
     major: [],
     potions: [], plants: [], glyphs: [], craftWands: [],
     extraWands: [], artifacts: [], classArtifacts: {},
+    items: {},
     spells: [],
   };
 }
@@ -142,6 +147,7 @@ export function hasDraftProgress(draft: Draft): boolean {
     draft.extraWands.length > 0 ||
     draft.artifacts.length > 0 ||
     Object.keys(draft.classArtifacts || {}).length > 0 ||
+    Object.keys(draft.items || {}).length > 0 ||
     draft.spells.length > 0
   );
 }
@@ -201,9 +207,21 @@ export const classPoints = (draft: Draft, D: ForgeData) => {
     return s + cost;
   }, 0);
 };
+/** An entry's material cost — wands/artifacts carry it as `mat`, items as
+ *  `cost` (both mats). */
+const matOf = (e: CompendiumEntry | undefined) => (e ? (e.mat != null ? e.mat : typeof e.cost === "number" ? e.cost : 0) : 0);
 const matPoints = (D: ForgeData, ids: string[], per: number) => {
   const m = compById(D);
-  return ids.reduce((s, id) => s + Math.ceil(((m[id] && m[id].mat) || 0) / per), 0);
+  return ids.reduce((s, id) => s + Math.ceil(matOf(m[id]) / per), 0);
+};
+/** Custom-build item points: unlike wands/artifacts (bought one at a time,
+ *  each rounded up to the point above), items are bought in bulk, so the
+ *  whole basket's mat total is rounded once — 720 Pigtures at 50 mat each
+ *  costs exactly 90 points at 400 mat/point, not 720 individually-rounded ones. */
+export const itemPoints = (draft: Draft, D: ForgeData) => {
+  const m = compById(D);
+  const totalMat = Object.entries(draft.items || {}).reduce((s, [id, qty]) => s + matOf(m[id]) * (qty || 0), 0);
+  return Math.ceil(totalMat / D.creation.custom.itemPer);
 };
 
 export type Budgets =
@@ -220,7 +238,7 @@ export type Budgets =
       pool: number;
       spent: number;
       remaining: number;
-      breakdown: { stats: number; abilities: number; classes: number; wands: number; artifacts: number };
+      breakdown: { stats: number; abilities: number; classes: number; wands: number; artifacts: number; items: number };
     };
 
 export function budgets(draft: Draft, D: ForgeData): Budgets {
@@ -230,6 +248,7 @@ export function budgets(draft: Draft, D: ForgeData): Budgets {
   const classExtra = classPoints(draft, D);
   const wandPts = matPoints(D, draft.extraWands, cc.wandPer);
   const artiPts = matPoints(D, draft.artifacts, cc.artifactPer);
+  const itemPts = itemPoints(draft, D);
 
   if (draft.buildType === "quick") {
     return {
@@ -239,10 +258,10 @@ export function budgets(draft: Draft, D: ForgeData): Budgets {
       skill: { spent: skillSpent, pool: year.quick.skill },
     };
   }
-  const spent = statSpent * cc.statCost + (subjSpent + skillSpent) * cc.abilityCost + classExtra + wandPts + artiPts;
+  const spent = statSpent * cc.statCost + (subjSpent + skillSpent) * cc.abilityCost + classExtra + wandPts + artiPts + itemPts;
   return {
     mode: "custom", limit: year.limit, pool: year.custom, spent, remaining: year.custom - spent,
-    breakdown: { stats: statSpent * cc.statCost, abilities: (subjSpent + skillSpent) * cc.abilityCost, classes: classExtra, wands: wandPts, artifacts: artiPts },
+    breakdown: { stats: statSpent * cc.statCost, abilities: (subjSpent + skillSpent) * cc.abilityCost, classes: classExtra, wands: wandPts, artifacts: artiPts, items: itemPts },
   };
 }
 
@@ -413,6 +432,18 @@ export function buildArtifacts(draft: Draft, D: ForgeData, classData: { classes:
       return { id: "art-start-" + i + "-" + id, name: e.name, level: e.level, tone: e.tone, subject: e.subject || "—", intensity: 0, attuned: true, condition: "stable", desc: e.desc, move: { name: e.name + " — Boon", stat: "Insight", skill: "—", bonus: 0, dc: null, desc: e.desc } };
     })
     .filter((x): x is ForgeArtifact => !!x);
+}
+
+export function buildItems(draft: Draft, D: ForgeData): Item[] {
+  const m = compById(D);
+  return Object.entries(draft.items || {})
+    .filter(([, qty]) => (qty || 0) > 0)
+    .map(([id, qty]): Item | null => {
+      const e = m[id];
+      if (!e) return null;
+      return { id: "itm-start-" + id, name: e.name, qty, cost: typeof e.cost === "number" ? e.cost : undefined, singleUse: e.singleUse ?? false, check: e.check ?? null, tags: e.tags ?? [], desc: e.desc };
+    })
+    .filter((x): x is Item => !!x);
 }
 
 export interface ForgePotionPair {

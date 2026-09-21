@@ -59,6 +59,7 @@ export interface CreationRules {
     classRankCost: number;
     wandPer: number;
     artifactPer: number;
+    itemPer: number;
   };
   classDefault: { single: number; double: number; maxClasses: number };
   startingMaterials: number;
@@ -162,6 +163,7 @@ export const SEED: SeedData = {
       classRankCost: 2,
       wandPer: 400,
       artifactPer: 400,
+      itemPer: 400,
     },
     classDefault: { single: 4, double: 2, maxClasses: 2 },
     startingMaterials: 500,

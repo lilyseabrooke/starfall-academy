@@ -1131,7 +1131,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       setRecipes(pots.map((p) => p.recipe));
       setPotions(pots.map((p) => p.vial));
       setPlants(F.buildPlants(draft, forgeData) as Plant[]);
-      setItems([]);
+      setItems(F.buildItems(draft, forgeData));
       setGlyphs(F.buildGlyphs(draft, forgeData) as Glyph[]);
       setArtifacts(startArtifacts);
       setWands([F.buildStartingWand(draft, forgeData) as unknown as Wand, ...(F.buildExtraWands(draft, forgeData) as unknown as Wand[])]);

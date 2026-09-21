@@ -624,6 +624,137 @@ function PickList({ D, cat, selected, onToggle, can, costOf, emptyHint }: {
   );
 }
 
+/** Custom-build item shopping list: unlike PickList's one-of toggle (wands,
+ *  artifacts), items can be bought in any quantity — each row gets a
+ *  +/- stepper instead of an add/remove button. */
+function BuyItemsList({ D, draft, set, remaining }: { D: ForgeData; draft: Draft; set: SetFn; remaining: number }) {
+  const items = D.compendium.filter((e) => e.cat === "item");
+  const [openIds, setOpenIds] = React.useState<Record<string, boolean>>({});
+  const toggleOpen = (id: string) => setOpenIds((m) => ({ ...m, [id]: !m[id] }));
+  const quantities = draft.items || {};
+  const chosen = items.filter((e) => (quantities[e.id] || 0) > 0);
+
+  const { visible, toolbar, q, facetCount, clearAll } = useEntryQuery("item", items, {
+    noun: "item", nounPlural: "items", label: "Refine items", searchPlaceholder: "Search items…",
+  });
+
+  const matById: Record<string, number> = {};
+  items.forEach((e) => { matById[e.id] = typeof e.cost === "number" ? e.cost : 0; });
+
+  const curPts = F.itemPoints(draft, D);
+  const addCost = (id: string) => F.itemPoints({ ...draft, items: { ...quantities, [id]: (quantities[id] || 0) + 1 } }, D) - curPts;
+  const setQty = (id: string, qty: number) => {
+    qty = Math.max(0, qty);
+    const next = { ...quantities };
+    if (qty <= 0) delete next[id]; else next[id] = qty;
+    set({ items: next });
+  };
+  /** Largest quantity of `id` the player can afford, given what's already
+   *  spent on every *other* item (bulk purchases round once as a whole
+   *  basket, so this isn't just curQty + remaining/unitCost). */
+  const maxAffordableQty = (id: string) => {
+    const unitMat = matById[id] || 0;
+    if (unitMat <= 0) return Infinity;
+    const restMat = Object.entries(quantities).reduce((s, [oid, q]) => (oid === id ? s : s + (matById[oid] || 0) * (q || 0)), 0);
+    const totalAllowedPts = curPts + remaining;
+    return Math.max(0, Math.floor((totalAllowedPts * D.creation.custom.itemPer - restMat) / unitMat));
+  };
+  const setQtyInput = (id: string, raw: number) => {
+    const qty = Math.max(0, Math.min(Math.floor(raw) || 0, maxAffordableQty(id)));
+    setQty(id, qty);
+  };
+
+  if (items.length === 0) return <p className="sf-fhint">No items in the archive yet.</p>;
+
+  return (
+    <React.Fragment>
+      {chosen.length > 0 ? (
+        <div className="sf-ipick-taken">
+          {chosen.map((e) => (
+            <button
+              key={e.id}
+              type="button"
+              className="sf-staken__chip"
+              onClick={() => setQty(e.id, 0)}
+              title={"Remove all " + e.name}
+              aria-label={"Remove all " + e.name}
+            >
+              <span className="sf-staken__dot" />
+              <span className="sf-staken__nm">{e.name} ×{quantities[e.id]}</span>
+              <Icon name="x" />
+            </button>
+          ))}
+        </div>
+      ) : null}
+
+      {toolbar}
+
+      {visible.length === 0 ? (
+        <div className="sf-comp-empty">
+          <Icon name="search-x" />
+          <p>Nothing matches — try adjusting your search or filters.</p>
+          {facetCount || q ? <button className="sf-filter-reset" onClick={clearAll}>Clear filters</button> : null}
+        </div>
+      ) : (
+      <div className="sf-spell-list">
+        {visible.map((e) => {
+          const qty = quantities[e.id] || 0;
+          const isOpen = !!openIds[e.id];
+          const lt = levelTone(e.level);
+          const facts = invFacts(e);
+          const cost = addCost(e.id);
+          const canAdd = remaining >= cost;
+          return (
+            <div
+              key={e.id}
+              className={"sf-entry" + (isOpen ? " is-open" : "") + (qty > 0 ? " is-picked" : "") + (lt ? "" : " is-neutral")}
+              style={{ "--ent-accent": lt ? TONE_500[lt] : "var(--ink-500)" } as React.CSSProperties}
+            >
+              <div className="sf-entry__head" onClick={() => toggleOpen(e.id)}>
+                <div className="sf-entry__headline">
+                  <span className="sf-entry__name">{e.name}</span>
+                  <div className="sf-entry__meta">
+                    <Badge tone={lt && lt !== "silver" ? lt : "neutral"} dot>{e.level}</Badge>
+                    {(e.meta || []).length ? <span className="sf-entry__metatxt">{(e.meta || []).join(" · ")}</span> : null}
+                  </div>
+                </div>
+                <div className="sf-entry__actions" onClick={(ev) => ev.stopPropagation()}>
+                  <span className="sf-fladder__rankctl">
+                    <button className="sf-step" disabled={qty <= 0} onClick={() => setQty(e.id, qty - 1)} type="button">−</button>
+                    <input
+                      className="sf-buyqty" type="number" inputMode="numeric" min={0}
+                      value={qty} onChange={(ev) => setQtyInput(e.id, ev.target.valueAsNumber)}
+                      aria-label={"Quantity of " + e.name}
+                    />
+                    <button className="sf-step" disabled={!canAdd} onClick={() => setQty(e.id, qty + 1)} type="button" title={canAdd ? `Buy one · ${cost} pt` : "Unavailable — over your allowance"}>+</button>
+                  </span>
+                  <span className="sf-entry__chev"><Icon name="chevron-down" /></span>
+                </div>
+              </div>
+              <div className="sf-entry__body" hidden={!isOpen}>
+                <div className="sf-entry__rule" />
+                {facts.length ? (
+                  <div className="sf-entry__facts">
+                    {facts.map(([k, v]) => <div key={k} className="sf-fact"><span className="sf-fact__k">{k}</span><span className="sf-fact__v">{v}</span></div>)}
+                  </div>
+                ) : null}
+                <p className="sf-entry__desc">{e.desc}</p>
+                <div className="sf-entry__foot">
+                  <span className="sf-entry__cost" />
+                  <Button variant="secondary" size="sm" disabled={!canAdd} iconLeft={<Icon name="plus" />} onClick={() => setQty(e.id, qty + 1)}>
+                    Buy one · {cost} pt
+                  </Button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      )}
+    </React.Fragment>
+  );
+}
+
 /** A collapsible inventory section: a header (icon, title, running note) that
  *  toggles its body. The note stays visible when collapsed as a quick summary. */
 function InventorySection({ icon, title, note, children }: { icon: string; title: string; note: React.ReactNode; children: React.ReactNode }) {
@@ -753,6 +884,10 @@ export function AdmissionInventory({ D, draft, set, classData }: { D: ForgeData;
 
           <InventorySection icon="gem" title="Buy artifacts" note="1 pt / 400 mat · auto-attuned">
             <PickList D={D} cat="artifact" selected={draft.artifacts} onToggle={(id) => toggleIn("artifacts", id, () => remaining >= Math.ceil(compMat(id) / D.creation.custom.artifactPer))} can={(e) => remaining >= Math.ceil((e.mat || 0) / D.creation.custom.artifactPer)} costOf={(e) => Math.ceil((e.mat || 0) / D.creation.custom.artifactPer) + " pt"} emptyHint="No artifacts in the archive yet." />
+          </InventorySection>
+
+          <InventorySection icon="package" title="Buy items" note="1 pt / 400 mat · any quantity">
+            <BuyItemsList D={D} draft={draft} set={set} remaining={remaining} />
           </InventorySection>
         </React.Fragment>
       ) : null}
