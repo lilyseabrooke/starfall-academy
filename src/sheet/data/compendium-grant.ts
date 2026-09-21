@@ -10,7 +10,7 @@
 import type { Artifact, ArtifactMove, Recipe, Plant, Wand, Glyph, Item, Potion, Spell, Move, MoveRollOption, CompendiumEntry } from "../types";
 
 /** Builds an artifact's boon-move stat/skill/rollOptions from its (possibly multi-skill) compendium entry. */
-function artifactMoveFrom(e: CompendiumEntry): ArtifactMove {
+export function artifactMoveFrom(e: CompendiumEntry): ArtifactMove {
   const rollOptions: MoveRollOption[] | undefined =
     e.skillOptions && e.skillOptions.length > 1
       ? e.skillOptions.map((o) => ({ kind: "skill", stat: o.stat, skill: o.skill, label: o.skill }))
