@@ -111,10 +111,11 @@
         onClick: function (e) { e.stopPropagation(); },
         role: "dialog", "aria-modal": "true", "aria-label": c.name
       },
-        React.createElement("button", { className: "hst-modal-close", onClick: onClose, "aria-label": "Close" }, Icon("x")),
         React.createElement("div", { className: "hst-modal-watermark" },
           React.createElement(Crest, { form: "lines", size: 360, basePath: "assets", tint: "gold" })),
+        React.createElement("button", { className: "hst-modal-close", onClick: onClose, "aria-label": "Close" }, Icon("x")),
 
+        React.createElement("div", { className: "hst-modal-scroll" },
         React.createElement("div", { className: "hst-modal-head" },
           React.createElement("span", { className: "hst-modal-medallion" },
             React.createElement("span", { className: "hst-modal-mono" }, campaignInitials(c.name))),
@@ -176,7 +177,7 @@
                         }))
                     : React.createElement("span", { className: "hst-cast-word" }, "no character recorded"))),
               );
-          }))));
+          })))));
   }
 
   window.SFC_UI = { TopBar: TopBar, Places: Places, ZoomControls: ZoomControls, CampaignModal: CampaignModal };

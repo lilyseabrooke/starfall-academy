@@ -34,6 +34,10 @@ when these shipped.
   Its rule and the one setting every other child of the modal to
   `position: relative` have equal CSS specificity, so source order was handing
   the watermark the wrong one.
+- The crest behind a record — on the Ledger and the Chronicle alike — is now
+  centred on the card and holds still while the record scrolls over it, the
+  way the crest behind a page does. The close button holds still with it, so
+  it stays reachable in a long record.
 
 ## v1.18.0 — 2026-09-21
 - Fix: the artifact Repair popup rendered as unstyled, unusable overlapping

@@ -291,30 +291,44 @@ html, body { height: 100%; margin: 0; }
   animation: hst-fade var(--dur-base) var(--ease-standard);
 }
 @keyframes hst-fade { from { opacity: 0; } to { opacity: 1; } }
+/* The card itself never scrolls — its body does. That's what lets the crest
+   behind the record hold still while the record moves over it, the way the
+   crest behind the page does, and it keeps the close button reachable. */
 .hst-modal {
-  position: relative; width: min(600px, 94vw); max-height: 88vh; overflow: auto;
-  padding: var(--space-6); background: var(--ink-850);
+  position: relative; width: min(600px, 94vw); max-height: 88vh; overflow: hidden;
+  display: flex; flex-direction: column;
+  background: var(--ink-850);
   border: 1px solid var(--border-strong); border-top: 2px solid var(--gold-500); border-radius: var(--radius-lg);
   box-shadow: var(--shadow-xl), var(--inset-hi);
-  scrollbar-width: thin; scrollbar-color: color-mix(in oklab, var(--gold-600) 40%, transparent) transparent;
   animation: hst-modal-in var(--dur-slow) var(--ease-out);
 }
+.hst-modal-scroll {
+  min-height: 0;   /* without this a flex child refuses to scroll, and grows */
+  overflow-y: auto; overflow-x: hidden; padding: var(--space-6);
+  scrollbar-width: thin; scrollbar-color: color-mix(in oklab, var(--gold-600) 40%, transparent) transparent;
+}
 @keyframes hst-modal-in { from { opacity: 0; transform: translateY(14px) scale(0.985); } to { opacity: 1; transform: none; } }
-.hst-modal::-webkit-scrollbar { width: 8px; }
-.hst-modal::-webkit-scrollbar-thumb { background: color-mix(in oklab, var(--gold-600) 36%, transparent); border-radius: var(--radius-pill); border: 2px solid transparent; background-clip: padding-box; }
+.hst-modal-scroll::-webkit-scrollbar { width: 8px; }
+.hst-modal-scroll::-webkit-scrollbar-thumb { background: color-mix(in oklab, var(--gold-600) 36%, transparent); border-radius: var(--radius-pill); border: 2px solid transparent; background-clip: padding-box; }
 .hst-modal > * { position: relative; z-index: 1; }
 /* Listed after the `> *` rule on purpose: both selectors weigh the same, so
    were this first the watermark would win `position: relative` on source order
    and lay out inline as a tall empty block above the campaign's name.
-   `inset: 0` centres the crest on the modal rather than hanging it off one
-   corner, and the clip stops an oversized crest adding to the modal's own
-   scrollable area. */
+   `inset: 0` centres the crest on the card rather than hanging it off one
+   corner, and the clip keeps a crest larger than a short card inside it. */
 .hst-modal .hst-modal-watermark {
   position: absolute; inset: 0; z-index: 0;
   display: grid; place-items: center; overflow: hidden;
   opacity: 0.06; pointer-events: none;
 }
-.hst-modal-close { position: absolute; top: var(--space-4); right: var(--space-4); z-index: 2; display: inline-flex; padding: 6px; background: none; border: none; cursor: pointer; color: var(--text-muted); border-radius: var(--radius-sm); }
+/* Opaque, because the body now scrolls underneath it: against the card this
+   is invisible, but it keeps a long line of text from running through the X. */
+.hst-modal-close {
+  position: absolute; top: var(--space-4); right: var(--space-4); z-index: 2;
+  display: inline-flex; padding: 6px; cursor: pointer;
+  background: var(--ink-850); border: none; border-radius: var(--radius-sm);
+  color: var(--text-muted);
+}
 .hst-modal-close:hover { color: var(--gold-300); background: var(--ink-700); }
 .hst-modal-close svg { width: 18px; height: 18px; }
 
