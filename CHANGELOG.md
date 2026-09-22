@@ -10,8 +10,8 @@ when these shipped.
 
 ## v1.19.0 — 2026-09-22
 - New Chronicle page at `/history`: a horizontal timeline of every past
-  campaign, read live from the Campaigns tab of the same Google Sheet the
-  Compendium and the Family Ledger already use. Campaigns are placed by
+  campaign, read live from the Campaigns tab of the same workbook the
+  Compendium pulls spells, artifacts and wands from. Campaigns are placed by
   semester as well as year (Fall 2011 sits half a year after Spring 2011), a
   campaign that ran across two semesters draws as a bar that long, and
   campaigns running at the same time stack above and below the rail instead of
