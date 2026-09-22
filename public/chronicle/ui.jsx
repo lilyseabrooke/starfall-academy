@@ -1,11 +1,11 @@
 /* ===========================================================================
    Starfall Academy — Chronicle: chrome & overlays (React, Babel)
-   window.SFC_UI = { TopBar, Roll, ZoomControls, CampaignModal }
+   window.SFC_UI = { TopBar, Places, ZoomControls, CampaignModal }
    =========================================================================== */
 (function () {
   const { useState, useRef, useEffect } = React;
   const DS = window.StarfallAcademyDesignSystem_61fef2;
-  const { Button, Crest, Badge } = DS;
+  const { Button, Crest } = DS;
   const colorOf = window.SFC_colorOf;
   const initials = window.SFC_initials;
   const campaignInitials = window.SFC_campaignInitials;
@@ -96,34 +96,34 @@
           }, "Start"))));
   }
 
-  // ------------------------------------------------------- the roll panel ---
-  function Roll({ L, filterPlayer, onFilter }) {
+  // ---------------------------------------------------- the places panel ---
+  // The legend for the accent colours on the cards, and the filter for them:
+  // the same job the Ledger's families panel does for its houses.
+  function Places({ L, filterLocation, onFilter }) {
     const [open, setOpen] = useState(true);
     if (!open) {
       return React.createElement("button", {
-        className: "hst-roll-chip", onClick: function () { setOpen(true); }
-      }, Icon("panel-left-open"), "The Table");
+        className: "hst-legend-chip", onClick: function () { setOpen(true); }
+      }, Icon("panel-left-open"), "Locations");
     }
-    return React.createElement("div", { className: "hst-roll" },
+    return React.createElement("div", { className: "hst-legend" },
       React.createElement("button", {
-        className: "hst-roll-collapse", onClick: function () { setOpen(false); }, "aria-label": "Collapse"
+        className: "hst-legend-collapse", onClick: function () { setOpen(false); }, "aria-label": "Collapse"
       }, Icon("chevrons-left")),
-      React.createElement("div", { className: "hst-roll-title" }, "The Table"),
-      React.createElement("div", { className: "hst-roll-list" },
-        L.players.map(function (p) {
-          const h = colorOf(toneFor(p.key));
+      React.createElement("div", { className: "hst-legend-title" }, "Locations"),
+      React.createElement("div", { className: "hst-legend-list" },
+        L.locations.map(function (l) {
+          const h = colorOf(l.tone);
           return React.createElement("button", {
-            key: p.key,
-            className: "hst-roll-row" + (filterPlayer === p.key ? " is-on" : ""),
-            onClick: function () { onFilter(filterPlayer === p.key ? null : p.key); },
-            title: p.characters.join(", ")
+            key: l.key,
+            className: "hst-legend-row" + (filterLocation === l.key ? " is-on" : ""),
+            onClick: function () { onFilter(filterLocation === l.key ? null : l.key); }
           },
-            React.createElement("span", { className: "hst-mono hst-mono--sm", style: { "--tone-l": h.light } },
-              React.createElement("span", { className: "hst-mono-text" }, initials(p.name))),
-            React.createElement("span", { className: "hst-roll-name" }, p.name),
-            React.createElement("span", { className: "hst-roll-count" }, p.campaigns.length));
+            React.createElement("span", { className: "hst-legend-dot", style: { background: h.light } }),
+            React.createElement("span", { className: "hst-legend-name" }, l.name),
+            React.createElement("span", { className: "hst-legend-count" }, l.count));
         })),
-      React.createElement("div", { className: "hst-roll-hint" }, "Tap a player to follow their thread · tap again to clear"));
+      React.createElement("div", { className: "hst-legend-hint" }, "Tap a place to follow its campaigns \u00b7 tap again to clear"));
   }
 
   // ---------------------------------------------------------- ZoomControls --
@@ -139,7 +139,7 @@
   }
 
   // ----------------------------------------------------------- the modal ----
-  function CampaignModal({ c, onClose, onPlayer }) {
+  function CampaignModal({ c, onClose, onPlayer, onLocation }) {
     useEffect(function () { if (window.lucide) window.lucide.createIcons(); });
     if (!c) return null;
     const h = colorOf(c._tone);
@@ -160,9 +160,17 @@
           React.createElement("span", { className: "hst-modal-medallion" },
             React.createElement("span", { className: "hst-modal-mono" }, campaignInitials(c.name))),
           React.createElement("div", { className: "hst-modal-id" },
-            React.createElement("div", { className: "hst-modal-eyebrow" },
-              React.createElement("span", { className: "hst-eyebrow-dot", style: { background: h.light } }),
-              c.location || "Somewhere unrecorded"),
+            c.location
+              ? React.createElement("button", {
+                  className: "hst-modal-eyebrow",
+                  onClick: function () { onLocation(c.location.toLowerCase()); },
+                  title: "Follow " + c.location + " through the chronicle"
+                },
+                  React.createElement("span", { className: "hst-eyebrow-dot", style: { background: h.light } }),
+                  c.location)
+              : React.createElement("div", { className: "hst-modal-eyebrow hst-modal-eyebrow--static" },
+                  React.createElement("span", { className: "hst-eyebrow-dot", style: { background: h.light } }),
+                  "Somewhere unrecorded"),
             React.createElement("h2", { className: "hst-modal-name" }, c.name),
             React.createElement("div", { className: "hst-modal-meta" },
               React.createElement("span", null, c.termLabel),
@@ -212,9 +220,9 @@
                             React.createElement("span", { className: "hst-cast-char" }, ch));
                         }))
                     : React.createElement("span", { className: "hst-cast-word" }, "no character recorded"))),
-              p.characters.length > 1 && React.createElement(Badge, { tone: "gold" }, "double duty"));
+              );
           }))));
   }
 
-  window.SFC_UI = { TopBar: TopBar, Roll: Roll, ZoomControls: ZoomControls, CampaignModal: CampaignModal };
+  window.SFC_UI = { TopBar: TopBar, Places: Places, ZoomControls: ZoomControls, CampaignModal: CampaignModal };
 })();

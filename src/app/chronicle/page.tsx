@@ -6,7 +6,7 @@ export const metadata = {
   title: "The Chronicle — Starfall Academy",
 };
 
-export default async function HistoryPage() {
+export default async function ChroniclePage() {
   const supabase = await createClient();
   const {
     data: { user },
@@ -17,7 +17,7 @@ export default async function HistoryPage() {
       <HudTopBar active="Chronicle" signedIn={!!user} title="The Chronicle" />
       <iframe
         className="embed-frame"
-        src="/history/index.html"
+        src="/chronicle/index.html"
         title="Starfall Academy campaign chronicle"
       />
     </div>

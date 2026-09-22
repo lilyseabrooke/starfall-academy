@@ -42,7 +42,7 @@ const BASE_NAV_LINKS: NavLink[] = [
   { name: "Gamebook", icon: ScrollText, href: GAMEBOOK_URL },
   { name: "Map", icon: Map, href: "/map" },
   { name: "Character Ledger", icon: BookMarked, href: "/character-map" },
-  { name: "Chronicle", icon: History, href: "/history" },
+  { name: "Chronicle", icon: History, href: "/chronicle" },
 ];
 
 const MY_CHARACTERS_LINK: NavLink = {

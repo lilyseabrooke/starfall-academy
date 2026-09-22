@@ -9,7 +9,7 @@ history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
 ## v1.19.0 — 2026-09-22
-- New Chronicle page at `/history`: a horizontal timeline of every past
+- New Chronicle page at `/chronicle`: a horizontal timeline of every past
   campaign, read live from the Campaigns tab of the same workbook the
   Compendium pulls spells, artifacts and wands from. Campaigns are placed by
   semester as well as year (Fall 2011 sits half a year after Spring 2011), a
@@ -21,9 +21,13 @@ when these shipped.
   on the Ledger.
 - The Chronicle parses the sheet's single PLAYERS field into players,
   characters, and who played whom, so a player who ran two characters in one
-  campaign is listed once with both roles (marked "double duty") rather than
-  twice. Searching covers campaign, player and character names, and picking a
-  player from The Table follows their thread across the whole timeline.
+  campaign is listed once carrying both, rather than twice.
+- Three ways to narrow the timeline, and they stack: search (campaign, player
+  or character names), a player picker in the toolbar, and the Locations panel
+  bottom-left, which doubles as the legend for the accent colour on each card.
+  A campaign's own record also filters — its location heading follows that
+  place, a row in its party follows that player. If the filters between them
+  rule everything out, the timeline says so and offers to clear them.
 
 ## v1.18.0 — 2026-09-21
 - Fix: the artifact Repair popup rendered as unstyled, unusable overlapping

@@ -4,7 +4,7 @@
 (function () {
   const { useState, useRef, useMemo, useEffect, useCallback } = React;
   const Timeline = window.SFC_Timeline;
-  const { TopBar, Roll, ZoomControls, CampaignModal } = window.SFC_UI;
+  const { TopBar, Places, ZoomControls, CampaignModal } = window.SFC_UI;
   const matches = window.SFC_matches;
 
   // How many pixels a year is worth. Wider spreads the semesters apart and
@@ -36,6 +36,7 @@
     const sidePad = wide ? 380 : 44;
     const [query, setQuery] = useState("");
     const [filterPlayer, setFilterPlayer] = useState(null);
+    const [filterLocation, setFilterLocation] = useState(null);
     const [openId, setOpenId] = useState(null);
     const timelineRef = useRef(null);
 
@@ -45,17 +46,23 @@
 
     const q = query.trim().toLowerCase();
     const dimSet = useMemo(function () {
-      if (!q && !filterPlayer) return null;
+      if (!q && !filterPlayer && !filterLocation) return null;
       const keep = new Set();
       L.items.forEach(function (c) {
         const byText = matches(c, q);
         const byPlayer = !filterPlayer || c.players.some(function (p) { return p.key === filterPlayer; });
-        if (byText && byPlayer) keep.add(c.id);
+        const byPlace = !filterLocation || (c.location || "").toLowerCase() === filterLocation;
+        if (byText && byPlayer && byPlace) keep.add(c.id);
       });
       return keep;
-    }, [L, q, filterPlayer]);
+    }, [L, q, filterPlayer, filterLocation]);
 
     const shown = dimSet ? dimSet.size : L.items.length;
+    const filtering = !!(q || filterPlayer || filterLocation);
+
+    const clearAll = useCallback(function () {
+      setQuery(""); setFilterPlayer(null); setFilterLocation(null);
+    }, []);
 
     const jumpTo = useCallback(function (id) {
       setOpenId(null);
@@ -65,6 +72,11 @@
     const followPlayer = useCallback(function (key) {
       setOpenId(null);
       setFilterPlayer(function (prev) { return prev === key ? null : key; });
+    }, []);
+
+    const followLocation = useCallback(function (key) {
+      setOpenId(null);
+      setFilterLocation(function (prev) { return prev === key ? null : key; });
     }, []);
 
     const onHome = useCallback(function () {
@@ -96,12 +108,12 @@
       const onKey = function (e) {
         if (e.key !== "Escape") return;
         if (openId) setOpenId(null);
-        else if (filterPlayer) setFilterPlayer(null);
+        else if (filterPlayer || filterLocation) { setFilterPlayer(null); setFilterLocation(null); }
         else if (query) setQuery("");
       };
       window.addEventListener("keydown", onKey);
       return function () { window.removeEventListener("keydown", onKey); };
-    }, [openId, filterPlayer, query]);
+    }, [openId, filterPlayer, filterLocation, query]);
 
     if (!L.items.length) {
       return React.createElement("div", { className: "hst-app" },
@@ -119,16 +131,26 @@
         React.createElement(Timeline, {
           ref: timelineRef, L: L, dimSet: dimSet, openId: openId, onOpen: setOpenId
         }),
-        React.createElement(Roll, { L: L, filterPlayer: filterPlayer, onFilter: setFilterPlayer }),
+        React.createElement(Places, { L: L, filterLocation: filterLocation, onFilter: setFilterLocation }),
         React.createElement(ZoomControls, {
           onZoom: onZoom, onFit: onFit,
           canIn: scale < SCALES.length - 1, canOut: scale > 0
         }),
+        filtering && shown === 0 && React.createElement("div", { className: "hst-nomatch" },
+          React.createElement("div", { className: "hst-nomatch-title" }, "Nothing in the chronicle matches"),
+          React.createElement("div", { className: "hst-nomatch-why" },
+            [
+              q ? "\u201c" + query.trim() + "\u201d" : null,
+              filterPlayer ? "played by " + ((L.players.find(function (p) { return p.key === filterPlayer; }) || {}).name || filterPlayer) : null,
+              filterLocation ? "in " + ((L.locations.find(function (l) { return l.key === filterLocation; }) || {}).name || filterLocation) : null
+            ].filter(Boolean).join(" \u00b7 ")),
+          React.createElement("button", { className: "hst-nomatch-clear", onClick: clearAll }, "Clear filters")),
         L.undated.length > 0 && React.createElement("div", { className: "hst-undated" },
           L.undated.length + " campaign" + (L.undated.length === 1 ? "" : "s") + " with no recorded dates " +
           (L.undated.length === 1 ? "is" : "are") + " missing from the timeline.")),
       openId && React.createElement(CampaignModal, {
-        c: L.byId[openId], onClose: function () { setOpenId(null); }, onPlayer: followPlayer
+        c: L.byId[openId], onClose: function () { setOpenId(null); },
+        onPlayer: followPlayer, onLocation: followLocation
       }));
   }
 

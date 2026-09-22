@@ -223,21 +223,21 @@ html, body { height: 100%; margin: 0; }
 .hst-mono--md { width: 38px; height: 38px; }
 .hst-mono--md .hst-mono-text { font-size: 14px; }
 
-/* ============================ THE ROLL ================================== */
-.hst-roll {
+/* ========================== THE LOCATIONS =============================== */
+.hst-legend {
   position: absolute; left: 24px; bottom: 24px; z-index: 14; width: 222px;
   display: flex; flex-direction: column; gap: var(--space-2);
   padding: var(--space-4); background: color-mix(in oklab, var(--ink-850) 92%, transparent);
   backdrop-filter: blur(8px); border: 1px solid var(--border-default); border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg), var(--inset-hi);
 }
-.hst-roll-collapse {
+.hst-legend-collapse {
   position: absolute; top: 10px; right: 10px; display: inline-flex; padding: 3px;
   background: none; border: none; cursor: pointer; color: var(--text-faint); border-radius: var(--radius-sm);
 }
-.hst-roll-collapse:hover { color: var(--gold-300); background: var(--ink-700); }
-.hst-roll-collapse svg { width: 15px; height: 15px; }
-.hst-roll-chip {
+.hst-legend-collapse:hover { color: var(--gold-300); background: var(--ink-700); }
+.hst-legend-collapse svg { width: 15px; height: 15px; }
+.hst-legend-chip {
   position: absolute; left: 24px; bottom: 24px; z-index: 14;
   display: inline-flex; align-items: center; gap: var(--space-2); height: 36px; padding: 0 var(--space-4);
   background: color-mix(in oklab, var(--ink-850) 92%, transparent); backdrop-filter: blur(8px);
@@ -245,24 +245,25 @@ html, body { height: 100%; margin: 0; }
   font-family: var(--font-sans); font-size: var(--text-xs); letter-spacing: var(--tracking-wide);
   text-transform: uppercase; color: var(--text-body); box-shadow: var(--shadow-md);
 }
-.hst-roll-chip:hover { color: var(--gold-200); border-color: var(--gold-600); }
-.hst-roll-chip svg { width: 15px; height: 15px; }
-.hst-roll-title {
+.hst-legend-chip:hover { color: var(--gold-200); border-color: var(--gold-600); }
+.hst-legend-chip svg { width: 15px; height: 15px; }
+.hst-legend-title {
   font-family: var(--font-sans); font-size: 10px; letter-spacing: var(--tracking-widest);
   text-transform: uppercase; color: var(--text-gold);
 }
-.hst-roll-list { display: flex; flex-direction: column; gap: 2px; max-height: 40vh; overflow: auto; scrollbar-width: thin; }
-.hst-roll-row {
+.hst-legend-list { display: flex; flex-direction: column; gap: 2px; max-height: 40vh; overflow: auto; scrollbar-width: thin; }
+.hst-legend-row {
   display: flex; align-items: center; gap: var(--space-2); width: 100%;
-  padding: 3px 4px; background: none; border: none; cursor: pointer; text-align: left;
+  padding: 4px 5px; background: none; border: none; cursor: pointer; text-align: left;
   border-radius: var(--radius-sm); font-family: var(--font-sans); font-size: var(--text-sm);
   color: var(--text-muted);
 }
-.hst-roll-row:hover { color: var(--text-strong); background: var(--ink-700); }
-.hst-roll-row.is-on { color: var(--gold-200); background: var(--ink-700); }
-.hst-roll-name { margin-right: auto; }
-.hst-roll-count { font-family: var(--font-mono); font-size: 11px; color: var(--text-faint); flex: none; }
-.hst-roll-hint { margin-top: 4px; font-family: var(--font-serif); font-style: italic; font-size: 11.5px; color: var(--text-faint); }
+.hst-legend-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; box-shadow: 0 0 6px currentColor; }
+.hst-legend-row:hover { color: var(--text-strong); background: var(--ink-700); }
+.hst-legend-row.is-on { color: var(--gold-200); background: var(--ink-700); }
+.hst-legend-name { margin-right: auto; }
+.hst-legend-count { font-family: var(--font-mono); font-size: 11px; color: var(--text-faint); flex: none; }
+.hst-legend-hint { margin-top: 4px; font-family: var(--font-serif); font-style: italic; font-size: 11.5px; color: var(--text-faint); }
 
 /* ============================ ZOOM ====================================== */
 .hst-zoom {
@@ -279,6 +280,31 @@ html, body { height: 100%; margin: 0; }
 .hst-zoom-btn:hover:not(:disabled) { background: var(--ink-700); color: var(--gold-300); }
 .hst-zoom-btn:disabled { color: var(--text-faint); cursor: default; opacity: .5; }
 .hst-zoom-btn svg { width: 18px; height: 18px; }
+
+.hst-nomatch {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 16;
+  display: flex; flex-direction: column; align-items: center; gap: var(--space-2);
+  padding: var(--space-5) var(--space-6); text-align: center; max-width: min(420px, 86vw);
+  background: color-mix(in oklab, var(--ink-850) 94%, transparent); backdrop-filter: blur(8px);
+  border: 1px solid var(--border-default); border-top: 2px solid var(--gold-500);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-lg), var(--inset-hi);
+}
+.hst-nomatch-title {
+  font-family: var(--font-display); font-weight: 700; font-size: var(--text-md);
+  letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--text-strong);
+}
+.hst-nomatch-why {
+  font-family: var(--font-serif); font-style: italic; font-size: var(--text-sm); color: var(--text-muted);
+}
+.hst-nomatch-clear {
+  margin-top: var(--space-2); height: 34px; padding: 0 var(--space-4); cursor: pointer;
+  font-family: var(--font-sans); font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide); text-transform: uppercase;
+  background: var(--brand-subtle); color: var(--gold-200);
+  border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  transition: box-shadow var(--dur-base), border-color var(--dur-base);
+}
+.hst-nomatch-clear:hover { box-shadow: var(--glow-gold); border-color: var(--gold-500); }
 
 .hst-undated {
   position: absolute; right: 24px; top: 20px; z-index: 14; max-width: 280px;
@@ -306,8 +332,14 @@ html, body { height: 100%; margin: 0; }
 @keyframes hst-modal-in { from { opacity: 0; transform: translateY(14px) scale(0.985); } to { opacity: 1; transform: none; } }
 .hst-modal::-webkit-scrollbar { width: 8px; }
 .hst-modal::-webkit-scrollbar-thumb { background: color-mix(in oklab, var(--gold-600) 36%, transparent); border-radius: var(--radius-pill); border: 2px solid transparent; background-clip: padding-box; }
-.hst-modal-watermark { position: absolute; top: -40px; right: -60px; opacity: 0.06; pointer-events: none; z-index: 0; }
 .hst-modal > * { position: relative; z-index: 1; }
+/* Listed after the `> *` rule on purpose: both selectors weigh the same, so
+   were this first the watermark would win `position: relative` on source order
+   and sit inline as a tall empty block above the campaign's name. */
+.hst-modal .hst-modal-watermark {
+  position: absolute; top: -40px; right: -60px; z-index: 0;
+  opacity: 0.06; pointer-events: none;
+}
 .hst-modal-close { position: absolute; top: var(--space-4); right: var(--space-4); z-index: 2; display: inline-flex; padding: 6px; background: none; border: none; cursor: pointer; color: var(--text-muted); border-radius: var(--radius-sm); }
 .hst-modal-close:hover { color: var(--gold-300); background: var(--ink-700); }
 .hst-modal-close svg { width: 18px; height: 18px; }
@@ -323,9 +355,13 @@ html, body { height: 100%; margin: 0; }
 .hst-modal-id { min-width: 0; }
 .hst-modal-eyebrow {
   display: inline-flex; align-items: center; gap: 7px;
+  background: none; border: none; padding: 0; cursor: pointer;
   font-family: var(--font-sans); font-size: 10px; letter-spacing: var(--tracking-widest);
   text-transform: uppercase; color: var(--text-gold);
 }
+.hst-modal-eyebrow:hover { color: var(--gold-200); }
+.hst-modal-eyebrow--static { cursor: default; }
+.hst-modal-eyebrow--static:hover { color: var(--text-gold); }
 .hst-eyebrow-dot { width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 6px currentColor; flex: none; }
 .hst-modal-name {
   font-family: var(--font-display); font-weight: 700; font-size: var(--text-2xl);
@@ -390,8 +426,9 @@ html, body { height: 100%; margin: 0; }
 @media (max-width: 880px) {
   .hst-topbar { gap: var(--space-3); padding: 0 var(--space-3); }
   .hst-count { display: none; }
-  /* the topbar's player filter covers this ground on a phone */
-  .hst-roll, .hst-roll-chip { display: none; }
+  /* No room for it beside the cards. Nothing is lost: the location name is
+     written on every card, and a campaign's modal filters by its location. */
+  .hst-legend, .hst-legend-chip { display: none; }
   .hst-zoom { right: 16px; bottom: 16px; }
   .hst-undated { display: none; }
 }

@@ -26,6 +26,15 @@
   // Locations become the accent colour, the way families do on the Ledger.
   const TONES = ["gold", "plum", "teal", "forest", "crimson", "azure", "rust", "slate"];
 
+  // The places that already have a colour people recognise. Pinning them means
+  // a campaign in a new location can't shuffle everyone else's accent, which a
+  // bare rotation would do the moment a new place sorted in ahead of them.
+  const LOCATION_TONES = {
+    "starfall": "gold",
+    "baranomichi": "plum",
+    "lune rouge": "crimson"
+  };
+
   function compute(campaigns, cfg) {
     const C = Object.assign({}, DEFAULTS, cfg || {});
 
@@ -60,16 +69,27 @@
 
     // ---- location tones ------------------------------------------------------
     const locations = [];
+    const takenTones = [];
+    // Pinned first, then the first tone nobody's using, then straight rotation.
+    const toneFor = function (key) {
+      if (LOCATION_TONES[key]) return LOCATION_TONES[key];
+      const free = TONES.find(function (t) { return takenTones.indexOf(t) === -1; });
+      return free || TONES[locations.length % TONES.length];
+    };
     items.forEach(function (i) {
       const key = (i.location || "").toLowerCase();
       if (!key) { i._tone = "gold"; return; }
       let l = locations.find(function (x) { return x.key === key; });
       if (!l) {
-        l = { key: key, name: i.location, tone: TONES[locations.length % TONES.length], count: 0 };
+        l = { key: key, name: i.location, tone: toneFor(key), count: 0 };
+        takenTones.push(l.tone);
         locations.push(l);
       }
       l.count++;
       i._tone = l.tone;
+    });
+    locations.sort(function (a, b) {
+      return (b.count - a.count) || a.name.localeCompare(b.name);
     });
 
     // ---- bars, then lanes ----------------------------------------------------
