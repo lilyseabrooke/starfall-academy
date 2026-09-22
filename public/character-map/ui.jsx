@@ -173,8 +173,9 @@
     useEffect(() => { if (window.lucide) window.lucide.createIcons(); });
     return React.createElement("div", { className: "sft-modal-scrim", onClick: onClose },
       React.createElement("div", { className: "sft-modal", style: { "--house": h.base, "--house-l": h.light }, onClick: (e) => e.stopPropagation() },
-        React.createElement("button", { className: "sft-modal-close", onClick: onClose, "aria-label": "Close" }, Icon("x")),
         React.createElement("div", { className: "sft-modal-watermark" }, React.createElement(Crest, { form: "lines", size: 360, basePath: "assets", tint: "gold" })),
+        React.createElement("button", { className: "sft-modal-close", onClick: onClose, "aria-label": "Close" }, Icon("x")),
+        React.createElement("div", { className: "sft-modal-scroll" },
         React.createElement("div", { className: "sft-modal-head" },
           React.createElement("span", { className: "sft-modal-medallion" }, n.portrait
             ? React.createElement("img", { src: n.portrait, alt: n.name })
@@ -194,7 +195,7 @@
         React.createElement("hr", { className: "sa-rule sft-modal-rule" }),
         n.bio && React.createElement("p", { className: "sft-modal-bio" }, renderBio(L, n.bio, onJump)),
         React.createElement(Details, { n }),
-        React.createElement(RelList, { rel, onJump })));
+        React.createElement(RelList, { rel, onJump }))));
   }
 
   // ----------------------------------------------------------- FamilyModal -
@@ -207,8 +208,9 @@
     useEffect(() => { if (window.lucide) window.lucide.createIcons(); });
     return React.createElement("div", { className: "sft-modal-scrim", onClick: onClose },
       React.createElement("div", { className: "sft-modal sft-modal--family", style: { "--house": h.base, "--house-l": h.light }, onClick: (e) => e.stopPropagation() },
-        React.createElement("button", { className: "sft-modal-close", onClick: onClose, "aria-label": "Close" }, Icon("x")),
         React.createElement("div", { className: "sft-modal-watermark" }, React.createElement(Crest, { form: "lines", size: 360, basePath: "assets", tint: "gold" })),
+        React.createElement("button", { className: "sft-modal-close", onClick: onClose, "aria-label": "Close" }, Icon("x")),
+        React.createElement("div", { className: "sft-modal-scroll" },
         React.createElement("div", { className: "sft-fam-head" },
           React.createElement("span", { className: "sft-fam-crest", style: { "--house-l": h.light } }, React.createElement(Crest, { form: "simple", size: 56, basePath: "assets" })),
           React.createElement("div", null,
@@ -226,7 +228,7 @@
           members.map((m) => React.createElement("button", { key: m.id, className: "sft-fam-member", onClick: () => onJump(m.id) },
             React.createElement("span", { className: "sft-fam-mono", style: { "--house-l": colorOf(m._color).light } }, initials(m.name)),
             React.createElement("span", { className: "sft-fam-mname" }, m.name),
-            React.createElement("span", { className: "sft-fam-mlife" }, lifeLabel(m)))))));
+            React.createElement("span", { className: "sft-fam-mlife" }, lifeLabel(m))))))));
   }
 
   window.SFT_UI = { TopBar, Legend, ZoomControls, DetailModal, FamilyModal };

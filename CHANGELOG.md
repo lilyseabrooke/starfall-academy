@@ -8,6 +8,37 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.19.0 — 2026-09-22
+- New Chronicle page at `/chronicle`: a horizontal timeline of every past
+  campaign, read live from the Campaigns tab of the same workbook the
+  Compendium pulls spells, artifacts and wands from. Campaigns are placed by
+  semester as well as year (Fall 2011 sits half a year after Spring 2011), a
+  campaign that ran across two semesters draws as a bar that long, and
+  campaigns running at the same time stack above and below the rail instead of
+  overlapping. Each card carries the campaign's name, term, location and a
+  monogram per player; clicking one opens the full record — description,
+  dates, location and the party — in the same modal treatment as a character
+  on the Ledger.
+- The Chronicle parses the sheet's single PLAYERS field into players,
+  characters, and who played whom, so a player who ran two characters in one
+  campaign is listed once carrying both, rather than twice.
+- Two ways to narrow the timeline, and they stack: search, which covers
+  campaign, player and character names, and the Locations panel bottom-left,
+  which doubles as the legend for the accent colour on each card. A campaign's
+  own record filters too — its location heading follows that place. If the two
+  between them rule everything out, the timeline says so and offers to clear
+  them.
+- Fix: the crest watermark behind a character's record on the Family Ledger
+  laid out inline instead of sitting in the background, so every character and
+  family modal opened on a tall empty block and pushed the name out of sight.
+  Its rule and the one setting every other child of the modal to
+  `position: relative` have equal CSS specificity, so source order was handing
+  the watermark the wrong one.
+- The crest behind a record — on the Ledger and the Chronicle alike — is now
+  centred on the card and holds still while the record scrolls over it, the
+  way the crest behind a page does. The close button holds still with it, so
+  it stays reachable in a long record.
+
 ## v1.18.0 — 2026-09-21
 - Fix: the artifact Repair popup rendered as unstyled, unusable overlapping
   text — its CSS was scoped to a container the popup no longer lived inside

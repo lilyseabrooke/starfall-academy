@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   BookMarked,
   BookOpen,
+  History,
   KeyRound,
   LogOut,
   MailCheck,
@@ -29,6 +30,7 @@ export type HudActiveLink =
   | "Gamebook"
   | "Map"
   | "Character Ledger"
+  | "Chronicle"
   | "My Characters";
 
 // TODO: replace with the real Gamebook page once it's built.
@@ -40,6 +42,7 @@ const BASE_NAV_LINKS: NavLink[] = [
   { name: "Gamebook", icon: ScrollText, href: GAMEBOOK_URL },
   { name: "Map", icon: Map, href: "/map" },
   { name: "Character Ledger", icon: BookMarked, href: "/character-map" },
+  { name: "Chronicle", icon: History, href: "/chronicle" },
 ];
 
 const MY_CHARACTERS_LINK: NavLink = {
