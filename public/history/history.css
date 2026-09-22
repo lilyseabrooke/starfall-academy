@@ -1,0 +1,415 @@
+/* ===========================================================================
+   Starfall Academy — Chronicle: timeline & chrome styling
+   Built entirely on Starfall Academy design tokens, and deliberately kept in
+   step with the Family Ledger's tree.css so the two pages read as one site.
+   =========================================================================== */
+
+html, body { height: 100%; margin: 0; }
+#root { height: 100%; }
+* { box-sizing: border-box; }
+
+.hst-app {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  background: var(--grad-vignette);
+  color: var(--text-body);
+  overflow: hidden;
+}
+
+.hst-empty {
+  flex: 1; display: grid; place-items: center;
+  font-family: var(--font-serif); font-style: italic;
+  font-size: var(--text-md); color: var(--text-muted);
+}
+
+/* ============================ TOP BAR ==================================== */
+.hst-topbar {
+  position: relative; z-index: 30;
+  display: flex; align-items: center; gap: var(--space-5);
+  height: 64px; padding: 0 var(--space-5) 0 var(--space-4);
+  background: color-mix(in oklab, var(--ink-900) 82%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border-subtle);
+  box-shadow: 0 1px 0 color-mix(in oklab, var(--gold-500) 10%, transparent), var(--shadow-md);
+}
+
+.hst-search {
+  position: relative; display: flex; align-items: center; gap: var(--space-2);
+  flex: 1; max-width: 480px; height: 40px; padding: 0 var(--space-3);
+  background: var(--ink-950); border: 1px solid var(--border-default); border-radius: var(--radius-sm);
+  transition: border-color var(--dur-base) var(--ease-standard), box-shadow var(--dur-base) var(--ease-standard);
+}
+.hst-search.is-focus { border-color: var(--gold-500); box-shadow: 0 0 0 3px var(--focus-ring); }
+.hst-search-icon { display: inline-flex; color: var(--text-muted); }
+.hst-search-icon svg { width: 17px; height: 17px; }
+.hst-search-input {
+  flex: 1; min-width: 0; background: none; border: none; outline: none;
+  font-family: var(--font-sans); font-size: var(--text-sm); color: var(--text-strong); letter-spacing: .01em;
+}
+.hst-search-input::placeholder { color: var(--text-faint); }
+.hst-search-clear { display: inline-flex; background: none; border: none; cursor: pointer; color: var(--text-faint); padding: 2px; }
+.hst-search-clear:hover { color: var(--gold-300); }
+.hst-search-clear svg { width: 15px; height: 15px; }
+
+.hst-typeahead {
+  position: absolute; top: calc(100% + 8px); left: 0; right: 0; z-index: 40;
+  background: var(--ink-850); border: 1px solid var(--border-default); border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg); overflow: hidden; padding: var(--space-1);
+}
+.hst-ta-row {
+  display: flex; align-items: center; gap: var(--space-3); width: 100%;
+  padding: var(--space-2) var(--space-3); background: none; border: none; cursor: pointer;
+  border-radius: var(--radius-sm); text-align: left;
+}
+.hst-ta-row:hover { background: var(--ink-700); }
+.hst-ta-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; box-shadow: 0 0 6px currentColor; }
+.hst-ta-name { font-family: var(--font-serif); font-size: var(--text-sm); color: var(--text-strong); }
+.hst-ta-meta { margin-left: auto; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); }
+
+.hst-topbar-right { margin-left: auto; display: flex; align-items: center; gap: var(--space-3); }
+.hst-count { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-faint); white-space: nowrap; }
+
+.hst-plfilter { position: relative; }
+.hst-plfilter-btn {
+  display: flex; align-items: center; gap: var(--space-2); height: 40px; padding: 0 var(--space-3);
+  background: var(--ink-850); color: var(--text-body); border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm); cursor: pointer; font-family: var(--font-sans); font-size: var(--text-sm);
+  letter-spacing: .02em; transition: border-color var(--dur-base), color var(--dur-base);
+}
+.hst-plfilter-btn { white-space: nowrap; }
+.hst-plfilter-btn:hover { border-color: var(--border-strong); color: var(--text-strong); }
+.hst-plfilter-btn.is-active { border-color: var(--gold-600); color: var(--gold-200); }
+.hst-plfilter-btn svg { width: 15px; height: 15px; }
+.hst-pl-chev { color: var(--text-muted); }
+.hst-pl-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; box-shadow: 0 0 6px currentColor; }
+.hst-plfilter-menu {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 40; min-width: 232px;
+  max-height: 60vh; overflow: auto;
+  background: var(--ink-850); border: 1px solid var(--border-default); border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg); padding: var(--space-1);
+}
+.hst-pl-item {
+  display: flex; align-items: center; gap: var(--space-3); width: 100%;
+  padding: var(--space-2) var(--space-3); background: none; border: none; cursor: pointer;
+  border-radius: var(--radius-sm); text-align: left; font-family: var(--font-sans); font-size: var(--text-sm);
+  color: var(--text-body);
+}
+.hst-pl-item:hover { background: var(--ink-700); color: var(--text-strong); }
+.hst-pl-item.is-on { color: var(--gold-200); }
+.hst-pl-name { margin-right: auto; }
+.hst-pl-count { margin-left: auto; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-faint); }
+
+/* ============================ STAGE ===================================== */
+.hst-stage { position: relative; flex: 1; overflow: hidden; }
+.hst-stage::before {
+  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(58% 52% at 50% 46%, rgba(185,157,83,0.045), transparent 70%),
+    url("assets/crest-lines.png") no-repeat center 46% / min(620px, 52vw);
+  filter: saturate(0.2);
+  opacity: 0.5;
+  mix-blend-mode: screen;
+}
+
+.hst-viewport {
+  position: absolute; inset: 0; z-index: 1;
+  overflow: auto; cursor: grab; overscroll-behavior: contain;
+  scrollbar-width: thin; scrollbar-color: color-mix(in oklab, var(--gold-600) 40%, transparent) transparent;
+}
+.hst-viewport.is-grabbing { cursor: grabbing; user-select: none; }
+.hst-viewport::-webkit-scrollbar { width: 10px; height: 10px; }
+.hst-viewport::-webkit-scrollbar-thumb {
+  background: color-mix(in oklab, var(--gold-600) 34%, transparent);
+  border-radius: var(--radius-pill); border: 3px solid transparent; background-clip: padding-box;
+}
+.hst-world { position: relative; }
+
+/* ============================ AXIS ====================================== */
+.hst-axis { position: absolute; top: 0; left: 0; overflow: visible; pointer-events: none; z-index: 1; }
+.hst-rail {
+  stroke: color-mix(in oklab, var(--gold-600) 52%, var(--ink-600));
+  stroke-width: 1.4px;
+}
+.hst-tick { stroke: color-mix(in oklab, var(--parchment-200) 18%, transparent); stroke-width: 1px; }
+.hst-tick.is-major { stroke: color-mix(in oklab, var(--gold-500) 45%, transparent); stroke-width: 1.4px; }
+.hst-tick-year {
+  font-family: var(--font-mono); font-size: 11px;
+  fill: var(--text-muted); letter-spacing: .04em;
+}
+
+.hst-span { transition: opacity var(--dur-slow) var(--ease-standard); }
+.hst-span.is-dim { opacity: 0.14; }
+.hst-stem {
+  fill: none;
+  stroke: color-mix(in oklab, var(--tone-l, var(--gold-400)) 42%, transparent);
+  stroke-width: 1.2px; stroke-dasharray: 3 4;
+}
+.hst-bar {
+  fill: var(--tone-l, var(--gold-400)); opacity: 0.55;
+}
+.hst-knot { fill: var(--tone-l, var(--gold-400)); }
+
+/* ============================ CARDS ===================================== */
+.hst-cards { position: absolute; top: 0; left: 0; z-index: 2; }
+.hst-card {
+  position: absolute; width: 268px; height: 182px;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+  padding: var(--space-3) var(--space-4);
+  text-align: left; cursor: pointer;
+  background: color-mix(in oklab, var(--ink-850) 90%, transparent);
+  backdrop-filter: blur(6px);
+  border: 1px solid var(--border-default);
+  border-top: 2px solid var(--tone-l, var(--gold-400));
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md), var(--inset-hi);
+  transition: transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base),
+              border-color var(--dur-base), opacity var(--dur-slow) var(--ease-standard);
+}
+.hst-card:hover { transform: translateY(-3px); box-shadow: var(--glow-gold); border-color: var(--gold-600); }
+.hst-card:focus-visible { outline: none; border-color: var(--gold-500); box-shadow: 0 0 0 3px var(--focus-ring); }
+.hst-card.is-active { border-color: var(--gold-500); box-shadow: var(--glow-gold); }
+.hst-card.is-dim { opacity: 0.2; filter: saturate(0.5); }
+
+.hst-card-eyebrow {
+  display: inline-flex; align-items: center; gap: 6px; flex: none;
+  font-family: var(--font-sans); font-size: 9.5px; letter-spacing: var(--tracking-widest);
+  text-transform: uppercase; color: color-mix(in oklab, var(--tone-l, var(--gold-400)) 76%, var(--text-gold));
+}
+.hst-card-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex: none;
+  background: var(--tone-l, var(--gold-400)); box-shadow: 0 0 6px currentColor;
+}
+.hst-card-name {
+  font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg);
+  letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--text-strong);
+  line-height: 1.12; text-wrap: balance;
+  /* two lines, never more — a long title must not push the monograms out of
+     the card, which is a fixed height the lane packing depends on */
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden; flex: none; width: 100%;
+}
+.hst-card-term { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-gold); flex: none; }
+.hst-card-foot {
+  margin-top: auto; font-family: var(--font-sans); font-size: 10.5px;
+  letter-spacing: .04em; color: var(--text-faint);
+}
+
+/* ---- monograms ---- */
+.hst-monos { display: flex; align-items: center; gap: 6px; margin-top: var(--space-2); flex: none; }
+.hst-mono {
+  position: relative; flex: none;
+  width: 32px; height: 32px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: radial-gradient(120% 120% at 50% 28%, var(--ink-700), var(--ink-950));
+  border: 1.5px solid var(--tone-l, var(--gold-400));
+  box-shadow: var(--inset-hi);
+}
+.hst-mono-text {
+  font-family: var(--font-display); font-weight: 700; font-size: 12px;
+  letter-spacing: .04em; color: var(--gold-200);
+}
+/* a player who ran two characters in one campaign — one monogram, marked */
+.hst-mono-dual {
+  position: absolute; right: -3px; bottom: -3px;
+  min-width: 14px; height: 14px; padding: 0 3px; border-radius: var(--radius-pill);
+  display: grid; place-items: center;
+  background: var(--grad-gold); color: var(--ink-950);
+  font-family: var(--font-mono); font-size: 9px; font-weight: 700; line-height: 1;
+  border: 1px solid var(--ink-950);
+}
+.hst-mono--more { border-style: dashed; border-color: var(--border-strong); font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
+.hst-mono--sm { width: 26px; height: 26px; }
+.hst-mono--sm .hst-mono-text { font-size: 10px; }
+.hst-mono--md { width: 38px; height: 38px; }
+.hst-mono--md .hst-mono-text { font-size: 14px; }
+
+/* ============================ THE ROLL ================================== */
+.hst-roll {
+  position: absolute; left: 24px; bottom: 24px; z-index: 14; width: 222px;
+  display: flex; flex-direction: column; gap: var(--space-2);
+  padding: var(--space-4); background: color-mix(in oklab, var(--ink-850) 92%, transparent);
+  backdrop-filter: blur(8px); border: 1px solid var(--border-default); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg), var(--inset-hi);
+}
+.hst-roll-collapse {
+  position: absolute; top: 10px; right: 10px; display: inline-flex; padding: 3px;
+  background: none; border: none; cursor: pointer; color: var(--text-faint); border-radius: var(--radius-sm);
+}
+.hst-roll-collapse:hover { color: var(--gold-300); background: var(--ink-700); }
+.hst-roll-collapse svg { width: 15px; height: 15px; }
+.hst-roll-chip {
+  position: absolute; left: 24px; bottom: 24px; z-index: 14;
+  display: inline-flex; align-items: center; gap: var(--space-2); height: 36px; padding: 0 var(--space-4);
+  background: color-mix(in oklab, var(--ink-850) 92%, transparent); backdrop-filter: blur(8px);
+  border: 1px solid var(--border-default); border-radius: var(--radius-pill); cursor: pointer;
+  font-family: var(--font-sans); font-size: var(--text-xs); letter-spacing: var(--tracking-wide);
+  text-transform: uppercase; color: var(--text-body); box-shadow: var(--shadow-md);
+}
+.hst-roll-chip:hover { color: var(--gold-200); border-color: var(--gold-600); }
+.hst-roll-chip svg { width: 15px; height: 15px; }
+.hst-roll-title {
+  font-family: var(--font-sans); font-size: 10px; letter-spacing: var(--tracking-widest);
+  text-transform: uppercase; color: var(--text-gold);
+}
+.hst-roll-list { display: flex; flex-direction: column; gap: 2px; max-height: 40vh; overflow: auto; scrollbar-width: thin; }
+.hst-roll-row {
+  display: flex; align-items: center; gap: var(--space-2); width: 100%;
+  padding: 3px 4px; background: none; border: none; cursor: pointer; text-align: left;
+  border-radius: var(--radius-sm); font-family: var(--font-sans); font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+.hst-roll-row:hover { color: var(--text-strong); background: var(--ink-700); }
+.hst-roll-row.is-on { color: var(--gold-200); background: var(--ink-700); }
+.hst-roll-name { margin-right: auto; }
+.hst-roll-count { font-family: var(--font-mono); font-size: 11px; color: var(--text-faint); flex: none; }
+.hst-roll-hint { margin-top: 4px; font-family: var(--font-serif); font-style: italic; font-size: 11.5px; color: var(--text-faint); }
+
+/* ============================ ZOOM ====================================== */
+.hst-zoom {
+  position: absolute; right: 24px; bottom: 24px; z-index: 14;
+  display: flex; flex-direction: column; padding: var(--space-1); gap: var(--space-1);
+  background: color-mix(in oklab, var(--ink-850) 92%, transparent); backdrop-filter: blur(8px);
+  border: 1px solid var(--border-default); border-radius: var(--radius-md); box-shadow: var(--shadow-lg);
+}
+.hst-zoom-btn {
+  width: 38px; height: 38px; display: grid; place-items: center; cursor: pointer;
+  background: none; border: none; border-radius: var(--radius-sm); color: var(--text-body);
+  transition: background var(--dur-base), color var(--dur-base);
+}
+.hst-zoom-btn:hover:not(:disabled) { background: var(--ink-700); color: var(--gold-300); }
+.hst-zoom-btn:disabled { color: var(--text-faint); cursor: default; opacity: .5; }
+.hst-zoom-btn svg { width: 18px; height: 18px; }
+
+.hst-undated {
+  position: absolute; right: 24px; top: 20px; z-index: 14; max-width: 280px;
+  padding: var(--space-2) var(--space-3);
+  background: color-mix(in oklab, var(--ink-850) 92%, transparent);
+  border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
+  font-family: var(--font-serif); font-style: italic; font-size: 11.5px; color: var(--text-muted);
+}
+
+/* ============================ MODAL ===================================== */
+.hst-modal-scrim {
+  position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: var(--space-5);
+  background: var(--surface-overlay); backdrop-filter: blur(5px);
+  animation: hst-fade var(--dur-base) var(--ease-standard);
+}
+@keyframes hst-fade { from { opacity: 0; } to { opacity: 1; } }
+.hst-modal {
+  position: relative; width: min(600px, 94vw); max-height: 88vh; overflow: auto;
+  padding: var(--space-6); background: var(--ink-850);
+  border: 1px solid var(--border-strong); border-top: 2px solid var(--gold-500); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl), var(--inset-hi);
+  scrollbar-width: thin; scrollbar-color: color-mix(in oklab, var(--gold-600) 40%, transparent) transparent;
+  animation: hst-modal-in var(--dur-slow) var(--ease-out);
+}
+@keyframes hst-modal-in { from { opacity: 0; transform: translateY(14px) scale(0.985); } to { opacity: 1; transform: none; } }
+.hst-modal::-webkit-scrollbar { width: 8px; }
+.hst-modal::-webkit-scrollbar-thumb { background: color-mix(in oklab, var(--gold-600) 36%, transparent); border-radius: var(--radius-pill); border: 2px solid transparent; background-clip: padding-box; }
+.hst-modal-watermark { position: absolute; top: -40px; right: -60px; opacity: 0.06; pointer-events: none; z-index: 0; }
+.hst-modal > * { position: relative; z-index: 1; }
+.hst-modal-close { position: absolute; top: var(--space-4); right: var(--space-4); z-index: 2; display: inline-flex; padding: 6px; background: none; border: none; cursor: pointer; color: var(--text-muted); border-radius: var(--radius-sm); }
+.hst-modal-close:hover { color: var(--gold-300); background: var(--ink-700); }
+.hst-modal-close svg { width: 18px; height: 18px; }
+
+.hst-modal-head { display: flex; align-items: center; gap: var(--space-4); padding-right: var(--space-6); }
+.hst-modal-medallion {
+  flex: none; width: 84px; height: 84px; border-radius: 50%;
+  display: grid; place-items: center; overflow: hidden;
+  background: radial-gradient(120% 120% at 50% 28%, var(--ink-700), var(--ink-950));
+  border: 2px solid var(--tone-l, var(--gold-400)); box-shadow: var(--inset-hi);
+}
+.hst-modal-mono { font-family: var(--font-display); font-weight: 700; font-size: 28px; letter-spacing: .04em; color: var(--gold-200); }
+.hst-modal-id { min-width: 0; }
+.hst-modal-eyebrow {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-family: var(--font-sans); font-size: 10px; letter-spacing: var(--tracking-widest);
+  text-transform: uppercase; color: var(--text-gold);
+}
+.hst-eyebrow-dot { width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 6px currentColor; flex: none; }
+.hst-modal-name {
+  font-family: var(--font-display); font-weight: 700; font-size: var(--text-2xl);
+  letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--text-strong);
+  margin: 3px 0 6px; line-height: 1.05;
+}
+.hst-modal-meta {
+  display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2);
+  font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted);
+}
+.hst-modal-meta > span:first-child { color: var(--text-gold); }
+.hst-dot-sep { color: var(--text-faint); }
+.hst-modal-honor {
+  display: inline-flex; align-items: center; gap: 6px; margin-top: var(--space-2);
+  font-family: var(--font-sans); font-size: var(--text-xs); letter-spacing: 0.04em;
+  color: var(--gold-300);
+}
+.hst-modal-honor svg { width: 14px; height: 14px; }
+.hst-modal-rule { margin: var(--space-5) 0; }
+.hst-modal-bio {
+  font-family: var(--font-serif); font-size: var(--text-md); line-height: var(--leading-relaxed);
+  color: var(--text-body); margin: 0 0 var(--space-5);
+}
+.hst-modal-bio--none { font-style: italic; color: var(--text-muted); }
+
+.hst-detgrid {
+  display: flex; flex-direction: column; gap: var(--space-2);
+  margin: 0 0 var(--space-5); padding: var(--space-4);
+  background: color-mix(in oklab, var(--ink-900) 65%, transparent);
+  border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
+}
+.hst-det { display: flex; gap: var(--space-3); align-items: baseline; }
+.hst-det-label {
+  flex: none; width: 96px; font-family: var(--font-sans); font-size: 10px;
+  letter-spacing: var(--tracking-widest); text-transform: uppercase; color: var(--text-gold);
+}
+.hst-det-val { font-family: var(--font-serif); font-size: var(--text-sm); color: var(--text-body); }
+
+.hst-cast-title {
+  font-family: var(--font-sans); font-size: 10px; letter-spacing: var(--tracking-widest);
+  text-transform: uppercase; color: var(--text-gold); margin-bottom: var(--space-3);
+}
+.hst-cast { display: flex; flex-direction: column; gap: var(--space-2); }
+.hst-cast-row {
+  display: flex; align-items: center; gap: var(--space-3); width: 100%;
+  padding: var(--space-2) var(--space-3); cursor: pointer; text-align: left;
+  background: var(--ink-800); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
+  transition: border-color var(--dur-base), transform var(--dur-fast);
+}
+.hst-cast-row:hover { border-color: var(--gold-500); transform: translateY(-1px); }
+.hst-cast-id { display: flex; flex-direction: column; gap: 2px; min-width: 0; margin-right: auto; }
+.hst-cast-player {
+  font-family: var(--font-display); font-weight: 700; font-size: var(--text-sm);
+  letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--text-strong); line-height: 1.1;
+}
+.hst-cast-as { font-family: var(--font-serif); font-size: var(--text-sm); color: var(--text-body); line-height: 1.25; }
+.hst-cast-word { color: var(--text-faint); font-style: italic; }
+.hst-cast-amp { color: var(--text-faint); }
+.hst-cast-char { color: var(--gold-200); }
+
+/* ============================ NARROW ==================================== */
+@media (max-width: 880px) {
+  .hst-topbar { gap: var(--space-3); padding: 0 var(--space-3); }
+  .hst-count { display: none; }
+  /* the topbar's player filter covers this ground on a phone */
+  .hst-roll, .hst-roll-chip { display: none; }
+  .hst-zoom { right: 16px; bottom: 16px; }
+  .hst-undated { display: none; }
+}
+
+@media (max-width: 640px) {
+  /* the timeline already opens at its start on a phone, so the Start button
+     is the first thing worth dropping when the bar runs out of room */
+  .hst-topbar-start { display: none; }
+  .hst-search { max-width: none; }
+  .hst-plfilter-btn { padding: 0 var(--space-2); }
+  .hst-modal { padding: var(--space-5) var(--space-4); }
+  .hst-modal-head { gap: var(--space-3); padding-right: var(--space-5); }
+  .hst-modal-medallion { width: 60px; height: 60px; }
+  .hst-modal-mono { font-size: 20px; }
+  .hst-modal-name { font-size: var(--text-xl); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hst-modal, .hst-modal-scrim { animation: none; }
+  .hst-card { transition: none; }
+}

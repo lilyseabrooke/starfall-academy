@@ -8,6 +8,23 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.19.0 — 2026-09-22
+- New Chronicle page at `/history`: a horizontal timeline of every past
+  campaign, read live from the Campaigns tab of the same Google Sheet the
+  Compendium and the Family Ledger already use. Campaigns are placed by
+  semester as well as year (Fall 2011 sits half a year after Spring 2011), a
+  campaign that ran across two semesters draws as a bar that long, and
+  campaigns running at the same time stack above and below the rail instead of
+  overlapping. Each card carries the campaign's name, term, location and a
+  monogram per player; clicking one opens the full record — description,
+  dates, location and the party — in the same modal treatment as a character
+  on the Ledger.
+- The Chronicle parses the sheet's single PLAYERS field into players,
+  characters, and who played whom, so a player who ran two characters in one
+  campaign is listed once with both roles (marked "double duty") rather than
+  twice. Searching covers campaign, player and character names, and picking a
+  player from The Table follows their thread across the whole timeline.
+
 ## v1.18.0 — 2026-09-21
 - Fix: the artifact Repair popup rendered as unstyled, unusable overlapping
   text — its CSS was scoped to a container the popup no longer lived inside
