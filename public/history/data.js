@@ -1,7 +1,10 @@
 /* ===========================================================================
    Starfall Academy — Chronicle (campaign history): dataset
-   Campaigns are loaded live from the same Google Sheet the Compendium and the
-   Family Ledger read, from the Campaigns tab (gid 1939873344).
+   Campaigns are loaded live from the Campaigns tab (gid 1939873344) of the
+   Compendium's workbook — the same one the spells, artifacts, wands and the
+   rest are pulled from, and the same published-CSV endpoint the Compendium
+   itself uses. (The Family Ledger reads a *different* workbook, the one with
+   the Characters and Families tabs, so don't borrow its sheet id here.)
 
    Campaigns columns: NAME, BEGINNING, END, LOCATION, PLAYERS, DESCRIPTION
 
@@ -16,9 +19,14 @@
    back into one player carrying both characters, so nobody is listed twice.
    =========================================================================== */
 (function () {
-  const SHEET_ID = "12pocjObSluK--b8ZdFnBljn01QVUbZsoSHF3KlnDb7I";
+  // Publish id for the Compendium workbook (spreadsheets/d/1DUyigWDvmE2Dn…),
+  // kept byte-identical to compendium.js and src/sheet/data/compendium.ts.
+  const PUB_ID =
+    "2PACX-1vTXtnorBMPVkIS5vVvc1hiPA_9MNwo3v5gcC__rVMLa28HHCjuKjCm5f_dwQgXfWVF9jF9rfl6oLsfd";
+  const CAMPAIGNS_GID = "1939873344";
   const CAMPAIGNS_URL =
-    "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/export?format=csv&gid=1939873344";
+    "https://docs.google.com/spreadsheets/d/e/" + PUB_ID +
+    "/pub?gid=" + CAMPAIGNS_GID + "&single=true&output=csv";
 
   // ---- CSV parser (RFC 4180) -----------------------------------------------
   function parseCSV(text) {
@@ -141,6 +149,13 @@
       return r.text();
     })
     .then(function (text) {
+      // A tab that isn't published to the web answers 200 with an HTML page
+      // instead of CSV, which would otherwise parse into an empty chronicle.
+      if (/^\s*</.test(text)) {
+        throw new Error(
+          "the Campaigns tab (gid " + CAMPAIGNS_GID + ") doesn't look published to the web \u2014 " +
+          "File \u203a Share \u203a Publish to web, then publish that tab as CSV");
+      }
       const CAMPAIGNS = parseCSV(text)
         .map(rowToCampaign)
         .filter(function (c) { return !!c; });
