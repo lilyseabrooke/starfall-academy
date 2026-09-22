@@ -3,7 +3,7 @@
    window.SFC_UI = { TopBar, Places, ZoomControls, CampaignModal }
    =========================================================================== */
 (function () {
-  const { useState, useRef, useEffect } = React;
+  const { useState, useEffect } = React;
   const DS = window.StarfallAcademyDesignSystem_61fef2;
   const { Button, Crest } = DS;
   const colorOf = window.SFC_colorOf;
@@ -16,20 +16,10 @@
   const Icon = window.SFC_Icon;
 
   // -------------------------------------------------------------- TopBar ---
-  function TopBar({ L, query, onQuery, onJump, filterPlayer, onFilter, onHome, shown, total }) {
-    const [openPl, setOpenPl] = useState(false);
+  function TopBar({ L, query, onQuery, onJump, onHome, shown, total }) {
     const [focusSearch, setFocusSearch] = useState(false);
-    const plRef = useRef(null);
     const q = query.trim().toLowerCase();
     const hits = q ? L.items.filter(function (c) { return window.SFC_matches(c, q); }).slice(0, 7) : [];
-
-    useEffect(function () {
-      const h = function (e) { if (plRef.current && !plRef.current.contains(e.target)) setOpenPl(false); };
-      document.addEventListener("mousedown", h);
-      return function () { document.removeEventListener("mousedown", h); };
-    }, []);
-
-    const activePl = L.players.find(function (p) { return p.key === filterPlayer; });
 
     return React.createElement("header", { className: "hst-topbar" },
       React.createElement("div", { className: "hst-search" + (focusSearch ? " is-focus" : "") },
@@ -60,40 +50,9 @@
       React.createElement("div", { className: "hst-topbar-right" },
         React.createElement("span", { className: "hst-count" },
           shown === total ? total + " campaigns" : shown + " of " + total),
-        React.createElement("div", { className: "hst-plfilter", ref: plRef },
-          React.createElement("button", {
-            // Lucide rewrites <i data-lucide> into <svg> in place, so React and
-            // the DOM disagree the moment the leading icon swaps for a player's
-            // dot. Re-keying remounts the button instead of patching it.
-            key: filterPlayer ? "player" : "all",
-            className: "hst-plfilter-btn" + (filterPlayer ? " is-active" : ""),
-            onClick: function () { setOpenPl(function (v) { return !v; }); }
-          },
-            activePl
-              ? React.createElement("span", { className: "hst-pl-dot", style: { background: colorOf(toneFor(activePl.key)).light } })
-              : Icon("filter"),
-            React.createElement("span", null, activePl ? activePl.name : "All players"),
-            Icon("chevron-down", { className: "hst-pl-chev" })),
-          openPl && React.createElement("div", { className: "hst-plfilter-menu" },
-            React.createElement("button", {
-              className: "hst-pl-item" + (!filterPlayer ? " is-on" : ""),
-              onClick: function () { onFilter(null); setOpenPl(false); }
-            },
-              React.createElement("span", { className: "hst-pl-dot", style: { background: "var(--text-faint)" } }),
-              "All players"),
-            L.players.map(function (p) {
-              return React.createElement("button", {
-                key: p.key, className: "hst-pl-item" + (filterPlayer === p.key ? " is-on" : ""),
-                onClick: function () { onFilter(p.key); setOpenPl(false); }
-              },
-                React.createElement("span", { className: "hst-pl-dot", style: { background: colorOf(toneFor(p.key)).light } }),
-                React.createElement("span", { className: "hst-pl-name" }, p.name),
-                React.createElement("span", { className: "hst-pl-count" }, p.campaigns.length));
-            }))),
-        React.createElement("span", { className: "hst-topbar-start" },
-          React.createElement(Button, {
-            variant: "secondary", size: "md", iconLeft: Icon("locate-fixed"), onClick: onHome
-          }, "Start"))));
+        React.createElement(Button, {
+          variant: "secondary", size: "md", iconLeft: Icon("locate-fixed"), onClick: onHome
+        }, "Start")));
   }
 
   // ---------------------------------------------------- the places panel ---
@@ -139,7 +98,7 @@
   }
 
   // ----------------------------------------------------------- the modal ----
-  function CampaignModal({ c, onClose, onPlayer, onLocation }) {
+  function CampaignModal({ c, onClose, onLocation }) {
     useEffect(function () { if (window.lucide) window.lucide.createIcons(); });
     if (!c) return null;
     const h = colorOf(c._tone);
@@ -201,11 +160,7 @@
         React.createElement("div", { className: "hst-cast" },
           c.players.map(function (p) {
             const ph = colorOf(toneFor(p.key));
-            return React.createElement("button", {
-              key: p.key, className: "hst-cast-row",
-              onClick: function () { onPlayer(p.key); },
-              title: "Follow " + p.name + " through the chronicle"
-            },
+            return React.createElement("div", { key: p.key, className: "hst-cast-row" },
               React.createElement("span", { className: "hst-mono hst-mono--md", style: { "--tone-l": ph.light } },
                 React.createElement("span", { className: "hst-mono-text" }, initials(p.name))),
               React.createElement("span", { className: "hst-cast-id" },

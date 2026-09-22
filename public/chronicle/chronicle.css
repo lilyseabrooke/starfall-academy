@@ -69,36 +69,6 @@ html, body { height: 100%; margin: 0; }
 .hst-topbar-right { margin-left: auto; display: flex; align-items: center; gap: var(--space-3); }
 .hst-count { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-faint); white-space: nowrap; }
 
-.hst-plfilter { position: relative; }
-.hst-plfilter-btn {
-  display: flex; align-items: center; gap: var(--space-2); height: 40px; padding: 0 var(--space-3);
-  background: var(--ink-850); color: var(--text-body); border: 1px solid var(--border-default);
-  border-radius: var(--radius-sm); cursor: pointer; font-family: var(--font-sans); font-size: var(--text-sm);
-  letter-spacing: .02em; transition: border-color var(--dur-base), color var(--dur-base);
-}
-.hst-plfilter-btn { white-space: nowrap; }
-.hst-plfilter-btn:hover { border-color: var(--border-strong); color: var(--text-strong); }
-.hst-plfilter-btn.is-active { border-color: var(--gold-600); color: var(--gold-200); }
-.hst-plfilter-btn svg { width: 15px; height: 15px; }
-.hst-pl-chev { color: var(--text-muted); }
-.hst-pl-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; box-shadow: 0 0 6px currentColor; }
-.hst-plfilter-menu {
-  position: absolute; top: calc(100% + 8px); right: 0; z-index: 40; min-width: 232px;
-  max-height: 60vh; overflow: auto;
-  background: var(--ink-850); border: 1px solid var(--border-default); border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg); padding: var(--space-1);
-}
-.hst-pl-item {
-  display: flex; align-items: center; gap: var(--space-3); width: 100%;
-  padding: var(--space-2) var(--space-3); background: none; border: none; cursor: pointer;
-  border-radius: var(--radius-sm); text-align: left; font-family: var(--font-sans); font-size: var(--text-sm);
-  color: var(--text-body);
-}
-.hst-pl-item:hover { background: var(--ink-700); color: var(--text-strong); }
-.hst-pl-item.is-on { color: var(--gold-200); }
-.hst-pl-name { margin-right: auto; }
-.hst-pl-count { margin-left: auto; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-faint); }
-
 /* ============================ STAGE ===================================== */
 .hst-stage { position: relative; flex: 1; overflow: hidden; }
 .hst-stage::before {
@@ -407,11 +377,9 @@ html, body { height: 100%; margin: 0; }
 .hst-cast { display: flex; flex-direction: column; gap: var(--space-2); }
 .hst-cast-row {
   display: flex; align-items: center; gap: var(--space-3); width: 100%;
-  padding: var(--space-2) var(--space-3); cursor: pointer; text-align: left;
+  padding: var(--space-2) var(--space-3); text-align: left;
   background: var(--ink-800); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
-  transition: border-color var(--dur-base), transform var(--dur-fast);
 }
-.hst-cast-row:hover { border-color: var(--gold-500); transform: translateY(-1px); }
 .hst-cast-id { display: flex; flex-direction: column; gap: 2px; min-width: 0; margin-right: auto; }
 .hst-cast-player {
   font-family: var(--font-display); font-weight: 700; font-size: var(--text-sm);
@@ -434,11 +402,7 @@ html, body { height: 100%; margin: 0; }
 }
 
 @media (max-width: 640px) {
-  /* the timeline already opens at its start on a phone, so the Start button
-     is the first thing worth dropping when the bar runs out of room */
-  .hst-topbar-start { display: none; }
   .hst-search { max-width: none; }
-  .hst-plfilter-btn { padding: 0 var(--space-2); }
   .hst-modal { padding: var(--space-5) var(--space-4); }
   .hst-modal-head { gap: var(--space-3); padding-right: var(--space-5); }
   .hst-modal-medallion { width: 60px; height: 60px; }

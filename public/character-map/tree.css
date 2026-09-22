@@ -352,8 +352,14 @@ html, body { height: 100%; margin: 0; }
 @keyframes sft-modal-in { from { opacity: 0; transform: translateY(14px) scale(0.985); } to { opacity: 1; transform: none; } }
 .sft-modal::-webkit-scrollbar { width: 8px; }
 .sft-modal::-webkit-scrollbar-thumb { background: color-mix(in oklab, var(--gold-600) 36%, transparent); border-radius: var(--radius-pill); border: 2px solid transparent; background-clip: padding-box; }
-.sft-modal-watermark { position: absolute; top: -40px; right: -60px; opacity: 0.06; pointer-events: none; z-index: 0; }
 .sft-modal > * { position: relative; z-index: 1; }
+/* Listed after the `> *` rule on purpose: both selectors weigh the same, so
+   were this first the watermark would win `position: relative` on source order
+   and lay out inline as a tall empty block above the character's name. */
+.sft-modal .sft-modal-watermark {
+  position: absolute; top: -40px; right: -60px; z-index: 0;
+  opacity: 0.06; pointer-events: none;
+}
 .sft-modal-close { position: absolute; top: var(--space-4); right: var(--space-4); z-index: 2; display: inline-flex; padding: 6px; background: none; border: none; cursor: pointer; color: var(--text-muted); border-radius: var(--radius-sm); }
 .sft-modal-close:hover { color: var(--gold-300); background: var(--ink-700); }
 .sft-modal-close svg { width: 18px; height: 18px; }

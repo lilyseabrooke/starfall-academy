@@ -22,12 +22,18 @@ when these shipped.
 - The Chronicle parses the sheet's single PLAYERS field into players,
   characters, and who played whom, so a player who ran two characters in one
   campaign is listed once carrying both, rather than twice.
-- Three ways to narrow the timeline, and they stack: search (campaign, player
-  or character names), a player picker in the toolbar, and the Locations panel
-  bottom-left, which doubles as the legend for the accent colour on each card.
-  A campaign's own record also filters — its location heading follows that
-  place, a row in its party follows that player. If the filters between them
-  rule everything out, the timeline says so and offers to clear them.
+- Two ways to narrow the timeline, and they stack: search, which covers
+  campaign, player and character names, and the Locations panel bottom-left,
+  which doubles as the legend for the accent colour on each card. A campaign's
+  own record filters too — its location heading follows that place. If the two
+  between them rule everything out, the timeline says so and offers to clear
+  them.
+- Fix: the crest watermark behind a character's record on the Family Ledger
+  laid out inline instead of sitting in the background, so every character and
+  family modal opened on a tall empty block and pushed the name out of sight.
+  Its rule and the one setting every other child of the modal to
+  `position: relative` have equal CSS specificity, so source order was handing
+  the watermark the wrong one.
 
 ## v1.18.0 — 2026-09-21
 - Fix: the artifact Repair popup rendered as unstyled, unusable overlapping

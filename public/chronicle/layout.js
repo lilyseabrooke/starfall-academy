@@ -57,7 +57,7 @@
 
     if (!items.length) {
       return {
-        items: [], undated: undated, players: [], locations: [], ticks: [],
+        items: [], undated: undated, locations: [], ticks: [],
         railY: C.topPad, worldW: C.sidePad * 2, worldH: C.topPad + C.bottomPad,
         minPos: 0, maxPos: 0, cfg: C
       };
@@ -134,21 +134,6 @@
       i.stemY = i.side < 0 ? i.cardY + C.cardH : i.cardY;
     });
 
-    // ---- the roll of players (deduped across every campaign) ----------------
-    const players = [];
-    const pByKey = {};
-    items.forEach(function (i) {
-      i.players.forEach(function (p) {
-        let g = pByKey[p.key];
-        if (!g) { g = pByKey[p.key] = { key: p.key, name: p.name, campaigns: [], characters: [] }; players.push(g); }
-        g.campaigns.push(i.id);
-        p.characters.forEach(function (ch) { if (g.characters.indexOf(ch) === -1) g.characters.push(ch); });
-      });
-    });
-    players.sort(function (a, b) {
-      return (b.campaigns.length - a.campaigns.length) || a.name.localeCompare(b.name);
-    });
-
     // ---- the axis ------------------------------------------------------------
     const ticks = [];
     const y0 = Math.floor(minPos), y1 = Math.ceil(maxPos);
@@ -161,7 +146,6 @@
       items: order,
       byId: order.reduce(function (m, i) { m[i.id] = i; return m; }, {}),
       undated: undated,
-      players: players,
       locations: locations,
       ticks: ticks,
       railY: railY,

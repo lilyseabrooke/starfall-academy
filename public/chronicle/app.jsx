@@ -35,7 +35,6 @@
     // on top of it at the timeline's start.
     const sidePad = wide ? 380 : 44;
     const [query, setQuery] = useState("");
-    const [filterPlayer, setFilterPlayer] = useState(null);
     const [filterLocation, setFilterLocation] = useState(null);
     const [openId, setOpenId] = useState(null);
     const timelineRef = useRef(null);
@@ -46,32 +45,26 @@
 
     const q = query.trim().toLowerCase();
     const dimSet = useMemo(function () {
-      if (!q && !filterPlayer && !filterLocation) return null;
+      if (!q && !filterLocation) return null;
       const keep = new Set();
       L.items.forEach(function (c) {
         const byText = matches(c, q);
-        const byPlayer = !filterPlayer || c.players.some(function (p) { return p.key === filterPlayer; });
         const byPlace = !filterLocation || (c.location || "").toLowerCase() === filterLocation;
-        if (byText && byPlayer && byPlace) keep.add(c.id);
+        if (byText && byPlace) keep.add(c.id);
       });
       return keep;
-    }, [L, q, filterPlayer, filterLocation]);
+    }, [L, q, filterLocation]);
 
     const shown = dimSet ? dimSet.size : L.items.length;
-    const filtering = !!(q || filterPlayer || filterLocation);
+    const filtering = !!(q || filterLocation);
 
     const clearAll = useCallback(function () {
-      setQuery(""); setFilterPlayer(null); setFilterLocation(null);
+      setQuery(""); setFilterLocation(null);
     }, []);
 
     const jumpTo = useCallback(function (id) {
       setOpenId(null);
       if (timelineRef.current) timelineRef.current.focusCampaign(id);
-    }, []);
-
-    const followPlayer = useCallback(function (key) {
-      setOpenId(null);
-      setFilterPlayer(function (prev) { return prev === key ? null : key; });
     }, []);
 
     const followLocation = useCallback(function (key) {
@@ -108,12 +101,12 @@
       const onKey = function (e) {
         if (e.key !== "Escape") return;
         if (openId) setOpenId(null);
-        else if (filterPlayer || filterLocation) { setFilterPlayer(null); setFilterLocation(null); }
+        else if (filterLocation) setFilterLocation(null);
         else if (query) setQuery("");
       };
       window.addEventListener("keydown", onKey);
       return function () { window.removeEventListener("keydown", onKey); };
-    }, [openId, filterPlayer, filterLocation, query]);
+    }, [openId, filterLocation, query]);
 
     if (!L.items.length) {
       return React.createElement("div", { className: "hst-app" },
@@ -124,7 +117,6 @@
     return React.createElement("div", { className: "hst-app" },
       React.createElement(TopBar, {
         L: L, query: query, onQuery: setQuery, onJump: jumpTo,
-        filterPlayer: filterPlayer, onFilter: setFilterPlayer,
         onHome: onHome, shown: shown, total: L.items.length
       }),
       React.createElement("div", { className: "hst-stage" },
@@ -141,7 +133,6 @@
           React.createElement("div", { className: "hst-nomatch-why" },
             [
               q ? "\u201c" + query.trim() + "\u201d" : null,
-              filterPlayer ? "played by " + ((L.players.find(function (p) { return p.key === filterPlayer; }) || {}).name || filterPlayer) : null,
               filterLocation ? "in " + ((L.locations.find(function (l) { return l.key === filterLocation; }) || {}).name || filterLocation) : null
             ].filter(Boolean).join(" \u00b7 ")),
           React.createElement("button", { className: "hst-nomatch-clear", onClick: clearAll }, "Clear filters")),
@@ -149,8 +140,7 @@
           L.undated.length + " campaign" + (L.undated.length === 1 ? "" : "s") + " with no recorded dates " +
           (L.undated.length === 1 ? "is" : "are") + " missing from the timeline.")),
       openId && React.createElement(CampaignModal, {
-        c: L.byId[openId], onClose: function () { setOpenId(null); },
-        onPlayer: followPlayer, onLocation: followLocation
+        c: L.byId[openId], onClose: function () { setOpenId(null); }, onLocation: followLocation
       }));
   }
 
