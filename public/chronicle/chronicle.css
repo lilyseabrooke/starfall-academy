@@ -305,9 +305,13 @@ html, body { height: 100%; margin: 0; }
 .hst-modal > * { position: relative; z-index: 1; }
 /* Listed after the `> *` rule on purpose: both selectors weigh the same, so
    were this first the watermark would win `position: relative` on source order
-   and sit inline as a tall empty block above the campaign's name. */
+   and lay out inline as a tall empty block above the campaign's name.
+   `inset: 0` centres the crest on the modal rather than hanging it off one
+   corner, and the clip stops an oversized crest adding to the modal's own
+   scrollable area. */
 .hst-modal .hst-modal-watermark {
-  position: absolute; top: -40px; right: -60px; z-index: 0;
+  position: absolute; inset: 0; z-index: 0;
+  display: grid; place-items: center; overflow: hidden;
   opacity: 0.06; pointer-events: none;
 }
 .hst-modal-close { position: absolute; top: var(--space-4); right: var(--space-4); z-index: 2; display: inline-flex; padding: 6px; background: none; border: none; cursor: pointer; color: var(--text-muted); border-radius: var(--radius-sm); }
