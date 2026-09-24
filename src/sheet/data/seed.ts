@@ -152,10 +152,10 @@ export const SEED: SeedData = {
   creation: {
     years: [
       { id: "first", label: "First Year", roman: "I", quick: { stat: 10, subject: 15, skill: 15 }, custom: 60, limit: 5, spells: { Basic: 5, Standard: 10, Advanced: 1 } },
-      { id: "second", label: "Second Year", roman: "II", quick: { stat: 15, subject: 25, skill: 25 }, custom: 90, limit: 6, spells: { Basic: 7, Standard: 12, Advanced: 1 } },
-      { id: "third", label: "Third Year", roman: "III", quick: { stat: 20, subject: 35, skill: 35 }, custom: 120, limit: 7, spells: { Basic: 10, Standard: 15, Advanced: 2 } },
-      { id: "fourth", label: "Fourth Year", roman: "IV", quick: { stat: 25, subject: 45, skill: 45 }, custom: 150, limit: 8, spells: { Basic: 12, Standard: 18, Advanced: 2 } },
-      { id: "graduate", label: "Graduate", roman: "—", quick: { stat: 30, subject: 55, skill: 55 }, custom: 180, limit: 9, spells: { Basic: 15, Standard: 20, Advanced: 3 } },
+      { id: "second", label: "Second Year", roman: "II", quick: { stat: 15, subject: 25, skill: 25 }, custom: 95, limit: 6, spells: { Basic: 7, Standard: 12, Advanced: 1 } },
+      { id: "third", label: "Third Year", roman: "III", quick: { stat: 20, subject: 35, skill: 35 }, custom: 130, limit: 7, spells: { Basic: 10, Standard: 15, Advanced: 2 } },
+      { id: "fourth", label: "Fourth Year", roman: "IV", quick: { stat: 25, subject: 45, skill: 45 }, custom: 165, limit: 8, spells: { Basic: 12, Standard: 18, Advanced: 2 } },
+      { id: "graduate", label: "Graduate", roman: "—", quick: { stat: 30, subject: 55, skill: 55 }, custom: 200, limit: 9, spells: { Basic: 15, Standard: 20, Advanced: 3 } },
     ],
     custom: {
       statCost: 3,

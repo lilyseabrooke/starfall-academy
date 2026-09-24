@@ -8,6 +8,11 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.19.1 — 2026-09-24
+- Fixed the Admission's custom-build point pools, which fell short of what
+  quick build offers for 2nd year onward (2nd: 90 → 95, 3rd: 120 → 130, 4th:
+  150 → 165, Graduate: 180 → 200). 1st year was already correct at 60.
+
 ## v1.19.0 — 2026-09-22
 - New Chronicle page at `/chronicle`: a horizontal timeline of every past
   campaign, read live from the Campaigns tab of the same workbook the
