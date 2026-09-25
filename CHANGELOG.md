@@ -8,6 +8,12 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.19.2 — 2026-09-25
+- Added a "Sort by ID" option to the Compendium, in both the sheet's
+  Compendium drawer and the standalone Compendium page. IDs (e.g.
+  `spell_144`) sort by their numeric suffix rather than as text, so
+  `spell_25` now correctly sorts before `spell_144`.
+
 ## v1.19.1 — 2026-09-24
 - Fixed the Admission's custom-build point pools, which fell short of what
   quick build offers for 2nd year onward (2nd: 90 → 95, 3rd: 120 → 130, 4th:
