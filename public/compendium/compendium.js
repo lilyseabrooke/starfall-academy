@@ -166,25 +166,30 @@ try { sortByCategory = JSON.parse(localStorage.getItem("starfallCompendiumSort")
 
 /* Sort fields available per category (key · label · comparator type) */
 const SORT_FIELDS = {
-  SPELLS:    [["NAME","Name","text"],["SUBJECT","Subject","text"],["STAT","Stat","text"],["LEVEL","Level","level"],["DC","DC","num"]],
-  POTIONS:   [["NAME","Name","text"],["COST","Cost","num"],["INTENSITY","Intensity","num"]],
-  GLYPHS:    [["NAME","Name","text"],["COST","Cost","num"],["INTENSITY","Intensity","num"]],
-  WANDS:     [["NAME","Name","text"],["COST","Cost","num"]],
-  ARTIFACTS: [["NAME","Name","text"],["SUBJECT","Subject","text"],["LEVEL","Level","level"],["COST","Cost","num"],["INTENSITY","Intensity","num"],["DC","DC","num"]],
-  PLANTS:    [["NAME","Name","text"],["VALUE","Value","num"],["INTENSITY","Intensity","num"]],
-  ITEMS:     [["NAME","Name","text"],["COST","Cost","num"]],
-  CLASSES:   [["NAME","Name","text"]],
+  SPELLS:    [["NAME","Name","text"],["SUBJECT","Subject","text"],["STAT","Stat","text"],["LEVEL","Level","level"],["DC","DC","num"],["ID","ID","id-num"]],
+  POTIONS:   [["NAME","Name","text"],["COST","Cost","num"],["INTENSITY","Intensity","num"],["ID","ID","id-num"]],
+  GLYPHS:    [["NAME","Name","text"],["COST","Cost","num"],["INTENSITY","Intensity","num"],["ID","ID","id-num"]],
+  WANDS:     [["NAME","Name","text"],["COST","Cost","num"],["ID","ID","id-num"]],
+  ARTIFACTS: [["NAME","Name","text"],["SUBJECT","Subject","text"],["LEVEL","Level","level"],["COST","Cost","num"],["INTENSITY","Intensity","num"],["DC","DC","num"],["ID","ID","id-num"]],
+  PLANTS:    [["NAME","Name","text"],["VALUE","Value","num"],["INTENSITY","Intensity","num"],["ID","ID","id-num"]],
+  ITEMS:     [["NAME","Name","text"],["COST","Cost","num"],["ID","ID","id-num"]],
+  CLASSES:   [["NAME","Name","text"],["ID","ID","id-num"]],
   /* Field keys here are UI-only ids (matched against sort state, not an
      actual column) — both read TIMING via timingRank(), just with a
      different season order. See the "Events — Timing parsing" block. */
-  EVENTS:    [["NAME","Name","text"],["TIMING_ACADEMIC","Timing (Academic Year)","timing-academic"],["TIMING_CALENDAR","Timing (Calendar Year)","timing-calendar"]],
-  ARCHETYPES: [["NAME","Name","text"],["CLASS","Class","text"]]
+  EVENTS:    [["NAME","Name","text"],["TIMING_ACADEMIC","Timing (Academic Year)","timing-academic"],["TIMING_CALENDAR","Timing (Calendar Year)","timing-calendar"],["ID","ID","id-num"]],
+  ARCHETYPES: [["NAME","Name","text"],["CLASS","Class","text"],["ID","ID","id-num"]]
 };
 const LEVEL_ORDER = { BASIC:0, STANDARD:1, ADVANCED:2, LEGENDARY:3, HEX:4, TWISTED:4 };
 function levelRank(v){
   if (!v) return 99;
   const first = v.toString().trim().toUpperCase().split(/\s+/)[0];
   return LEVEL_ORDER[first] != null ? LEVEL_ORDER[first] : 50;
+}
+/* IDs look like "spell_144" — sort by the numeric part, not lexically. */
+function idNumRank(v){
+  const m = (v || "").toString().match(/(\d+)\s*$/);
+  return m ? parseInt(m[1], 10) : Infinity;
 }
 
 /* ===========================================================================
@@ -809,6 +814,8 @@ function sortEntries(arr){
       r = av - bv;
     } else if (type === "level"){
       r = levelRank(a[field]) - levelRank(b[field]);
+    } else if (type === "id-num"){
+      r = idNumRank(a[field]) - idNumRank(b[field]);
     } else if (type === "timing-academic" || type === "timing-calendar"){
       const mode = type === "timing-academic" ? "academic" : "calendar";
       r = timingRank(a.TIMING, mode) - timingRank(b.TIMING, mode);

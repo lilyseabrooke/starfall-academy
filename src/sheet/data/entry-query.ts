@@ -17,15 +17,21 @@ export const compLevelRank = (v: string | null | undefined) => {
   return COMP_LEVEL_ORDER[f] != null ? COMP_LEVEL_ORDER[f] : 50;
 };
 
+/** IDs look like "spell_144" — sort by the numeric part, not lexically. */
+export const idNumRank = (v: string | null | undefined) => {
+  const m = String(v || "").match(/(\d+)\s*$/);
+  return m ? parseInt(m[1], 10) : Infinity;
+};
+
 export const COMP_SORT_FIELDS: Record<string, Array<[string, string, string]>> = {
-  spell: [["name", "Name", "text"], ["subject", "Subject", "text"], ["stat", "Stat", "text"], ["level", "Level", "level"], ["dc", "DC", "num"]],
-  move: [["name", "Name", "text"], ["level", "Tier", "text"]],
-  artifact: [["name", "Name", "text"], ["subject", "Subject", "text"], ["level", "Level", "level"], ["intensity", "Intensity", "num"]],
-  potion: [["name", "Name", "text"], ["cost", "Cost", "num"], ["intensity", "Intensity", "num"]],
-  wand: [["name", "Name", "text"]],
-  glyph: [["name", "Name", "text"], ["value", "Cost", "num"], ["intensity", "Intensity", "num"]],
-  item: [["name", "Name", "text"]],
-  plant: [["name", "Name", "text"], ["value", "Value", "num"], ["intensity", "Intensity", "num"]],
+  spell: [["name", "Name", "text"], ["subject", "Subject", "text"], ["stat", "Stat", "text"], ["level", "Level", "level"], ["dc", "DC", "num"], ["id", "ID", "id-num"]],
+  move: [["name", "Name", "text"], ["level", "Tier", "text"], ["id", "ID", "id-num"]],
+  artifact: [["name", "Name", "text"], ["subject", "Subject", "text"], ["level", "Level", "level"], ["intensity", "Intensity", "num"], ["id", "ID", "id-num"]],
+  potion: [["name", "Name", "text"], ["cost", "Cost", "num"], ["intensity", "Intensity", "num"], ["id", "ID", "id-num"]],
+  wand: [["name", "Name", "text"], ["id", "ID", "id-num"]],
+  glyph: [["name", "Name", "text"], ["value", "Cost", "num"], ["intensity", "Intensity", "num"], ["id", "ID", "id-num"]],
+  item: [["name", "Name", "text"], ["id", "ID", "id-num"]],
+  plant: [["name", "Name", "text"], ["value", "Value", "num"], ["intensity", "Intensity", "num"], ["id", "ID", "id-num"]],
 };
 
 export type FilterCfg =
@@ -138,6 +144,8 @@ export function applySort(items: CompendiumEntry[], sortFields: Array<[string, s
       else r = av - bv;
     } else if (type === "level") {
       r = compLevelRank(field(a, sort.field) as string) - compLevelRank(field(b, sort.field) as string);
+    } else if (type === "id-num") {
+      r = idNumRank(field(a, sort.field) as string) - idNumRank(field(b, sort.field) as string);
     } else {
       r = String(field(a, sort.field) || "").toLowerCase().localeCompare(String(field(b, sort.field) || "").toLowerCase());
     }

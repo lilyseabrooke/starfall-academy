@@ -7,7 +7,7 @@ import { DualRange, type RangeValue } from "./DualRange";
 import { SpellHLB } from "./SpellCard";
 import { PLANT_ROLL_LABEL, TONE_500, levelTone, parsePlantRoll } from "../../data/shared";
 import {
-  COMP_FILTERS, COMP_SORT_FIELDS, compLevelRank, field,
+  COMP_FILTERS, COMP_SORT_FIELDS, compLevelRank, field, idNumRank,
   type FilterValue, type Filters,
 } from "../../data/entry-query";
 import type { CompendiumCat, CompendiumEntry, Tone } from "../../types";
@@ -155,6 +155,8 @@ export function Compendium({
       else r = av - bv;
     } else if (type === "level") {
       r = compLevelRank(field(a, sort.field) as string) - compLevelRank(field(b, sort.field) as string);
+    } else if (type === "id-num") {
+      r = idNumRank(field(a, sort.field) as string) - idNumRank(field(b, sort.field) as string);
     } else {
       r = String(field(a, sort.field) || "").toLowerCase().localeCompare(String(field(b, sort.field) || "").toLowerCase());
     }
