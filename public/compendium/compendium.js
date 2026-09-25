@@ -178,7 +178,11 @@ const SORT_FIELDS = {
      actual column) — both read TIMING via timingRank(), just with a
      different season order. See the "Events — Timing parsing" block. */
   EVENTS:    [["NAME","Name","text"],["TIMING_ACADEMIC","Timing (Academic Year)","timing-academic"],["TIMING_CALENDAR","Timing (Calendar Year)","timing-calendar"],["ID","ID","id-num"]],
-  ARCHETYPES: [["NAME","Name","text"],["CLASS","Class","text"],["ID","ID","id-num"]]
+  ARCHETYPES: [["NAME","Name","text"],["CLASS","Class","text"],["ID","ID","id-num"]],
+  /* Never had its own entry (added in 83acc22, before this map existed for
+     it) — was silently falling back to the Name-only default below, with no
+     ID option. */
+  SUBCULTURES: [["NAME","Name","text"],["ID","ID","id-num"]]
 };
 const LEVEL_ORDER = { BASIC:0, STANDARD:1, ADVANCED:2, LEGENDARY:3, HEX:4, TWISTED:4 };
 function levelRank(v){
