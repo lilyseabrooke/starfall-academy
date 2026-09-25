@@ -18,14 +18,14 @@ export const compLevelRank = (v: string | null | undefined) => {
 };
 
 export const COMP_SORT_FIELDS: Record<string, Array<[string, string, string]>> = {
-  spell: [["name", "Name", "text"], ["subject", "Subject", "text"], ["stat", "Stat", "text"], ["level", "Level", "level"], ["dc", "DC", "num"]],
-  move: [["name", "Name", "text"], ["level", "Tier", "text"]],
-  artifact: [["name", "Name", "text"], ["subject", "Subject", "text"], ["level", "Level", "level"], ["intensity", "Intensity", "num"]],
-  potion: [["name", "Name", "text"], ["cost", "Cost", "num"], ["intensity", "Intensity", "num"]],
-  wand: [["name", "Name", "text"]],
-  glyph: [["name", "Name", "text"], ["value", "Cost", "num"], ["intensity", "Intensity", "num"]],
-  item: [["name", "Name", "text"]],
-  plant: [["name", "Name", "text"], ["value", "Value", "num"], ["intensity", "Intensity", "num"]],
+  spell: [["name", "Name", "text"], ["subject", "Subject", "text"], ["stat", "Stat", "text"], ["level", "Level", "level"], ["dc", "DC", "num"], ["id", "ID", "text"]],
+  move: [["name", "Name", "text"], ["level", "Tier", "text"], ["id", "ID", "text"]],
+  artifact: [["name", "Name", "text"], ["subject", "Subject", "text"], ["level", "Level", "level"], ["intensity", "Intensity", "num"], ["id", "ID", "text"]],
+  potion: [["name", "Name", "text"], ["cost", "Cost", "num"], ["intensity", "Intensity", "num"], ["id", "ID", "text"]],
+  wand: [["name", "Name", "text"], ["id", "ID", "text"]],
+  glyph: [["name", "Name", "text"], ["value", "Cost", "num"], ["intensity", "Intensity", "num"], ["id", "ID", "text"]],
+  item: [["name", "Name", "text"], ["id", "ID", "text"]],
+  plant: [["name", "Name", "text"], ["value", "Value", "num"], ["intensity", "Intensity", "num"], ["id", "ID", "text"]],
 };
 
 export type FilterCfg =

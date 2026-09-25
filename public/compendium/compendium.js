@@ -166,19 +166,19 @@ try { sortByCategory = JSON.parse(localStorage.getItem("starfallCompendiumSort")
 
 /* Sort fields available per category (key · label · comparator type) */
 const SORT_FIELDS = {
-  SPELLS:    [["NAME","Name","text"],["SUBJECT","Subject","text"],["STAT","Stat","text"],["LEVEL","Level","level"],["DC","DC","num"]],
-  POTIONS:   [["NAME","Name","text"],["COST","Cost","num"],["INTENSITY","Intensity","num"]],
-  GLYPHS:    [["NAME","Name","text"],["COST","Cost","num"],["INTENSITY","Intensity","num"]],
-  WANDS:     [["NAME","Name","text"],["COST","Cost","num"]],
-  ARTIFACTS: [["NAME","Name","text"],["SUBJECT","Subject","text"],["LEVEL","Level","level"],["COST","Cost","num"],["INTENSITY","Intensity","num"],["DC","DC","num"]],
-  PLANTS:    [["NAME","Name","text"],["VALUE","Value","num"],["INTENSITY","Intensity","num"]],
-  ITEMS:     [["NAME","Name","text"],["COST","Cost","num"]],
-  CLASSES:   [["NAME","Name","text"]],
+  SPELLS:    [["NAME","Name","text"],["SUBJECT","Subject","text"],["STAT","Stat","text"],["LEVEL","Level","level"],["DC","DC","num"],["ID","ID","text"]],
+  POTIONS:   [["NAME","Name","text"],["COST","Cost","num"],["INTENSITY","Intensity","num"],["ID","ID","text"]],
+  GLYPHS:    [["NAME","Name","text"],["COST","Cost","num"],["INTENSITY","Intensity","num"],["ID","ID","text"]],
+  WANDS:     [["NAME","Name","text"],["COST","Cost","num"],["ID","ID","text"]],
+  ARTIFACTS: [["NAME","Name","text"],["SUBJECT","Subject","text"],["LEVEL","Level","level"],["COST","Cost","num"],["INTENSITY","Intensity","num"],["DC","DC","num"],["ID","ID","text"]],
+  PLANTS:    [["NAME","Name","text"],["VALUE","Value","num"],["INTENSITY","Intensity","num"],["ID","ID","text"]],
+  ITEMS:     [["NAME","Name","text"],["COST","Cost","num"],["ID","ID","text"]],
+  CLASSES:   [["NAME","Name","text"],["ID","ID","text"]],
   /* Field keys here are UI-only ids (matched against sort state, not an
      actual column) — both read TIMING via timingRank(), just with a
      different season order. See the "Events — Timing parsing" block. */
-  EVENTS:    [["NAME","Name","text"],["TIMING_ACADEMIC","Timing (Academic Year)","timing-academic"],["TIMING_CALENDAR","Timing (Calendar Year)","timing-calendar"]],
-  ARCHETYPES: [["NAME","Name","text"],["CLASS","Class","text"]]
+  EVENTS:    [["NAME","Name","text"],["TIMING_ACADEMIC","Timing (Academic Year)","timing-academic"],["TIMING_CALENDAR","Timing (Calendar Year)","timing-calendar"],["ID","ID","text"]],
+  ARCHETYPES: [["NAME","Name","text"],["CLASS","Class","text"],["ID","ID","text"]]
 };
 const LEVEL_ORDER = { BASIC:0, STANDARD:1, ADVANCED:2, LEGENDARY:3, HEX:4, TWISTED:4 };
 function levelRank(v){
