@@ -8,6 +8,11 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.19.3 — 2026-09-25
+- Fixed the standalone Compendium's Lore → Subcultures tab having no Sort
+  by ID (and no Sort menu customization at all — it silently fell back to
+  a Name-only default from before v1.19.2 added per-category sort fields).
+
 ## v1.19.2 — 2026-09-25
 - Added a "Sort by ID" option to the Compendium, in both the sheet's
   Compendium drawer and the standalone Compendium page. IDs (e.g.
