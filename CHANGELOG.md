@@ -8,6 +8,13 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.19.3 — 2026-09-26
+- Fixed Sylene's Crystal (the starting stat wand): choosing it in the Admission
+  used to permanently bump the chosen Stat's base rank by +2 instead of
+  granting a wand bonus, so respeccing or unequipping it could never remove
+  the +2. It now grants a proper wand bonus, same as the ability wands
+  already did.
+
 ## v1.19.2 — 2026-09-25
 - Added a "Sort by ID" option to the Compendium, in both the sheet's
   Compendium drawer and the standalone Compendium page. IDs (e.g.
