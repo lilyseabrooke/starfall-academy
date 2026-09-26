@@ -355,10 +355,9 @@ export function statWandBonus(draft: Draft, D: ForgeData): { statName: string; v
 }
 
 export function buildStats(draft: Draft, D: ForgeData): Stat[] {
-  const sb = statWandBonus(draft, D);
   return D.stats.map((f) => ({
     ...f,
-    rank: (draft.stats[f.id] || 0) + (sb && sb.statName === f.name ? sb.value : 0),
+    rank: draft.stats[f.id] || 0,
     skills: f.skills.map((s) => ({ ...s, rank: draft.skills[s.id] || 0 })),
   }));
 }
@@ -371,6 +370,10 @@ export function buildSchools(draft: Draft, D: ForgeData): MagicSchool[] {
 
 export function buildWandBonuses(draft: Draft, D: ForgeData): Bonus[] {
   const w = wandById(D, draft.wandId);
+  if (w.kind === "stat") {
+    const sb = statWandBonus(draft, D);
+    return sb ? [{ id: "bn-startwand-0", source: w.name, type: "stat", target: sb.statName, targetLabel: sb.statName, value: sb.value, active: true }] : [];
+  }
   if (w.kind !== "ability") return [];
   return (draft.wandTargets || [])
     .filter((t): t is WandAbilityTarget => !!t && typeof t === "object")
