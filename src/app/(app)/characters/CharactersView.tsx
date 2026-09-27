@@ -16,6 +16,7 @@ import {
   KeyRound,
   Pencil,
   Plus,
+  RefreshCw,
   Settings2,
   Sparkles,
   Swords,
@@ -154,6 +155,24 @@ export default function CharactersView({
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: trimmed }),
+    }).catch(() => {});
+    setBusy(false);
+    closeManage();
+    router.refresh();
+  }
+
+  async function regenerateJoinCode(id: string) {
+    if (
+      !confirm(
+        "Generate a new join code for this campaign? The old code will stop working immediately, though anyone already seated stays enrolled."
+      )
+    )
+      return;
+    setBusy(true);
+    await fetch(`/api/campaigns/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ regenerate_code: true }),
     }).catch(() => {});
     setBusy(false);
     closeManage();
@@ -712,6 +731,23 @@ export default function CharactersView({
                       </span>
                       <span className="sa-manage-opt__sub">
                         Change the name shown to you and your players.
+                      </span>
+                    </span>
+                  </button>
+                  <button
+                    className="sa-manage-opt"
+                    disabled={busy}
+                    onClick={() => regenerateJoinCode(managedCampaign.id)}
+                  >
+                    <span className="sa-manage-opt__icon sa-manage-opt__icon--gold">
+                      <RefreshCw size={18} aria-hidden="true" />
+                    </span>
+                    <span className="sa-manage-opt__text">
+                      <span className="sa-manage-opt__title">
+                        Change Join Code
+                      </span>
+                      <span className="sa-manage-opt__sub">
+                        Roll a new code; the old one stops working.
                       </span>
                     </span>
                   </button>
