@@ -67,37 +67,76 @@ export function AtlasStage({
 
   const clampScale = (s: number) => Math.max(MIN, Math.min(MAX, s));
 
-  const fit = React.useCallback(() => {
+  // Discrete zoom actions (the +/- and fit buttons) tween over a short ease;
+  // continuous input (wheel, drag, pinch) stays immediate so it never lags
+  // behind the pointer.
+  const zoomAnimRef = React.useRef<number | null>(null);
+  const cancelZoomAnim = React.useCallback(() => {
+    if (zoomAnimRef.current != null) { cancelAnimationFrame(zoomAnimRef.current); zoomAnimRef.current = null; }
+  }, []);
+  const animateTo = React.useCallback((s1: number, tx1: number, ty1: number, duration = 220) => {
+    cancelZoomAnim();
+    const s0 = scaleRef.current, tx0 = txRef.current, ty0 = tyRef.current;
+    if (s0 === s1 && tx0 === tx1 && ty0 === ty1) return;
+    const start = performance.now();
+    const easeOutCubic = (t: number) => 1 - (1 - t) ** 3;
+    const step = (now: number) => {
+      const t = Math.min(1, (now - start) / duration);
+      const e = easeOutCubic(t);
+      scaleRef.current = s0 + (s1 - s0) * e;
+      txRef.current = tx0 + (tx1 - tx0) * e;
+      tyRef.current = ty0 + (ty1 - ty0) * e;
+      apply();
+      zoomAnimRef.current = t < 1 ? requestAnimationFrame(step) : null;
+    };
+    zoomAnimRef.current = requestAnimationFrame(step);
+  }, [apply, cancelZoomAnim]);
+
+  const fit = React.useCallback((animated = false) => {
     const stage = stageRef.current;
     if (!stage) return;
     const r = stage.getBoundingClientRect();
     const pad = 90;
+    let s: number, tx: number, ty: number;
     if (mode === "citadel") {
-      scaleRef.current = clampScale(Math.min((r.width - pad) / 1000, (r.height - pad) / 1200));
-      txRef.current = 0; tyRef.current = -6;
+      s = clampScale(Math.min((r.width - pad) / 1000, (r.height - pad) / 1200));
+      tx = 0; ty = -6;
     } else {
-      scaleRef.current = clampScale(Math.min((r.width - pad) / 1480, (r.height - pad) / 1120));
-      txRef.current = 78; tyRef.current = -14 * scaleRef.current;
+      s = clampScale(Math.min((r.width - pad) / 1480, (r.height - pad) / 1120));
+      tx = 78; ty = -14 * s;
     }
+    if (animated) { animateTo(s, tx, ty); return; }
+    cancelZoomAnim();
+    scaleRef.current = s; txRef.current = tx; tyRef.current = ty;
     apply();
-  }, [mode, apply]);
+  }, [mode, apply, animateTo, cancelZoomAnim]);
 
   React.useEffect(() => { fit(); }, [fit]);
   React.useEffect(() => {
     let t: ReturnType<typeof setTimeout>;
-    const onResize = () => { clearTimeout(t); t = setTimeout(fit, 120); };
+    const onResize = () => { clearTimeout(t); t = setTimeout(() => fit(), 120); };
     window.addEventListener("resize", onResize);
     return () => { window.removeEventListener("resize", onResize); clearTimeout(t); };
   }, [fit]);
 
   const zoomAt = React.useCallback((mx: number, my: number, factor: number) => {
+    cancelZoomAnim();
     const ns = clampScale(scaleRef.current * factor);
     if (ns === scaleRef.current) return;
     txRef.current = mx - (ns / scaleRef.current) * (mx - txRef.current);
     tyRef.current = my - (ns / scaleRef.current) * (my - tyRef.current);
     scaleRef.current = ns;
     apply();
-  }, [apply]);
+  }, [apply, cancelZoomAnim]);
+
+  const animateZoomAt = React.useCallback((mx: number, my: number, factor: number) => {
+    const s0 = scaleRef.current;
+    const s1 = clampScale(s0 * factor);
+    if (s1 === s0) return;
+    const tx1 = mx - (s1 / s0) * (mx - txRef.current);
+    const ty1 = my - (s1 / s0) * (my - tyRef.current);
+    animateTo(s1, tx1, ty1);
+  }, [animateTo]);
 
   const centreXY = (cx: number, cy: number): [number, number] => {
     const r = stageRef.current!.getBoundingClientRect();
@@ -110,6 +149,7 @@ export function AtlasStage({
   const onPointerDown = (e: React.PointerEvent) => {
     dropHint();
     if (e.pointerType === "mouse" && e.button !== 0) return;
+    cancelZoomAnim();
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pointers.current.size === 1) {
       dragRef.current = { dragging: true, moved: false, sx: e.clientX, sy: e.clientY, stx: txRef.current, sty: tyRef.current };
@@ -301,9 +341,9 @@ export function AtlasStage({
       </svg>
 
       <div className="float zoom" role="group" aria-label="Zoom">
-        <button type="button" className="zoom-btn" aria-label="Zoom in" onClick={() => zoomAt(0, 0, 1.2)}><Icon name="plus" /></button>
-        <button type="button" className="zoom-btn" aria-label="Zoom out" onClick={() => zoomAt(0, 0, 1 / 1.2)}><Icon name="minus" /></button>
-        <button type="button" className="zoom-btn" aria-label="Fit to view" onClick={fit}><Icon name="maximize" /></button>
+        <button type="button" className="zoom-btn" aria-label="Zoom in" onClick={() => animateZoomAt(0, 0, 1.2)}><Icon name="plus" /></button>
+        <button type="button" className="zoom-btn" aria-label="Zoom out" onClick={() => animateZoomAt(0, 0, 1 / 1.2)}><Icon name="minus" /></button>
+        <button type="button" className="zoom-btn" aria-label="Fit to view" onClick={() => fit(true)}><Icon name="maximize" /></button>
       </div>
 
       <div className="float hint" ref={hintRef} style={hinted ? { opacity: 0 } : undefined}>
