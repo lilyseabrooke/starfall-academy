@@ -331,25 +331,28 @@
 .sf-sheet .sf-slot__pop-desc { font-family: var(--font-serif); font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--text-muted); margin: 0; }
 
 /* ============================ Repair chooser ========================= */
+/* .sf-repair__pop is portaled to document.body (for fixed viewport
+   positioning), so it renders outside .sf-sheet — these rules must not
+   require that ancestor or they silently no-op. */
 .sf-sheet .sf-repair { position: relative; }
 .sf-sheet .sf-repair > .sf-ia svg:last-child { width: 13px; height: 13px; opacity: .7; }
-.sf-sheet .sf-repair__pop {
+.sf-repair__pop {
   padding: 6px;
   background: color-mix(in oklab, var(--ink-850) 97%, transparent); border: 1px solid var(--border-default);
   border-radius: var(--radius-md); box-shadow: var(--shadow-xl), var(--inset-hi); backdrop-filter: blur(10px);
   display: flex; flex-direction: column; gap: 3px;
 }
-.sf-sheet .sf-repair__head { display: flex; align-items: flex-start; gap: 7px; padding: 6px 8px 8px; margin-bottom: 3px; border-bottom: 1px solid var(--hairline); font-family: var(--font-serif); font-size: 12px; color: var(--text-muted); }
-.sf-sheet .sf-repair__head svg { flex: none; margin-top: 1px; }
-.sf-sheet .sf-repair__head span { flex: 1; line-height: 1.4; }
-.sf-sheet .sf-repair__head svg { width: 13px; height: 13px; flex: none; color: var(--gold-400); }
-.sf-sheet .sf-repair__head b { color: var(--gold-200); text-transform: capitalize; }
-.sf-sheet .sf-repair__opt { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; width: 100%; cursor: pointer; padding: 8px 10px; border-radius: var(--radius-sm); border: 1px solid transparent; background: none; text-align: left; transition: background var(--dur-fast), border-color var(--dur-fast); }
-.sf-sheet .sf-repair__opt:hover { background: var(--ink-700); border-color: var(--border-default); }
-.sf-sheet .sf-repair__pace { font-family: var(--font-sans); font-weight: 500; font-size: 12px; letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--text-strong); }
-.sf-sheet .sf-repair__time { display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-serif); font-size: 11.5px; color: var(--text-faint); }
-.sf-sheet .sf-repair__time svg { width: 12px; height: 12px; }
-.sf-sheet .sf-repair__dc { font-family: var(--font-mono); font-size: 12px; color: var(--gold-200); white-space: nowrap; }
+.sf-repair__head { display: flex; align-items: flex-start; gap: 7px; padding: 6px 8px 8px; margin-bottom: 3px; border-bottom: 1px solid var(--hairline); font-family: var(--font-serif); font-size: 12px; color: var(--text-muted); }
+.sf-repair__head svg { flex: none; margin-top: 1px; }
+.sf-repair__head span { flex: 1; line-height: 1.4; }
+.sf-repair__head svg { width: 13px; height: 13px; flex: none; color: var(--gold-400); }
+.sf-repair__head b { color: var(--gold-200); text-transform: capitalize; }
+.sf-repair__opt { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; width: 100%; cursor: pointer; padding: 8px 10px; border-radius: var(--radius-sm); border: 1px solid transparent; background: none; text-align: left; transition: background var(--dur-fast), border-color var(--dur-fast); }
+.sf-repair__opt:hover { background: var(--ink-700); border-color: var(--border-default); }
+.sf-repair__pace { font-family: var(--font-sans); font-weight: 500; font-size: 12px; letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--text-strong); }
+.sf-repair__time { display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-serif); font-size: 11.5px; color: var(--text-faint); }
+.sf-repair__time svg { width: 12px; height: 12px; }
+.sf-repair__dc { font-family: var(--font-mono); font-size: 12px; color: var(--gold-200); white-space: nowrap; }
 
 /* ============================ Sub-sections ============================ */
 .sf-sheet .sf-sub { display: flex; flex-direction: column; gap: var(--space-3); }

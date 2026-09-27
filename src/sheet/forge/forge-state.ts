@@ -7,9 +7,11 @@
    (seed creation rules/houses/stats/schools + the live compendium).
    =========================================================================== */
 import type {
+  ArtifactMove,
   Bonus,
   CharacterVitals,
   CompendiumEntry,
+  Item,
   MagicSchool,
   Stat,
   Tone,
@@ -17,6 +19,7 @@ import type {
 import type { CreationRules, House } from "../data/seed";
 import type { SerializedSheet } from "../types";
 import type { ClassDef } from "../data/classes";
+import { artifactMoveFrom } from "../data/compendium-grant";
 
 export const ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
 
@@ -57,6 +60,9 @@ export interface Draft {
   craftWands: string[];
   extraWands: string[];
   artifacts: string[];
+  /** Custom-build item purchases — compendium item id → quantity bought,
+   *  since (unlike wands/artifacts) the same item can be bought many times. */
+  items: Record<string, number>;
   /** Artifacts granted free by a class option's item() tag (e.g. Artificer's
    *  "Take a Basic artifact when you take this ability"), keyed by grant id
    *  (`${classId}:${rank}`) — separate from `artifacts` (custom-build
@@ -117,6 +123,7 @@ export function blankDraft(): Draft {
     major: [],
     potions: [], plants: [], glyphs: [], craftWands: [],
     extraWands: [], artifacts: [], classArtifacts: {},
+    items: {},
     spells: [],
   };
 }
@@ -142,6 +149,7 @@ export function hasDraftProgress(draft: Draft): boolean {
     draft.extraWands.length > 0 ||
     draft.artifacts.length > 0 ||
     Object.keys(draft.classArtifacts || {}).length > 0 ||
+    Object.keys(draft.items || {}).length > 0 ||
     draft.spells.length > 0
   );
 }
@@ -191,11 +199,38 @@ export function classArtifactIds(draft: Draft, classData: { classes: ClassDef[] 
 }
 
 /* ---- Cost engine ---- */
-export const classPoints = (draft: Draft) => Object.values(draft.classes).reduce((s, c) => s + 2 * (c.rank || 0), 0);
+export const classPoints = (draft: Draft, D: ForgeData) => {
+  const cc = D.creation.custom;
+  const base = draft.classMode === "single" ? D.creation.classDefault.single : D.creation.classDefault.double;
+  return Object.values(draft.classes).reduce((s, c) => {
+    const rank = c.rank || 0;
+    let cost = 0;
+    for (let L = base + 1; L <= rank; L++) cost += cc.classRankCost * L;
+    return s + cost;
+  }, 0);
+};
+/** An entry's material cost — wands/artifacts carry it as `mat`, items as
+ *  `cost` (both mats). */
+const matOf = (e: CompendiumEntry | undefined) => (e ? (e.mat != null ? e.mat : typeof e.cost === "number" ? e.cost : 0) : 0);
+/** Basket-wide points for a set of custom-build purchases: the whole
+ *  basket's mat total is rounded up once, not per-purchase — a 50-mat
+ *  basket costs 1 point at 400 mat/point, and so does a 390-mat one, but a
+ *  basket of eight 50-mat items (400 mat total) still costs exactly 1. */
 const matPoints = (D: ForgeData, ids: string[], per: number) => {
   const m = compById(D);
-  return ids.reduce((s, id) => s + Math.ceil(((m[id] && m[id].mat) || 0) / per), 0);
+  const totalMat = ids.reduce((s, id) => s + matOf(m[id]), 0);
+  return Math.ceil(totalMat / per);
 };
+/** Custom-build item points — same basket-wide rounding as matPoints, but
+ *  over an id→quantity map (items can be bought many at once, e.g. 720
+ *  Pigtures at 50 mat each costs exactly 90 points at 400 mat/point). */
+export const itemPoints = (draft: Draft, D: ForgeData) => {
+  const m = compById(D);
+  const totalMat = Object.entries(draft.items || {}).reduce((s, [id, qty]) => s + matOf(m[id]) * (qty || 0), 0);
+  return Math.ceil(totalMat / D.creation.custom.itemPer);
+};
+export const wandPoints = (draft: Draft, D: ForgeData) => matPoints(D, draft.extraWands, D.creation.custom.wandPer);
+export const artifactPoints = (draft: Draft, D: ForgeData) => matPoints(D, draft.artifacts, D.creation.custom.artifactPer);
 
 export type Budgets =
   | {
@@ -211,16 +246,17 @@ export type Budgets =
       pool: number;
       spent: number;
       remaining: number;
-      breakdown: { stats: number; abilities: number; classes: number; wands: number; artifacts: number };
+      breakdown: { stats: number; abilities: number; classes: number; wands: number; artifacts: number; items: number };
     };
 
 export function budgets(draft: Draft, D: ForgeData): Budgets {
   const year = yearById(D, draft.yearId);
   const cc = D.creation.custom;
   const statSpent = sumVals(draft.stats), subjSpent = sumVals(draft.subjects), skillSpent = sumVals(draft.skills);
-  const classExtra = Math.max(0, classPoints(draft) - cc.freeClassPoints);
-  const wandPts = matPoints(D, draft.extraWands, cc.wandPer);
-  const artiPts = matPoints(D, draft.artifacts, cc.artifactPer);
+  const classExtra = classPoints(draft, D);
+  const wandPts = wandPoints(draft, D);
+  const artiPts = artifactPoints(draft, D);
+  const itemPts = itemPoints(draft, D);
 
   if (draft.buildType === "quick") {
     return {
@@ -230,10 +266,10 @@ export function budgets(draft: Draft, D: ForgeData): Budgets {
       skill: { spent: skillSpent, pool: year.quick.skill },
     };
   }
-  const spent = statSpent * cc.statCost + (subjSpent + skillSpent) * cc.abilityCost + classExtra + wandPts + artiPts;
+  const spent = statSpent * cc.statCost + (subjSpent + skillSpent) * cc.abilityCost + classExtra + wandPts + artiPts + itemPts;
   return {
     mode: "custom", limit: year.limit, pool: year.custom, spent, remaining: year.custom - spent,
-    breakdown: { stats: statSpent * cc.statCost, abilities: (subjSpent + skillSpent) * cc.abilityCost, classes: classExtra, wands: wandPts, artifacts: artiPts },
+    breakdown: { stats: statSpent * cc.statCost, abilities: (subjSpent + skillSpent) * cc.abilityCost, classes: classExtra, wands: wandPts, artifacts: artiPts, items: itemPts },
   };
 }
 
@@ -319,10 +355,9 @@ export function statWandBonus(draft: Draft, D: ForgeData): { statName: string; v
 }
 
 export function buildStats(draft: Draft, D: ForgeData): Stat[] {
-  const sb = statWandBonus(draft, D);
   return D.stats.map((f) => ({
     ...f,
-    rank: (draft.stats[f.id] || 0) + (sb && sb.statName === f.name ? sb.value : 0),
+    rank: draft.stats[f.id] || 0,
     skills: f.skills.map((s) => ({ ...s, rank: draft.skills[s.id] || 0 })),
   }));
 }
@@ -335,6 +370,10 @@ export function buildSchools(draft: Draft, D: ForgeData): MagicSchool[] {
 
 export function buildWandBonuses(draft: Draft, D: ForgeData): Bonus[] {
   const w = wandById(D, draft.wandId);
+  if (w.kind === "stat") {
+    const sb = statWandBonus(draft, D);
+    return sb ? [{ id: "bn-startwand-0", source: w.name, type: "stat", target: sb.statName, targetLabel: sb.statName, value: sb.value, active: true }] : [];
+  }
   if (w.kind !== "ability") return [];
   return (draft.wandTargets || [])
     .filter((t): t is WandAbilityTarget => !!t && typeof t === "object")
@@ -392,7 +431,7 @@ export interface ForgeArtifact {
   attuned: boolean;
   condition: "stable";
   desc: string;
-  move: { name: string; stat: string; skill: string; bonus: number; dc: number | null; desc: string };
+  move: ArtifactMove;
 }
 export function buildArtifacts(draft: Draft, D: ForgeData, classData: { classes: ClassDef[] }): ForgeArtifact[] {
   const m = compById(D);
@@ -401,9 +440,21 @@ export function buildArtifacts(draft: Draft, D: ForgeData, classData: { classes:
     .map((id, i): ForgeArtifact | null => {
       const e = m[id];
       if (!e) return null;
-      return { id: "art-start-" + i + "-" + id, name: e.name, level: e.level, tone: e.tone, subject: e.subject || "—", intensity: 0, attuned: true, condition: "stable", desc: e.desc, move: { name: e.name + " — Boon", stat: "Insight", skill: "—", bonus: 0, dc: null, desc: e.desc } };
+      return { id: "art-start-" + i + "-" + id, name: e.name, level: e.level, tone: e.tone, subject: e.subject || "—", intensity: 0, attuned: true, condition: "stable", desc: e.desc, move: artifactMoveFrom(e) };
     })
     .filter((x): x is ForgeArtifact => !!x);
+}
+
+export function buildItems(draft: Draft, D: ForgeData): Item[] {
+  const m = compById(D);
+  return Object.entries(draft.items || {})
+    .filter(([, qty]) => (qty || 0) > 0)
+    .map(([id, qty]): Item | null => {
+      const e = m[id];
+      if (!e) return null;
+      return { id: "itm-start-" + id, name: e.name, qty, cost: typeof e.cost === "number" ? e.cost : undefined, singleUse: e.singleUse ?? false, check: e.check ?? null, tags: e.tags ?? [], desc: e.desc };
+    })
+    .filter((x): x is Item => !!x);
 }
 
 export interface ForgePotionPair {

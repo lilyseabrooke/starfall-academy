@@ -209,6 +209,85 @@ input, textarea {
   color: #d7d1c0;
 }
 
+/* ------------------------------------------------------------ board tabs */
+.vb-tabs-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 10px 20px 0;
+}
+.vb-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px 6px 12px;
+  background: #161822;
+  border: 1px solid rgba(185, 157, 83, 0.2);
+  border-radius: 6px 6px 0 0;
+  cursor: pointer;
+}
+.vb-tab:hover {
+  background: #1c1f2b;
+}
+.vb-tab--active {
+  background: #20232f;
+  border-color: rgba(201, 174, 99, 0.55);
+  border-bottom-color: transparent;
+}
+.vb-tab-input {
+  width: 92px;
+  padding: 2px 0;
+  background: transparent;
+  border: 0;
+  color: #d7d1c0;
+  font-family: "Jost", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  outline: none;
+  cursor: pointer;
+}
+.vb-tab--active .vb-tab-input {
+  color: #f4ecd2;
+  cursor: text;
+}
+.vb-tab-input:focus {
+  cursor: text;
+}
+.vb-tab-close {
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  color: #6b6757;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+.vb-tab-close:hover {
+  background: #4d1f1f;
+  color: #f7f3e7;
+}
+.vb-tab-add {
+  padding: 7px 12px;
+  background: transparent;
+  border: 1px dashed rgba(185, 157, 83, 0.3);
+  border-radius: 6px;
+  color: #968f7c;
+  font-family: "Jost", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+.vb-tab-add:hover {
+  background: #1c1f2b;
+  color: #d7d1c0;
+  border-color: rgba(185, 157, 83, 0.5);
+}
+
 /* ---------------------------------------------------------------- board */
 .vb-board-area {
   flex: 1;

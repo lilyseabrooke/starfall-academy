@@ -34,7 +34,7 @@ import { buildIndex, search as runSearch, type SearchResult } from "./data/searc
 import { REGIONS } from "./data/map/regions";
 import type { MapFocusSignal } from "./components/map/MapPage";
 import { useCompendium } from "./data/compendium";
-import { computeCompendiumGrant, computeAttunedArtifactGrant, computeLearningSpellGrant, computePotionSheafGrant, computePotionRecipeGrant, computeWandCraftGrant } from "./data/compendium-grant";
+import { computeCompendiumGrant, computeAttunedArtifactGrant, computeLearningSpellGrant, computePotionSheafGrant, computePotionRecipeGrant, computeWandCraftGrant, artifactBoonMove } from "./data/compendium-grant";
 import type { GmTime } from "./data/gm-seed";
 
 import { useClassState } from "./state/useClassState";
@@ -925,7 +925,9 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       const primStat = skillsArr.length ? statForSkill(primSkill) : fs("subject") ? subjStat(fs("subject")) : "Insight";
       if (editArtifact) {
         const artMove = { ...editArtifact.move, name: fs("name") + " — Boon", stat: primStat, skill: primSkill, dc: fs("dc") ? num(fs("dc")) : null, desc: fs("desc"), rollOptions };
-        setArtifacts((prev) => prev.map((x) => x.id === editArtifact.id ? { ...x, name: fs("name"), level: fs("level") || x.level, tone: fs("subject") ? subjTone(fs("subject")) : x.tone, subject: subjName(fs("subject")) || x.subject, intensity: num(fs("intensity"), 1), desc: fs("desc"), skills: skillsArr, dc: fs("dc") ? num(fs("dc")) : 0, move: artMove } : x));
+        const nextCondition = (fs("condition") || editArtifact.condition) as Artifact["condition"];
+        setArtifacts((prev) => prev.map((x) => x.id === editArtifact.id ? { ...x, name: fs("name"), level: fs("level") || x.level, tone: fs("subject") ? subjTone(fs("subject")) : x.tone, subject: subjName(fs("subject")) || x.subject, intensity: num(fs("intensity"), 1), desc: fs("desc"), skills: skillsArr, dc: fs("dc") ? num(fs("dc")) : 0, condition: nextCondition, move: artMove } : x));
+        if (nextCondition !== editArtifact.condition) magic.handlers.setMoveCond(editArtifact.id, nextCondition);
         toast("Artifact updated"); setEditArtifact(null); return;
       }
       const artMove = { name: fs("name") + " — Boon", stat: primStat, skill: primSkill, bonus: 0, dc: fs("dc") ? num(fs("dc")) : null, desc: fs("desc"), rollOptions };
@@ -1150,14 +1152,15 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       classes.handlers.loadState(F.buildClassState(draft), 0);
       magic.setState.setBonuses(F.buildWandBonuses(draft, forgeData));
       magic.setState.setSpells(F.buildSpells(draft, forgeData));
-      magic.setState.setMoves([]);
+      const startArtifacts = F.buildArtifacts(draft, forgeData, CL) as unknown as Artifact[];
+      magic.setState.setMoves(startArtifacts.filter((a) => a.attuned).map(artifactBoonMove));
       const pots = F.buildPotions(draft, forgeData);
       setRecipes(pots.map((p) => p.recipe));
       setPotions(pots.map((p) => p.vial));
       setPlants(F.buildPlants(draft, forgeData) as Plant[]);
-      setItems([]);
+      setItems(F.buildItems(draft, forgeData));
       setGlyphs(F.buildGlyphs(draft, forgeData) as Glyph[]);
-      setArtifacts(F.buildArtifacts(draft, forgeData, CL) as unknown as Artifact[]);
+      setArtifacts(startArtifacts);
       setWands([F.buildStartingWand(draft, forgeData) as unknown as Wand, ...(F.buildExtraWands(draft, forgeData) as unknown as Wand[])]);
       setRuneStack([]);
     }

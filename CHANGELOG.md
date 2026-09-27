@@ -8,7 +8,16 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
-## v1.17.0 — 2026-09-27
+## v1.21.0 — 2026-09-27
+- The character sheet's Map tab no longer embeds the vendored vanilla-JS
+  atlas in an iframe: the whole campus map — world tessellation, pan/zoom,
+  the Citadel's 21-district shield tessellation, region/district/zone
+  drill-down with dossiers, and party-location markers — is now native
+  React/SVG (`src/sheet/components/map/`, typed geometry/data under
+  `src/sheet/data/map/`). The search menu's "Map Location" results now
+  actually jump the map to that region or Citadel district (previously a
+  no-op stub). The standalone `/map` route keeps serving its own separate
+  vendored copy under `public/map/`, untouched by this port.
 - The Map tab's Whereabouts panel is gone, replaced by a pin button docked
   bottom-right of the map: click it, then click any location on the atlas —
   a region, a Citadel district, or a nested zone within either — to set that
@@ -31,17 +40,108 @@ when these shipped.
   wrapping onto a redundant row (the Map tab hides vitals, so that row had
   nothing else in it).
 
-## v1.16.0 — 2026-09-17
-- The character sheet's Map tab no longer embeds the vendored vanilla-JS
-  atlas in an iframe: the whole campus map — world tessellation, pan/zoom,
-  the Citadel's 21-district shield tessellation, region/district/zone
-  drill-down with dossiers, and party-location markers — is now native
-  React/SVG (`src/sheet/components/map/`, typed geometry/data under
-  `src/sheet/data/map/`). The whereabouts panel's external contract to
-  `CharacterSheet.tsx` is unchanged. The search menu's "Map Location"
-  results now actually jump the map to that region or Citadel district
-  (previously a no-op stub). The standalone `/map` route keeps serving its
-  own separate vendored copy under `public/map/`, untouched by this port.
+## v1.20.0 — 2026-09-27
+- Added "Change Join Code" to a campaign's Manage menu on the Characters
+  page. Rolls a fresh join code for the campaign and immediately invalidates
+  the old one; players already seated keep their membership since that's
+  tracked separately from the code. Confirms in a second Manage-modal view
+  before applying.
+
+## v1.19.3 — 2026-09-26
+- Fixed Sylene's Crystal (the starting stat wand): choosing it in the Admission
+  used to permanently bump the chosen Stat's base rank by +2 instead of
+  granting a wand bonus, so respeccing or unequipping it could never remove
+  the +2. It now grants a proper wand bonus, same as the ability wands
+  already did.
+
+## v1.19.2 — 2026-09-25
+- Added a "Sort by ID" option to the Compendium, in both the sheet's
+  Compendium drawer and the standalone Compendium page. IDs (e.g.
+  `spell_144`) sort by their numeric suffix rather than as text, so
+  `spell_25` now correctly sorts before `spell_144`.
+
+## v1.19.1 — 2026-09-24
+- Fixed the Admission's custom-build point pools, which fell short of what
+  quick build offers for 2nd year onward (2nd: 90 → 95, 3rd: 120 → 130, 4th:
+  150 → 165, Graduate: 180 → 200). 1st year was already correct at 60.
+
+## v1.19.0 — 2026-09-22
+- New Chronicle page at `/chronicle`: a horizontal timeline of every past
+  campaign, read live from the Campaigns tab of the same workbook the
+  Compendium pulls spells, artifacts and wands from. Campaigns are placed by
+  semester as well as year (Fall 2011 sits half a year after Spring 2011), a
+  campaign that ran across two semesters draws as a bar that long, and
+  campaigns running at the same time stack above and below the rail instead of
+  overlapping. Each card carries the campaign's name, term, location and a
+  monogram per player; clicking one opens the full record — description,
+  dates, location and the party — in the same modal treatment as a character
+  on the Ledger.
+- The Chronicle parses the sheet's single PLAYERS field into players,
+  characters, and who played whom, so a player who ran two characters in one
+  campaign is listed once carrying both, rather than twice.
+- Two ways to narrow the timeline, and they stack: search, which covers
+  campaign, player and character names, and the Locations panel bottom-left,
+  which doubles as the legend for the accent colour on each card. A campaign's
+  own record filters too — its location heading follows that place. If the two
+  between them rule everything out, the timeline says so and offers to clear
+  them.
+- Fix: the crest watermark behind a character's record on the Family Ledger
+  laid out inline instead of sitting in the background, so every character and
+  family modal opened on a tall empty block and pushed the name out of sight.
+  Its rule and the one setting every other child of the modal to
+  `position: relative` have equal CSS specificity, so source order was handing
+  the watermark the wrong one.
+- The crest behind a record — on the Ledger and the Chronicle alike — is now
+  centred on the card and holds still while the record scrolls over it, the
+  way the crest behind a page does. The close button holds still with it, so
+  it stays reachable in a long record.
+
+## v1.18.0 — 2026-09-21
+- Fix: the artifact Repair popup rendered as unstyled, unusable overlapping
+  text — its CSS was scoped to a container the popup no longer lived inside
+  once it opened, since it's positioned via a portal to stay on-screen.
+- The artifact edit panel now has a Condition field, so a GM/player can set
+  an artifact to Stable/Damaged/Broken directly instead of only through a
+  repair roll.
+
+## v1.17.1 — 2026-09-21
+- Fix: an Artifact bought directly with points in the Forge's custom build
+  (rather than granted by a class) always got its move's Boon roll stat/skill
+  hardcoded to Insight/none, ignoring the artifact's own skill(s). It now
+  gets the same stat/skill (and multiple roll options, for a multi-skill
+  artifact) the sheet already uses when an artifact is granted during play.
+
+## v1.17.0 — 2026-09-21
+- Fix: custom-build class ranks bought past the free base rank cost a flat
+  2 points per level instead of scaling with the level bought (rank 5 now
+  costs 10 points, rank 3 costs 6, etc).
+- Custom build can now buy Items with points, the same way it already buys
+  Wands and Artifacts, at the same 400-mat-per-point ratio — and unlike
+  Wands/Artifacts, the same Item can be bought in any quantity.
+- Fix: custom-build Wand/Artifact/Item purchases each rounded their own mat
+  cost up to the next point individually, so several cheap purchases could
+  cost far more than their combined mat value. The whole basket's mat total
+  is now rounded up once instead.
+
+## v1.16.1 — 2026-09-20
+- The standalone Compendium's category tab bar now has small nudge
+  buttons and eases a vertical scroll-wheel gesture into a smooth
+  horizontal scroll while the bar is hovered, so every tab stays reachable
+  on devices without horizontal scroll input.
+
+## v1.16.0 — 2026-09-19
+- The Vialbottom Board: added a new suspect token, The Blue-Eyed Man.
+- The Vialbottom Board now supports multiple boards via tabs — start a
+  fresh board without losing or resetting an existing one. Each tab is a
+  fully independent board (its own tokens, strings, notes, and shapes),
+  and boards can be added, renamed, switched between, and closed.
+
+## v1.15.2 — 2026-09-17
+- Fix: an artifact picked in the Forge during character creation (from a
+  class grant or bought directly in the Inventory step) was attuned but its
+  linked Boon move never showed up on the sheet. Picking an artifact there
+  now adds its move alongside it, same as attuning one after character
+  creation already did.
 
 ## v1.15.1 — 2026-09-17
 - Removed the "Map Studio" dev-authoring tooling (the edit-mode tweak

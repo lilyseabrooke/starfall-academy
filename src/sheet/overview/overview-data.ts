@@ -243,6 +243,7 @@ export function sourceFromDraft(draft: Draft, D: ForgeData, classData: { classes
           potions: F.buildPotions(draft, D).map((p) => p.vial),
           plants: F.buildPlants(draft, D),
           glyphs: F.buildGlyphs(draft, D),
+          items: F.buildItems(draft, D),
         },
   };
 }
