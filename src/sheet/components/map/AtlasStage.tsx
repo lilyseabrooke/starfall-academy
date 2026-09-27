@@ -341,8 +341,8 @@ export function AtlasStage({
       </svg>
 
       <div className="float zoom" role="group" aria-label="Zoom">
-        <button type="button" className="zoom-btn" aria-label="Zoom in" onClick={() => animateZoomAt(0, 0, 1.2)}><Icon name="plus" /></button>
-        <button type="button" className="zoom-btn" aria-label="Zoom out" onClick={() => animateZoomAt(0, 0, 1 / 1.2)}><Icon name="minus" /></button>
+        <button type="button" className="zoom-btn" aria-label="Zoom in" onClick={() => animateZoomAt(0, 0, 1.3)}><Icon name="plus" /></button>
+        <button type="button" className="zoom-btn" aria-label="Zoom out" onClick={() => animateZoomAt(0, 0, 1 / 1.3)}><Icon name="minus" /></button>
         <button type="button" className="zoom-btn" aria-label="Fit to view" onClick={() => fit(true)}><Icon name="maximize" /></button>
       </div>
 

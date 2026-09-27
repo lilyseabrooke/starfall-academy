@@ -129,7 +129,7 @@ export function DistrictField({ host, interactive, hoveredIdx, selectedIdx, onHo
             const members = membersByTag[a.tag];
             if (!members || !members.length) return null;
             const cc = polylabel(cell);
-            return <PartyMarkerCluster key={a.tag} x={cc[0]} y={cc[1]} members={members} selfId={party!.selfId} spacing={40} rowY={-12} />;
+            return <PartyMarkerCluster key={a.tag} x={cc[0]} y={cc[1]} members={members} selfId={party!.selfId} />;
           })}
         </g>
       )}

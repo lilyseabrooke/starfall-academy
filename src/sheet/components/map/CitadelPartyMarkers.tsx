@@ -6,7 +6,10 @@
    ("starfall-citadel/<district-slug>[/<zone-tag>]"); resolveCitadelPoint
    reprojects a zone's own label anchor into Citadel-shield space so a pin
    shows up at that zone's actual spot within its district, not just at the
-   district's generic centre.
+   district's generic centre. Uses PartyMarkerCluster's default sizing (same
+   as the world/campus view) rather than shrinking for this "middle" zoom
+   level — markers should read the same size everywhere, not just once
+   zoomed all the way out.
    =========================================================================== */
 import * as React from "react";
 import { computeCitadelCells, resolveCitadelPoint } from "../../data/map/hosts";
@@ -39,12 +42,7 @@ export function CitadelPartyMarkers({ citadel, roster, locations, selfId }: Cita
       {Object.entries(byLoc).map(([loc, members]) => {
         const pt = resolveCitadelPoint(loc, citadel, citadelCells);
         if (!pt) return null;
-        return (
-          <PartyMarkerCluster
-            key={loc} x={pt[0]} y={pt[1]} members={members} selfId={selfId}
-            spacing={36} rowY={-32} ringR={17} fillR={14} fontSize={12}
-          />
-        );
+        return <PartyMarkerCluster key={loc} x={pt[0]} y={pt[1]} members={members} selfId={selfId} />;
       })}
     </g>
   );
