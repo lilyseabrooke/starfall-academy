@@ -7,9 +7,9 @@
    underlying thing is one of the 5 outer regions or one of the Citadel's 21
    districts — same shape, same renderer (DistrictField + Dossier).
    =========================================================================== */
-import type { DistrictSeed, Region, SubArea } from "./types";
+import type { DistrictSeed, Point, Region, SubArea } from "./types";
 import { ensureSubAreas, seedSlug } from "./citadelData";
-import { shieldOutline, smoothClosed, toPts, voronoiCells } from "./geom";
+import { DISTRICT_FIELD_BOX, fitPointsToBox, fromBoxSpace, polylabel, shieldOutline, smoothClosed, toBoxSpace, toPts, voronoiCells } from "./geom";
 
 export const CAMPUS_OUTLINE =
   "120,250 440,150 820,112 1190,150 1466,345 1500,716 1330,1052 905,1132 470,1086 180,892 94,556";
@@ -152,4 +152,107 @@ export function pickIdForZoneLink(
     return link.region + (tag ? "/" + tag : "");
   }
   return null;
+}
+
+/* ---- whereabouts marker placement ------------------------------------------
+   A pin should show up "where that place visually is" at ANY zoom level, not
+   just in the field view it was set from. Each level already computes a
+   label anchor (polylabel's pole-of-inaccessibility + that entity's authored
+   nudge) for its own text — these functions reproject that same anchor
+   across the coordinate spaces the map uses: a district-field's normalised
+   display box, the Citadel's full-size shield, and the Citadel's small
+   fixed placement on the campus map. */
+
+/** A zone's own label anchor, reprojected out of DistrictField's normalised
+ *  display box into the host's real coordinate space — Citadel-shield space
+ *  for a district, campus space for a region (the space `host.cell` is
+ *  already expressed in). Mirrors DistrictField's own cell computation
+ *  exactly, so it lands on the same spot the zone's label does. */
+export function zoneAnchorInHostSpace(host: ZoneHost, tag: string): Point | null {
+  if (!host.cell) return null;
+  const subsOn = host.sub.filter((a) => a.on);
+  const idx = subsOn.findIndex((a) => a.tag === tag);
+  if (idx < 0) return null;
+  const realPts = toPts(host.cell);
+  const t = fitPointsToBox(realPts, DISTRICT_FIELD_BOX.w, DISTRICT_FIELD_BOX.h, DISTRICT_FIELD_BOX.bx, DISTRICT_FIELD_BOX.by);
+  const normPts = realPts.map((p) => toBoxSpace(p, t));
+  const cells = voronoiCells(subsOn.map((a) => ({ x: a.x, y: a.y, w: a.w })), normPts);
+  const cellStr = cells[idx];
+  if (!cellStr || cellStr.split(" ").length < 3) return null;
+  const a = subsOn[idx];
+  const base = polylabel(cellStr);
+  return fromBoxSpace([base[0] + (a.lx || 0), base[1] + (a.ly || 0)], t);
+}
+
+/** A Citadel district's own label anchor, already in Citadel-shield space —
+ *  no reprojection needed, since CitadelTessellation computes its cells
+ *  directly in that space. */
+function districtAnchor(seed: DistrictSeed, cellStr: string | undefined): Point {
+  if (!cellStr) return [seed.x, seed.y];
+  const base = polylabel(cellStr);
+  return [base[0] + (seed.labelDx || 0), base[1] + (seed.labelDy || 0)];
+}
+
+/** Resolve any "starfall-citadel/…" location to a point in Citadel-shield
+ *  space: the district's own anchor for a bare district pick, or that
+ *  district's zone anchor for a nested one. Null for anything outside the
+ *  Citadel. */
+export function resolveCitadelPoint(locId: string, citadel: Region, citadelCells: Record<number, string>): Point | null {
+  if (!locId.startsWith("starfall-citadel/")) return null;
+  const parts = locId.split("/");
+  const slug = parts[1];
+  const seeds = citadel.submap.seeds || [];
+  const idx = seeds.findIndex((s) => !s.special && seedSlug(s) === slug);
+  if (idx < 0) return null;
+  const seed = seeds[idx];
+  const cellStr = seed._cell || citadelCells[idx];
+  const anchor = districtAnchor(seed, cellStr);
+  const tag = parts[2];
+  if (!tag || !cellStr) return anchor;
+  const host = districtHost(seed, "Starfall Citadel");
+  host.cell = cellStr;
+  return zoneAnchorInHostSpace(host, tag) || anchor;
+}
+
+/** The Citadel is drawn full-size in its own view but as a small, fixed
+ *  shield glyph on the campus map — proportionally remap a point from one
+ *  shield's coordinate space to the other's. */
+export function citadelPointToWorld(pt: Point, citadel: Region): Point {
+  const g = citadel.submap.shieldGeom!;
+  const sx = CITADEL_PLACE.hw / g.hw, sy = CITADEL_PLACE.h / g.h;
+  return [CITADEL_PLACE.cx + (pt[0] - g.cx) * sx, CITADEL_PLACE.top + (pt[1] - g.top) * sy];
+}
+
+/** Resolve any location id to a point in campus/world space (1600×1200) —
+ *  the finest anchor available at each level: a zone's own position if the
+ *  location names one, else that region/district's own label anchor. */
+export function resolveWorldPoint(
+  locId: string,
+  regions: Region[],
+  campusCells: Record<string, string>,
+  citadel: Region,
+  citadelCells: Record<number, string>,
+): Point {
+  const topId = locId.split("/")[0];
+  if (topId === citadel.id) {
+    const g = citadel.submap.shieldGeom!;
+    const fallback: Point = [g.cx, g.top + g.h * 0.42];
+    const citPt = resolveCitadelPoint(locId, citadel, citadelCells) || fallback;
+    return citadelPointToWorld(citPt, citadel);
+  }
+  const region = regions.find((r) => r.id === topId);
+  if (!region) return [800, 600];
+  const tag = locId.split("/")[1];
+  if (tag) {
+    const host = regionHost(region, campusCells);
+    const pt = zoneAnchorInHostSpace(host, tag);
+    if (pt) return pt;
+  }
+  const cellStr = campusCells[region.id];
+  const seed = CAMPUS_SEEDS.find((s) => s.id === region.id);
+  if (cellStr && seed) {
+    const base = polylabel(cellStr);
+    return [base[0] + (seed.ldx || 0), base[1] + (seed.ldy || 0)];
+  }
+  return region.label;
 }

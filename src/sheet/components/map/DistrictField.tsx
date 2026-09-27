@@ -8,20 +8,16 @@
    fixed 1000×760 box regardless of the host's native coordinate space.
    =========================================================================== */
 import * as React from "react";
-import { polylabel, roundedPath, splitLabel, tilePath, toPts, voronoiCells } from "../../data/map/geom";
+import { DISTRICT_FIELD_BOX, fitPointsToBox, polylabel, roundedPath, splitLabel, tilePath, toBoxSpace, toPts, voronoiCells } from "../../data/map/geom";
 import { pickPrefixForHost, type ZoneHost } from "../../data/map/hosts";
+import { PartyMarkerCluster } from "./PartyMarkerCluster";
 import type { MapRosterMember } from "./MapPage";
 
 const SUB_MIX = [46, 54, 62, 48, 56, 64];
-const BOX_W = 740, BOX_H = 580, BX = 500, BY = 380;
 
 function normalizeCellToBox(pts: [number, number][]): [number, number][] {
-  let minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9;
-  pts.forEach((p) => { minX = Math.min(minX, p[0]); minY = Math.min(minY, p[1]); maxX = Math.max(maxX, p[0]); maxY = Math.max(maxY, p[1]); });
-  const cw = maxX - minX || 1, ch = maxY - minY || 1;
-  const s = Math.min(BOX_W / cw, BOX_H / ch);
-  const mx = (minX + maxX) / 2, my = (minY + maxY) / 2;
-  return pts.map((p): [number, number] => [BX + (p[0] - mx) * s, BY + (p[1] - my) * s]);
+  const t = fitPointsToBox(pts, DISTRICT_FIELD_BOX.w, DISTRICT_FIELD_BOX.h, DISTRICT_FIELD_BOX.bx, DISTRICT_FIELD_BOX.by);
+  return pts.map((p) => toBoxSpace(p, t));
 }
 
 export interface DistrictFieldProps {
@@ -133,27 +129,7 @@ export function DistrictField({ host, interactive, hoveredIdx, selectedIdx, onHo
             const members = membersByTag[a.tag];
             if (!members || !members.length) return null;
             const cc = polylabel(cell);
-            const D = 40, n = members.length, rowY = -12;
-            return (
-              <g key={a.tag} className="pm" transform={`translate(${cc[0]},${cc[1]})`}>
-                <g className="pm-scale">
-                  {members.map((mem, i) => {
-                    const x = (i - (n - 1) / 2) * D;
-                    const isSelf = mem.id === party!.selfId;
-                    return (
-                      <g key={mem.id} className={"pm-av t-" + (mem.tone || "gold") + (isSelf ? " is-self" : "")} transform={`translate(${x},${rowY})`}>
-                        <circle className="pm-ring" cx={0} cy={0} r={20} />
-                        <circle className="pm-fill" cx={0} cy={0} r={17} />
-                        <text className="pm-initials" x={0} y={1} textAnchor="middle" dominantBaseline="central">
-                          {mem.initials || (mem.name || "?").slice(0, 1)}
-                        </text>
-                        <title>{mem.name + (isSelf ? " (you)" : "")}</title>
-                      </g>
-                    );
-                  })}
-                </g>
-              </g>
-            );
+            return <PartyMarkerCluster key={a.tag} x={cc[0]} y={cc[1]} members={members} selfId={party!.selfId} spacing={40} rowY={-12} />;
           })}
         </g>
       )}

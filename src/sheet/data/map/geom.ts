@@ -276,6 +276,35 @@ export function splitLabel(name: string, force = false): string[] {
   return [words.slice(0, best).join(" "), words.slice(best).join(" ")];
 }
 
+/* ---- fit-to-box transform ----------------------------------------------
+   DistrictField squeezes a host's real polygon (Citadel-shield space for a
+   district, campus space for a region) into a fixed display box so every
+   district/region field renders at the same size regardless of its real
+   footprint. Exposing the transform (not just its forward application)
+   lets a point computed IN that display box — e.g. a zone's label anchor —
+   be projected back into the host's real coordinate space, which is what
+   party-location markers need to show up in the right spot when zoomed
+   out past the field that zone belongs to. */
+export interface BoxTransform { mx: number; my: number; s: number; bx: number; by: number; }
+
+export const DISTRICT_FIELD_BOX = { w: 740, h: 580, bx: 500, by: 380 };
+
+export function fitPointsToBox(pts: Point[], boxW: number, boxH: number, bx: number, by: number): BoxTransform {
+  let minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9;
+  pts.forEach(([x, y]) => { minX = Math.min(minX, x); minY = Math.min(minY, y); maxX = Math.max(maxX, x); maxY = Math.max(maxY, y); });
+  const cw = maxX - minX || 1, ch = maxY - minY || 1;
+  const s = Math.min(boxW / cw, boxH / ch);
+  return { mx: (minX + maxX) / 2, my: (minY + maxY) / 2, s, bx, by };
+}
+
+export function toBoxSpace(p: Point, t: BoxTransform): Point {
+  return [t.bx + (p[0] - t.mx) * t.s, t.by + (p[1] - t.my) * t.s];
+}
+
+export function fromBoxSpace(p: Point, t: BoxTransform): Point {
+  return [t.mx + (p[0] - t.bx) / t.s, t.my + (p[1] - t.by) / t.s];
+}
+
 /* Closed Catmull-Rom spline through `pts`, sampled `per` points per segment —
    turns an angular control polygon into a smooth rounded outline. */
 export function smoothClosed(pts: Point[], per = 14): Point[] {
