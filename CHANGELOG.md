@@ -8,6 +8,29 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.17.0 — 2026-09-27
+- The Map tab's Whereabouts panel is gone, replaced by a pin button docked
+  bottom-right of the map: click it, then click any location on the atlas —
+  a region, a Citadel district, or a nested zone within either — to set that
+  as your position; click empty space or the pin again to cancel. A clear
+  button appears next to the pin once a location is set.
+- Party-location markers now resolve nested Citadel picks correctly at every
+  zoom level (previously a location like Dragon's Walk's La Avenida never
+  rendered a marker anywhere), and a marker at a coarser zoom level now
+  inherits its precise position from wherever it was actually placed —
+  e.g. a pin in South Gate shows up at South Gate's own spot within Dragon's
+  Walk when viewing the Citadel, and at Dragon's Walk's spot within the
+  Citadel shield when viewing the campus — instead of always sitting at that
+  region/district's generic centre. Marker size is now consistent at every
+  zoom level instead of shrinking away from the campus view's size.
+- The map's +/-/fit zoom buttons now ease into their target zoom instead of
+  snapping instantly, and zoom a bit further per click.
+- The campaign clock badge no longer forces its own second bar under the
+  title on the Map tab — it stays inline with the title/search row and
+  simply disappears once the bar is too narrow to fit it, instead of
+  wrapping onto a redundant row (the Map tab hides vitals, so that row had
+  nothing else in it).
+
 ## v1.16.0 — 2026-09-17
 - The character sheet's Map tab no longer embeds the vendored vanilla-JS
   atlas in an iframe: the whole campus map — world tessellation, pan/zoom,
