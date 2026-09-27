@@ -19,12 +19,18 @@ export interface PartyMarkersProps {
 }
 
 export function PartyMarkers({ regions, roster, locations, selfId }: PartyMarkersProps) {
+  // A location may be a bare top-level id ("amber-woods") or a "/"-joined
+  // path into a nested Citadel district/zone ("starfall-citadel/dragon_s_
+  // walk/C"). The world map only shows the top-level regions, so markers
+  // anchor at whichever region the path's first segment names.
   const byRegion = React.useMemo(() => {
     const map: Record<string, MapRosterMember[]> = {};
     roster.forEach((mem) => {
       const loc = locations[mem.id];
-      if (!loc || !regions.find((r) => r.id === loc)) return;
-      (map[loc] = map[loc] || []).push(mem);
+      if (!loc) return;
+      const topId = loc.split("/")[0];
+      if (!regions.find((r) => r.id === topId)) return;
+      (map[topId] = map[topId] || []).push(mem);
     });
     return map;
   }, [roster, locations, regions]);

@@ -11,6 +11,7 @@ import * as React from "react";
 import { Icon } from "../Icon";
 import { CitadelTessellation } from "./CitadelTessellation";
 import { PartyMarkers, type PartyMarkersProps } from "./PartyMarkers";
+import { CitadelPartyMarkers } from "./CitadelPartyMarkers";
 import { WorldTessellation } from "./WorldTessellation";
 import { seedSlug } from "../../data/map/citadelData";
 import type { Region } from "../../data/map/types";
@@ -211,6 +212,7 @@ export function AtlasStage({
               <CitadelTessellation citadel={citadel} hoveredIdx={hoveredDistrict} onHover={setHoveredDistrict} onPick={pickDistrict} />
             )}
             {mode === "world" && party && <PartyMarkers regions={regions} {...party} />}
+            {mode === "citadel" && party && <CitadelPartyMarkers citadel={citadel} {...party} />}
           </svg>
         </div>
       </div>

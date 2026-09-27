@@ -9,7 +9,8 @@
    =========================================================================== */
 import * as React from "react";
 import { polylabel, roundedPath, splitLabel, tilePath, toPts, voronoiCells } from "../../data/map/geom";
-import type { ZoneHost } from "../../data/map/hosts";
+import { pickPrefixForHost, type ZoneHost } from "../../data/map/hosts";
+import type { MapRosterMember } from "./MapPage";
 
 const SUB_MIX = [46, 54, 62, 48, 56, 64];
 const BOX_W = 740, BOX_H = 580, BX = 500, BY = 380;
@@ -31,9 +32,13 @@ export interface DistrictFieldProps {
   onHover: (idx: number | null) => void;
   onPick?: (idx: number) => void;
   onBackgroundClick?: () => void;
+  /** Whereabouts pinned to one of this host's zones show a marker on that
+   *  tile — the same feedback the world/Citadel views give, at whatever
+   *  depth the player is currently browsing. */
+  party?: { roster: MapRosterMember[]; locations: Record<string, string | null | undefined>; selfId: string };
 }
 
-export function DistrictField({ host, interactive, hoveredIdx, selectedIdx, onHover, onPick, onBackgroundClick }: DistrictFieldProps) {
+export function DistrictField({ host, interactive, hoveredIdx, selectedIdx, onHover, onPick, onBackgroundClick, party }: DistrictFieldProps) {
   const norm = React.useMemo(() => (host.cell ? normalizeCellToBox(toPts(host.cell)) : []), [host.cell]);
   const normStr = React.useMemo(() => norm.map((p) => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" "), [norm]);
   const color = host.hcOverride || "var(--gold-500)";
@@ -43,6 +48,19 @@ export function DistrictField({ host, interactive, hoveredIdx, selectedIdx, onHo
     if (!subsOn.length || !norm.length) return [];
     return voronoiCells(subsOn.map((a) => ({ x: a.x, y: a.y, w: a.w })), norm);
   }, [subsOn, norm]);
+
+  const membersByTag = React.useMemo(() => {
+    const map: Record<string, MapRosterMember[]> = {};
+    if (!party) return map;
+    const prefix = pickPrefixForHost(host);
+    party.roster.forEach((mem) => {
+      const loc = party.locations[mem.id];
+      if (!loc || !loc.startsWith(prefix + "/")) return;
+      const tag = loc.slice(prefix.length + 1);
+      (map[tag] = map[tag] || []).push(mem);
+    });
+    return map;
+  }, [party, host]);
 
   if (!norm.length) return null;
 
@@ -107,6 +125,38 @@ export function DistrictField({ host, interactive, hoveredIdx, selectedIdx, onHo
           );
         })}
       </g>
+      {Object.keys(membersByTag).length > 0 && (
+        <g className="party-layer">
+          {subsOn.length > 0 && cells.map((cell, k) => {
+            if (!cell || cell.split(" ").length < 3) return null;
+            const a = subsOn[k];
+            const members = membersByTag[a.tag];
+            if (!members || !members.length) return null;
+            const cc = polylabel(cell);
+            const D = 40, n = members.length, rowY = -12;
+            return (
+              <g key={a.tag} className="pm" transform={`translate(${cc[0]},${cc[1]})`}>
+                <g className="pm-scale">
+                  {members.map((mem, i) => {
+                    const x = (i - (n - 1) / 2) * D;
+                    const isSelf = mem.id === party!.selfId;
+                    return (
+                      <g key={mem.id} className={"pm-av t-" + (mem.tone || "gold") + (isSelf ? " is-self" : "")} transform={`translate(${x},${rowY})`}>
+                        <circle className="pm-ring" cx={0} cy={0} r={20} />
+                        <circle className="pm-fill" cx={0} cy={0} r={17} />
+                        <text className="pm-initials" x={0} y={1} textAnchor="middle" dominantBaseline="central">
+                          {mem.initials || (mem.name || "?").slice(0, 1)}
+                        </text>
+                        <title>{mem.name + (isSelf ? " (you)" : "")}</title>
+                      </g>
+                    );
+                  })}
+                </g>
+              </g>
+            );
+          })}
+        </g>
+      )}
     </svg>
   );
 }

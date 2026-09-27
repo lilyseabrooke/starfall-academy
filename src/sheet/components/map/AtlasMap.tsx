@@ -188,7 +188,7 @@ export function AtlasMap({ roster, activeChar, locations, picking, onPick, onCan
           picking={picking}
           onPick={onPick}
           onCancelPick={onCancelPick}
-          party={nav.view === "world" ? { roster, locations, selfId: activeChar } : null}
+          party={nav.view === "world" || nav.view === "citadel" ? { roster, locations, selfId: activeChar } : null}
         />
       ) : (
         <div className="submap" data-house={host!.house_color}
@@ -212,6 +212,7 @@ export function AtlasMap({ roster, activeChar, locations, picking, onPick, onCan
               onHover={setFieldHoverIdx}
               onPick={pickOrSelectZone}
               onBackgroundClick={backgroundOrCancel}
+              party={{ roster, locations, selfId: activeChar }}
             />
           </div>
         </div>
