@@ -8,6 +8,13 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.20.0 — 2026-09-27
+- Added "Change Join Code" to a campaign's Manage menu on the Characters
+  page. Rolls a fresh join code for the campaign and immediately invalidates
+  the old one; players already seated keep their membership since that's
+  tracked separately from the code. Confirms in a second Manage-modal view
+  before applying.
+
 ## v1.19.3 — 2026-09-26
 - Fixed Sylene's Crystal (the starting stat wand): choosing it in the Admission
   used to permanently bump the chosen Stat's base rank by +2 instead of
