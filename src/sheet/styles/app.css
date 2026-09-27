@@ -161,6 +161,17 @@
    day+time mode — the vitals wrap onto their own line instead of being
    pushed past the edge of the header. */
 .sf-sheet .sf-top__status { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-3) var(--space-5); }
+/* The Map page has no vitals to show, at ANY width — not just once the
+   tablet/mobile breakpoints below kick in, since even a wide-but-not-huge
+   window (sidebar expanded, sf-main under ~1200px) can be too narrow to fit
+   title + clock + vitals + search on one line, wrapping vitals the reader
+   was never going to look at onto a whole redundant second bar. With them
+   gone the clock has no reason to wrap onto its own row either. */
+.sf-sheet .sf-top--hide-vitals .sf-vitals { display: none; }
+.sf-sheet .sf-top--hide-vitals .sf-top__status {
+  flex: 0 0 auto; width: auto; flex-wrap: nowrap;
+  border-top: none; padding-top: 0; margin-top: 0; gap: 0;
+}
 
 /* Campaign clock badge (GM: clickable, opens the Clock modal; player: same
    look, read-only — TimeBadge picks the variant via whether onClick is set). */
@@ -1431,8 +1442,10 @@
   .sf-sheet .sf-vital {
     padding: 6px var(--space-3);
   }
-  /* Hide vitals row on Map page (matches mobile behaviour) */
-  .sf-sheet .sf-top--hide-vitals .sf-vitals { display: none; }
+  /* Map page: vitals stay hidden and the clock stays inline with the title
+     row (see the unconditional .sf-top--hide-vitals rules above) — just
+     needs to sit before the search field in this bracket's row-1 order. */
+  .sf-sheet .sf-top--hide-vitals .sf-top__status { order: 1; }
 }
 
 /* ============================ MOBILE TOP BAR =========================== */
@@ -1501,14 +1514,21 @@
   .sf-sheet .sf-vital__num small { font-size: 11px; }
   .sf-sheet .sf-step { width: 20px; height: 20px; font-size: 13px; }
   .sf-sheet .sf-stars svg { width: 15px; height: 15px; }
-  /* Hide AP/Trouble/Resolve rows on Map page */
-  .sf-sheet .sf-top--hide-vitals .sf-vitals { display: none; }
+  /* Map page: vitals stay hidden and the clock stays inline (see the
+     unconditional .sf-top--hide-vitals rules above); just needs row-1
+     order and to opt back out of this bracket's column stacking. */
+  .sf-sheet .sf-top--hide-vitals .sf-top__status { order: 1; flex-direction: row; }
   /* Hide roll dock on Map page */
   .sf-sheet [data-nav="map"] .sf-dock { display: none; }
   /* Collapse search to icon-only by default; expand on focus */
   .sf-sheet .sf-search { height: var(--control-sm); }
   .sf-sheet .sf-search input { width: 0; }
   .sf-sheet .sf-search:focus-within input { width: 140px; }
+}
+/* Below this, title + clock + search icon no longer fit on one line — drop
+   the clock entirely rather than wrapping it onto a bar of its own. */
+@container sf-top-cq (max-width: 600px) {
+  .sf-sheet .sf-top--hide-vitals .sf-top__status { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .sf-sheet .sf-ladder { animation: none; }
