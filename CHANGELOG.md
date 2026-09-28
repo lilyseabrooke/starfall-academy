@@ -8,6 +8,12 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.21.1 — 2026-09-28
+- The character sheet's side rail now has an "Overview" button (between
+  Compendium and Edit character) that opens the Character Sheet Overview
+  card directly, instead of only being reachable via Edit Character's
+  Identity step.
+
 ## v1.21.0 — 2026-09-27
 - The character sheet's Map tab no longer embeds the vendored vanilla-JS
   atlas in an iframe: the whole campus map — world tessellation, pan/zoom,
