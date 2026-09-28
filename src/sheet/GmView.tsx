@@ -589,7 +589,7 @@ export function GmView({ campaign, party: hostParty, npcs: hostNpcs, notes: host
   return (
     <div className="sf-sheet" style={{ position: "fixed", inset: 0, overflow: "hidden" }}>
     <div className={"sf-app sf-app--gm" + (collapsed ? " sidebar-collapsed" : "")} data-tab={tab}>
-      <Sidebar gm={sidebarGm} onNavigate={() => {}} roster={[]} activeChar="" onPickChar={() => {}} compCount={0} onEditCharacter={() => {}} collapsed={collapsed} onToggleSidebar={() => setCollapsed((v) => !v)} mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
+      <Sidebar gm={sidebarGm} onNavigate={() => {}} roster={[]} activeChar="" onPickChar={() => {}} compCount={0} onOverview={() => {}} onEditCharacter={() => {}} collapsed={collapsed} onToggleSidebar={() => setCollapsed((v) => !v)} mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
 
       <main className="sf-main">
         <header className="sf-top gm-top">
