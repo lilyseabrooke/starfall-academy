@@ -26,11 +26,18 @@ export default async function GMToolsPage({
   // query succeeding.
   const { data: campaign, error } = await supabase
     .from("campaigns")
-    .select("id, name, code, gm_id, npcs, notes")
+    .select("id, name, code, gm_id, npcs")
     .eq("id", id)
     .single();
 
   if (error || !campaign || campaign.gm_id !== user.id) notFound();
+
+  // The journal is not part of the campaign row's readable columns — players
+  // can select that row too, and RLS can't hide a column — so it comes back
+  // through a definer function that checks GM ownership itself. (Players read
+  // the shared subset through shared_campaign_notes; see the migration.)
+  const { data: notes, error: notesError } = await supabase.rpc("gm_campaign_notes", { p_campaign: campaign.id });
+  if (notesError) console.error("GM journal load failed", notesError.message);
 
   // The campaign's player characters (cross-user — RLS lets the GM read members'
   // characters). NPCs (type='npc') are managed in the GM view, not the party board.
@@ -48,7 +55,7 @@ export default async function GMToolsPage({
       campaign={campaign}
       party={party}
       npcs={(campaign.npcs as GmNpc[] | null) ?? []}
-      notes={(campaign.notes as GmNote[] | null) ?? []}
+      notes={(notes as GmNote[] | null) ?? []}
     />
   );
 }

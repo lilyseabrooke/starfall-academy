@@ -20,6 +20,7 @@ import "./styles/rolls.css";
 import "./styles/inventory.css";
 import "./styles/bonus.css";
 import "./styles/map.css";
+import "./styles/journal.css";
 import "./styles/forge.css";
 import "./styles/forge-alloc.css";
 
@@ -35,7 +36,7 @@ import { REGIONS } from "./data/map/regions";
 import type { MapFocusSignal } from "./components/map/MapPage";
 import { useCompendium } from "./data/compendium";
 import { computeCompendiumGrant, computeAttunedArtifactGrant, computeLearningSpellGrant, computePotionSheafGrant, computePotionRecipeGrant, computeWandCraftGrant, artifactBoonMove } from "./data/compendium-grant";
-import type { GmTime } from "./data/gm-seed";
+import type { GmNote, GmTime } from "./data/gm-seed";
 
 import { useClassState } from "./state/useClassState";
 import { useMagicState } from "./state/useMagicState";
@@ -64,6 +65,7 @@ import { InventoryPage } from "./components/inventory/InventoryPage";
 import { ManualModal } from "./components/inventory/ManualModal";
 import { GiveModal, ChoosePlantModal, type GivePayload } from "./components/inventory/Modals";
 import { MapPage } from "./components/map/MapPage";
+import { JournalPage } from "./components/journal/JournalPage";
 import { BonusEditor } from "./components/bonus/BonusEditor";
 import { RollToasts } from "./components/rolls/RollToasts";
 import { RollDock } from "./components/rolls/RollDock";
@@ -78,7 +80,7 @@ import type { RosterMember } from "@/app/(app)/characters/roster";
 import type { RollRosterMember } from "./state/useRollState";
 import type {
   Artifact, Bonus, CharacterVitals, Condition, Glyph, Item, MagicSchool, Move, Plant,
-  Potion, Recipe, Roll, SerializedSheet, Spell, Stat, Tone, Wand, WandEffect,
+  Potion, Recipe, Roll, SerializedSheet, SheetNote, Spell, Stat, Tone, Wand, WandEffect,
 } from "./types";
 
 const clamp = (v: number, min: number, max: number | null) =>
@@ -129,6 +131,9 @@ interface GmPrompt {
   /** For kind:"condition" — which character's conditions changed (this sheet's id, not a GM target). */
   character?: string;
   conds?: Record<string, number>;
+  /** For kind:"journal" — the GM shared a page, edited a shared one, or took one back. */
+  action?: "share" | "unshare" | "update";
+  title?: string;
 }
 
 export interface CharacterSheetProps {
@@ -139,6 +144,12 @@ export interface CharacterSheetProps {
   roster?: RosterMember[];
   me?: string | null;
   campaignId?: string | null;
+  /**
+   * False when the signed-in user is reading somebody else's sheet (RLS lets
+   * party-mates and the GM read each other's). Only the owner's own journal
+   * pages get an editor — everyone else reads them.
+   */
+  ownsSheet?: boolean;
 }
 
 /** A "Map Location" search result's `data` carries the matched region/seed
@@ -164,7 +175,7 @@ function mapFocusFromSearchResult(result: SearchResult): MapFocusSignal | null {
   return null;
 }
 
-export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roster, me, campaignId }: CharacterSheetProps) {
+export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roster, me, campaignId, ownsSheet = true }: CharacterSheetProps) {
   const router = useRouter();
 
   // Whether we have real saved data to hydrate from at first paint (SSR
@@ -251,6 +262,21 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   });
   React.useEffect(() => { try { localStorage.setItem("sf-party-locations", JSON.stringify(locations)); } catch { /* ignore */ } }, [locations]);
   const setLocation = (cid: string, regionId: string | null) => setLocations((prev) => ({ ...prev, [cid]: regionId || null }));
+
+  // ---- The character's own journal pages (Journal tab → "Your notes") ----
+  // Part of the serialized sheet, so they ride the same debounced autosave as
+  // everything else — and anyone who can read this sheet (party-mates, the
+  // GM) reads the notes with it. Only the owner gets the editor; see
+  // `ownsSheet`.
+  const [notes, setNotes] = React.useState<SheetNote[]>(() => (hasSheet ? (initialSheet!.notes ?? []).map((n) => ({ ...n })) : []));
+  const createNote = () => {
+    const label = new Date().toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+    const note: SheetNote = { id: "p_" + Math.random().toString(36).slice(2, 9), title: "Note · " + label, tags: "", body: "" };
+    setNotes((prev) => [...prev, note]);
+    return note.id;
+  };
+  const patchNote = (nid: string, patch: Partial<SheetNote>) => setNotes((prev) => prev.map((n) => (n.id === nid ? { ...n, ...patch } : n)));
+  const deleteNote = (nid: string) => { setNotes((prev) => prev.filter((n) => n.id !== nid)); toast("Note torn out of your journal."); };
 
   // ---- Compendium / manual-add UI ----
   const [compCat, setCompCat] = React.useState("spell");
@@ -493,6 +519,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
         runeStack: syncField(runeStack, base?.inventory?.runeStack, serverSheet.inventory?.runeStack ?? [], (v) => setRuneStack(v.map((x) => ({ ...x })))),
       },
       locations: syncField(locations, base?.locations, serverSheet.locations, (v) => setLocations((prev) => ({ ...prev, ...(v as Record<string, string | null>) }))),
+      notes: syncField(notes, base?.notes, serverSheet.notes ?? [], (v) => setNotes(v.map((n) => ({ ...n })))),
     };
     syncedSheetRef.current = merged;
     return merged;
@@ -513,6 +540,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     magic: { bonuses, spells, moves },
     inventory: { artifacts, potions, recipes, plants, wands, glyphs, items, runeStack },
     locations,
+    notes,
   });
   const applySheet = (s: SerializedSheet | null | undefined) => {
     if (!s || typeof s !== "object") return;
@@ -538,6 +566,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       if (i.runeStack) setRuneStack(i.runeStack.map((x) => ({ ...x })));
     }
     if (s.locations && typeof s.locations === "object") setLocations((prev) => ({ ...prev, ...(s.locations as Record<string, string | null>) }));
+    if (s.notes) setNotes(s.notes.map((n) => ({ ...n })));
   };
 
   const hydratedRef = React.useRef(false);
@@ -555,7 +584,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     persistence.save(serializeSheet());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [c, conditions, stats, schools, rp, classState, bonuses, spells, moves,
-    artifacts, potions, recipes, plants, wands, glyphs, items, runeStack, locations]);
+    artifacts, potions, recipes, plants, wands, glyphs, items, runeStack, locations, notes]);
 
   /* ---- Shared roll sync + GM prompts ------------------------------------ */
   const forcedResistRef = React.useRef<{ conditionId: string } | null>(null);
@@ -573,6 +602,24 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     });
     return () => { cancelled = true; };
   }, [campaignId]);
+  // The campaign journal — the pages the GM marked "share with players".
+  // Read-only here, and fetched through shared_campaign_notes() rather than
+  // the campaign row: the GM's unshared pages never reach this client.
+  const [journal, setJournal] = React.useState<GmNote[]>([]);
+  // A failed load has to say so: "no shared pages" and "couldn't reach the
+  // shared pages" look identical otherwise, and the second one is a bug
+  // somebody needs to see (it's how a missing migration presented once).
+  const [journalError, setJournalError] = React.useState<string | null>(null);
+  const loadJournal = React.useCallback(() => {
+    if (!campaignId) return;
+    createClient().rpc("shared_campaign_notes", { p_campaign: campaignId }).then(({ data, error }) => {
+      if (error) { console.error("Journal load failed", error.message); setJournalError(error.message); return; }
+      setJournalError(null);
+      setJournal((data as GmNote[] | null) ?? []);
+    });
+  }, [campaignId]);
+  React.useEffect(() => { loadJournal(); }, [loadJournal]);
+
   React.useEffect(() => { insightModRef.current = effFacRank("Insight"); });
 
   // `onPrompt`'s identity must stay stable across renders (it's a dependency
@@ -592,6 +639,12 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       if (prompt.kind === "time") {
         // Campaign-wide — no target, everyone at the table sees the same clock.
         setGmTime({ day: prompt.day ?? 0, block: prompt.block ?? 0, enabled: !!prompt.enabled });
+        return;
+      }
+      if (prompt.kind === "journal") {
+        // Campaign-wide, like the clock: everyone's Journal tab refreshes.
+        loadJournal();
+        if (prompt.action === "share") toast("The Game Master shared a journal entry" + (prompt.title ? ": " + prompt.title : "") + ".");
         return;
       }
       if (prompt.target !== me) return;
@@ -1179,7 +1232,14 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   const openDrawer = () => setDrawer(true);
   const openCompendiumTo = (cat: string) => { setCompCat(cat); setDrawer(true); };
   const closeDrawer = () => setDrawer(false);
-  const onNavigate = (navId: string) => { if (navId === "compendium") openDrawer(); else setNav(navId); };
+  const onNavigate = (navId: string) => {
+    if (navId === "compendium") { openDrawer(); return; }
+    // Opening the Journal re-reads the shared pages: a broadcast only reaches
+    // sheets that were open when the GM shared, and this also retries a load
+    // that failed at mount.
+    if (navId === "journal") loadJournal();
+    setNav(navId);
+  };
   // eslint-disable-next-line react-hooks/set-state-in-effect
   React.useEffect(() => { if (mode === "create") openForgeNew(); }, [mode]);
 
@@ -1384,7 +1444,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     });
   };
 
-  const titleMap: Record<string, string> = { overview: "Overview", classes: "Classes", magic: "Magic", inventory: "Inventory", map: "Map" };
+  const titleMap: Record<string, string> = { overview: "Overview", classes: "Classes", magic: "Magic", inventory: "Inventory", journal: "Journal", map: "Map" };
   const plantSum = plants.reduce((s, p) => s + (p.value || 0), 0);
 
   return (
@@ -1459,6 +1519,21 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
             materials={c.materials} caps={caps}
             artifacts={artifacts} potions={potions} recipes={recipes} plants={plants} wands={wands} glyphs={glyphs} items={items}
             runeStack={runeStack} h={invH} />
+        )}
+
+        {nav === "journal" && (
+          <JournalPage
+            shared={campaignId ? journal : []}
+            sharedError={campaignId ? journalError : null}
+            onReloadShared={loadJournal}
+            notes={notes}
+            ownsSheet={ownsSheet}
+            ownerName={c.name || "This arcanist"}
+            campaignId={campaignId ?? null}
+            onCreate={createNote}
+            onPatch={patchNote}
+            onDelete={deleteNote}
+          />
         )}
 
         {nav === "map" && (

@@ -53,6 +53,10 @@ export interface GmNote {
   title: string;
   tags: string;
   body: string;
+  /** Marked by the GM to show in the players' read-only Journal tab. */
+  shared?: boolean;
+  /** ISO timestamp of the moment it was last shared (unset while private). */
+  sharedAt?: string;
 }
 
 export interface GmTime {

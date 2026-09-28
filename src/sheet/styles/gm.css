@@ -149,6 +149,12 @@
 .sf-sheet .gm-notes__titlebar { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--hairline); }
 .sf-sheet .gm-notes__titlebar svg { width: 18px; height: 18px; color: var(--gold-400); flex: none; }
 .sf-sheet .gm-notes__titlebar input { flex: 1; background: none; border: none; outline: none; font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; font-size: 18px; color: var(--text-strong); }
+.sf-sheet .gm-tag--shared { display: inline-flex; align-items: center; gap: 3px; background: color-mix(in oklab, var(--teal-500) 12%, transparent); border-color: color-mix(in oklab, var(--teal-500) 34%, transparent); color: var(--teal-200); }
+.sf-sheet .gm-tag--shared svg { width: 9px; height: 9px; }
+.sf-sheet .gm-notes__share { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: var(--radius-pill); background: var(--ink-800); border: 1px solid var(--border-subtle); color: var(--text-muted); font-family: var(--font-sans); font-size: 11px; letter-spacing: .02em; cursor: pointer; transition: border-color var(--dur-fast), color var(--dur-fast), background var(--dur-fast); }
+.sf-sheet .gm-notes__share:hover { border-color: var(--border-strong); color: var(--text-strong); }
+.sf-sheet .gm-notes__share.is-on { background: color-mix(in oklab, var(--teal-500) 12%, transparent); border-color: color-mix(in oklab, var(--teal-500) 40%, transparent); color: var(--teal-200); }
+.sf-sheet .gm-notes__share svg { width: 13px; height: 13px; }
 .sf-sheet .gm-notes__tagbar { display: flex; align-items: center; gap: 7px; padding: 7px 18px; border-bottom: 1px solid var(--hairline); }
 .sf-sheet .gm-notes__tagbar svg { width: 13px; height: 13px; color: var(--text-faint); flex: none; }
 .sf-sheet .gm-notes__tagbar input { flex: 1; background: none; border: none; outline: none; font-family: var(--font-sans); font-size: 12px; color: var(--text-muted); letter-spacing: .02em; }

@@ -78,7 +78,7 @@ export interface Persistence {
 // and already skips the common case: an HP/AP/condition tweak touches only
 // `c`/`conditions`, not the far larger magic/inventory blobs.
 const SHEET_KEYS = [
-  "c", "conditions", "stats", "schools", "classes", "magic", "inventory", "locations",
+  "c", "conditions", "stats", "schools", "classes", "magic", "inventory", "locations", "notes",
 ] as const;
 
 function diffSheet(next: SerializedSheet, base: SerializedSheet | null): Partial<SerializedSheet> {
