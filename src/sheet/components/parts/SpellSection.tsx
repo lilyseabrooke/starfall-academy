@@ -140,6 +140,7 @@ export function SpellSection({
       const am = subjectModFor ? subjectModFor(a.subjectKey) : 0;
       const bm = subjectModFor ? subjectModFor(b.subjectKey) : 0;
       let r = bm - am;
+      if (r === 0) r = String(a.subject || "").toLowerCase().localeCompare(String(b.subject || "").toLowerCase());
       if (r === 0) r = spellLevelRank(a.level) - spellLevelRank(b.level);
       if (r === 0) {
         const ad = a.dc == null ? Infinity : a.dc;

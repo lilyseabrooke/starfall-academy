@@ -8,6 +8,12 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.21.2 — 2026-09-28
+- Fixed the spell list's Auto sort: subjects tied on bonus (e.g. equal
+  Chronomancy and Divination ranks) were interleaved by level/DC instead of
+  staying grouped. Tied subjects now group together, in alphabetical order,
+  before falling back to level/DC/name within each group.
+
 ## v1.21.1 — 2026-09-28
 - The character sheet's side rail now has an "Overview" button (between
   Compendium and Edit character) that opens the Character Sheet Overview
