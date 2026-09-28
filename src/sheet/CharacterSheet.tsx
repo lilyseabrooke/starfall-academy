@@ -579,10 +579,15 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   // Read-only here, and fetched through shared_campaign_notes() rather than
   // the campaign row: the GM's unshared pages never reach this client.
   const [journal, setJournal] = React.useState<GmNote[]>([]);
+  // A failed load has to say so: "no shared pages" and "couldn't reach the
+  // shared pages" look identical otherwise, and the second one is a bug
+  // somebody needs to see (it's how a missing migration presented once).
+  const [journalError, setJournalError] = React.useState<string | null>(null);
   const loadJournal = React.useCallback(() => {
     if (!campaignId) return;
     createClient().rpc("shared_campaign_notes", { p_campaign: campaignId }).then(({ data, error }) => {
-      if (error) { console.error("Journal load failed", error.message); return; }
+      if (error) { console.error("Journal load failed", error.message); setJournalError(error.message); return; }
+      setJournalError(null);
       setJournal((data as GmNote[] | null) ?? []);
     });
   }, [campaignId]);
@@ -1185,7 +1190,14 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   const openDrawer = () => setDrawer(true);
   const openCompendiumTo = (cat: string) => { setCompCat(cat); setDrawer(true); };
   const closeDrawer = () => setDrawer(false);
-  const onNavigate = (navId: string) => { if (navId === "compendium") openDrawer(); else setNav(navId); };
+  const onNavigate = (navId: string) => {
+    if (navId === "compendium") { openDrawer(); return; }
+    // Opening the Journal re-reads the shared pages: a broadcast only reaches
+    // sheets that were open when the GM shared, and this also retries a load
+    // that failed at mount.
+    if (navId === "journal") loadJournal();
+    setNav(navId);
+  };
   // eslint-disable-next-line react-hooks/set-state-in-effect
   React.useEffect(() => { if (mode === "create") openForgeNew(); }, [mode]);
 
@@ -1466,6 +1478,8 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
         {nav === "journal" && (
           <JournalPage
             shared={campaignId ? journal : []}
+            sharedError={campaignId ? journalError : null}
+            onReloadShared={loadJournal}
             notes={notes}
             ownsSheet={ownsSheet}
             ownerName={c.name || "This arcanist"}

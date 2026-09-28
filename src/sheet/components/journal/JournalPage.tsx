@@ -27,6 +27,10 @@ const matchesTag = (note: { tags?: string }, tf: string) => !tf || tagsOf(note).
 export interface JournalPageProps {
   /** Pages the GM shared with the whole table. */
   shared: GmNote[];
+  /** Why the shared pages couldn't be read, if they couldn't. */
+  sharedError?: string | null;
+  /** Re-read the shared pages (the retry behind the error state). */
+  onReloadShared?: () => void;
   /** The sheet owner's own pages. */
   notes: SheetNote[];
   /** False when this is somebody else's sheet — their notes are read-only. */
@@ -40,7 +44,7 @@ export interface JournalPageProps {
   onDelete: (id: string) => void;
 }
 
-export function JournalPage({ shared, notes, ownsSheet, ownerName, campaignId, onCreate, onPatch, onDelete }: JournalPageProps) {
+export function JournalPage({ shared, sharedError, onReloadShared, notes, ownsSheet, ownerName, campaignId, onCreate, onPatch, onDelete }: JournalPageProps) {
   const [sel, setSel] = React.useState<Selection | null>(null);
   const [tagFilter, setTagFilter] = React.useState("");
   const [confirmId, setConfirmId] = React.useState<string | null>(null);
@@ -109,7 +113,12 @@ export function JournalPage({ shared, notes, ownsSheet, ownerName, campaignId, o
           </div>
           <div className="sf-journal__items">
             {gmFiltered.map((n) => pageButton("gm", n))}
-            {gmFiltered.length === 0 && (
+            {sharedError ? (
+              <div className="sf-journal__sectionempty sf-journal__sectionempty--error">
+                <span>The shared pages couldn’t be loaded.</span>
+                {onReloadShared && <button className="sf-journal__btn" onClick={onReloadShared}><Icon name="refresh-cw" />Try again</button>}
+              </div>
+            ) : gmFiltered.length === 0 && (
               <div className="sf-journal__sectionempty">{shared.length ? "No shared page carries that tag." : "Nothing shared yet."}</div>
             )}
           </div>

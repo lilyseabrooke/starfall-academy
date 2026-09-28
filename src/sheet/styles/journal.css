@@ -41,6 +41,11 @@
   padding: 8px 10px; font-family: var(--font-sans); font-size: 11px; line-height: 1.5;
   color: var(--text-faint); border: 1px dashed var(--border-subtle); border-radius: 6px;
 }
+.sf-sheet .sf-journal__sectionempty--error {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 7px;
+  color: var(--crimson-200); border-color: color-mix(in oklab, var(--crimson-500) 32%, transparent);
+}
+.sf-sheet .sf-journal__sectionempty--error .sf-journal__btn { flex: none; }
 .sf-sheet .sf-journal__filter {
   display: flex; align-items: center; gap: 7px; padding: 6px 9px;
   border-radius: 5px; background: var(--ink-800); border: 1px solid var(--border-subtle);
