@@ -186,9 +186,11 @@ function levelRank(v){
   const first = v.toString().trim().toUpperCase().split(/\s+/)[0];
   return LEVEL_ORDER[first] != null ? LEVEL_ORDER[first] : 50;
 }
-/* IDs look like "spell_144" — sort by the numeric part, not lexically. */
+/* IDs look like "spell_429y5rA0DfUG2" — a prefix, then a leading row number,
+   then a random suffix. Sort by that leading number, not lexically (and not
+   by trailing digits, which just land on a random character of the suffix). */
 function idNumRank(v){
-  const m = (v || "").toString().match(/(\d+)\s*$/);
+  const m = (v || "").toString().match(/(\d+)/);
   return m ? parseInt(m[1], 10) : Infinity;
 }
 

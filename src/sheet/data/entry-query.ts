@@ -17,9 +17,11 @@ export const compLevelRank = (v: string | null | undefined) => {
   return COMP_LEVEL_ORDER[f] != null ? COMP_LEVEL_ORDER[f] : 50;
 };
 
-/** IDs look like "spell_144" — sort by the numeric part, not lexically. */
+/** IDs look like "spell_429y5rA0DfUG2" — a prefix, then a leading row number,
+   then a random suffix. Sort by that leading number, not lexically (and not
+   by trailing digits, which just land on a random character of the suffix). */
 export const idNumRank = (v: string | null | undefined) => {
-  const m = String(v || "").match(/(\d+)\s*$/);
+  const m = String(v || "").match(/(\d+)/);
   return m ? parseInt(m[1], 10) : Infinity;
 };
 
