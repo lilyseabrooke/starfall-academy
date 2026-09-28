@@ -8,6 +8,12 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.21.3 — 2026-09-28
+- A forced Resist from a spell backfire or a failed attunement no longer
+  defaults to Wound: the condition starts unselected ("Select condition…")
+  and the roll button stays disabled until you actually pick one.
+- Updated the spell backfire modal's success/failure taglines.
+
 ## v1.21.2 — 2026-09-28
 - Fixed the spell list's Auto sort: subjects tied on bonus (e.g. equal
   Chronomancy and Divination ranks) were interleaved by level/DC instead of
