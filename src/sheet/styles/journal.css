@@ -38,12 +38,13 @@
 .sf-sheet .sf-journal__new:hover { border-color: var(--gold-500); color: var(--gold-200); }
 .sf-sheet .sf-journal__new svg { width: 15px; height: 15px; }
 .sf-sheet .sf-journal__sectionempty {
-  padding: 8px 10px; font-family: var(--font-sans); font-size: 11px; line-height: 1.5;
-  color: var(--text-faint); border: 1px dashed var(--border-subtle); border-radius: 6px;
+  padding: 2px 2px 4px; font-family: var(--font-sans); font-size: 11px; line-height: 1.5;
+  color: var(--text-faint);
 }
 .sf-sheet .sf-journal__sectionempty--error {
   display: flex; flex-direction: column; align-items: flex-start; gap: 7px;
-  color: var(--crimson-200); border-color: color-mix(in oklab, var(--crimson-500) 32%, transparent);
+  padding: 8px 10px; color: var(--crimson-200);
+  border: 1px dashed color-mix(in oklab, var(--crimson-500) 32%, transparent); border-radius: 6px;
 }
 .sf-sheet .sf-journal__sectionempty--error .sf-journal__btn { flex: none; }
 .sf-sheet .sf-journal__filter {

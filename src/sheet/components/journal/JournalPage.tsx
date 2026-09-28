@@ -60,9 +60,6 @@ export function JournalPage({ shared, sharedError, onReloadShared, notes, ownsSh
     (sel?.section === "mine" && notes.find((n) => n.id === sel.id) && { section: "mine" as const, note: notes.find((n) => n.id === sel.id)! }) ||
     (shared[0] ? { section: "gm" as const, note: shared[0] } : notes[0] ? { section: "mine" as const, note: notes[0] } : null);
 
-  const minePlaceholder = ownsSheet
-    ? "Pages you write are yours to keep — your party can read them on your sheet."
-    : ownerName + " hasn't written any notes yet.";
   const emptyMessage = !ownsSheet
     ? "Nothing to read on this sheet yet."
     : campaignId
@@ -135,8 +132,8 @@ export function JournalPage({ shared, sharedError, onReloadShared, notes, ownsSh
           )}
           <div className="sf-journal__items">
             {mineFiltered.map((n) => pageButton("mine", n))}
-            {mineFiltered.length === 0 && (
-              <div className="sf-journal__sectionempty">{notes.length ? "No note carries that tag." : minePlaceholder}</div>
+            {mineFiltered.length === 0 && (notes.length > 0 || !ownsSheet) && (
+              <div className="sf-journal__sectionempty">{notes.length ? "No note carries that tag." : "No notes yet."}</div>
             )}
           </div>
         </div>
