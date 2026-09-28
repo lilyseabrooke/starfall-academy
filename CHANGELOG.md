@@ -8,6 +8,26 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.22.0 — 2026-09-28
+- The character sheet has a new **Journal** tab (between Inventory and Map)
+  with two sections. "Shared by the Game Master" holds the pages the GM
+  marked to show the table, read-only; "Your notes" is the character's own
+  journal — new page, title, tags, body, delete — the same writing surface
+  as the GM's Notes tab, minus anything about sharing. A player's notes live
+  on their sheet, so a party-mate or the GM reads them by opening that
+  sheet; only the owner gets the editor.
+- The GM's Notes tab gained a "Share with players" toggle per page, and a
+  Shared chip on shared pages in the list. Sharing broadcasts on the
+  campaign channel: every sheet at the table toasts and refreshes on the
+  spot. Editing a shared page re-broadcasts silently, and un-sharing drops
+  it from open Journals rather than leaving a stale copy.
+- `campaigns.notes` is no longer readable by the whole table. Every campaign
+  member can select the campaign row and RLS can't hide a column, so the
+  GM's private prep was readable from any player's browser. The column now
+  comes off the `authenticated` grant list, and both sides read the journal
+  through definer functions — `gm_campaign_notes()` for the GM's own pages,
+  `shared_campaign_notes()` for the members' shared subset.
+
 ## v1.21.3 — 2026-09-28
 - A forced Resist from a spell backfire or a failed attunement no longer
   defaults to Wound: the condition starts unselected ("Select condition…")
