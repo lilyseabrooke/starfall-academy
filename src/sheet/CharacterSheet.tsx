@@ -76,7 +76,7 @@ import type { RosterMember } from "@/app/(app)/characters/roster";
 import type { RollRosterMember } from "./state/useRollState";
 import type {
   Artifact, Bonus, CharacterVitals, Condition, Glyph, Item, MagicSchool, Move, Plant,
-  Potion, Recipe, Roll, SerializedSheet, Spell, Stat, Tone, Wand, WandEffect,
+  Potion, Recipe, Roll, SerializedSheet, SheetNote, Spell, Stat, Tone, Wand, WandEffect,
 } from "./types";
 
 const clamp = (v: number, min: number, max: number | null) =>
@@ -140,9 +140,15 @@ export interface CharacterSheetProps {
   roster?: RosterMember[];
   me?: string | null;
   campaignId?: string | null;
+  /**
+   * False when the signed-in user is reading somebody else's sheet (RLS lets
+   * party-mates and the GM read each other's). Only the owner's own journal
+   * pages get an editor — everyone else reads them.
+   */
+  ownsSheet?: boolean;
 }
 
-export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roster, me, campaignId }: CharacterSheetProps) {
+export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roster, me, campaignId, ownsSheet = true }: CharacterSheetProps) {
   const router = useRouter();
 
   // Whether we have real saved data to hydrate from at first paint (SSR
@@ -229,6 +235,21 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   });
   React.useEffect(() => { try { localStorage.setItem("sf-party-locations", JSON.stringify(locations)); } catch { /* ignore */ } }, [locations]);
   const setLocation = (cid: string, regionId: string | null) => setLocations((prev) => ({ ...prev, [cid]: regionId || null }));
+
+  // ---- The character's own journal pages (Journal tab → "Your notes") ----
+  // Part of the serialized sheet, so they ride the same debounced autosave as
+  // everything else — and anyone who can read this sheet (party-mates, the
+  // GM) reads the notes with it. Only the owner gets the editor; see
+  // `ownsSheet`.
+  const [notes, setNotes] = React.useState<SheetNote[]>(() => (hasSheet ? (initialSheet!.notes ?? []).map((n) => ({ ...n })) : []));
+  const createNote = () => {
+    const label = new Date().toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+    const note: SheetNote = { id: "p_" + Math.random().toString(36).slice(2, 9), title: "Note · " + label, tags: "", body: "" };
+    setNotes((prev) => [...prev, note]);
+    return note.id;
+  };
+  const patchNote = (nid: string, patch: Partial<SheetNote>) => setNotes((prev) => prev.map((n) => (n.id === nid ? { ...n, ...patch } : n)));
+  const deleteNote = (nid: string) => { setNotes((prev) => prev.filter((n) => n.id !== nid)); toast("Note torn out of your journal."); };
 
   // ---- Compendium / manual-add UI ----
   const [compCat, setCompCat] = React.useState("spell");
@@ -471,6 +492,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
         runeStack: syncField(runeStack, base?.inventory?.runeStack, serverSheet.inventory?.runeStack ?? [], (v) => setRuneStack(v.map((x) => ({ ...x })))),
       },
       locations: syncField(locations, base?.locations, serverSheet.locations, (v) => setLocations((prev) => ({ ...prev, ...(v as Record<string, string | null>) }))),
+      notes: syncField(notes, base?.notes, serverSheet.notes ?? [], (v) => setNotes(v.map((n) => ({ ...n })))),
     };
     syncedSheetRef.current = merged;
     return merged;
@@ -491,6 +513,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     magic: { bonuses, spells, moves },
     inventory: { artifacts, potions, recipes, plants, wands, glyphs, items, runeStack },
     locations,
+    notes,
   });
   const applySheet = (s: SerializedSheet | null | undefined) => {
     if (!s || typeof s !== "object") return;
@@ -516,6 +539,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       if (i.runeStack) setRuneStack(i.runeStack.map((x) => ({ ...x })));
     }
     if (s.locations && typeof s.locations === "object") setLocations((prev) => ({ ...prev, ...(s.locations as Record<string, string | null>) }));
+    if (s.notes) setNotes(s.notes.map((n) => ({ ...n })));
   };
 
   const hydratedRef = React.useRef(false);
@@ -533,7 +557,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     persistence.save(serializeSheet());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [c, conditions, stats, schools, rp, classState, bonuses, spells, moves,
-    artifacts, potions, recipes, plants, wands, glyphs, items, runeStack, locations]);
+    artifacts, potions, recipes, plants, wands, glyphs, items, runeStack, locations, notes]);
 
   /* ---- Shared roll sync + GM prompts ------------------------------------ */
   const forcedResistRef = React.useRef<{ conditionId: string } | null>(null);
@@ -1440,7 +1464,16 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
         )}
 
         {nav === "journal" && (
-          <JournalPage entries={campaignId ? journal : []} campaignId={campaignId ?? null} />
+          <JournalPage
+            shared={campaignId ? journal : []}
+            notes={notes}
+            ownsSheet={ownsSheet}
+            ownerName={c.name || "This arcanist"}
+            campaignId={campaignId ?? null}
+            onCreate={createNote}
+            onPatch={patchNote}
+            onDelete={deleteNote}
+          />
         )}
 
         {nav === "map" && (

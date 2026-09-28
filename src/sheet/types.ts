@@ -477,6 +477,20 @@ export interface CompendiumEntry {
   tags?: string[];
 }
 
+/* ------------------------------------------------------------- journal -- */
+
+/** A page in the character's own journal (Journal tab → "Your notes").
+ *  Same shape as the GM's journal pages (GmNote), deliberately: the two
+ *  sections of the Journal tab render from one component. Lives on the sheet,
+ *  so anyone who can read the sheet — party-mates, the GM — reads the notes
+ *  with it, and only the owner writes them. */
+export interface SheetNote {
+  id: string;
+  title: string;
+  tags: string;
+  body: string;
+}
+
 /* ----------------------------------------------------- the durable sheet -- */
 
 /** The serialized character — the durable contract persisted to
@@ -500,4 +514,7 @@ export interface SerializedSheet {
   inventory: InventoryState;
   /** Party map locations, keyed by character id. */
   locations: Record<string, unknown>;
+  /** The character's own journal pages. Absent on sheets saved before the
+   *  Journal tab shipped — read it as an empty journal. */
+  notes?: SheetNote[];
 }

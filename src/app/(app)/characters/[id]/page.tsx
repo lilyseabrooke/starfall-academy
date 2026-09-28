@@ -21,7 +21,7 @@ export default async function CharacterSheetPage({
   // campaign it's in (party-wide read access); writes stay owner/GM-scoped.
   const { data: character, error } = await supabase
     .from("characters")
-    .select("id, name, sheet, campaign_code, campaign_id, updated_at")
+    .select("id, name, sheet, campaign_code, campaign_id, owner_id, updated_at")
     .eq("id", id)
     .single();
 
@@ -66,6 +66,7 @@ export default async function CharacterSheetPage({
       roster={roster}
       me={character.id}
       campaignId={campaignId}
+      ownsSheet={character.owner_id === user.id}
     />
   );
 }
