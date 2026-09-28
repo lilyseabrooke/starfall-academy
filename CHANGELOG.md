@@ -8,6 +8,18 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.22.1 — 2026-09-28
+- Fixed Sort by ID in the Compendium (drawer and standalone page both): it
+  matched digits at the *end* of each ID rather than the row number right
+  after the prefix, so any ID with extra trailing characters sorted into a
+  near-arbitrary position instead of numeric order.
+- Regenerated the Compendium's offline/seed data from the live sheet. The
+  bundled snapshot had gone stale — from before the sheet's current
+  `spell_144`-style IDs — so a category whose live fetch failed would
+  silently fall back to entries with old, differently-ordered IDs, which is
+  what made Sort by ID look broken in the sheet's Compendium drawer but not
+  the standalone Compendium page.
+
 ## v1.22.0 — 2026-09-28
 - The character sheet has a new **Journal** tab (between Inventory and Map)
   with two sections. "Shared by the Game Master" holds the pages the GM
