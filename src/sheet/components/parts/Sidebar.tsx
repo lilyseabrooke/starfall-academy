@@ -47,6 +47,7 @@ export interface SidebarProps {
   activeChar: string;
   onPickChar: (id: string) => void;
   compCount: number;
+  onOverview: () => void;
   onEditCharacter: () => void;
   collapsed?: boolean;
   onToggleSidebar: () => void;
@@ -66,7 +67,7 @@ const NAV = [
 
 export function Sidebar({
   active, onNavigate, roster, activeChar, onPickChar, compCount,
-  onEditCharacter, collapsed, onToggleSidebar, mobileOpen, onMobileClose, gm,
+  onOverview, onEditCharacter, collapsed, onToggleSidebar, mobileOpen, onMobileClose, gm,
 }: SidebarProps) {
   const router = useRouter();
   const goBack = () => router.push(consumeReturnTarget() || "/characters");
@@ -163,6 +164,9 @@ export function Sidebar({
         <button className="sf-nav__item" onClick={() => { onNavigate("compendium"); if (onMobileClose) onMobileClose(); }} title={collapsed ? "Compendium" : undefined}>
           <Icon name="library-big" /><span className="sf-side__label">Compendium</span>
           <span className="sf-nav__count">{compCount}</span>
+        </button>
+        <button className="sf-nav__item" onClick={() => { onOverview(); if (onMobileClose) onMobileClose(); }} title={collapsed ? "Overview" : undefined}>
+          <Icon name="scroll" /><span className="sf-side__label">Overview</span>
         </button>
         <button className="sf-nav__item" onClick={onEditCharacter} title={collapsed ? "Edit character" : undefined}>
           <Icon name="pencil-line" /><span className="sf-side__label">Edit character</span>

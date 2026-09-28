@@ -6,13 +6,13 @@
   const TreeCanvas = window.SFT_TreeCanvas;
   const { TopBar, Legend, ZoomControls, DetailModal, FamilyModal } = window.SFT_UI;
 
-  const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
-    "lineStyle": "curved",
-    "density": "cosy",
-    "canvasBg": "watermark",
-    "watermark": 50,
-    "nodeStyle": "medallion"
-  }/*EDITMODE-END*/;
+  const DISPLAY_DEFAULTS = {
+    lineStyle: "curved",
+    density: "cosy",
+    canvasBg: "watermark",
+    watermark: 50,
+    nodeStyle: "medallion"
+  };
 
   const DENSITY = {
     compact: { pxPerYear: 9.5, colGap: 128 },
@@ -21,7 +21,7 @@
   };
 
   function App() {
-    const [t, setTweak] = window.useTweaks(TWEAK_DEFAULTS);
+    const t = DISPLAY_DEFAULTS;
     const data = window.SFT_DATA;
     const L = useMemo(() => window.SFT_LAYOUT.compute(data, DENSITY[t.density] || DENSITY.cosy), [data, t.density]);
 
@@ -89,32 +89,7 @@
         React.createElement(ZoomControls, { onZoom, onFit })),
 
       modalId && React.createElement(DetailModal, { L, id: modalId, onClose: () => setModalId(null), onJump: jumpTo, onFamily: openFamily, present: L.presentYear }),
-      familyId && React.createElement(FamilyModal, { L, id: familyId, onClose: () => setFamilyId(null), onJump: jumpTo }),
-
-      React.createElement(window.TweaksPanel, null,
-        React.createElement(window.TweakSection, { label: "Connections" }),
-        React.createElement(window.TweakRadio, {
-          label: "Line style", value: t.lineStyle, options: ["curved", "orthogonal", "ribbon"],
-          onChange: (v) => setTweak("lineStyle", v)
-        }),
-        React.createElement(window.TweakSection, { label: "Canvas" }),
-        React.createElement(window.TweakRadio, {
-          label: "Density", value: t.density, options: ["compact", "cosy", "airy"],
-          onChange: (v) => setTweak("density", v)
-        }),
-        React.createElement(window.TweakRadio, {
-          label: "Backdrop", value: t.canvasBg, options: ["midnight", "watermark", "constellation"],
-          onChange: (v) => setTweak("canvasBg", v)
-        }),
-        React.createElement(window.TweakSlider, {
-          label: "Watermark", value: t.watermark, min: 0, max: 100, step: 5, unit: "%",
-          onChange: (v) => setTweak("watermark", v)
-        }),
-        React.createElement(window.TweakSection, { label: "Nodes" }),
-        React.createElement(window.TweakRadio, {
-          label: "Portrait shape", value: t.nodeStyle, options: ["medallion", "plate"],
-          onChange: (v) => setTweak("nodeStyle", v)
-        })));
+      familyId && React.createElement(FamilyModal, { L, id: familyId, onClose: () => setFamilyId(null), onJump: jumpTo }));
   }
 
   window.SFT_DATA_READY

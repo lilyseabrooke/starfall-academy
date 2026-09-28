@@ -611,7 +611,7 @@ export function GmView({ campaign, party: hostParty, npcs: hostNpcs, notes: host
   return (
     <div className="sf-sheet" style={{ position: "fixed", inset: 0, overflow: "hidden" }}>
     <div className={"sf-app sf-app--gm" + (collapsed ? " sidebar-collapsed" : "")} data-tab={tab}>
-      <Sidebar gm={sidebarGm} onNavigate={() => {}} roster={[]} activeChar="" onPickChar={() => {}} compCount={0} onEditCharacter={() => {}} collapsed={collapsed} onToggleSidebar={() => setCollapsed((v) => !v)} mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
+      <Sidebar gm={sidebarGm} onNavigate={() => {}} roster={[]} activeChar="" onPickChar={() => {}} compCount={0} onOverview={() => {}} onEditCharacter={() => {}} collapsed={collapsed} onToggleSidebar={() => setCollapsed((v) => !v)} mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
 
       <main className="sf-main">
         <header className="sf-top gm-top">
@@ -1094,8 +1094,8 @@ function AddNpcModal({ addNpc, onPatch, onConfirm, onDelete, onClose }: { addNpc
           </div>
           <div className="gm-npc-form__row3">
             <div className="gm-statbox"><span className="gm-field-label">Resolve</span><NpcStepper value={addNpc.resolve} onChange={(v) => onPatch({ resolve: v })} min={1} max={15} /></div>
-            <div className="gm-statbox gm-statbox--strong"><span className="gm-field-label">Strong roll</span><NpcStepper value={addNpc.strong} onChange={(v) => onPatch({ strong: v })} min={0} max={20} accent="var(--forest-300)" /></div>
-            <div className="gm-statbox gm-statbox--weak"><span className="gm-field-label">Weak roll</span><NpcStepper value={addNpc.weak} onChange={(v) => onPatch({ weak: v })} min={0} max={20} accent="var(--crimson-300)" /></div>
+            <div className="gm-statbox gm-statbox--strong"><span className="gm-field-label">Strong roll</span><NpcStepper value={addNpc.strong} onChange={(v) => onPatch({ strong: v })} min={0} max={40} accent="var(--forest-300)" /></div>
+            <div className="gm-statbox gm-statbox--weak"><span className="gm-field-label">Weak roll</span><NpcStepper value={addNpc.weak} onChange={(v) => onPatch({ weak: v })} min={0} max={40} accent="var(--crimson-300)" /></div>
           </div>
           <div>
             <div className="gm-field-label">Icon <span className="gm-opt">Choose an icon or use the default monogram</span></div>

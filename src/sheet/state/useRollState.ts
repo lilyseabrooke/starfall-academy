@@ -74,6 +74,12 @@ export type PromptPartial = Omit<RollInput, "who"> & {
   spellMatCost?: number;
   /** Offer a Public/Secret toggle in the prompt (GM rolls). */
   canSecret?: boolean;
+  /** Render as a centered, scrim-backed modal (like the backfire resist
+   *  prompt) instead of the anchored popover — for prompts the player didn't
+   *  click a button to open (a DC-tie improvement roll), where an anchored
+   *  box tucked wherever `document.body`'s rect falls is easy to miss or
+   *  dismiss unnoticed via the anchored prompt's click-outside catcher. */
+  centered?: boolean;
 };
 
 export interface PendingPrompt {
@@ -180,8 +186,11 @@ export function useRollState(data: RollStateData, activeChar: string, options: R
     return made;
   };
 
-  const openPrompt = (partial: PendingPrompt["partial"], anchorEl: HTMLElement) =>
-    setPending({ id: ++pendSeq.current, partial, rect: anchorEl.getBoundingClientRect() });
+  // `anchorEl` positions the anchored popover — omit it for a `centered:
+  // true` partial (a centered modal ignores `rect` entirely and needs no
+  // button to anchor to).
+  const openPrompt = (partial: PendingPrompt["partial"], anchorEl?: HTMLElement) =>
+    setPending({ id: ++pendSeq.current, partial, rect: (anchorEl || document.body).getBoundingClientRect() });
 
   const confirmPrompt = (opts: ConfirmPromptOpts) => {
     if (!pending) return;

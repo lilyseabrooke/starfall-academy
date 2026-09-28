@@ -13,6 +13,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import HudTopBar, { type HudTopBarHandle } from "@/components/HudTopBar";
+import { APP_VERSION } from "@/lib/version";
 import "@/styles/landing.css";
 
 type IconType = typeof BookOpen;
@@ -163,7 +164,10 @@ export default function Landing({
         </section>
 
         {/* ===================== FOOTER ===================== */}
-        <footer className="lp-footer">Starfall Academy · Semper Ad Astra</footer>
+        <footer className="lp-footer">
+          Starfall Academy · Semper Ad Astra
+          <span className="lp-footer__version">v{APP_VERSION}</span>
+        </footer>
       </main>
     </div>
   );

@@ -4,14 +4,13 @@
    The pure data layer for the Citadel's level-4 sub-areas. Given a district
    seed (from regions.js, carrying `subs`/`subPos`/`subGen`), it materialises
    `seed.sub` — the 6 A–F sub-area records with position, weight, enabled flag,
-   generic type, and any authored name/blurb. No app state, no DOM, no TWEAKS.
-   Persisted edits are layered on later by applyCitadelOverrides() in app.js.
+   generic type, and any authored name/blurb. No app state, no DOM.
    Exposed on `window.AtlasCitadelData`.
    =========================================================================== */
 (function () {
   "use strict";
 
-  // slug for a seed name → used to key persisted tweaks and DOM lookups
+  // slug for a seed name → used to key DOM lookups
   const seedSlug = (s) => s.name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
 
   const SUB_TAGS = ["A", "B", "C", "D", "E", "F"];
@@ -46,7 +45,6 @@
       return {
         tag: t, x, y, w, on, generic, lx, ly,
         name: a ? a.name : null, blurb: a ? a.blurb : null,
-        _d0: { x, y, w, on, generic, lx, ly },
       };
     });
   }

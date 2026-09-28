@@ -5,7 +5,7 @@
 import * as React from "react";
 import { Button, IconButton, Input, Select, Switch } from "@/ds";
 import { Icon } from "../Icon";
-import type { CompendiumEntry, MagicSchool, Skill, Stat, Subject } from "../../types";
+import type { ArtifactCondition, CompendiumEntry, MagicSchool, Skill, Stat, Subject } from "../../types";
 
 type ManualForm = Record<string, unknown>;
 const str = (v: unknown): string => (v == null ? "" : String(v));
@@ -186,6 +186,8 @@ export interface EditSubject {
   /** All skill options an artifact can be rolled with (compendium imports may carry more than one). */
   skills?: string[];
   move?: { skill?: string; dc?: number | null };
+  /** ArtifactCondition for artifacts; a numeric charge track for wands. */
+  condition?: ArtifactCondition | number;
   maxCondition?: number;
   twisted?: boolean;
   desc?: string;
@@ -224,7 +226,7 @@ export function ManualModal({ open, kind, subjects, skills, stats, schools, comp
     if (es) {
       if (kind === "artifact") {
         const preSkills = es.skills && es.skills.length ? es.skills : es.move && es.move.skill && es.move.skill !== "—" ? [es.move.skill] : [];
-        pre = { name: es.name, subject: es.subjectKey || (subjects.find((s) => s.name === es.subject) || ({} as Subject)).key || "", level: es.level || "Basic", intensity: es.intensity != null ? String(es.intensity) : "", skill: preSkills.length ? preSkills : [""], dc: es.move && es.move.dc != null ? String(es.move.dc) : "", desc: es.desc || "" };
+        pre = { name: es.name, subject: es.subjectKey || (subjects.find((s) => s.name === es.subject) || ({} as Subject)).key || "", level: es.level || "Basic", intensity: es.intensity != null ? String(es.intensity) : "", skill: preSkills.length ? preSkills : [""], dc: es.move && es.move.dc != null ? String(es.move.dc) : "", desc: es.desc || "", condition: typeof es.condition === "string" ? es.condition : "stable" };
       } else if (kind === "wand") pre = { name: es.name, cost: es.maxCondition != null ? String(es.maxCondition) : "", twisted: !!es.twisted, desc: es.desc || "" };
       else if (kind === "plant") pre = { name: es.name, value: es.value != null ? String(es.value) : "", intensity: es.intensity != null ? String(es.intensity) : "", desc: es.desc || "", ability: es.ability || "", singleUse: !!es.removeOnUse, requiresRoll: (es.requiresRoll || "NO").toLowerCase(), abilityTab: es.passive ? "passive" : "active", bonusType: es.passive ? es.passive.type : "none", bonusTarget: es.passive ? es.passive.target : "", bonusValue: es.passive ? String(es.passive.value || "") : "", bonusConditional: es.passive ? !!es.passive.conditional : false, bonusCondNote: es.passive ? es.passive.condNote || "" : "" };
       else pre = { name: es.name, intensity: es.intensity != null ? String(es.intensity) : "", cost: es.cost != null ? String(es.cost) : "", twisted: !!es.twisted, desc: es.desc || "" };
@@ -369,6 +371,16 @@ export function ManualModal({ open, kind, subjects, skills, stats, schools, comp
                 </React.Fragment>
               ) : (
                 <>
+                  {kind === "artifact" && editSubject ? (
+                    <div className="sf-manual__full">
+                      <Select
+                        label="Condition"
+                        options={[{ value: "stable", label: "Stable" }, { value: "damaged", label: "Damaged" }, { value: "broken", label: "Broken" }]}
+                        value={str(f.condition) || "stable"}
+                        onChange={(e) => set("condition", e.target.value)}
+                      />
+                    </div>
+                  ) : null}
                   {cfg.fields.map(([key, label, type]) => {
                     if (type === "switch") {
                       return (

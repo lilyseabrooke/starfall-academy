@@ -11,10 +11,12 @@ import {
   Compass,
   Copy,
   Crown,
+  Eye,
   Feather,
   KeyRound,
   Pencil,
   Plus,
+  RefreshCw,
   Settings2,
   Sparkles,
   Swords,
@@ -24,6 +26,7 @@ import {
   X,
 } from "lucide-react";
 import HudTopBar from "@/components/HudTopBar";
+import { APP_VERSION } from "@/lib/version";
 import "@/styles/landing.css";
 import "@/styles/characters.css";
 
@@ -69,9 +72,9 @@ export default function CharactersView({
 
   // The card whose manage popup is open, plus its inner view.
   const [manage, setManage] = useState<ManageTarget | null>(null);
-  const [manageView, setManageView] = useState<"menu" | "join" | "rename">(
-    "menu"
-  );
+  const [manageView, setManageView] = useState<
+    "menu" | "join" | "rename" | "confirm-code"
+  >("menu");
   const [joinCode, setJoinCode] = useState("");
   const [renameValue, setRenameValue] = useState("");
   const [busy, setBusy] = useState(false);
@@ -152,6 +155,18 @@ export default function CharactersView({
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: trimmed }),
+    }).catch(() => {});
+    setBusy(false);
+    closeManage();
+    router.refresh();
+  }
+
+  async function regenerateJoinCode(id: string) {
+    setBusy(true);
+    await fetch(`/api/campaigns/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ regenerate_code: true }),
     }).catch(() => {});
     setBusy(false);
     closeManage();
@@ -271,29 +286,40 @@ export default function CharactersView({
                         </button>
                       </>
                     ) : (
-                      <button
-                        className="sa-join"
-                        onClick={() =>
-                          openManage({ kind: "character", id: ch.id })
-                        }
-                      >
-                        <Compass
-                          className="sa-join__icon"
-                          size={18}
-                          aria-hidden="true"
-                        />
-                        <span className="sa-join__text">
-                          <span className="sa-join__title">Join a Campaign</span>
-                          <span className="sa-join__sub">
-                            Still waiting for the next adventure.
+                      <>
+                        <button
+                          className="sa-join"
+                          onClick={() =>
+                            openManage({ kind: "character", id: ch.id })
+                          }
+                        >
+                          <Compass
+                            className="sa-join__icon"
+                            size={18}
+                            aria-hidden="true"
+                          />
+                          <span className="sa-join__text">
+                            <span className="sa-join__title">
+                              Join a Campaign
+                            </span>
+                            <span className="sa-join__sub">
+                              Still waiting for the next adventure.
+                            </span>
                           </span>
-                        </span>
-                        <ArrowRight
-                          className="sa-join-chev"
-                          size={15}
-                          aria-hidden="true"
-                        />
-                      </button>
+                          <ArrowRight
+                            className="sa-join-chev"
+                            size={15}
+                            aria-hidden="true"
+                          />
+                        </button>
+                        <Link
+                          className="sa-manage"
+                          href={`/characters/${ch.id}`}
+                        >
+                          <Eye size={15} aria-hidden="true" />
+                          View Character
+                        </Link>
+                      </>
                     )}
                   </div>
                 </article>
@@ -413,7 +439,10 @@ export default function CharactersView({
           </div>
         </section>
 
-        <footer className="lp-footer">Starfall Academy · Semper Ad Astra</footer>
+        <footer className="lp-footer">
+          Starfall Academy · Semper Ad Astra
+          <span className="lp-footer__version">v{APP_VERSION}</span>
+        </footer>
       </main>
 
       {/* ===================== CHARACTER MANAGE / JOIN POPUP ===================== */}
@@ -614,7 +643,31 @@ export default function CharactersView({
               <X size={15} aria-hidden="true" />
             </button>
 
-            {manageView === "rename" ? (
+            {manageView === "confirm-code" ? (
+              <>
+                <button
+                  className="cp-modal__back"
+                  onClick={() => setManageView("menu")}
+                >
+                  <ArrowLeft size={14} aria-hidden="true" />
+                  Back
+                </button>
+                <span className="cp-modal__eyebrow">Change Join Code</span>
+                <h2 className="cp-modal__title">{managedCampaign.name}</h2>
+                <p className="cp-modal__copy">
+                  Changing the join code renders the previous join code
+                  invalid. Are you sure?
+                </p>
+                <button
+                  className="sa-btn-primary"
+                  disabled={busy}
+                  onClick={() => regenerateJoinCode(managedCampaign.id)}
+                >
+                  <RefreshCw size={15} aria-hidden="true" />
+                  {busy ? "Changing…" : "Change Code"}
+                </button>
+              </>
+            ) : manageView === "rename" ? (
               <>
                 <button
                   className="cp-modal__back"
@@ -696,6 +749,23 @@ export default function CharactersView({
                       </span>
                       <span className="sa-manage-opt__sub">
                         Change the name shown to you and your players.
+                      </span>
+                    </span>
+                  </button>
+                  <button
+                    className="sa-manage-opt"
+                    disabled={busy}
+                    onClick={() => setManageView("confirm-code")}
+                  >
+                    <span className="sa-manage-opt__icon sa-manage-opt__icon--gold">
+                      <RefreshCw size={18} aria-hidden="true" />
+                    </span>
+                    <span className="sa-manage-opt__text">
+                      <span className="sa-manage-opt__title">
+                        Change Join Code
+                      </span>
+                      <span className="sa-manage-opt__sub">
+                        Roll a new code; the old one stops working.
                       </span>
                     </span>
                   </button>

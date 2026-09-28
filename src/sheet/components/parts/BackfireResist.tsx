@@ -28,7 +28,7 @@ export interface BackfireResistProps {
 }
 
 export function BackfireResist({ open, roll, conditions, facRank, onResist, onClose }: BackfireResistProps) {
-  const [cond, setCond] = React.useState("wound");
+  const [cond, setCond] = React.useState("");
   const [dc, setDc] = React.useState("");
   const rcfg = (roll && roll.resist) || null;
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -36,25 +36,27 @@ export function BackfireResist({ open, roll, conditions, facRank, onResist, onCl
     if (open && roll) {
       if (roll.forced) {
         const fc = roll.forced.condition;
-        setCond(conditions.find((c) => c.id === fc) ? fc : conditions[0].id);
+        setCond(conditions.find((c) => c.id === fc) ? fc : "");
         setDc(roll.forced.dc != null ? String(roll.forced.dc) : "");
         return;
       }
-      const want = (rcfg && rcfg.condition) || "wound";
-      setCond(conditions.find((c) => c.id === want) ? want : conditions[0].id);
+      const want = rcfg && rcfg.condition;
+      setCond(want && conditions.find((c) => c.id === want) ? want : "");
       if (rcfg && rcfg.dcPerDegree) setDc(String(Math.max(1, rcfg.dcPerDegree * (roll.degrees || 1))));
       else setDc(roll.dc != null ? String(Math.max(1, roll.dc - 4)) : "");
     }
   }, [open, roll && roll.id]);
   if (!roll) return null;
-  const condObj = conditions.find((c) => c.id === cond) || conditions[0];
-  const mod = facRank(condObj.resist);
+  const condObj = conditions.find((c) => c.id === cond) || null;
+  const mod = condObj ? facRank(condObj.resist) : 0;
   const cast = roll.pass;
   const isEnchant = roll.kind === "enchant";
   const resist = () => {
+    if (!condObj) return;
     onResist({ condition: condObj, dc: dc === "" ? null : parseInt(dc, 10), mod });
     onClose();
   };
+  const condOptions = [{ value: "", label: "Select condition…" }, ...conditions.map((c) => ({ value: c.id, label: c.name }))];
   return (
     <React.Fragment>
       <div className={"sf-scrim sf-scrim--bf" + (open ? " open" : "")} onClick={onClose} />
@@ -75,23 +77,23 @@ export function BackfireResist({ open, roll, conditions, facRank, onResist, onCl
               isEnchant ? (
                 <React.Fragment><Icon name="circle-check" /><span>You place an enchantment lasting <b>{enchantDurationLabel(roll.degrees || 1)}</b>, and you burn your magic in the process.</span></React.Fragment>
               ) : (
-                <React.Fragment><Icon name="circle-check" /><span>The spell <b>still takes hold</b> — {roll.degrees} {roll.degrees === 1 ? "degree" : "degrees"} of success — but the recoil demands a save.</span></React.Fragment>
+                <React.Fragment><Icon name="circle-check" /><span>Sparked the cast, but the magic overloads in a backfire.</span></React.Fragment>
               )
             ) : cast === false ? (
-              <React.Fragment><Icon name="circle-x" /><span>{isEnchant ? "The enchantment sparks out, and your magic burns." : "The casting fails, and the loosed magic turns back on you."}</span></React.Fragment>
+              <React.Fragment><Icon name="circle-x" /><span>{isEnchant ? "The enchantment sparks out, and your magic burns." : "Sparked out—the spell fails, and the backfire hits hard."}</span></React.Fragment>
             ) : (
               <React.Fragment><Icon name="flame" /><span>The magic recoils. Choose what it costs you to resist.</span></React.Fragment>
             )}
           </p>
           <div className="sf-modal__row">
-            <Select label="Condition to resist" options={conditions.map((c) => ({ value: c.id, label: c.name }))} value={cond} onChange={(e) => setCond(e.target.value)} />
+            <Select label="Condition to resist" options={condOptions} value={cond} onChange={(e) => setCond(e.target.value)} />
             <Input label="Save DC" type="number" placeholder="—" value={dc} onChange={(e) => setDc(e.target.value)} />
           </div>
-          <p className="sf-modal__hint"><Icon name="info" /> This save rolls {condObj.resist} ({mod >= 0 ? "+" : "−"}{Math.abs(mod)}).</p>
+          <p className="sf-modal__hint"><Icon name="info" /> {condObj ? <React.Fragment>This save rolls {condObj.resist} ({mod >= 0 ? "+" : "−"}{Math.abs(mod)}).</React.Fragment> : "Choose which condition this save resists."}</p>
         </div>
         <div className="sf-modal__foot">
           <Button variant="ghost" onClick={onClose}>Shrug it off</Button>
-          <Button variant="primary" iconLeft={<Icon name="dices" />} onClick={resist}>Roll {condObj.resist} save{dc !== "" ? " · DC " + dc : ""}</Button>
+          <Button variant="primary" iconLeft={<Icon name="dices" />} onClick={resist} disabled={!condObj}>{condObj ? "Roll " + condObj.resist + " save" + (dc !== "" ? " · DC " + dc : "") : "Select a condition"}</Button>
         </div>
       </div>
     </React.Fragment>

@@ -5,16 +5,16 @@
    as the original compendium did; only the presentation has been reworked.
    =========================================================================== */
 
-/* ---- Tweak defaults (the host rewrites this block on disk when changed) --- */
-const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
-  "cardScale": 100,
-  "density": "regular",
-  "levelColors": true,
-  "categoryIcons": true,
-  "watermark": 50,
-  "rankShade": 13,
-  "rankBorder": 22
-}/*EDITMODE-END*/;
+/* ---- Authored display defaults --------------------------------------- */
+const DISPLAY_DEFAULTS = {
+  cardScale: 100,
+  density: "regular",
+  levelColors: true,
+  categoryIcons: true,
+  watermark: 50,
+  rankShade: 13,
+  rankBorder: 22
+};
 
 /* ---- Live data sources (published CSV, unchanged from the original) -------
    Split into two views so the page never crowds its tabs: every existing
@@ -38,8 +38,9 @@ const ASSET_SHEETS = {
 
 /* Lore tabs — proof of concept: Events. */
 const LORE_SHEETS = {
-  "Events":     "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXtnorBMPVkIS5vVvc1hiPA_9MNwo3v5gcC__rVMLa28HHCjuKjCm5f_dwQgXfWVF9jF9rfl6oLsfd/pub?gid=1082602083&single=true&output=csv",
-  "Archetypes": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXtnorBMPVkIS5vVvc1hiPA_9MNwo3v5gcC__rVMLa28HHCjuKjCm5f_dwQgXfWVF9jF9rfl6oLsfd/pub?gid=1862278646&single=true&output=csv"
+  "Events":      "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXtnorBMPVkIS5vVvc1hiPA_9MNwo3v5gcC__rVMLa28HHCjuKjCm5f_dwQgXfWVF9jF9rfl6oLsfd/pub?gid=1082602083&single=true&output=csv",
+  "Archetypes":  "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXtnorBMPVkIS5vVvc1hiPA_9MNwo3v5gcC__rVMLa28HHCjuKjCm5f_dwQgXfWVF9jF9rfl6oLsfd/pub?gid=1862278646&single=true&output=csv",
+  "Subcultures": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXtnorBMPVkIS5vVvc1hiPA_9MNwo3v5gcC__rVMLa28HHCjuKjCm5f_dwQgXfWVF9jF9rfl6oLsfd/pub?gid=1363649626&single=true&output=csv"
 };
 
 const VIEWS = { assets: ASSET_SHEETS, lore: LORE_SHEETS };
@@ -52,7 +53,7 @@ let currentView = "assets";
 const CATEGORY_ICONS = {
   "Spells": "sparkles", "Potions": "flask-conical", "Glyphs": "pen-tool",
   "Wands": "wand-2", "Artifacts": "gem", "Plants": "sprout", "Items": "backpack", "Classes": "graduation-cap",
-  "Events": "calendar-days", "Archetypes": "shapes"
+  "Events": "calendar-days", "Archetypes": "shapes", "Subcultures": "users"
 };
 
 /* header meta line per category (unchanged formats, rendered as badges below) */
@@ -68,7 +69,8 @@ const headerFields = {
   /* Same "level badge" treatment Spells get, just keyed off the season the
      Timing falls in instead of a spell tier. */
   event:    e => ({ level: (e.TIMING || "").toString().trim(), tone: eventTone(e.TIMING), txt: "" }),
-  archetype: e => ({ txt: e.CLASS ? "Class · " + e.CLASS : "" })
+  archetype: e => ({ txt: e.CLASS ? "Class · " + e.CLASS : "" }),
+  subculture: e => ({ txt: "" })
 };
 function trio(a, av, b, bv){
   const parts = [];
@@ -135,6 +137,8 @@ function timingRank(raw, mode){
 /* ---- DOM refs ------------------------------------------------------------ */
 const viewToggleEl = document.getElementById("view-toggle");
 const catsEl   = document.getElementById("cats");
+const catsPrevBtn = document.getElementById("cats-prev");
+const catsNextBtn = document.getElementById("cats-next");
 const list     = document.getElementById("list");
 const searchWrap = document.querySelector(".search");
 const searchBar= document.getElementById("search-bar");
@@ -162,25 +166,30 @@ try { sortByCategory = JSON.parse(localStorage.getItem("starfallCompendiumSort")
 
 /* Sort fields available per category (key · label · comparator type) */
 const SORT_FIELDS = {
-  SPELLS:    [["NAME","Name","text"],["SUBJECT","Subject","text"],["STAT","Stat","text"],["LEVEL","Level","level"],["DC","DC","num"]],
-  POTIONS:   [["NAME","Name","text"],["COST","Cost","num"],["INTENSITY","Intensity","num"]],
-  GLYPHS:    [["NAME","Name","text"],["COST","Cost","num"],["INTENSITY","Intensity","num"]],
-  WANDS:     [["NAME","Name","text"],["COST","Cost","num"]],
-  ARTIFACTS: [["NAME","Name","text"],["SUBJECT","Subject","text"],["LEVEL","Level","level"],["COST","Cost","num"],["INTENSITY","Intensity","num"],["DC","DC","num"]],
-  PLANTS:    [["NAME","Name","text"],["VALUE","Value","num"],["INTENSITY","Intensity","num"]],
-  ITEMS:     [["NAME","Name","text"],["COST","Cost","num"]],
-  CLASSES:   [["NAME","Name","text"]],
+  SPELLS:    [["NAME","Name","text"],["SUBJECT","Subject","text"],["STAT","Stat","text"],["LEVEL","Level","level"],["DC","DC","num"],["ID","ID","id-num"]],
+  POTIONS:   [["NAME","Name","text"],["COST","Cost","num"],["INTENSITY","Intensity","num"],["ID","ID","id-num"]],
+  GLYPHS:    [["NAME","Name","text"],["COST","Cost","num"],["INTENSITY","Intensity","num"],["ID","ID","id-num"]],
+  WANDS:     [["NAME","Name","text"],["COST","Cost","num"],["ID","ID","id-num"]],
+  ARTIFACTS: [["NAME","Name","text"],["SUBJECT","Subject","text"],["LEVEL","Level","level"],["COST","Cost","num"],["INTENSITY","Intensity","num"],["DC","DC","num"],["ID","ID","id-num"]],
+  PLANTS:    [["NAME","Name","text"],["VALUE","Value","num"],["INTENSITY","Intensity","num"],["ID","ID","id-num"]],
+  ITEMS:     [["NAME","Name","text"],["COST","Cost","num"],["ID","ID","id-num"]],
+  CLASSES:   [["NAME","Name","text"],["ID","ID","id-num"]],
   /* Field keys here are UI-only ids (matched against sort state, not an
      actual column) — both read TIMING via timingRank(), just with a
      different season order. See the "Events — Timing parsing" block. */
-  EVENTS:    [["NAME","Name","text"],["TIMING_ACADEMIC","Timing (Academic Year)","timing-academic"],["TIMING_CALENDAR","Timing (Calendar Year)","timing-calendar"]],
-  ARCHETYPES: [["NAME","Name","text"],["CLASS","Class","text"]]
+  EVENTS:    [["NAME","Name","text"],["TIMING_ACADEMIC","Timing (Academic Year)","timing-academic"],["TIMING_CALENDAR","Timing (Calendar Year)","timing-calendar"],["ID","ID","id-num"]],
+  ARCHETYPES: [["NAME","Name","text"],["CLASS","Class","text"],["ID","ID","id-num"]]
 };
 const LEVEL_ORDER = { BASIC:0, STANDARD:1, ADVANCED:2, LEGENDARY:3, HEX:4, TWISTED:4 };
 function levelRank(v){
   if (!v) return 99;
   const first = v.toString().trim().toUpperCase().split(/\s+/)[0];
   return LEVEL_ORDER[first] != null ? LEVEL_ORDER[first] : 50;
+}
+/* IDs look like "spell_144" — sort by the numeric part, not lexically. */
+function idNumRank(v){
+  const m = (v || "").toString().match(/(\d+)\s*$/);
+  return m ? parseInt(m[1], 10) : Infinity;
 }
 
 /* ===========================================================================
@@ -218,11 +227,54 @@ function updateCatsFade(){
   const max = catsEl.scrollWidth - catsEl.clientWidth;
   const atStart = catsEl.scrollLeft <= 2;
   const atEnd = catsEl.scrollLeft >= max - 2;
-  catsEl.style.setProperty("--fade-l", (max > 4 && !atStart) ? "28px" : "0px");
-  catsEl.style.setProperty("--fade-r", (max > 4 && !atEnd) ? "28px" : "0px");
+  const canScroll = max > 4;
+  catsEl.style.setProperty("--fade-l", (canScroll && !atStart) ? "28px" : "0px");
+  catsEl.style.setProperty("--fade-r", (canScroll && !atEnd) ? "28px" : "0px");
+  catsPrevBtn.classList.toggle("is-visible", canScroll && !atStart);
+  catsNextBtn.classList.toggle("is-visible", canScroll && !atEnd);
 }
 catsEl.addEventListener("scroll", updateCatsFade, { passive: true });
 window.addEventListener("resize", updateCatsFade);
+
+/* ---- Category-bar nudge buttons: step by ~1.5 tabs' worth at a time ------ */
+function nudgeCats(dir){
+  catsEl.scrollBy({ left: dir * catsEl.clientWidth * 0.6, behavior: "smooth" });
+}
+catsPrevBtn.addEventListener("click", () => nudgeCats(-1));
+catsNextBtn.addEventListener("click", () => nudgeCats(1));
+
+/* ---- Vertical wheel scroll → horizontal, while hovering the tab bar ------
+   Devices without horizontal scroll (most trackpads aside, plain mouse
+   wheels) can still reach every tab this way instead of needing the nudge
+   buttons or a drag. Only takes over when there's somewhere to scroll to,
+   and only for the dominant vertical component so a natural horizontal
+   swipe still passes through untouched.
+   Raw wheel deltas arrive in discrete, uneven steps, which reads as jerky
+   against the rest of the site's eased motion — so instead of jumping
+   scrollLeft straight to each delta, wheel events nudge a target and a
+   rAF loop eases scrollLeft toward it every frame. */
+let catsScrollTarget = null;
+let catsScrollRaf = null;
+function stepCatsScroll(){
+  const diff = catsScrollTarget - catsEl.scrollLeft;
+  if (Math.abs(diff) < 0.5){
+    catsEl.scrollLeft = catsScrollTarget;
+    catsScrollRaf = null;
+    catsScrollTarget = null; // let the next wheel event start fresh from wherever scrollLeft ends up
+    return;
+  }
+  catsEl.scrollLeft += diff * 0.18;
+  catsScrollRaf = requestAnimationFrame(stepCatsScroll);
+}
+catsEl.addEventListener("wheel", (e) => {
+  if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+  const max = catsEl.scrollWidth - catsEl.clientWidth;
+  if (max <= 4) return;
+  e.preventDefault();
+  const base = catsScrollTarget == null ? catsEl.scrollLeft : catsScrollTarget;
+  catsScrollTarget = Math.max(0, Math.min(max, base + e.deltaY));
+  if (!catsScrollRaf) catsScrollRaf = requestAnimationFrame(stepCatsScroll);
+}, { passive: false });
 
 function selectCategory(name){
   if (name === currentCategory && currentData.length) return;
@@ -404,7 +456,13 @@ function renderDetails(entry, category){
     const multiline = /•|\r|\n/.test(val);
     const html = esc(val).replace(/•|\r\n|\r|\n/g, "<br>");
     if (multiline || val.length > 46 || ALWAYS_BLOCK_KEYS.has(key)){
-      blocks.push(`<div class="block"><div class="block__k">${esc(key)}</div><div class="block__v">${html}</div></div>`);
+      // A block much longer than a typical field (long prose, or several
+      // bulleted/broken lines) spans the full row instead of sharing one
+      // with whatever shorter block lands next to it — otherwise the grid
+      // row's height follows the tall block, stranding empty space under
+      // its short neighbor. Shorter blocks still pair up in the columns.
+      const isLong = val.length > 200 || (val.match(/•|\r\n|\r|\n/g) || []).length >= 2;
+      blocks.push(`<div class="block${isLong ? " block--full" : ""}"><div class="block__k">${esc(key)}</div><div class="block__v">${html}</div></div>`);
     } else {
       facts.push(`<div class="fact"><span class="fact__k">${esc(key)}</span><span class="fact__v">${html}</span></div>`);
     }
@@ -756,6 +814,8 @@ function sortEntries(arr){
       r = av - bv;
     } else if (type === "level"){
       r = levelRank(a[field]) - levelRank(b[field]);
+    } else if (type === "id-num"){
+      r = idNumRank(a[field]) - idNumRank(b[field]);
     } else if (type === "timing-academic" || type === "timing-calendar"){
       const mode = type === "timing-academic" ? "academic" : "calendar";
       r = timingRank(a.TIMING, mode) - timingRank(b.TIMING, mode);
@@ -864,9 +924,9 @@ function esc(s){ return (s == null ? "" : s.toString()).replace(/[&<>"]/g, m => 
 function refreshIcons(){ if (window.lucide) window.lucide.createIcons(); }
 
 /* ===========================================================================
-   Tweaks panel  (host-toggled — raw postMessage protocol, like the Map)
+   Display tweaks — authored presentation constants applied as CSS vars
    =========================================================================== */
-const tweaks = Object.assign({}, TWEAK_DEFAULTS);
+const tweaks = Object.assign({}, DISPLAY_DEFAULTS);
 
 function applyTweaks(){
   const root = document.documentElement;
@@ -882,128 +942,10 @@ function applyTweaks(){
   document.body.classList.toggle("no-icons", !tweaks.categoryIcons);
 }
 
-function setTweak(key, val){
-  tweaks[key] = val;
-  applyTweaks();
-  try { window.parent.postMessage({ type:"__edit_mode_set_keys", edits:{ [key]: val } }, "*"); } catch(e){}
-}
-
-function buildTweaksPanel(){
-  const panel = document.createElement("aside");
-  panel.className = "tweaks";
-  panel.id = "tweaks-panel";
-  panel.hidden = true;
-  panel.innerHTML = `
-    <div class="tweaks__head" id="tweaks-drag">
-      <div class="tweaks__titles">
-        <span class="tweaks__eyebrow">Starfall Academy</span>
-        <span class="tweaks__title">Tweaks</span>
-      </div>
-      <button class="tweaks__close" id="tweaks-close" aria-label="Close">✕</button>
-    </div>
-    <div class="tweaks__body">
-      <div class="tweaks__section">
-        <div class="tweaks__legend">Cards</div>
-        <div class="tweaks__row">
-          <span class="tweaks__label">Card size</span>
-          <span class="tweaks__val" id="tw-scale-val">${tweaks.cardScale}%</span>
-          <input type="range" class="tweaks__slider" id="tw-scale" min="85" max="125" step="5" value="${tweaks.cardScale}">
-        </div>
-        <div class="tweaks__row">
-          <span class="tweaks__label" style="grid-column:1 / -1">Density</span>
-          <div class="tweaks__seg" id="tw-density">
-            <button data-v="compact"${tweaks.density==="compact"?' class="is-active"':""}>Compact</button>
-            <button data-v="regular"${tweaks.density==="regular"?' class="is-active"':""}>Regular</button>
-            <button data-v="comfy"${tweaks.density==="comfy"?' class="is-active"':""}>Comfy</button>
-          </div>
-        </div>
-      </div>
-      <div class="tweaks__section">
-        <div class="tweaks__legend">Style</div>
-        <div class="tweaks__row">
-          <span class="tweaks__label">Colour-code levels</span>
-          <div class="tweaks__switch${tweaks.levelColors?" is-on":""}" id="tw-levels" role="switch"></div>
-        </div>
-        <div class="tweaks__row">
-          <span class="tweaks__label">Category icons</span>
-          <div class="tweaks__switch${tweaks.categoryIcons?" is-on":""}" id="tw-icons" role="switch"></div>
-        </div>
-        <div class="tweaks__row">
-          <span class="tweaks__label">Crest watermark</span>
-          <span class="tweaks__val" id="tw-wm-val">${tweaks.watermark}%</span>
-          <input type="range" class="tweaks__slider" id="tw-wm" min="0" max="80" step="5" value="${tweaks.watermark}">
-        </div>
-      </div>
-      <div class="tweaks__section">
-        <div class="tweaks__legend">Class rank rows</div>
-        <div class="tweaks__row">
-          <span class="tweaks__label">Alt-row shade</span>
-          <span class="tweaks__val" id="tw-rshade-val">${tweaks.rankShade}%</span>
-          <input type="range" class="tweaks__slider" id="tw-rshade" min="0" max="45" step="1" value="${tweaks.rankShade}">
-        </div>
-        <div class="tweaks__row">
-          <span class="tweaks__label">Alt-row border</span>
-          <span class="tweaks__val" id="tw-rborder-val">${tweaks.rankBorder}%</span>
-          <input type="range" class="tweaks__slider" id="tw-rborder" min="0" max="70" step="1" value="${tweaks.rankBorder}">
-        </div>
-      </div>
-    </div>`;
-  document.body.appendChild(panel);
-
-  const scale = panel.querySelector("#tw-scale");
-  scale.addEventListener("input", () => { panel.querySelector("#tw-scale-val").textContent = scale.value + "%"; setTweak("cardScale", +scale.value); });
-  const wm = panel.querySelector("#tw-wm");
-  wm.addEventListener("input", () => { panel.querySelector("#tw-wm-val").textContent = wm.value + "%"; setTweak("watermark", +wm.value); });
-  const rshade = panel.querySelector("#tw-rshade");
-  rshade.addEventListener("input", () => { panel.querySelector("#tw-rshade-val").textContent = rshade.value + "%"; setTweak("rankShade", +rshade.value); });
-  const rborder = panel.querySelector("#tw-rborder");
-  rborder.addEventListener("input", () => { panel.querySelector("#tw-rborder-val").textContent = rborder.value + "%"; setTweak("rankBorder", +rborder.value); });
-  panel.querySelector("#tw-density").addEventListener("click", e => {
-    const btn = e.target.closest("button"); if (!btn) return;
-    [...e.currentTarget.children].forEach(b => b.classList.toggle("is-active", b === btn));
-    setTweak("density", btn.dataset.v);
-  });
-  const lv = panel.querySelector("#tw-levels");
-  lv.addEventListener("click", () => { const on = !lv.classList.contains("is-on"); lv.classList.toggle("is-on", on); setTweak("levelColors", on); });
-  const ic = panel.querySelector("#tw-icons");
-  ic.addEventListener("click", () => { const on = !ic.classList.contains("is-on"); ic.classList.toggle("is-on", on); setTweak("categoryIcons", on); refreshIcons(); });
-
-  panel.querySelector("#tweaks-close").addEventListener("click", () => { panel.hidden = true; try { window.parent.postMessage({ type:"__edit_mode_dismissed" }, "*"); } catch(e){} });
-  makeDraggable(panel, panel.querySelector("#tweaks-drag"));
-
-  // host protocol
-  window.addEventListener("message", e => {
-    const t = e && e.data && e.data.type;
-    if (t === "__activate_edit_mode") panel.hidden = false;
-    else if (t === "__deactivate_edit_mode") panel.hidden = true;
-  });
-  try { window.parent.postMessage({ type:"__edit_mode_available" }, "*"); } catch(e){}
-}
-
-function makeDraggable(panel, handle){
-  let sx, sy, ox, oy, dragging = false;
-  handle.addEventListener("mousedown", e => {
-    if (e.target.closest(".tweaks__close")) return;
-    dragging = true;
-    const r = panel.getBoundingClientRect();
-    panel.style.right = "auto"; panel.style.bottom = "auto";
-    panel.style.left = r.left + "px"; panel.style.top = r.top + "px";
-    sx = e.clientX; sy = e.clientY; ox = r.left; oy = r.top;
-    e.preventDefault();
-  });
-  window.addEventListener("mousemove", e => {
-    if (!dragging) return;
-    panel.style.left = Math.max(8, Math.min(window.innerWidth - panel.offsetWidth - 8, ox + e.clientX - sx)) + "px";
-    panel.style.top  = Math.max(8, Math.min(window.innerHeight - 40, oy + e.clientY - sy)) + "px";
-  });
-  window.addEventListener("mouseup", () => { dragging = false; });
-}
-
 /* ===========================================================================
    Boot
    =========================================================================== */
 buildCats();
-buildTweaksPanel();
 applyTweaks();
 refreshIcons();
 setTopbarH();

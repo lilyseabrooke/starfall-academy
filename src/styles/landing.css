@@ -503,6 +503,12 @@
   text-transform: uppercase;
   color: var(--text-faint);
 }
+.lp-footer__version {
+  font-family: var(--font-mono);
+  letter-spacing: var(--tracking-wide);
+  color: var(--text-faint);
+  opacity: 0.6;
+}
 
 /* ===================== MAGIC-LINK SIGN-IN MODAL ===================== */
 .lp-modal-overlay {

@@ -32,8 +32,10 @@ import { spellCrit, spellMaterialCost, artifactBackfireDC, spellLevelKey } from 
 import { ENCHANT_MATERIAL_COST, enchantHL } from "./data/enchant";
 import { blank as blankBonus } from "./data/bonus";
 import { buildIndex, search as runSearch, type SearchResult } from "./data/search";
+import { REGIONS } from "./data/map/regions";
+import type { MapFocusSignal } from "./components/map/MapPage";
 import { useCompendium } from "./data/compendium";
-import { computeCompendiumGrant, computeAttunedArtifactGrant, computeLearningSpellGrant, computePotionSheafGrant, computePotionRecipeGrant, computeWandCraftGrant } from "./data/compendium-grant";
+import { computeCompendiumGrant, computeAttunedArtifactGrant, computeLearningSpellGrant, computePotionSheafGrant, computePotionRecipeGrant, computeWandCraftGrant, artifactBoonMove } from "./data/compendium-grant";
 import type { GmNote, GmTime } from "./data/gm-seed";
 
 import { useClassState } from "./state/useClassState";
@@ -71,6 +73,8 @@ import { RollPrompt } from "./components/rolls/RollPrompt";
 import { Admission } from "./forge/Forge";
 import * as F from "./forge/forge-state";
 import type { Draft } from "./forge/forge-state";
+import { CharacterOverview } from "./overview/CharacterOverview";
+import { overviewFromDraft, type OverviewLive } from "./overview/overview-data";
 
 import type { RosterMember } from "@/app/(app)/characters/roster";
 import type { RollRosterMember } from "./state/useRollState";
@@ -148,6 +152,29 @@ export interface CharacterSheetProps {
   ownsSheet?: boolean;
 }
 
+/** A "Map Location" search result's `data` carries the matched region/seed
+ *  (see data/search.ts's location branch) — resolve it to the map's focus
+ *  signal. Mirrors the two cases the atlas can jump straight to: a region,
+ *  or a Citadel district (never a specific zone — the original iframe bridge
+ *  didn't support that either). */
+function mapFocusFromSearchResult(result: SearchResult): MapFocusSignal | null {
+  const data = result.data as { id?: string; isCitadel?: boolean; name?: string; parentRegion?: string; parentDistrict?: string; parentRegionId?: string } | null;
+  if (!data) return null;
+  if (result.id.startsWith("location-region-")) {
+    return data.isCitadel ? { isCitadel: true } : { regionId: data.id };
+  }
+  if (result.id.startsWith("location-seed-")) {
+    return { isCitadel: true, districtName: data.name };
+  }
+  if (result.id.startsWith("location-place-")) {
+    return { isCitadel: true, districtName: data.parentDistrict };
+  }
+  if (result.id.startsWith("location-sub-")) {
+    return data.parentRegionId ? { regionId: data.parentRegionId } : null;
+  }
+  return null;
+}
+
 export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roster, me, campaignId, ownsSheet = true }: CharacterSheetProps) {
   const router = useRouter();
 
@@ -219,7 +246,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   // ---- Search menu state ----
   const [searchQuery, setSearchQuery] = React.useState("");
   const [searchMenuOpen, setSearchMenuOpen] = React.useState(false);
-  const [mapFocus, setMapFocus] = React.useState<unknown>(null);
+  const [mapFocus, setMapFocus] = React.useState<MapFocusSignal | null>(null);
 
   React.useLayoutEffect(() => {
     try { localStorage.setItem("sf-sidebar-collapsed", String(sidebarCollapsed)); } catch { /* ignore */ }
@@ -395,8 +422,8 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   };
   const triggerTieImprovement = (target: TieTarget) => {
     if (!target) return;
-    if ("skill" in target) onImproveSkill(target.skill.fac, target.skill.sk, { currentTarget: document.body });
-    else onImproveSubject(target.subject.school, target.subject.sub, { currentTarget: document.body });
+    if ("skill" in target) onImproveSkill(target.skill.fac, target.skill.sk);
+    else onImproveSubject(target.subject.school, target.subject.sub);
   };
   const maybeImproveOnTie = (r: Roll, target: TieTarget) => {
     if (target && r.dc != null && r.total === r.dc) triggerTieImprovement(target);
@@ -417,8 +444,8 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   const searchIndex = React.useMemo(() => buildIndex({
     stats, schools, spells, moves, artifacts, potions, recipes, plants,
     items, glyphs, wands, conditions, classState, bonuses,
+    locations: REGIONS,
     classes: CL.classes,
-    locations: [],
   }), [stats, schools, spells, moves, artifacts, potions, recipes, plants, items, glyphs, wands, conditions, classState, bonuses, CL.classes]);
   const searchResults = React.useMemo(() => runSearch(searchQuery, searchIndex), [searchQuery, searchIndex]);
 
@@ -698,7 +725,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       if (a.attuned || attunedCount >= caps.attuneCap) return;
       op({ label: "Attune to " + a.name, kind: "attune", stat: "Creativity", mod: effFacRank("Creativity") + subRank("artificy") + rollBonusFor("attune"), dc: a.intensity, meta: ["Artificy", "Attunement"], detail: a.desc, hl: attuneHL(a), dosMod: dosShiftFor((b) => b.type === "attune"),
         condBonuses: catCond("attune"),
-        resist: { condition: "wound", dcPerDegree: 5, eyebrow: "Failed attunement", heading: "SOULBURNED", verdict: "The artifact’s magic bites back, lashing out against yours." },
+        resist: { dcPerDegree: 5, eyebrow: "Failed attunement", heading: "SOULBURNED", verdict: "The artifact’s magic bites back, lashing out against yours." },
         onResult: (r) => {
           if (r.pass) { setArtifacts((prev) => prev.map((x) => (x.id === a.id ? { ...x, attuned: true, intensity: 0 } : x))); magic.handlers.addArtMove(a); }
           else { const key = String(Math.max(-11, Math.min(-1, -(r.degrees || 0)))); const ease = INV.attuneEase[key] || 0; setArtifacts((prev) => prev.map((x) => (x.id === a.id ? { ...x, intensity: Math.max(0, x.intensity + ease) } : x))); }
@@ -952,7 +979,9 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       const primStat = skillsArr.length ? statForSkill(primSkill) : fs("subject") ? subjStat(fs("subject")) : "Insight";
       if (editArtifact) {
         const artMove = { ...editArtifact.move, name: fs("name") + " — Boon", stat: primStat, skill: primSkill, dc: fs("dc") ? num(fs("dc")) : null, desc: fs("desc"), rollOptions };
-        setArtifacts((prev) => prev.map((x) => x.id === editArtifact.id ? { ...x, name: fs("name"), level: fs("level") || x.level, tone: fs("subject") ? subjTone(fs("subject")) : x.tone, subject: subjName(fs("subject")) || x.subject, intensity: num(fs("intensity"), 1), desc: fs("desc"), skills: skillsArr, dc: fs("dc") ? num(fs("dc")) : 0, move: artMove } : x));
+        const nextCondition = (fs("condition") || editArtifact.condition) as Artifact["condition"];
+        setArtifacts((prev) => prev.map((x) => x.id === editArtifact.id ? { ...x, name: fs("name"), level: fs("level") || x.level, tone: fs("subject") ? subjTone(fs("subject")) : x.tone, subject: subjName(fs("subject")) || x.subject, intensity: num(fs("intensity"), 1), desc: fs("desc"), skills: skillsArr, dc: fs("dc") ? num(fs("dc")) : 0, condition: nextCondition, move: artMove } : x));
+        if (nextCondition !== editArtifact.condition) magic.handlers.setMoveCond(editArtifact.id, nextCondition);
         toast("Artifact updated"); setEditArtifact(null); return;
       }
       const artMove = { name: fs("name") + " — Boon", stat: primStat, skill: primSkill, bonus: 0, dc: fs("dc") ? num(fs("dc")) : null, desc: fs("desc"), rollOptions };
@@ -1133,6 +1162,13 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   // ---- The Admission (character creation / respec) ----
   const [admission, setForge] = React.useState<{ open: boolean; mode: "new" | "edit"; draft: Draft | null }>({ open: false, mode: "new", draft: null });
   const forgeData = React.useMemo(() => ({ creation: SEED.creation, houses: SEED.houses, stats, magicSchools: schools, compendium: D.compendium }), [stats, schools, D.compendium]);
+  // What a respec can't rebuild from its own draft — classes, spells, and gear
+  // as they stand in play. The Forge's overview card reads these so a character
+  // back from gameplay summarises in full, not just the two respec steps.
+  const forgeLive = React.useMemo<OverviewLive>(
+    () => ({ classState, spells, inventory: { wands, artifacts, potions, plants, glyphs, items } }),
+    [classState, spells, wands, artifacts, potions, plants, glyphs, items],
+  );
   const openForgeNew = () => {
     
     let draft = F.blankDraft();
@@ -1143,6 +1179,11 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     
     setForge({ open: true, mode: "edit", draft: F.draftFromLive(forgeData, { c, stats, schools, classState }) });
   };
+  const [overviewOpen, setOverviewOpen] = React.useState(false);
+  const overviewModel = React.useMemo(
+    () => (overviewOpen ? overviewFromDraft(F.draftFromLive(forgeData, { c, stats, schools, classState }), forgeData, CL, forgeLive) : null),
+    [overviewOpen, forgeData, c, stats, schools, classState, CL, forgeLive],
+  );
   const closeForge = () => {
     // In create mode there's no character until the Forge commits — closing
     // without committing would otherwise leave the seed demo sheet showing.
@@ -1170,14 +1211,15 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       classes.handlers.loadState(F.buildClassState(draft), 0);
       magic.setState.setBonuses(F.buildWandBonuses(draft, forgeData));
       magic.setState.setSpells(F.buildSpells(draft, forgeData));
-      magic.setState.setMoves([]);
+      const startArtifacts = F.buildArtifacts(draft, forgeData, CL) as unknown as Artifact[];
+      magic.setState.setMoves(startArtifacts.filter((a) => a.attuned).map(artifactBoonMove));
       const pots = F.buildPotions(draft, forgeData);
       setRecipes(pots.map((p) => p.recipe));
       setPotions(pots.map((p) => p.vial));
       setPlants(F.buildPlants(draft, forgeData) as Plant[]);
-      setItems([]);
+      setItems(F.buildItems(draft, forgeData));
       setGlyphs(F.buildGlyphs(draft, forgeData) as Glyph[]);
-      setArtifacts(F.buildArtifacts(draft, forgeData) as unknown as Artifact[]);
+      setArtifacts(startArtifacts);
       setWands([F.buildStartingWand(draft, forgeData) as unknown as Wand, ...(F.buildExtraWands(draft, forgeData) as unknown as Wand[])]);
       setRuneStack([]);
     }
@@ -1218,7 +1260,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     // A tie against the DC is a bare-minimum success — it earns an immediate improvement roll
     // in the trained skill (a flat Stat check, sk.id undefined, doesn't have one to earn).
     onResult: (r) => {
-      if (sk.id && sk.rank != null && r.dc != null && r.total === r.dc) onImproveSkill(fac, sk as RollSkill & { rank: number }, { currentTarget: document.body });
+      if (sk.id && sk.rank != null && r.dc != null && r.total === r.dc) onImproveSkill(fac, sk as RollSkill & { rank: number });
     },
   }, e.currentTarget as HTMLElement);
   const onRollAction = () => openPrompt({
@@ -1275,7 +1317,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     condBonuses: condBonusesFor((b) => (b.type === "subject" && b.target === sub.key) || (b.type === "stat" && b.target === sub.stat) || b.type === "universal"),
     // A tie against the DC is a bare-minimum success — it earns an immediate improvement roll in the subject.
     onResult: (r) => {
-      if (r.dc != null && r.total === r.dc) onImproveSubject(school, sub, { currentTarget: document.body });
+      if (r.dc != null && r.total === r.dc) onImproveSubject(school, sub);
     },
   }, e.currentTarget as HTMLElement);
 
@@ -1364,38 +1406,42 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   const bumpSubjectRank = (schoolId: string, subKey: string) => setSchools((prev) => prev.map((sc) => (sc.id === schoolId ? { ...sc, subjects: sc.subjects.map((s) => (s.key === subKey ? { ...s, rank: s.rank + 1 } : s)) } : sc)));
 
   const improveCrit = (statName: string) => ({ success: { on: "ten" as const, forces: true, label: "Breakthrough", text: "A natural 10 — the lesson lifts your " + statName + " itself by a rank." } });
-  const onImproveSkill = (fac: Stat, sk: RollSkill & { rank: number }, e: { currentTarget: Element }) => {
+  // Both improvement rolls below are always auto-triggered by a DC tie —
+  // nobody clicks a button to open them — so they always render as the
+  // centered modal (see RollPrompt's `centered` branch), never the anchored
+  // popover a real button click would otherwise position.
+  const onImproveSkill = (fac: Stat, sk: RollSkill & { rank: number }) => {
     const dc = 10 + sk.rank;
     openPrompt({
       who: meWho(), label: sk.name, kind: "improve", stat: fac.name, mod: effFacRank(fac.name) + rollBonusFor("improve", sk.id), dc,
       meta: ["Improvement", "DC 10 + " + sk.rank + " rank" + (sk.rank === 1 ? "" : "s")],
-      crit: improveCrit(fac.name),
+      crit: improveCrit(fac.name), centered: true,
       dosMod: dosShiftFor((b) => b.type === "improve" && (!b.target || b.target === sk.id)),
       condBonuses: catCond("improve", sk.id),
-      detail: "An improvement roll — test your " + fac.name + " against the lesson. Succeed and " + sk.name + " deepens by a rank; roll a natural 10 and " + fac.name + " itself rises instead.",
+      detail: "Sparked it, just narrowly. Your skills improve from pushing them to their limits. Roll " + fac.name + " to improve your " + sk.name + ", or boost " + fac.name + " on a critical success.",
       fail: "The lesson eludes you — no progress this time.",
       onResult: (r) => {
         if (r.crit && r.crit.kind === "success") { bumpStatById(fac.id); toast(fac.name + " rises to rank " + (fac.rank + 1) + " · +1 Rank Point"); grantRp(1); }
         else if (r.pass && sk.id) { bumpSkillRank(fac.id, sk.id); toast(sk.name + " deepens to rank " + (sk.rank + 1) + " · +1 Rank Point"); grantRp(1); }
       },
-    }, e.currentTarget as HTMLElement);
+    });
   };
-  const onImproveSubject = (school: MagicSchool, sub: RollSubject, e: { currentTarget: Element }) => {
+  const onImproveSubject = (school: MagicSchool, sub: RollSubject) => {
     const fr = facRank(sub.stat);
     const dc = 10 + sub.rank;
     openPrompt({
       who: meWho(), label: sub.name, kind: "improve", stat: sub.stat, mod: effFacRank(sub.stat) + rollBonusFor("improve", sub.key), dc,
       meta: [school.name.replace(" Magics", ""), "Improvement", "DC 10 + " + sub.rank + " rank" + (sub.rank === 1 ? "" : "s")],
-      crit: improveCrit(sub.stat),
+      crit: improveCrit(sub.stat), centered: true,
       dosMod: dosShiftFor((b) => b.type === "improve" && (!b.target || b.target === sub.key)),
       condBonuses: catCond("improve", sub.key),
-      detail: "An improvement roll — test your " + sub.stat + " against the field. Succeed and " + sub.name + " deepens by a rank; roll a natural 10 and " + sub.stat + " itself rises instead.",
+      detail: "Sparked it, just narrowly. Your skills improve from pushing them to their limits. Roll " + sub.stat + " to improve your " + sub.name + ", or boost " + sub.stat + " on a critical success.",
       fail: "The field resists you — no progress this time.",
       onResult: (r) => {
         if (r.crit && r.crit.kind === "success") { bumpStatByName(sub.stat); toast(sub.stat + " rises to rank " + (fr + 1) + " · +1 Rank Point"); grantRp(1); }
         else if (r.pass) { bumpSubjectRank(school.id, sub.key); toast(sub.name + " deepens to rank " + (sub.rank + 1) + " · +1 Rank Point"); grantRp(1); }
       },
-    }, e.currentTarget as HTMLElement);
+    });
   };
 
   const titleMap: Record<string, string> = { overview: "Overview", classes: "Classes", magic: "Magic", inventory: "Inventory", journal: "Journal", map: "Map" };
@@ -1404,7 +1450,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   return (
     <div className="sf-sheet" style={{ position: "fixed", inset: 0, overflow: "hidden" }}>
     <div className="sf-app" data-nav={nav}>
-      <Sidebar active={nav} onNavigate={onNavigate} roster={ROSTER} activeChar={activeChar} onPickChar={pickChar} compCount={D.compendium.length} onEditCharacter={openForgeEdit} collapsed={sidebarCollapsed} onToggleSidebar={toggleSidebar} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
+      <Sidebar active={nav} onNavigate={onNavigate} roster={ROSTER} activeChar={activeChar} onPickChar={pickChar} compCount={D.compendium.length} onOverview={() => setOverviewOpen(true)} onEditCharacter={openForgeEdit} collapsed={sidebarCollapsed} onToggleSidebar={toggleSidebar} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
       <main className="sf-main">
         <TopBar title={titleMap[nav] || "Overview"} eyebrow={c.name + " · " + c.house} c={{ ...c, resolve: Math.max(0, 5 - conditions.reduce((s, cd) => s + cd.value, 0)), resolveMax: 5 }} onStep={stepVital} onRollAction={onRollAction} onToggleMobileMenu={() => setMobileMenuOpen((v) => !v)} hideVitals={nav === "map"} time={campaignId ? gmTime : undefined} searchQuery={searchQuery} onSearchQueryChange={setSearchQuery} searchResults={searchResults} onSearchSelect={handleSearchSelect} onSearchRoll={handleSearchRoll} onSearchRepair={handleSearchRepair} onSearchUse={handleSearchUse} searchMenuOpen={searchMenuOpen} onSearchMenuOpen={() => setSearchMenuOpen(true)} onSearchMenuClose={() => setSearchMenuOpen(false)} onSearchMobileOpen={() => setSearchMenuOpen(true)} />
 
@@ -1495,7 +1541,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
         )}
       </main>
 
-      <Compendium open={drawer} onClose={closeDrawer} data={{ compendiumCats: SEED.compendiumCats, compendium: D.compendium }} addedIds={addedIds} onAdd={onAdd} onAddAttuned={onAddAttuned} onAddLearning={onAddLearning} onAddPotionSheaf={onAddPotionSheaf} onAddPotionRecipe={onAddPotionRecipe} onAddWandCraft={onAddWandCraft} potionSheafCount={heldCount} potionCap={INV.potionCap} potionRecipes={recipes} lastAdded={lastAdded} cat={compCat} setCat={setCompCat} width={t.archiveWidth as number} attuneFull={attunedCount >= caps.attuneCap} cultivationCap={caps.plantCap} plantSum={plantSum} />
+      <Compendium open={drawer} onClose={closeDrawer} loading={!comp.ready} data={{ compendiumCats: SEED.compendiumCats, compendium: D.compendium }} addedIds={addedIds} onAdd={onAdd} onAddAttuned={onAddAttuned} onAddLearning={onAddLearning} onAddPotionSheaf={onAddPotionSheaf} onAddPotionRecipe={onAddPotionRecipe} onAddWandCraft={onAddWandCraft} potionSheafCount={heldCount} potionCap={INV.potionCap} potionRecipes={recipes} lastAdded={lastAdded} cat={compCat} setCat={setCompCat} width={t.archiveWidth as number} attuneFull={attunedCount >= caps.attuneCap} cultivationCap={caps.plantCap} plantSum={plantSum} />
       <ManualMove
         open={manualMoveOpen}
         onClose={() => { setManualMoveOpen(false); setEditMove(null); }}
@@ -1509,7 +1555,8 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       <ManualModal open={!!manualKind} kind={manualKind} subjects={allSubjects} skills={stats.flatMap((st) => st.skills)} stats={stats} schools={schools} compendiumSpells={D.compendium.filter((e) => e.cat === "spell")} attuneFull={attunedCount >= caps.attuneCap} sheafFull={heldCount >= caps.potionCap} editSubject={manualKind === "recipe" ? editRecipe : manualKind === "artifact" ? editArtifact : manualKind === "wand" ? editWand : manualKind === "plant" ? editPlant : manualKind === "glyph" ? editGlyph : null} cultivationCap={caps.plantCap} cultivationUsed={plantSum} onSave={saveManual} onClose={() => { setManualKind(null); setEditRecipe(null); setEditArtifact(null); setEditWand(null); setEditPlant(null); setEditGlyph(null); }} />
       <GiveModal open={!!givePayload} payload={givePayload as GivePayload | null} roster={ROSTER} activeChar={activeChar} onConfirm={onGiveConfirm} onClose={() => setGivePayload(null)} />
       <ChoosePlantModal open={!!choosePlant} plant={choosePlant ? choosePlant.pl : null} onRoll={() => { const ctx = choosePlant; setChoosePlant(null); if (ctx) invH.rollPlant(ctx.pl, ctx.anchor); }} onJustUse={() => { const ctx = choosePlant; setChoosePlant(null); if (ctx) invH.markPlantUsed(ctx.pl); }} onClose={() => setChoosePlant(null)} />
-      {admission.open && admission.draft ? <Admission mode={admission.mode} initial={admission.draft} data={forgeData} classData={CL} onCommit={commitForge} onClose={closeForge} /> : null}
+      {admission.open && admission.draft ? <Admission mode={admission.mode} initial={admission.draft} data={forgeData} classData={CL} live={forgeLive} onCommit={commitForge} onClose={closeForge} /> : null}
+      <CharacterOverview open={overviewOpen} model={overviewModel} onClose={() => setOverviewOpen(false)} />
       <BonusEditor open={bonusEdit.open} bonus={bonusEdit.bonus} mode={bonusEdit.mode} ctx={{ stats, schools, moves, spells, conditions }} classes={bonusClasses} onSave={saveBonus} onDelete={removeBonus} onClose={closeBonusEdit} />
       <div className={"sf-inv-toast" + (invToast ? " show" : "")} role="status">
         {invToast && <span><Icon name="check-circle" /> {invToast}</span>}
@@ -1529,7 +1576,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     setSearchMenuOpen(false);
     setSearchQuery("");
     if (result.section) setNav(result.section);
-    if (result.type === "location") setMapFocus({ type: "sf-map-focus" });
+    if (result.type === "location") setMapFocus(mapFocusFromSearchResult(result));
   }
   function handleSearchRepair(result: SearchResult) { invH.repairArtifact(result.data as Artifact, "medium", document.body); }
   function handleSearchUse(result: SearchResult) {

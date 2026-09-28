@@ -1,13 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { Badge, Banner, Button, IconButton, Select } from "@/ds";
+import { Badge, Banner, Button, Crest, IconButton, Select } from "@/ds";
 import { Icon } from "../Icon";
 import { DualRange, type RangeValue } from "./DualRange";
 import { SpellHLB } from "./SpellCard";
 import { PLANT_ROLL_LABEL, TONE_500, levelTone, parsePlantRoll } from "../../data/shared";
 import {
-  COMP_FILTERS, COMP_SORT_FIELDS, compLevelRank, field,
+  COMP_FILTERS, COMP_SORT_FIELDS, compLevelRank, field, idNumRank,
   type FilterValue, type Filters,
 } from "../../data/entry-query";
 import type { CompendiumCat, CompendiumEntry, Tone } from "../../types";
@@ -23,6 +23,8 @@ const learnDaysFor = (level: string | undefined) => {
 export interface CompendiumProps {
   open: boolean;
   onClose: () => void;
+  /** True while the live compendium is still loading — shows a crest placeholder instead of seed entries. */
+  loading?: boolean;
   data: { compendiumCats: CompendiumCat[]; compendium: CompendiumEntry[] };
   addedIds: string[];
   onAdd: (id: string) => void;
@@ -44,7 +46,7 @@ export interface CompendiumProps {
 }
 
 export function Compendium({
-  open, onClose, data, addedIds, onAdd, onAddAttuned, onAddLearning, onAddPotionSheaf,
+  open, onClose, loading, data, addedIds, onAdd, onAddAttuned, onAddLearning, onAddPotionSheaf,
   onAddPotionRecipe, onAddWandCraft, potionSheafCount, potionCap, potionRecipes, lastAdded,
   cultivationCap = 0, plantSum = 0, attuneFull, cat, setCat, width,
 }: CompendiumProps) {
@@ -153,6 +155,8 @@ export function Compendium({
       else r = av - bv;
     } else if (type === "level") {
       r = compLevelRank(field(a, sort.field) as string) - compLevelRank(field(b, sort.field) as string);
+    } else if (type === "id-num") {
+      r = idNumRank(field(a, sort.field) as string) - idNumRank(field(b, sort.field) as string);
     } else {
       r = String(field(a, sort.field) || "").toLowerCase().localeCompare(String(field(b, sort.field) || "").toLowerCase());
     }
@@ -220,7 +224,7 @@ export function Compendium({
         </div>
 
         <div className="sf-comp-toolbar">
-          <span className="sf-comp-count">{items.length} {items.length === 1 ? "entry" : "entries"}</span>
+          <span className="sf-comp-count">{loading ? "Loading…" : `${items.length} ${items.length === 1 ? "entry" : "entries"}`}</span>
           <div className="sf-comp-controls">
             <div className="sf-pop" ref={filterRef}>
               <button className={"sf-tool-btn" + (filterOpen ? " is-open" : "")} disabled={!filterCfg.length} onClick={() => { setFilterOpen((v) => !v); setSortOpen(false); }} aria-label="Filters">
@@ -294,7 +298,12 @@ export function Compendium({
         </div>
 
         <div className="sf-comp-list">
-          {items.length === 0 ? (
+          {loading ? (
+            <div className="sf-comp-loading">
+              <Crest form="lines" size={56} tint="gold" className="sf-comp-loading__crest" />
+              <p>The fetch hound is working…</p>
+            </div>
+          ) : items.length === 0 ? (
             <div className="sf-comp-empty">
               <Icon name="search-x" />
               <p>No entries match — try another wing of the archive.</p>
