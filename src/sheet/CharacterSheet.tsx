@@ -71,7 +71,8 @@ import { RollPrompt } from "./components/rolls/RollPrompt";
 import { Admission } from "./forge/Forge";
 import * as F from "./forge/forge-state";
 import type { Draft } from "./forge/forge-state";
-import type { OverviewLive } from "./overview/overview-data";
+import { CharacterOverview } from "./overview/CharacterOverview";
+import { overviewFromDraft, type OverviewLive } from "./overview/overview-data";
 
 import type { RosterMember } from "@/app/(app)/characters/roster";
 import type { RollRosterMember } from "./state/useRollState";
@@ -1125,6 +1126,11 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     
     setForge({ open: true, mode: "edit", draft: F.draftFromLive(forgeData, { c, stats, schools, classState }) });
   };
+  const [overviewOpen, setOverviewOpen] = React.useState(false);
+  const overviewModel = React.useMemo(
+    () => (overviewOpen ? overviewFromDraft(F.draftFromLive(forgeData, { c, stats, schools, classState }), forgeData, CL, forgeLive) : null),
+    [overviewOpen, forgeData, c, stats, schools, classState, CL, forgeLive],
+  );
   const closeForge = () => {
     // In create mode there's no character until the Forge commits — closing
     // without committing would otherwise leave the seed demo sheet showing.
@@ -1384,7 +1390,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   return (
     <div className="sf-sheet" style={{ position: "fixed", inset: 0, overflow: "hidden" }}>
     <div className="sf-app" data-nav={nav}>
-      <Sidebar active={nav} onNavigate={onNavigate} roster={ROSTER} activeChar={activeChar} onPickChar={pickChar} compCount={D.compendium.length} onEditCharacter={openForgeEdit} collapsed={sidebarCollapsed} onToggleSidebar={toggleSidebar} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
+      <Sidebar active={nav} onNavigate={onNavigate} roster={ROSTER} activeChar={activeChar} onPickChar={pickChar} compCount={D.compendium.length} onOverview={() => setOverviewOpen(true)} onEditCharacter={openForgeEdit} collapsed={sidebarCollapsed} onToggleSidebar={toggleSidebar} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
       <main className="sf-main">
         <TopBar title={titleMap[nav] || "Overview"} eyebrow={c.name + " · " + c.house} c={{ ...c, resolve: Math.max(0, 5 - conditions.reduce((s, cd) => s + cd.value, 0)), resolveMax: 5 }} onStep={stepVital} onRollAction={onRollAction} onToggleMobileMenu={() => setMobileMenuOpen((v) => !v)} hideVitals={nav === "map"} time={campaignId ? gmTime : undefined} searchQuery={searchQuery} onSearchQueryChange={setSearchQuery} searchResults={searchResults} onSearchSelect={handleSearchSelect} onSearchRoll={handleSearchRoll} onSearchRepair={handleSearchRepair} onSearchUse={handleSearchUse} searchMenuOpen={searchMenuOpen} onSearchMenuOpen={() => setSearchMenuOpen(true)} onSearchMenuClose={() => setSearchMenuOpen(false)} onSearchMobileOpen={() => setSearchMenuOpen(true)} />
 
@@ -1475,6 +1481,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       <GiveModal open={!!givePayload} payload={givePayload as GivePayload | null} roster={ROSTER} activeChar={activeChar} onConfirm={onGiveConfirm} onClose={() => setGivePayload(null)} />
       <ChoosePlantModal open={!!choosePlant} plant={choosePlant ? choosePlant.pl : null} onRoll={() => { const ctx = choosePlant; setChoosePlant(null); if (ctx) invH.rollPlant(ctx.pl, ctx.anchor); }} onJustUse={() => { const ctx = choosePlant; setChoosePlant(null); if (ctx) invH.markPlantUsed(ctx.pl); }} onClose={() => setChoosePlant(null)} />
       {admission.open && admission.draft ? <Admission mode={admission.mode} initial={admission.draft} data={forgeData} classData={CL} live={forgeLive} onCommit={commitForge} onClose={closeForge} /> : null}
+      <CharacterOverview open={overviewOpen} model={overviewModel} onClose={() => setOverviewOpen(false)} />
       <BonusEditor open={bonusEdit.open} bonus={bonusEdit.bonus} mode={bonusEdit.mode} ctx={{ stats, schools, moves, spells, conditions }} classes={bonusClasses} onSave={saveBonus} onDelete={removeBonus} onClose={closeBonusEdit} />
       <div className={"sf-inv-toast" + (invToast ? " show" : "")} role="status">
         {invToast && <span><Icon name="check-circle" /> {invToast}</span>}
