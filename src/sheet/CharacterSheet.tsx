@@ -672,7 +672,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       if (a.attuned || attunedCount >= caps.attuneCap) return;
       op({ label: "Attune to " + a.name, kind: "attune", stat: "Creativity", mod: effFacRank("Creativity") + subRank("artificy") + rollBonusFor("attune"), dc: a.intensity, meta: ["Artificy", "Attunement"], detail: a.desc, hl: attuneHL(a), dosMod: dosShiftFor((b) => b.type === "attune"),
         condBonuses: catCond("attune"),
-        resist: { condition: "wound", dcPerDegree: 5, eyebrow: "Failed attunement", heading: "SOULBURNED", verdict: "The artifact’s magic bites back, lashing out against yours." },
+        resist: { dcPerDegree: 5, eyebrow: "Failed attunement", heading: "SOULBURNED", verdict: "The artifact’s magic bites back, lashing out against yours." },
         onResult: (r) => {
           if (r.pass) { setArtifacts((prev) => prev.map((x) => (x.id === a.id ? { ...x, attuned: true, intensity: 0 } : x))); magic.handlers.addArtMove(a); }
           else { const key = String(Math.max(-11, Math.min(-1, -(r.degrees || 0)))); const ease = INV.attuneEase[key] || 0; setArtifacts((prev) => prev.map((x) => (x.id === a.id ? { ...x, intensity: Math.max(0, x.intensity + ease) } : x))); }
