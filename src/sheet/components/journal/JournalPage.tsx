@@ -63,7 +63,7 @@ export function JournalPage({ shared, sharedError, onReloadShared, notes, ownsSh
   const emptyMessage = !ownsSheet
     ? "Nothing to read on this sheet yet."
     : campaignId
-      ? "Nothing here yet — pages your Game Master shares, and pages you write, both land here."
+      ? "Empty journal: the fetch hound searched and found no pages here."
       : "Start a page of your own — and join a campaign to read what your Game Master shares.";
 
   const pageButton = (section: Section, note: GmNote | SheetNote) => {

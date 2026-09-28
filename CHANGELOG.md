@@ -8,6 +8,9 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.22.1 — 2026-09-28
+- Reworded the Journal tab's empty state.
+
 ## v1.22.0 — 2026-09-28
 - The character sheet has a new **Journal** tab (between Inventory and Map)
   with two sections. "Shared by the Game Master" holds the pages the GM
