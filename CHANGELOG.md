@@ -8,6 +8,16 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.23.3 — 2026-09-30
+- The **random-NPC form** has a new look. Year is a row of roman numerals;
+  House, major and classes each sit on one compact row showing your picks as
+  coloured tokens (or "Random" when left open), and clicking a row opens a
+  panel underneath: House crests, majors grouped by school, and class cards
+  with their icons. The form also fits on a phone screen now.
+- The built-in backup of the Classes table (used when the Google Sheet can't
+  be reached) is refreshed: it now includes the **Technician** and the
+  reworked Alchemist abilities.
+
 ## v1.23.2 — 2026-09-30
 - **Unlimited build** now ignores the year's rank cap (ranks up to 12) and is
   no longer the default for NPCs. A random Unlimited build rolls its point
