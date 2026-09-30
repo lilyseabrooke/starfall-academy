@@ -8,6 +8,21 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.23.2 — 2026-09-30
+- **Unlimited build** now ignores the year's rank cap (ranks up to 12) and is
+  no longer the default for NPCs. A random Unlimited build rolls its point
+  total first, then takes its rank cap from the year whose point pool is
+  closest to that total.
+- NPCs can be **Unaffiliated** — "Not everyone who lives and works at Starfall
+  is tied to a House." — with gray as the sheet's theme colour. It's offered in
+  the NPC creator, and the random-NPC form can now pick a House (or Unaffiliated),
+  leaving it to chance if you don't.
+- The random-NPC form builds on the default (Quick) build, so the year you pick
+  decides the NPC's power level.
+- Backing out of the character creator now shows the loading screen instead of
+  flashing the demo sheet underneath.
+- The "Conjuring…" screen for a new random NPC picks from sixteen lines.
+
 ## v1.23.1 — 2026-09-30
 - GM tools: the basic-NPC tab is now **Extras**, so it no longer shares a name
   with the full NPC sheets in the side rail.

@@ -60,6 +60,7 @@ import { ManualSpell } from "./components/parts/ManualSpell";
 import { BackfireResist } from "./components/parts/BackfireResist";
 import { ArtifactBackfireModal } from "./components/parts/ArtifactBackfireModal";
 import { Icon } from "./components/Icon";
+import LoadingScreen from "@/components/LoadingScreen";
 import { ClassesPage } from "./components/classes/ClassesPage";
 import { InventoryPage } from "./components/inventory/InventoryPage";
 import { ManualModal } from "./components/inventory/ManualModal";
@@ -142,7 +143,10 @@ interface GmPrompt {
  *  used the side rail's dice — the answers to build a random one from. */
 export interface NpcCreate {
   campaignId: string;
-  random: { name: string; pronouns: string; yearId: string; major: string[]; classIds: string[]; bio: string } | null;
+  /** The "conjuring" line for the cover screen, picked by the server so the
+   *  server and client renders agree. {name} stands for the NPC's name. */
+  phrase: string;
+  random: { name: string; pronouns: string; yearId: string; houseId: string; major: string[]; classIds: string[]; bio: string } | null;
 }
 
 export interface CharacterSheetProps {
@@ -242,6 +246,9 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   );
   const [activeChar, setActiveChar] = React.useState(me || (ROSTER.find((r) => r.active) || ROSTER[0]).id);
   const [randomNpcOpen, setRandomNpcOpen] = React.useState(false);
+  // Backing out of the creator: the page behind it is only the seed demo sheet,
+  // so cover it with the loading screen until the navigation lands.
+  const [leavingCreator, setLeavingCreator] = React.useState(false);
   const [deleteNpc, setDeleteNpc] = React.useState<{ busy: boolean; error: string | null } | null>(null);
 
   const pickChar = (cid: string) => {
@@ -1194,8 +1201,8 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     [classState, spells, wands, artifacts, potions, plants, glyphs, items],
   );
   const openForgeNew = () => {
-    // An NPC starts on the Unlimited build, with a draft of its own.
-    let draft: Draft = npc ? { ...F.blankDraft(), buildType: "unlimited" } : F.blankDraft();
+    // An NPC keeps its draft apart from a player character's.
+    let draft: Draft = F.blankDraft();
     try { const s = JSON.parse(localStorage.getItem(npc ? "sf-admission-draft-npc" : "sf-admission-draft") || "null"); if (s && s.mode === "new") draft = { ...draft, ...s }; } catch { /* ignore */ }
     setForge({ open: true, mode: "new", draft });
   };
@@ -1211,7 +1218,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   const closeForge = () => {
     // In create mode there's no character until the Forge commits — closing
     // without committing would otherwise leave the seed demo sheet showing.
-    if (admission.mode === "new" && mode === "create") { router.push(npc ? `/gm/${npc.campaignId}` : "/characters"); return; }
+    if (admission.mode === "new" && mode === "create") { setLeavingCreator(true); router.push(npc ? `/gm/${npc.campaignId}` : "/characters"); return; }
     setForge((s) => ({ ...s, open: false }));
   };
 
@@ -1279,8 +1286,10 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     if (!quickNpc || !comp.ready || quickNpcRan.current) return;
     quickNpcRan.current = true;
     const year = SEED.creation.years.find((y) => y.id === quickNpc.yearId) || SEED.creation.years[0];
-    const house = SEED.houses[Math.floor(Math.random() * SEED.houses.length)];
-    const base: Draft = { ...F.blankDraft(), name: quickNpc.name.trim(), pronouns: quickNpc.pronouns, bio: quickNpc.bio, yearId: year.id, houseId: house.id, buildType: "unlimited" };
+    const houseId = quickNpc.houseId === F.NO_HOUSE_ID || SEED.houses.some((h) => h.id === quickNpc.houseId)
+      ? quickNpc.houseId
+      : SEED.houses[Math.floor(Math.random() * SEED.houses.length)].id;
+    const base: Draft = { ...F.blankDraft(), name: quickNpc.name.trim(), pronouns: quickNpc.pronouns, bio: quickNpc.bio, yearId: year.id, houseId };
     commitForge(randomizeDraft(base, forgeData, CL, { major: quickNpc.major, classIds: quickNpc.classIds }));
     setQuickNpcBusy(false);
   }, [quickNpc, comp.ready]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1602,6 +1611,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
         <RandomNpcModal
           options={{
             years: SEED.creation.years.map((y) => ({ id: y.id, label: y.label })),
+            houses: [...SEED.houses, F.UNAFFILIATED_HOUSE].map((h) => ({ id: h.id, name: h.name.replace(/ House$/, "") })),
             subjects: F.flatSubjects(forgeData).map((sb) => ({ key: sb.key, name: sb.name })),
             classes: CL.classes.map((k) => ({ id: k.id, name: k.name })),
           }}
@@ -1627,7 +1637,8 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
           }}
         />
       ) : null}
-      {quickNpcBusy ? <div className="sf-npc-conjure" role="status"><Icon name="dices" /><span>Conjuring {quickNpc?.name.trim() || "an NPC"}…</span></div> : null}
+      {leavingCreator ? <LoadingScreen overlay /> : null}
+      {quickNpcBusy ? <div className="sf-npc-conjure" role="status"><Icon name="dices" /><span>{(npc?.phrase || "Conjuring {name}").replace("{name}", quickNpc?.name.trim() || "an NPC")}…</span></div> : null}
       <CharacterOverview open={overviewOpen} model={overviewModel} onClose={() => setOverviewOpen(false)} />
       <BonusEditor open={bonusEdit.open} bonus={bonusEdit.bonus} mode={bonusEdit.mode} ctx={{ stats, schools, moves, spells, conditions }} classes={bonusClasses} onSave={saveBonus} onDelete={removeBonus} onClose={closeBonusEdit} />
       <div className={"sf-inv-toast" + (invToast ? " show" : "")} role="status">

@@ -16,6 +16,8 @@ export interface RandomNpcValues {
   name: string;
   pronouns: string;
   yearId: string;
+  /** A House id, "none" for Unaffiliated, or "" to leave it to chance. */
+  houseId: string;
   major: string[];
   classIds: string[];
   bio: string;
@@ -23,6 +25,7 @@ export interface RandomNpcValues {
 
 export interface RandomNpcOptions {
   years: { id: string; label: string }[];
+  houses: { id: string; name: string }[];
   subjects: { key: string; name: string }[];
   classes: { id: string; name: string }[];
 }
@@ -38,6 +41,7 @@ export function npcCreateHref(campaignId: string, values?: RandomNpcValues): str
     q.set("name", values.name);
     if (values.pronouns) q.set("pronouns", values.pronouns);
     q.set("year", values.yearId);
+    if (values.houseId) q.set("house", values.houseId);
     if (values.major.length) q.set("major", values.major.join(","));
     if (values.classIds.length) q.set("classes", values.classIds.join(","));
     if (values.bio) q.set("bio", values.bio);
@@ -62,7 +66,7 @@ function ChipPicker({ label, hint, options, picked, onToggle }: { label: string;
 }
 
 export function RandomNpcModal({ options, onSubmit, onClose }: { options: RandomNpcOptions; onSubmit: (v: RandomNpcValues) => void; onClose: () => void }) {
-  const [v, setV] = React.useState<RandomNpcValues>({ name: "", pronouns: "", yearId: options.years[0]?.id ?? "first", major: [], classIds: [], bio: "" });
+  const [v, setV] = React.useState<RandomNpcValues>({ name: "", pronouns: "", yearId: options.years[0]?.id ?? "first", houseId: "", major: [], classIds: [], bio: "" });
   const patch = (p: Partial<RandomNpcValues>) => setV((s) => ({ ...s, ...p }));
   const toggle = (key: "major" | "classIds", id: string) => setV((s) => ({ ...s, [key]: s[key].includes(id) ? s[key].filter((x) => x !== id) : s[key].length < MAX_PICKS ? [...s[key], id] : s[key] }));
   const ready = v.name.trim().length > 0;
@@ -77,7 +81,7 @@ export function RandomNpcModal({ options, onSubmit, onClose }: { options: Random
           <button className="gm-modal__x" onClick={onClose} aria-label="Close"><Icon name="x" /></button>
         </div>
         <div className="gm-modal__body">
-          <p className="gm-modal__info">Tell us who they are — everything else, from stats and classes to spells and gear, is rolled for you on an unlimited build.</p>
+          <p className="gm-modal__info">Tell us who they are — everything else, from stats and classes to spells and gear, is rolled for you.</p>
           <div className="gm-npc-form__row2">
             <label className="gm-input-field"><span className="gm-field-label">Name <span className="gm-req">*</span></span><input autoFocus value={v.name} onChange={(e) => patch({ name: e.target.value })} onKeyDown={(e) => { if (e.key === "Enter") submit(); }} placeholder="e.g. Florence Walker" /></label>
             <label className="gm-input-field"><span className="gm-field-label">Pronouns</span><input value={v.pronouns} onChange={(e) => patch({ pronouns: e.target.value })} placeholder="e.g. she / her" /></label>
@@ -87,6 +91,14 @@ export function RandomNpcModal({ options, onSubmit, onClose }: { options: Random
             <div className="sf-npcchips">
               {options.years.map((y) => (
                 <button key={y.id} type="button" className={"sf-npcchip" + (v.yearId === y.id ? " is-on" : "")} aria-pressed={v.yearId === y.id} onClick={() => patch({ yearId: y.id })}>{y.label}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div className="gm-field-label">House <span className="gm-opt">optional · left to chance if unchosen</span></div>
+            <div className="sf-npcchips">
+              {options.houses.map((h) => (
+                <button key={h.id} type="button" className={"sf-npcchip" + (v.houseId === h.id ? " is-on" : "")} aria-pressed={v.houseId === h.id} onClick={() => patch({ houseId: v.houseId === h.id ? "" : h.id })}>{h.name}</button>
               ))}
             </div>
           </div>

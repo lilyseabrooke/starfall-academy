@@ -122,7 +122,8 @@ export function toGMPartyMember(row: GMRosterRow): GMPartyMember {
     name,
     initials: initialsOf(name),
     tone,
-    house: houseFull ? `${houseFull} House` : "Unsorted",
+    // "Unaffiliated" is an NPC's no-House state, not a House to append "House" to.
+    house: houseFull === "Unaffiliated" ? houseFull : houseFull ? `${houseFull} House` : "Unsorted",
     className: (c.title || "").toString(),
     // Resolve isn't its own stored stat — it's 5 minus the character's total
     // condition severity, same formula as the player's own TopBar computes

@@ -119,6 +119,7 @@
 .sf-sheet .sf-avatar.t-plum    { background: color-mix(in oklab, var(--plum-500) 60%, var(--ink-900)); }
 .sf-sheet .sf-avatar.t-forest  { background: color-mix(in oklab, var(--forest-500) 60%, var(--ink-900)); }
 .sf-sheet .sf-avatar.t-teal    { background: color-mix(in oklab, var(--teal-500) 60%, var(--ink-900)); }
+.sf-sheet .sf-avatar.t-silver  { background: color-mix(in oklab, oklch(62% 0.016 222) 60%, var(--ink-900)); }
 .sf-sheet .sf-avatar.t-crimson { background: color-mix(in oklab, var(--crimson-500) 62%, var(--ink-900)); }
 .sf-sheet .sf-roster__item.is-active .sf-avatar { background: var(--grad-gold); color: var(--ink-950); border-color: transparent; box-shadow: var(--inset-hi); }
 .sf-sheet .sf-roster__meta { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }

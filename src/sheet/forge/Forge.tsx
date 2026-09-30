@@ -72,7 +72,7 @@ function IdentityStep({ D, draft, set, onRandomize, randomizeNeedsConfirm, onOve
       ["quick", "Quick build", `Three tidy pools — ${q.stat} stats · ${q.subject} subjects · ${q.skill} skills.`],
       ["custom", "Custom build", `One pool · ${yr.custom} pts — fine-tune, and buy class ranks, wands, artifacts.`],
     ];
-    if (npc) list.push(["unlimited", "Unlimited build", "A custom build with no point limit — only the year's rank cap applies."]);
+    if (npc) list.push(["unlimited", "Unlimited build", "A custom build with no point limit and no year rank cap."]);
     return list;
   })();
 
@@ -111,7 +111,7 @@ function IdentityStep({ D, draft, set, onRandomize, randomizeNeedsConfirm, onOve
       <div className="sf-ffield">
         <span className="sf-flabel">House <span className="sf-flabel__opt">· flavor, and your sheet&apos;s color</span></span>
         <div className="sf-fhouses">
-          {D.houses.map((h) => (
+          {(npc ? [...D.houses, F.UNAFFILIATED_HOUSE] : D.houses).map((h) => (
             <button key={h.id} type="button" onClick={() => set({ houseId: h.id })}
               className={"sf-fhouse" + (draft.houseId === h.id ? " is-active" : "")} style={{ "--h-accent": TONE_500[h.tone], "--h-accent-fg": TONE_FG[h.tone] } as React.CSSProperties}>
               <span className="sf-fhouse__dot"></span>
@@ -309,7 +309,7 @@ function Meter({ label, spent, pool }: { label: string; spent: number; pool: num
 
 function BudgetHUD({ D, draft }: { D: ForgeData; draft: Draft }) {
   const b = F.budgets(draft, D);
-  const cap = <span className="sf-hud__cap">Year cap <b>{b.limit}</b></span>;
+  const cap = b.mode === "custom" && b.unlimited ? <span className="sf-hud__cap">No year cap</span> : <span className="sf-hud__cap">Year cap <b>{b.limit}</b></span>;
   if (b.mode === "quick") {
     return <div className="sf-hud">{cap}<Meter label="Stats" spent={b.stat.spent} pool={b.stat.pool} /><Meter label="Subjects" spent={b.subject.spent} pool={b.subject.pool} /><Meter label="Skills" spent={b.skill.spent} pool={b.skill.pool} /></div>;
   }

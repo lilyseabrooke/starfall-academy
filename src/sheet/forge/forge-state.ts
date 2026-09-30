@@ -74,11 +74,24 @@ export interface Draft {
 }
 
 export const yearById = (D: ForgeData, id: string) => D.creation.years.find((y) => y.id === id) || D.creation.years[0];
-export const houseById = (D: ForgeData, id: string) => D.houses.find((h) => h.id === id) || D.houses[0];
+/** NPCs only: someone at Starfall who belongs to no House. Gray (the "silver"
+ *  tone) is its theme colour. */
+export const NO_HOUSE_ID = "none";
+export const UNAFFILIATED_HOUSE: House = {
+  id: NO_HOUSE_ID, name: "Unaffiliated", tone: "silver", color: "Gray", animal: "",
+  blurb: "Not everyone who lives and works at Starfall is tied to a House.",
+};
+export const houseById = (D: ForgeData, id: string) =>
+  id === NO_HOUSE_ID ? UNAFFILIATED_HOUSE : D.houses.find((h) => h.id === id) || D.houses[0];
 export const wandById = (D: ForgeData, id: string) => D.creation.startingWands.find((w) => w.id === id) || D.creation.startingWands[0];
+
+/** The rank ceiling of an Unlimited build, which ignores the year's cap. High
+ *  enough to clear anything a graduate's major could reach (9 + 3). */
+export const UNLIMITED_CAP = 12;
 
 export const majorBonus = (draft: Draft) => (draft.major.length === 1 ? 3 : draft.major.length === 2 ? 1 : 0);
 export const rankCap = (draft: Draft, D: ForgeData, mapName: string, key: string) => {
+  if (draft.buildType === "unlimited") return UNLIMITED_CAP;
   const lim = yearById(D, draft.yearId).limit;
   return mapName === "subjects" && draft.major.includes(key) ? lim + majorBonus(draft) : lim;
 };
@@ -276,7 +289,7 @@ export function budgets(draft: Draft, D: ForgeData): Budgets {
   const spent = statSpent * cc.statCost + (subjSpent + skillSpent) * cc.abilityCost + classExtra + wandPts + artiPts + itemPts;
   const pool = draft.buildType === "unlimited" ? UNLIMITED_POOL : year.custom;
   return {
-    mode: "custom", limit: year.limit, pool, spent, remaining: pool - spent, unlimited: draft.buildType === "unlimited",
+    mode: "custom", limit: draft.buildType === "unlimited" ? UNLIMITED_CAP : year.limit, pool, spent, remaining: pool - spent, unlimited: draft.buildType === "unlimited",
     breakdown: { stats: statSpent * cc.statCost, abilities: (subjSpent + skillSpent) * cc.abilityCost, classes: classExtra, wands: wandPts, artifacts: artiPts, items: itemPts },
   };
 }
@@ -284,7 +297,7 @@ export function budgets(draft: Draft, D: ForgeData): Budgets {
 /* ---- Validation ---- */
 export const overCap = (draft: Draft, D: ForgeData) => {
   if (draft.mode === "edit") return false;
-  const lim = yearById(D, draft.yearId).limit;
+  const lim = draft.buildType === "unlimited" ? UNLIMITED_CAP : yearById(D, draft.yearId).limit;
   const any = (o: Record<string, number>) => Object.values(o).some((v) => (v || 0) > lim);
   const subjOver = Object.entries(draft.subjects).some(([k, v]) => (v || 0) > rankCap(draft, D, "subjects", k));
   return any(draft.stats) || subjOver || any(draft.skills);
@@ -555,7 +568,7 @@ export function draftFromLive(D: ForgeData, live: { c?: Partial<CharacterVitals>
   const d = blankDraft();
   d.mode = "edit";
   const c = live.c || {};
-  const house = D.houses.find((h) => h.name === c.house) || D.houses[0];
+  const house = c.house === UNAFFILIATED_HOUSE.name ? UNAFFILIATED_HOUSE : D.houses.find((h) => h.name === c.house) || D.houses[0];
   d.name = c.name || "";
   d.pronouns = c.pronouns || "";
   d.title = c.title || "";

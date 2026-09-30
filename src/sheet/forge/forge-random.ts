@@ -922,16 +922,19 @@ function pickInventory(nd: Draft, D: ForgeData) {
  *  through the same budget/cap rules the manual wizard enforces, so the
  *  result is always a legal, ready-to-begin build. */
 export function randomizeDraft(draft: Draft, baseD: ForgeData, classData: { classes: ClassDef[] }, preset: RandomPreset = {}): Draft {
-  // An unlimited build has no pool of its own to spend, so it first rolls one:
-  // somewhere between a first-year's custom pool and a graduate's, then builds
-  // exactly like a custom build of that size (the year's rank caps unchanged).
+  // An unlimited build has no pool or year cap of its own, so it first rolls a
+  // pool — somewhere between a first-year's custom pool and a graduate's — and
+  // borrows the rank cap of whichever year's pool is closest to it, then builds
+  // exactly like a custom build of that size. Only the pool and cap are swapped
+  // on the character's own year, so its spell quota and the rest stay its own.
   const unlimited = draft.buildType === "unlimited";
   let D = baseD;
   if (unlimited) {
-    const pools = baseD.creation.years.map((y) => y.custom);
-    const pts = randInt(Math.min(...pools), Math.max(...pools));
+    const years = baseD.creation.years;
+    const pts = randInt(Math.min(...years.map((y) => y.custom)), Math.max(...years.map((y) => y.custom)));
+    const nearest = years.reduce((best, y) => (Math.abs(y.custom - pts) < Math.abs(best.custom - pts) ? y : best), years[0]);
     const yearId = F.yearById(baseD, draft.yearId).id;
-    D = { ...baseD, creation: { ...baseD.creation, years: baseD.creation.years.map((y) => (y.id === yearId ? { ...y, custom: pts } : y)) } };
+    D = { ...baseD, creation: { ...baseD.creation, years: years.map((y) => (y.id === yearId ? { ...y, custom: pts, limit: nearest.limit } : y)) } };
   }
   const nd: Draft = {
     ...F.blankDraft(),

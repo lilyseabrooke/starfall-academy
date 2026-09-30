@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { CharacterSheet, type NpcCreate } from "@/sheet/CharacterSheet";
+import { pickConjurePhrase } from "@/sheet/data/npc-phrases";
 
 export const metadata = {
   title: "New character — Starfall Academy",
@@ -37,11 +38,13 @@ export default async function NewCharacterPage({ searchParams }: { searchParams:
     if (!campaign || campaign.gm_id !== user.id) redirect("/characters");
     npc = {
       campaignId: campaign.id,
+      phrase: pickConjurePhrase(),
       random: one(sp.random)
         ? {
             name: one(sp.name),
             pronouns: one(sp.pronouns),
             yearId: one(sp.year),
+            houseId: one(sp.house),
             major: list(sp.major),
             classIds: list(sp.classes),
             bio: one(sp.bio),

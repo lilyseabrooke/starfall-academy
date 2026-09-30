@@ -28,6 +28,7 @@ import { INV } from "./data/inventory";
 import { DAYS, BLOCKS } from "./data/time";
 
 import { Sidebar } from "./components/parts/Sidebar";
+import { UNAFFILIATED_HOUSE } from "./forge/forge-state";
 import { RandomNpcModal, npcCreateHref } from "./components/parts/RandomNpcModal";
 import { RollDock } from "./components/rolls/RollDock";
 import { RollPrompt } from "./components/rolls/RollPrompt";
@@ -681,6 +682,7 @@ export function GmView({ campaign, party: hostParty, npcSheets: hostNpcSheets, n
         <RandomNpcModal
           options={{
             years: SEED.creation.years.map((y) => ({ id: y.id, label: y.label })),
+            houses: [...SEED.houses, UNAFFILIATED_HOUSE].map((h) => ({ id: h.id, name: h.name.replace(/ House$/, "") })),
             subjects: SEED.magicSchools.flatMap((sc) => sc.subjects.map((sb) => ({ key: sb.key, name: sb.name }))),
             classes: comp.classes.map((k) => ({ id: k.id, name: k.name })),
           }}
