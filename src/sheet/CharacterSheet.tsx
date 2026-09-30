@@ -249,6 +249,10 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   // Backing out of the creator: the page behind it is only the seed demo sheet,
   // so cover it with the loading screen until the navigation lands.
   const [leavingCreator, setLeavingCreator] = React.useState(false);
+  // A new character's build is committed and being saved: the create page
+  // still has the demo party in its side rail, so keep it covered until the
+  // URL swaps to the saved sheet (whose own loading screen takes over).
+  const [savingNew, setSavingNew] = React.useState(false);
   const [deleteNpc, setDeleteNpc] = React.useState<{ busy: boolean; error: string | null } | null>(null);
 
   const pickChar = (cid: string) => {
@@ -563,6 +567,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     npcCampaignId: npc?.campaignId ?? null,
     onSaved: (sheet) => { syncedSheetRef.current = sheet; },
     onConflict: (serverSheet, retry) => retry(reconcileFromServer(serverSheet)),
+    onCreateFailed: () => { setSavingNew(false); setQuickNpcBusy(false); },
   });
   const serializeSheet = (): SerializedSheet => ({
     v: 1,
@@ -1257,6 +1262,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     setNav("overview");
     // Committing isn't cancelling: in create mode the row is saved next and the
     // URL then swaps to it, so don't also navigate away to the list.
+    if (draft.mode !== "edit" && mode === "create") setSavingNew(true);
     setForge((f) => ({ ...f, open: false }));
     persistence.notifyCommitted();
   };
@@ -1290,8 +1296,9 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       ? quickNpc.houseId
       : SEED.houses[Math.floor(Math.random() * SEED.houses.length)].id;
     const base: Draft = { ...F.blankDraft(), name: quickNpc.name.trim(), pronouns: quickNpc.pronouns, bio: quickNpc.bio, yearId: year.id, houseId };
+    // The "Conjuring…" cover stays up through the save; the saved sheet's
+    // loading screen replaces it (or a failed save takes it down).
     commitForge(randomizeDraft(base, forgeData, CL, { major: quickNpc.major, classIds: quickNpc.classIds }));
-    setQuickNpcBusy(false);
   }, [quickNpc, comp.ready]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---- Character vital + condition steppers ----
@@ -1632,7 +1639,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
           }}
         />
       ) : null}
-      {leavingCreator ? <LoadingScreen overlay /> : null}
+      {leavingCreator || (savingNew && !quickNpcBusy) ? <LoadingScreen overlay /> : null}
       {quickNpcBusy ? <div className="sf-npc-conjure" role="status"><Icon name="dices" /><span>{(npc?.phrase || "Conjuring {name}").replace("{name}", quickNpc?.name.trim() || "an NPC")}…</span></div> : null}
       <CharacterOverview open={overviewOpen} model={overviewModel} onClose={() => setOverviewOpen(false)} />
       <BonusEditor open={bonusEdit.open} bonus={bonusEdit.bonus} mode={bonusEdit.mode} ctx={{ stats, schools, moves, spells, conditions }} classes={bonusClasses} onSave={saveBonus} onDelete={removeBonus} onClose={closeBonusEdit} />
