@@ -8,6 +8,16 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.23.1 — 2026-09-30
+- GM tools: the basic-NPC tab is now **Extras**, so it no longer shares a name
+  with the full NPC sheets in the side rail.
+- An NPC's sheet has **Delete character** under Edit character, behind a
+  confirmation.
+- Random NPC/Character builds are more coherent: a declared major always gets
+  real ranks in its subject and governing stat (the stat could previously be
+  folded to 0) and at least two of its own spells; class options follow one
+  path instead of flipping at random, and lean toward the declared major.
+
 ## v1.23.0 — 2026-09-30
 - **NPC character sheets.** A GM can now give an NPC a full character sheet,
   stored inside the campaign and visible only to them. The side rail (on the

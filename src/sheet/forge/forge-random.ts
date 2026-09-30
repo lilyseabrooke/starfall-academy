@@ -540,7 +540,7 @@ interface ClassMentionResult {
  *  no investment yet to weigh it against; what matters is that this runs
  *  first, so the character's stats/subjects/skills get built to support
  *  whatever the class actually rolls with, not the other way around. */
-function pickClassesAndChoices(nd: Draft, D: ForgeData, classData: { classes: ClassDef[] }, presetIds: string[] = []): ClassMentionResult {
+function pickClassesAndChoices(nd: Draft, D: ForgeData, classData: { classes: ClassDef[] }, presetIds: string[] = [], hintNames: string[] = []): ClassMentionResult {
   // Classes named up front (the quick-NPC form) are used as given — one is a
   // single-class build, two a double — and only their rank choices are random.
   const preset = presetIds
@@ -572,11 +572,37 @@ function pickClassesAndChoices(nd: Draft, D: ForgeData, classData: { classes: Cl
     if (clean.length === 1) mention(clean[0]);
     else if (clean.length > 1) ambiguousGroups.push(clean);
   };
+  // How well a rank option fits a declared major: its move rolls with the
+  // major's subject or governing stat (strong), or its text names the subject.
+  const hint = hintNames.map((h) => h.toLowerCase());
+  const fit = (opt: ClassDef["ranks"][number]["options"][number] | undefined): number => {
+    if (!opt || !hint.length) return 0;
+    let score = 0;
+    if (opt.move) score += opt.move.abilities.filter((a) => hint.includes(a.trim().toLowerCase())).length * 2;
+    const text = (opt.title + " " + (opt.desc || "")).toLowerCase();
+    if (hint.some((h) => h.length > 3 && text.includes(h))) score += 1;
+    return score;
+  };
+  const pathFit = (k: ClassDef, side: number) => k.ranks.slice(0, rank).reduce((s, r) => s + fit(r.options[side]), 0);
+  // With a major named but no classes, lean toward the classes whose paths
+  // actually serve it — a little noise so it isn't always the same pick.
+  if (!preset.length && hint.length) {
+    const noisy = new Map(pool.map((k) => [k.id, Math.max(pathFit(k, 0), pathFit(k, 1)) + Math.random() * 2]));
+    pool.sort((a, b) => (noisy.get(b.id) || 0) - (noisy.get(a.id) || 0));
+  }
   pool.slice(0, n).forEach((k) => {
-    const baseSide = Math.random() < 0.5 ? 0 : 1;
+    // A class's two options at every rank belong to two paths (SPECIALIST vs
+    // MULTI-TALENTED…), so a sensible build walks one path start to finish
+    // rather than flipping between them at random. The path is the one that
+    // best serves the declared major, or a coin flip when nothing tells them apart.
+    const f0 = pathFit(k, 0), f1 = pathFit(k, 1);
+    const baseSide = f0 === f1 ? (Math.random() < 0.5 ? 0 : 1) : f0 > f1 ? 0 : 1;
     const choices: Record<string, number> = {};
     for (let L = 1; L <= rank; L++) {
-      const side = Math.random() < 0.85 ? baseSide : 1 - baseSide;
+      // The one exception: this rung's other option rolls with the major and
+      // the path's own doesn't.
+      const own = fit(k.ranks[L - 1]?.options[baseSide]), other = fit(k.ranks[L - 1]?.options[1 - baseSide]);
+      const side = other >= 2 && own === 0 ? 1 - baseSide : baseSide;
       const rung = k.ranks[L - 1];
       const opt = rung && rung.options[side];
       choices[L] = side;
@@ -843,6 +869,36 @@ function pickSpells(nd: Draft, D: ForgeData) {
   });
 }
 
+/** A declared major should never come out with a token spell list: the weighted
+ *  draw above favours it heavily but is still a draw, so top each major up to
+ *  a couple of spells of its own, swapping out the weakest same-level pick from
+ *  a non-major subject (the year's per-level quota is left exactly as it was). */
+function ensureMajorSpells(nd: Draft, D: ForgeData, minPerMajor = 2) {
+  const m = F.compById(D);
+  const majors = new Set(nd.major);
+  const statRank = (statName: string) => nd.stats[D.stats.find((f) => f.name.toLowerCase() === statName.toLowerCase())?.id || ""] || 0;
+  const subjectOf = (id: string) => m[id]?.subjectKey || "";
+  nd.major.forEach((key) => {
+    let guard = 0;
+    while (nd.spells.filter((id) => subjectOf(id) === key).length < minPerMajor && guard++ < 6) {
+      let swapped = false;
+      for (const level of ["Standard", "Basic"]) {
+        const cands = D.compendium.filter((e) => e.cat === "spell" && e.subjectKey === key && e.level === level && !nd.spells.includes(e.id));
+        const victims = nd.spells.filter((id) => m[id]?.level === level && !majors.has(subjectOf(id)));
+        if (!cands.length || !victims.length) continue;
+        // Best realistic odds for this character (2d10 + stat + subject vs DC).
+        const mod = (e: (typeof cands)[number]) => statRank(e.stat || "") + (nd.subjects[key] || 0);
+        const best = shuffle(cands).sort((a, b) => spellFeasibility(b.dc, mod(b)) - spellFeasibility(a.dc, mod(a)))[0];
+        const victim = victims.sort((a, b) => (nd.subjects[subjectOf(a)] || 0) - (nd.subjects[subjectOf(b)] || 0))[0];
+        nd.spells = nd.spells.map((id) => (id === victim ? best.id : id));
+        swapped = true;
+        break;
+      }
+      if (!swapped) break;
+    }
+  });
+}
+
 /* -------------------------------- inventory ------------------------------ */
 function pickInventory(nd: Draft, D: ForgeData) {
   const y = F.yields(nd, D);
@@ -928,7 +984,11 @@ export function randomizeDraft(draft: Draft, baseD: ForgeData, classData: { clas
 
   // Classes and their rank choices first — nothing to weigh them against
   // yet, so the option side comes from the class's own per-rank lean.
-  const { mentions, ambiguousGroups } = pickClassesAndChoices(nd, D, classData, preset.classIds);
+  // A declared major steers the class paths too: names its subject and its
+  // governing stat are matched against each option's move.
+  const declaredMajors = (preset.major || []).map((key) => F.flatSubjects(D).find((s) => s.key === key)).filter((s): s is F.FlatSubject => !!s).slice(0, 2);
+  const majorHint = declaredMajors.flatMap((s) => [s.name, s.key, s.stat]);
+  const { mentions, ambiguousGroups } = pickClassesAndChoices(nd, D, classData, preset.classIds, majorHint);
   const { statHits, subjectHits, skillHits } = resolveAbilityMentions(mentions, D);
 
   // Guarantee actual training in whatever the chosen moves roll with — a
@@ -956,13 +1016,17 @@ export function randomizeDraft(draft: Draft, baseD: ForgeData, classData: { clas
   // below, which still respects a slot the archetype deliberately zeroed
   // out, a major's own governing stat should never end up at literal zero;
   // a demonologist with no Logic at all reads as a mistake, not a build.
+  // The floor scales with the year's rank cap, so a major reads as a real
+  // specialty (a third-year Evocation major starts at Evocation 4 and Focus 4,
+  // not 1 and 1) before the weighted spend takes it further.
+  const yearLimit = F.yearById(D, nd.yearId).limit;
   nd.major.forEach((key) => {
-    guaranteeFloor(nd, D, "subjects", key, 1);
+    guaranteeFloor(nd, D, "subjects", key, Math.ceil(yearLimit * 0.6));
     cfg.subjectWeights[key] *= 4;
     const subj = F.flatSubjects(D).find((s) => s.key === key);
     if (subj) {
       const statId = subj.stat.toLowerCase();
-      guaranteeFloor(nd, D, "stats", statId, 1);
+      guaranteeFloor(nd, D, "stats", statId, Math.ceil(yearLimit * 0.5));
       if (cfg.statWeights[statId] > 0) cfg.statWeights[statId] *= 1.8;
     }
   });
@@ -1078,12 +1142,16 @@ export function randomizeDraft(draft: Draft, baseD: ForgeData, classData: { clas
   // clean 0s or 2s/3s instead of a smear of disconnected single ranks.
   // Majors and anything a class move/artifact grant guaranteed are exempt —
   // those 1s are a promise, not noise.
-  consolidateOnes(nd, D, "stats", new Set([...Object.keys(statHits), ...Object.keys(ambStatHits)]));
+  // A major's governing stat is exempt too: it was floored above, and folding
+  // that point away would leave an Evocation major with no Focus at all.
+  const majorStats = nd.major.map((key) => F.flatSubjects(D).find((s) => s.key === key)?.stat.toLowerCase()).filter((x): x is string => !!x);
+  consolidateOnes(nd, D, "stats", new Set([...Object.keys(statHits), ...Object.keys(ambStatHits), ...majorStats]));
   consolidateOnes(nd, D, "subjects", new Set([...Object.keys(subjectHits), ...Object.keys(ambSubjectHits), ...nd.major]));
   consolidateOnes(nd, D, "skills", new Set([...Object.keys(skillHits), ...Object.keys(ambSkillHits)]));
 
   pickStartWand(nd, D, cfg);
   pickSpells(nd, D);
+  ensureMajorSpells(nd, D);
   pickInventory(nd, D);
 
   if (unlimited) nd.buildType = "unlimited";

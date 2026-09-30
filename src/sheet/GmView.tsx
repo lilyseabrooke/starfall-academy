@@ -197,7 +197,7 @@ export function GmView({ campaign, party: hostParty, npcSheets: hostNpcSheets, n
   // campaign row, so no new policy or RPC is needed.
   const persistNpcs = (next: GmNpc[]) => {
     createClient().from("campaigns").update({ npcs: next }).eq("id", campaign.id).then(({ error }) => {
-      if (error) { console.error("NPC cast failed to persist", error.message); toast("Couldn't save NPC changes — try again."); }
+      if (error) { console.error("NPC cast failed to persist", error.message); toast("Couldn't save Extras changes — try again."); }
     });
   };
   const updateNpcs = (updater: (s: GmNpc[]) => GmNpc[]) => setNpcs((s) => {
@@ -413,7 +413,7 @@ export function GmView({ campaign, party: hostParty, npcSheets: hostNpcSheets, n
   const openAddNpc = () => setAddNpc({ editId: null, name: "", title: "", resolve: 3, strong: 8, weak: 3, icon: "__mono", confirmDelete: false });
   const openEditNpc = (id: string) => { const n = npcs.find((x) => x.id === id); if (!n) return; setAddNpc({ editId: id, name: n.name, title: n.kind || "", resolve: n.maxResolve, strong: n.strong, weak: n.weak, icon: n.icon || "__mono", confirmDelete: false }); };
   const patchAddNpc = (patch: Partial<AddNpcState>) => setAddNpc((a) => a ? { ...a, ...patch } : a);
-  const deleteNpc = (id: string) => { updateNpcs((s) => s.filter((n) => n.id !== id)); toast("NPC removed from the cast."); };
+  const deleteNpc = (id: string) => { updateNpcs((s) => s.filter((n) => n.id !== id)); toast("Extra removed from the cast."); };
   const confirmAddNpc = () => {
     const a = addNpc; if (!a || !a.name.trim()) return;
     const name = a.name.trim();
@@ -603,12 +603,12 @@ export function GmView({ campaign, party: hostParty, npcSheets: hostNpcSheets, n
 
   const campaignName = campaign.name || "Untitled campaign";
 
-  const TAB_META: Record<string, { title: string }> = { party: { title: "Party Board" }, npcs: { title: "NPCs" }, notes: { title: "Campaign Journal" }, action: { title: "Action Scene" } };
+  const TAB_META: Record<string, { title: string }> = { party: { title: "Party Board" }, npcs: { title: "Extras" }, notes: { title: "Campaign Journal" }, action: { title: "Action Scene" } };
   const sidebarGm = {
     brandSub: "Faculty View", tableLabel: "The Table", partyLabel: "The Party",
     tabs: [
       { id: "party", label: "Party", icon: "users", count: party.length, active: tab === "party", onClick: () => setTab("party") },
-      { id: "npcs", label: "NPCs", icon: "venetian-mask", count: npcs.length, active: tab === "npcs", onClick: () => setTab("npcs") },
+      { id: "npcs", label: "Extras", icon: "venetian-mask", count: npcs.length, active: tab === "npcs", onClick: () => setTab("npcs") },
       { id: "notes", label: "Notes", icon: "scroll-text", count: notes.length, active: tab === "notes", onClick: () => setTab("notes") },
       { id: "action", label: "Action", icon: "swords", count: "", active: tab === "action", onClick: () => setTab("action") },
     ],
@@ -788,9 +788,9 @@ function NpcsTab({ npcs, conds, onAdd, onEdit, onRoll, onBumpCond }: { npcs: GmN
   return (
     <div>
       <div className="gm-sec-head">
-        <h2>NPCs</h2>
-        <span className="gm-sec-sub">A basic NPC uses their Strong roll for any check they’re good at and their Weak roll for any check they aren’t. Full NPCs are stored in their own sheets.</span>
-        <button className="gm-btn gm-sec-head__action" onClick={onAdd}><Icon name="plus" style={{ color: "var(--gold-300)" }} />Add NPC</button>
+        <h2>Extras</h2>
+        <span className="gm-sec-sub">A basic Extra uses their Strong roll for any check they’re good at and their Weak roll for any check they aren’t. Full NPCs (under NPCs in the side rail) are stored in their own sheets.</span>
+        <button className="gm-btn gm-sec-head__action" onClick={onAdd}><Icon name="plus" style={{ color: "var(--gold-300)" }} />Add Extra</button>
       </div>
       <div className="gm-npc-grid">
         {npcs.map((n) => {
@@ -1133,7 +1133,7 @@ function AddNpcModal({ addNpc, onPatch, onConfirm, onDelete, onClose }: { addNpc
       <div className="gm-modal gm-modal--wide" onClick={(e) => e.stopPropagation()}>
         <div className="gm-modal__head">
           <span className="gm-modal__glyph"><Icon name="venetian-mask" /></span>
-          <div className="gm-modal__titles"><span className="gm-modal__eyebrow">{isEdit ? "Update the cast" : "Add to the cast"}</span><span className="gm-modal__title">{isEdit ? "Edit NPC" : "New NPC"}</span></div>
+          <div className="gm-modal__titles"><span className="gm-modal__eyebrow">{isEdit ? "Update the cast" : "Add to the cast"}</span><span className="gm-modal__title">{isEdit ? "Edit Extra" : "New Extra"}</span></div>
           <button className="gm-modal__x" onClick={onClose}><Icon name="x" /></button>
         </div>
         <div className="gm-modal__body">
@@ -1159,10 +1159,10 @@ function AddNpcModal({ addNpc, onPatch, onConfirm, onDelete, onClose }: { addNpc
         {addNpc.confirmDelete ? (
           <div className="gm-modal__foot gm-modal__foot--danger">
             <Icon name="triangle-alert" style={{ color: "var(--crimson-300)" }} />
-            <span className="gm-modal__footnote">Remove this NPC permanently? This cannot be undone.</span>
+            <span className="gm-modal__footnote">Remove this Extra permanently? This cannot be undone.</span>
             <div className="gm-modal__footbtns">
               <button className="gm-btn" onClick={() => onPatch({ confirmDelete: false })}>Keep</button>
-              <button className="gm-btn-sm gm-btn-danger" onClick={() => addNpc.editId && onDelete(addNpc.editId)}><Icon name="trash-2" />Remove NPC</button>
+              <button className="gm-btn-sm gm-btn-danger" onClick={() => addNpc.editId && onDelete(addNpc.editId)}><Icon name="trash-2" />Remove Extra</button>
             </div>
           </div>
         ) : (

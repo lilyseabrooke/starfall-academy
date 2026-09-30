@@ -72,7 +72,7 @@ import { RollDock } from "./components/rolls/RollDock";
 import { RollPrompt } from "./components/rolls/RollPrompt";
 import { Admission } from "./forge/Forge";
 import { randomizeDraft } from "./forge/forge-random";
-import { RandomNpcModal, npcCreateHref } from "./components/parts/RandomNpcModal";
+import { RandomNpcModal, DeleteNpcModal, npcCreateHref } from "./components/parts/RandomNpcModal";
 import * as F from "./forge/forge-state";
 import type { Draft } from "./forge/forge-state";
 import { CharacterOverview } from "./overview/CharacterOverview";
@@ -242,6 +242,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   );
   const [activeChar, setActiveChar] = React.useState(me || (ROSTER.find((r) => r.active) || ROSTER[0]).id);
   const [randomNpcOpen, setRandomNpcOpen] = React.useState(false);
+  const [deleteNpc, setDeleteNpc] = React.useState<{ busy: boolean; error: string | null } | null>(null);
 
   const pickChar = (cid: string) => {
     if (!cid || cid === activeChar) return;
@@ -1491,7 +1492,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   return (
     <div className="sf-sheet" style={{ position: "fixed", inset: 0, overflow: "hidden" }}>
     <div className="sf-app" data-nav={nav}>
-      <Sidebar npcs={gmNpc ? { npcs: gmNpc.npcs, activeId: me || undefined, onOpen: pickChar, onCreate: () => router.push(npcCreateHref(gmNpc.campaignId)), onRandom: () => setRandomNpcOpen(true) } : undefined} active={nav} onNavigate={onNavigate} roster={ROSTER} activeChar={activeChar} onPickChar={pickChar} compCount={D.compendium.length} onOverview={() => setOverviewOpen(true)} onEditCharacter={openForgeEdit} collapsed={sidebarCollapsed} onToggleSidebar={toggleSidebar} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
+      <Sidebar onDeleteCharacter={isNpc && id ? () => setDeleteNpc({ busy: false, error: null }) : undefined} npcs={gmNpc ? { npcs: gmNpc.npcs, activeId: me || undefined, onOpen: pickChar, onCreate: () => router.push(npcCreateHref(gmNpc.campaignId)), onRandom: () => setRandomNpcOpen(true) } : undefined} active={nav} onNavigate={onNavigate} roster={ROSTER} activeChar={activeChar} onPickChar={pickChar} compCount={D.compendium.length} onOverview={() => setOverviewOpen(true)} onEditCharacter={openForgeEdit} collapsed={sidebarCollapsed} onToggleSidebar={toggleSidebar} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
       <main className="sf-main">
         <TopBar title={titleMap[nav] || "Overview"} eyebrow={c.name + " · " + c.house + (isNpc ? " · NPC" : "")} c={{ ...c, resolve: Math.max(0, 5 - conditions.reduce((s, cd) => s + cd.value, 0)), resolveMax: 5 }} onStep={stepVital} onRollAction={onRollAction} onToggleMobileMenu={() => setMobileMenuOpen((v) => !v)} hideVitals={nav === "map"} time={campaignId ? gmTime : undefined} searchQuery={searchQuery} onSearchQueryChange={setSearchQuery} searchResults={searchResults} onSearchSelect={handleSearchSelect} onSearchRoll={handleSearchRoll} onSearchRepair={handleSearchRepair} onSearchUse={handleSearchUse} searchMenuOpen={searchMenuOpen} onSearchMenuOpen={() => setSearchMenuOpen(true)} onSearchMenuClose={() => setSearchMenuOpen(false)} onSearchMobileOpen={() => setSearchMenuOpen(true)} />
 
@@ -1606,6 +1607,24 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
           }}
           onSubmit={(v) => { setRandomNpcOpen(false); router.push(npcCreateHref(gmNpc.campaignId, v)); }}
           onClose={() => setRandomNpcOpen(false)}
+        />
+      ) : null}
+      {deleteNpc && id ? (
+        <DeleteNpcModal
+          name={c.name}
+          busy={deleteNpc.busy}
+          error={deleteNpc.error}
+          onClose={() => setDeleteNpc(null)}
+          onConfirm={async () => {
+            setDeleteNpc({ busy: true, error: null });
+            try {
+              const res = await fetch(`/api/characters/${id}`, { method: "DELETE" });
+              if (!res.ok) throw new Error("The server refused the delete.");
+              router.push(campaignId ? `/gm/${campaignId}` : "/characters");
+            } catch (err) {
+              setDeleteNpc({ busy: false, error: err instanceof Error ? err.message : "Couldn't delete — try again." });
+            }
+          }}
         />
       ) : null}
       {quickNpcBusy ? <div className="sf-npc-conjure" role="status"><Icon name="dices" /><span>Conjuring {quickNpc?.name.trim() || "an NPC"}…</span></div> : null}

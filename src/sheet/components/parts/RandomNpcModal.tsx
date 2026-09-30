@@ -104,3 +104,28 @@ export function RandomNpcModal({ options, onSubmit, onClose }: { options: Random
     </div>
   );
 }
+
+/** Confirm before permanently deleting an NPC's sheet. */
+export function DeleteNpcModal({ name, busy, error, onConfirm, onClose }: { name: string; busy: boolean; error: string | null; onConfirm: () => void; onClose: () => void }) {
+  return (
+    <div className="gm-scrim" onClick={busy ? undefined : onClose}>
+      <div className="gm-modal gm-modal--time" role="alertdialog" aria-label="Delete character" onClick={(e) => e.stopPropagation()}>
+        <div className="gm-modal__head">
+          <span className="gm-modal__glyph"><Icon name="trash-2" /></span>
+          <div className="gm-modal__titles"><span className="gm-modal__eyebrow">This cannot be undone</span><span className="gm-modal__title">Delete character</span></div>
+          <button className="gm-modal__x" onClick={onClose} disabled={busy} aria-label="Close"><Icon name="x" /></button>
+        </div>
+        <div className="gm-modal__body">
+          <p className="gm-modal__info">Permanently delete <b>{name}</b> and their whole sheet — stats, spells, inventory, journal? Rolls they made stay in the campaign log.</p>
+          {error ? <p className="gm-modal__info" style={{ color: "var(--crimson-300)" }}>{error}</p> : null}
+        </div>
+        <div className="gm-modal__foot gm-modal__foot--danger">
+          <div className="gm-modal__footbtns">
+            <button className="gm-btn" onClick={onClose} disabled={busy}>Keep</button>
+            <button className="gm-btn-sm gm-btn-danger" onClick={onConfirm} disabled={busy}><Icon name="trash-2" />{busy ? "Deleting…" : "Delete character"}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

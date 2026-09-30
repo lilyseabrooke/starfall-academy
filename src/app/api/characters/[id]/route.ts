@@ -99,7 +99,7 @@ export async function PATCH(
   return NextResponse.json({ ok: true });
 }
 
-// Remove a character (RLS scopes to the owner).
+// Remove a character (RLS scopes to the owner, or the GM for a campaign NPC).
 export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -114,10 +114,14 @@ export async function DELETE(
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const { error } = await supabase.from("characters").delete().eq("id", id);
+  const { data, error } = await supabase.from("characters").delete().eq("id", id).select("id");
   if (error) {
     console.error("DELETE /api/characters/[id]", error);
     return NextResponse.json({ error: "could not delete character" }, { status: 400 });
+  }
+  // RLS filters rows the caller can't delete rather than erroring.
+  if (!data || data.length === 0) {
+    return NextResponse.json({ error: "character not found" }, { status: 404 });
   }
   return NextResponse.json({ ok: true });
 }

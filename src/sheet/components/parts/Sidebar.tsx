@@ -66,6 +66,8 @@ export interface SidebarProps {
   gm?: GMSidebarConfig;
   /** Present only for the campaign's GM; players never get an NPC category. */
   npcs?: SidebarNpcConfig;
+  /** Only on an NPC's own sheet: shows Delete character under Edit character. */
+  onDeleteCharacter?: () => void;
 }
 
 function NpcSection({ cfg, collapsed, onMobileClose }: { cfg: SidebarNpcConfig; collapsed?: boolean; onMobileClose?: () => void }) {
@@ -105,7 +107,7 @@ const NAV = [
 
 export function Sidebar({
   active, onNavigate, roster, activeChar, onPickChar, compCount,
-  onOverview, onEditCharacter, collapsed, onToggleSidebar, mobileOpen, onMobileClose, gm, npcs,
+  onOverview, onEditCharacter, collapsed, onToggleSidebar, mobileOpen, onMobileClose, gm, npcs, onDeleteCharacter,
 }: SidebarProps) {
   const router = useRouter();
   const goBack = () => router.push(consumeReturnTarget() || "/characters");
@@ -213,6 +215,11 @@ export function Sidebar({
         <button className="sf-nav__item" onClick={onEditCharacter} title={collapsed ? "Edit character" : undefined}>
           <Icon name="pencil-line" /><span className="sf-side__label">Edit character</span>
         </button>
+        {onDeleteCharacter ? (
+          <button className="sf-nav__item sf-nav__item--danger" onClick={() => { onDeleteCharacter(); if (onMobileClose) onMobileClose(); }} title={collapsed ? "Delete character" : undefined}>
+            <Icon name="trash-2" /><span className="sf-side__label">Delete character</span>
+          </button>
+        ) : null}
       </div>
       <button className="sf-side__toggle-btn" onClick={onToggleSidebar} title={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
         <Icon name={collapsed ? "chevrons-right" : "chevrons-left"} />
