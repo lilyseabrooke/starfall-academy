@@ -189,7 +189,7 @@ export function AdmissionClasses({ D, classData, draft, set }: { D: ForgeData; c
   const defaultRank = mode === "single" ? 4 : 2;
   const maxClasses = mode === "single" ? 1 : 2;
   const b = F.budgets(draft, D);
-  const custom = draft.buildType === "custom";
+  const custom = draft.buildType !== "quick";
 
   const switchMode = (m: "single" | "double") => { if (m !== mode) set({ classMode: m, classes: {} }); };
 
@@ -884,7 +884,7 @@ export function AdmissionInventory({ D, draft, set, classData }: { D: ForgeData;
 
       {custom ? (
         <React.Fragment>
-          <div className="sf-idiv"><span>Custom-build purchases</span><span className="sf-idiv__pts">{remaining} pts left</span></div>
+          <div className="sf-idiv"><span>Custom-build purchases</span><span className="sf-idiv__pts">{b.mode === "custom" && b.unlimited ? "Unlimited points" : remaining + " pts left"}</span></div>
 
           <InventorySection icon="wand-sparkles" title="Buy wands" note="1 pt / 400 mat">
             <PickList D={D} cat="wand" selected={draft.extraWands} onToggle={(id) => toggleIn("extraWands", id, () => remaining >= wandAddCost(id))} can={(e) => remaining >= wandAddCost(e.id)} costOf={(e) => wandAddCost(e.id) + " pt"} emptyHint="No wands in the archive yet." />

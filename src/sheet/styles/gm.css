@@ -348,3 +348,80 @@
   .sf-sheet .gm-notes { grid-template-columns: 1fr; height: auto; }
   .sf-sheet .gm-npc-form__row2, .sf-sheet .gm-npc-form__row3 { grid-template-columns: 1fr; }
 }
+
+/* Quick random NPC modal (RandomNpcModal) */
+.sf-sheet .sf-npcmodal { width: min(620px, calc(100vw - 48px)); }
+.sf-sheet .sf-npcmodal button:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+/* Year — a segmented dial of roman numerals */
+.sf-sheet .sf-npcyears { display: grid; grid-template-columns: repeat(5, 1fr); padding: 3px; gap: 3px; border-radius: 10px; background: var(--ink-950); border: 1px solid var(--border-default); }
+.sf-sheet .sf-npcyear { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 7px 4px 6px; border: 1px solid transparent; border-radius: 7px; background: none; color: var(--text-muted); cursor: pointer; transition: background .15s, color .15s, border-color .15s; }
+.sf-sheet .sf-npcyear:hover { color: var(--text-strong); background: color-mix(in oklab, var(--gold-500) 6%, transparent); }
+.sf-sheet .sf-npcyear__num { font-family: var(--font-display); font-weight: 700; font-size: 16px; line-height: 20px; height: 20px; display: inline-flex; align-items: center; letter-spacing: .06em; }
+.sf-sheet .sf-npcyear__label { font-family: var(--font-sans); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
+.sf-sheet .sf-npcyear.is-on { background: var(--brand-subtle); border-color: color-mix(in oklab, var(--gold-500) 55%, transparent); color: var(--gold-300); }
+
+/* House / Major / Classes — slot rows with a drawer each */
+.sf-sheet .sf-npcrows { flex-shrink: 0; display: flex; flex-direction: column; border: 1px solid var(--border-default); border-radius: 10px; background: var(--ink-950); overflow: hidden; }
+.sf-sheet .sf-npcrow + .sf-npcrow { border-top: 1px solid var(--border-subtle); }
+.sf-sheet .sf-npcrow__head { display: grid; grid-template-columns: 116px 1fr; align-items: center; gap: 12px; padding: 10px 12px; }
+.sf-sheet .sf-npcrow__head .gm-field-label { margin: 0; display: flex; flex-direction: column; gap: 3px; }
+.sf-sheet .sf-npcrow.is-open .sf-npcrow__head { background: color-mix(in oklab, var(--gold-500) 5%, transparent); }
+.sf-sheet .sf-npcslots { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+
+.sf-sheet .sf-npcslot { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px 6px 11px; border-radius: var(--radius-pill); border: 1px dashed var(--border-default); background: none; color: var(--text-faint); font-family: var(--font-sans); font-size: 12px; font-style: italic; cursor: pointer; transition: color .15s, border-color .15s; }
+.sf-sheet .sf-npcslot.is-add { font-style: normal; }
+.sf-sheet .sf-npcslot:hover, .sf-sheet .sf-npcslot[aria-expanded="true"] { color: var(--gold-300); border-color: var(--gold-600); }
+.sf-sheet .sf-npcslot__chev { opacity: .7; transition: transform .18s var(--ease-out); }
+.sf-sheet .sf-npcslot[aria-expanded="true"] .sf-npcslot__chev { transform: rotate(180deg); }
+
+.sf-sheet .sf-npctoken { display: inline-flex; align-items: stretch; border-radius: var(--radius-pill); border: 1px solid color-mix(in oklab, var(--t) 60%, transparent); background: color-mix(in oklab, var(--t) 16%, var(--ink-900)); color: var(--t-fg); overflow: hidden; }
+.sf-sheet .sf-npctoken__main { display: inline-flex; align-items: center; gap: 6px; padding: 5px 4px 5px 11px; border: none; background: none; color: inherit; font-family: var(--font-sans); font-size: 12px; font-weight: 600; cursor: pointer; }
+.sf-sheet .sf-npctoken__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--t); box-shadow: 0 0 0 2px color-mix(in oklab, var(--t) 30%, transparent); }
+.sf-sheet .sf-npctoken__x { display: inline-flex; align-items: center; padding: 0 9px 0 5px; border: none; background: none; color: inherit; opacity: .6; cursor: pointer; }
+.sf-sheet .sf-npctoken__x:hover { opacity: 1; }
+
+.sf-sheet .sf-npcdrawer { padding: 4px 12px 12px; background: color-mix(in oklab, var(--gold-500) 5%, transparent); animation: sfNpcDrawer .18s var(--ease-out); }
+@keyframes sfNpcDrawer { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.sf-sheet .sf-npcdrawer__foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; font-family: var(--font-sans); font-size: 11px; color: var(--text-faint); }
+
+/* Houses — crests */
+.sf-sheet .sf-npchouses { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.sf-sheet .sf-npchouse { display: flex; gap: 10px; align-items: center; min-width: 0; text-align: left; padding: 9px 11px; border-radius: 8px; border: 1px solid var(--border-subtle); background: var(--ink-900); cursor: pointer; transition: border-color .15s, background .15s, transform .15s var(--ease-out); }
+.sf-sheet .sf-npchouse:hover { border-color: color-mix(in oklab, var(--t) 55%, transparent); transform: translateY(-1px); }
+.sf-sheet .sf-npchouse.is-on { border-color: color-mix(in oklab, var(--t) 75%, transparent); background: color-mix(in oklab, var(--t) 16%, var(--ink-900)); }
+.sf-sheet .sf-npchouse__crest { flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 15px; color: var(--t-fg); background: color-mix(in oklab, var(--t) 22%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--t) 50%, transparent); }
+.sf-sheet .sf-npchouse__name { font-family: var(--font-display); font-weight: 700; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-strong); }
+
+/* Majors — subjects under their school */
+.sf-sheet .sf-npcschools { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.sf-sheet .sf-npcschool { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.sf-sheet .sf-npcschool__head { display: flex; align-items: center; gap: 6px; padding: 4px 6px 7px; margin-bottom: 3px; border-bottom: 1px solid color-mix(in oklab, var(--t) 40%, transparent); color: var(--t-fg); font-family: var(--font-sans); font-size: 10px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; }
+.sf-sheet .sf-npcsubj { display: flex; align-items: center; gap: 7px; padding: 5px 6px; border: 1px solid transparent; border-radius: 6px; background: none; color: var(--text-muted); font-family: var(--font-sans); font-size: 12px; text-align: left; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: background .12s, color .12s; }
+.sf-sheet .sf-npcsubj:hover:not(:disabled) { color: var(--text-strong); background: color-mix(in oklab, var(--t) 10%, transparent); }
+.sf-sheet .sf-npcsubj.is-on { color: var(--t-fg); background: color-mix(in oklab, var(--t) 18%, transparent); border-color: color-mix(in oklab, var(--t) 45%, transparent); font-weight: 600; }
+.sf-sheet .sf-npcsubj:disabled { opacity: .35; cursor: not-allowed; }
+.sf-sheet .sf-npccheck { flex-shrink: 0; width: 13px; height: 13px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; border: 1px solid var(--border-default); }
+.sf-sheet .sf-npcsubj.is-on .sf-npccheck { background: var(--t); border-color: var(--t); color: var(--ink-950); }
+
+/* Classes — icon cards */
+.sf-sheet .sf-npcclasses { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.sf-sheet .sf-npcclass { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-subtle); background: var(--ink-900); text-align: left; cursor: pointer; transition: border-color .15s, background .15s; }
+.sf-sheet .sf-npcclass:hover:not(:disabled) { border-color: color-mix(in oklab, var(--t) 55%, transparent); }
+.sf-sheet .sf-npcclass.is-on { border-color: color-mix(in oklab, var(--t) 75%, transparent); background: color-mix(in oklab, var(--t) 16%, var(--ink-900)); }
+.sf-sheet .sf-npcclass:disabled { opacity: .35; cursor: not-allowed; }
+.sf-sheet .sf-npcclass__icon { flex-shrink: 0; width: 30px; height: 30px; border-radius: 7px; display: inline-flex; align-items: center; justify-content: center; font-size: 15px; color: var(--t-fg); background: color-mix(in oklab, var(--t) 20%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--t) 45%, transparent); }
+.sf-sheet .sf-npcclass.is-on .sf-npcclass__icon { background: var(--t); color: var(--ink-950); }
+.sf-sheet .sf-npcclass__name { font-family: var(--font-sans); font-size: 13px; font-weight: 600; color: var(--text-strong); min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+@media (max-width: 620px) {
+  .sf-sheet .sf-npcrow__head { grid-template-columns: 1fr; gap: 8px; }
+  .sf-sheet .sf-npcrow__head .gm-field-label { flex-direction: row; gap: 6px; align-items: baseline; }
+  .sf-sheet .sf-npcschools { grid-template-columns: repeat(2, 1fr); row-gap: 14px; }
+  .sf-sheet .sf-npchouses { grid-template-columns: repeat(2, 1fr); }
+  .sf-sheet .sf-npcclasses { grid-template-columns: repeat(2, 1fr); }
+  .sf-sheet .sf-npcyear__label { font-size: 8.5px; letter-spacing: .06em; }
+}
+.sf-sheet .sf-npcbio { background: var(--ink-950); border: 1px solid var(--border-default); border-radius: 6px; padding: 10px 12px; color: var(--text-strong); font-family: var(--font-serif); font-size: 14px; resize: vertical; }
+.sf-sheet .sf-npcbio:focus { outline: none; box-shadow: var(--focus-ring); }
+.sf-sheet .gm-sec-head--npcboard { margin-top: var(--space-6, 32px); }

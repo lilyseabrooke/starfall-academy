@@ -40,6 +40,16 @@ export interface GMSidebarConfig {
   party?: GMSidebarPartyMember[];
 }
 
+/** The GM-only NPC category: a list of the campaign's NPC sheets, with a "+" to
+ *  build one in the character creator and a dice to conjure a random one. */
+export interface SidebarNpcConfig {
+  npcs: SidebarRosterMember[];
+  activeId?: string;
+  onOpen: (id: string) => void;
+  onCreate: () => void;
+  onRandom: () => void;
+}
+
 export interface SidebarProps {
   active?: string;
   onNavigate: (id: string) => void;
@@ -54,6 +64,36 @@ export interface SidebarProps {
   mobileOpen?: boolean;
   onMobileClose?: () => void;
   gm?: GMSidebarConfig;
+  /** Present only for the campaign's GM; players never get an NPC category. */
+  npcs?: SidebarNpcConfig;
+  /** Only on an NPC's own sheet: shows Delete character under Edit character. */
+  onDeleteCharacter?: () => void;
+}
+
+function NpcSection({ cfg, collapsed, onMobileClose }: { cfg: SidebarNpcConfig; collapsed?: boolean; onMobileClose?: () => void }) {
+  return (
+    <div className="sf-switcher sf-switcher--npc">
+      <div className="sf-switch-head">
+        <span className="sf-eyebrow">NPCs</span>
+        <span className="sf-switch-head__tools">
+          <span className="sf-nav__count" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--text-faint)" }}>{cfg.npcs.length}</span>
+          <button className="sf-switch-head__btn" onClick={() => { cfg.onRandom(); if (onMobileClose) onMobileClose(); }} title="Random NPC" aria-label="Create a random NPC"><Icon name="dices" /></button>
+          <button className="sf-switch-head__btn" onClick={() => { cfg.onCreate(); if (onMobileClose) onMobileClose(); }} title="New NPC" aria-label="Create a new NPC"><Icon name="plus" /></button>
+        </span>
+      </div>
+      <div className="sf-roster">
+        {cfg.npcs.map((r) => (
+          <button key={r.id} className={"sf-roster__item" + (r.id === cfg.activeId ? " is-active" : "")} onClick={() => { cfg.onOpen(r.id); if (onMobileClose) onMobileClose(); }} title={collapsed ? r.name + " · NPC" : undefined}>
+            <span className={"sf-avatar t-" + r.tone}>{r.initials}</span>
+            <span className="sf-roster__meta">
+              <span className="sf-roster__name">{r.name}</span>
+              <span className="sf-roster__house">{r.house}</span>
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 const NAV = [
@@ -67,7 +107,7 @@ const NAV = [
 
 export function Sidebar({
   active, onNavigate, roster, activeChar, onPickChar, compCount,
-  onOverview, onEditCharacter, collapsed, onToggleSidebar, mobileOpen, onMobileClose, gm,
+  onOverview, onEditCharacter, collapsed, onToggleSidebar, mobileOpen, onMobileClose, gm, npcs, onDeleteCharacter,
 }: SidebarProps) {
   const router = useRouter();
   const goBack = () => router.push(consumeReturnTarget() || "/characters");
@@ -112,6 +152,8 @@ export function Sidebar({
           </div>
         </nav>
 
+        {npcs ? <div className="sf-nav sf-nav--party"><NpcSection cfg={npcs} collapsed={collapsed} onMobileClose={onMobileClose} /></div> : null}
+
         <button className="sf-side__toggle-btn" onClick={onToggleSidebar} title={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
           <Icon name={collapsed ? "chevrons-right" : "chevrons-left"} />
           <span className="sf-side__label">{collapsed ? "Expand" : "Collapse"}</span>
@@ -150,6 +192,8 @@ export function Sidebar({
         </div>
       </div>
 
+      {npcs ? <NpcSection cfg={npcs} collapsed={collapsed} onMobileClose={onMobileClose} /> : null}
+
       <nav className="sf-nav">
         <div className="sf-nav__label sf-eyebrow">The Sheet</div>
         {NAV.map((n) => (
@@ -171,6 +215,11 @@ export function Sidebar({
         <button className="sf-nav__item" onClick={onEditCharacter} title={collapsed ? "Edit character" : undefined}>
           <Icon name="pencil-line" /><span className="sf-side__label">Edit character</span>
         </button>
+        {onDeleteCharacter ? (
+          <button className="sf-nav__item sf-nav__item--danger" onClick={() => { onDeleteCharacter(); if (onMobileClose) onMobileClose(); }} title={collapsed ? "Delete character" : undefined}>
+            <Icon name="trash-2" /><span className="sf-side__label">Delete character</span>
+          </button>
+        ) : null}
       </div>
       <button className="sf-side__toggle-btn" onClick={onToggleSidebar} title={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
         <Icon name={collapsed ? "chevrons-right" : "chevrons-left"} />

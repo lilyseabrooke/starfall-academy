@@ -45,6 +45,8 @@ const STEPS = [
 // once those are the only two editable sections.
 const RESPEC_STEPS = STEPS.filter((s) => ["identity", "allocation"].includes(s.id));
 const DRAFT_KEY = "sf-admission-draft";
+// An NPC in progress never shares (or restores) a player's own draft.
+const NPC_DRAFT_KEY = "sf-admission-draft-npc";
 
 /* ---------------------------- Overview CTA ---------------------------- */
 function OverviewCta({ onClick }: { onClick: () => void }) {
@@ -57,26 +59,28 @@ function OverviewCta({ onClick }: { onClick: () => void }) {
 }
 
 /* ------------------------------- Identity ----------------------------- */
-function IdentityStep({ D, draft, set, onRandomize, randomizeNeedsConfirm, onOverview }: { D: ForgeData; draft: Draft; set: SetFn; onRandomize?: () => void; randomizeNeedsConfirm?: boolean; onOverview?: () => void }) {
+function IdentityStep({ D, draft, set, onRandomize, randomizeNeedsConfirm, onOverview, npc }: { D: ForgeData; draft: Draft; set: SetFn; onRandomize?: () => void; randomizeNeedsConfirm?: boolean; onOverview?: () => void; npc?: boolean }) {
   const [confirming, setConfirming] = React.useState(false);
   const clickRandomize = () => {
     if (randomizeNeedsConfirm) setConfirming(true);
     else onRandomize?.();
   };
-  const builds: ["quick" | "custom", string, string][] = (() => {
+  const builds: [Draft["buildType"], string, string][] = (() => {
     const yr = D.creation.years.find((y) => y.id === draft.yearId) || D.creation.years[0];
     const q = yr.quick;
-    return [
+    const list: [Draft["buildType"], string, string][] = [
       ["quick", "Quick build", `Three tidy pools — ${q.stat} stats · ${q.subject} subjects · ${q.skill} skills.`],
       ["custom", "Custom build", `One pool · ${yr.custom} pts — fine-tune, and buy class ranks, wands, artifacts.`],
     ];
+    if (npc) list.push(["unlimited", "Unlimited build", "A custom build with no point limit and no year rank cap."]);
+    return list;
   })();
 
   return (
     <div className="sf-fstep-body">
       <div className="sf-fhead">
         <h3>Student Profile</h3>
-        <p className="sf-fhint">Define who you are and what you do here at Starfall. Pick your year, your House, and write a bio to describe who you are.</p>
+        <p className="sf-fhint">{npc ? "Define who this character is and what they do here at Starfall. Pick their year and House, and write a bio to describe them." : "Define who you are and what you do here at Starfall. Pick your year, your House, and write a bio to describe who you are."}</p>
       </div>
 
       <div className="sf-frow sf-frow--2">
@@ -107,7 +111,7 @@ function IdentityStep({ D, draft, set, onRandomize, randomizeNeedsConfirm, onOve
       <div className="sf-ffield">
         <span className="sf-flabel">House <span className="sf-flabel__opt">· flavor, and your sheet&apos;s color</span></span>
         <div className="sf-fhouses">
-          {D.houses.map((h) => (
+          {(npc ? [...D.houses, F.UNAFFILIATED_HOUSE] : D.houses).map((h) => (
             <button key={h.id} type="button" onClick={() => set({ houseId: h.id })}
               className={"sf-fhouse" + (draft.houseId === h.id ? " is-active" : "")} style={{ "--h-accent": TONE_500[h.tone], "--h-accent-fg": TONE_FG[h.tone] } as React.CSSProperties}>
               <span className="sf-fhouse__dot"></span>
@@ -267,7 +271,7 @@ function ReviewStep({ D, classData, draft, missing, onOverview }: { D: ForgeData
             <div className="sf-rev__name">{draft.name || "Unnamed arcanist"}</div>
             <div className="sf-rev__sub">{year.label} · {house.name}{majors.length ? " · " + majors.join(" & ") : ""}</div>
           </div>
-          <span className="sf-rev__build">{b.mode === "custom" ? `Custom · ${b.remaining} pts left` : "Quick build"}</span>
+          <span className="sf-rev__build">{b.mode === "custom" ? (b.unlimited ? "Unlimited build" : `Custom · ${b.remaining} pts left`) : "Quick build"}</span>
         </div>
 
         <Line k="Classes">{owned.length ? owned.join(" · ") : <em className="sf-rev__none">none chosen</em>}</Line>
@@ -305,11 +309,11 @@ function Meter({ label, spent, pool }: { label: string; spent: number; pool: num
 
 function BudgetHUD({ D, draft }: { D: ForgeData; draft: Draft }) {
   const b = F.budgets(draft, D);
-  const cap = <span className="sf-hud__cap">Year cap <b>{b.limit}</b></span>;
+  const cap = b.mode === "custom" && b.unlimited ? <span className="sf-hud__cap">No year cap</span> : <span className="sf-hud__cap">Year cap <b>{b.limit}</b></span>;
   if (b.mode === "quick") {
     return <div className="sf-hud">{cap}<Meter label="Stats" spent={b.stat.spent} pool={b.stat.pool} /><Meter label="Subjects" spent={b.subject.spent} pool={b.subject.pool} /><Meter label="Skills" spent={b.skill.spent} pool={b.skill.pool} /></div>;
   }
-  return <div className="sf-hud">{cap}<Meter label="Points" spent={b.spent} pool={b.pool} /><span className={"sf-hud__rem" + (b.remaining < 0 ? " is-over" : "")}>{b.remaining} left</span></div>;
+  return <div className="sf-hud">{cap}{b.unlimited ? <span className="sf-hud__rem">{b.spent} pts spent · unlimited</span> : <React.Fragment><Meter label="Points" spent={b.spent} pool={b.pool} /><span className={"sf-hud__rem" + (b.remaining < 0 ? " is-over" : "")}>{b.remaining} left</span></React.Fragment>}</div>;
 }
 
 /* ------------------------------- The shell ---------------------------- */
@@ -324,9 +328,13 @@ export interface AdmissionProps {
    *  edits classes, spells, or gear, so the overview card reads those off the
    *  character the player walked in with rather than off the draft. */
   live?: OverviewLive | null;
+  /** Building a GM-only NPC: adds the Unlimited build type and keeps its
+   *  in-progress draft apart from a player character's. */
+  npc?: boolean;
 }
 
-export function Admission({ mode, initial, data, classData, onCommit, onClose, live }: AdmissionProps) {
+export function Admission({ mode, initial, data, classData, onCommit, onClose, live, npc }: AdmissionProps) {
+  const draftKey = npc ? NPC_DRAFT_KEY : DRAFT_KEY;
   const D = data;
   const [draft, setDraft] = React.useState<Draft>(initial);
   const [idx, setIdx] = React.useState(0);
@@ -337,8 +345,8 @@ export function Admission({ mode, initial, data, classData, onCommit, onClose, l
 
   // Persist new-character drafts so a refresh mid-build is safe.
   React.useEffect(() => {
-    if (draft.mode === "new") { try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch { /* ignore */ } }
-  }, [draft]);
+    if (draft.mode === "new") { try { localStorage.setItem(draftKey, JSON.stringify(draft)); } catch { /* ignore */ } }
+  }, [draft, draftKey]);
 
   const validOf = (id: string) => F.stepValid(id, draft, D);
   const missing: string[] = [];
@@ -353,8 +361,8 @@ export function Admission({ mode, initial, data, classData, onCommit, onClose, l
   }
   const ready = missing.length === 0;
 
-  const begin = () => { if (ready) { try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ } onCommit(draft); } };
-  const cancel = () => { if (draft.mode === "new") { try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ } } onClose(); };
+  const begin = () => { if (ready) { try { localStorage.removeItem(draftKey); } catch { /* ignore */ } onCommit(draft); } };
+  const cancel = () => { if (draft.mode === "new") { try { localStorage.removeItem(draftKey); } catch { /* ignore */ } } onClose(); };
   const randomize = () => {
     setDraft(randomizeDraft(draft, D, classData));
     setIdx(STEPS.length - 1);
@@ -379,7 +387,7 @@ export function Admission({ mode, initial, data, classData, onCommit, onClose, l
             <Crest form="lines" size={34} tint="gold" />
             <div className="sf-admission__brandwm">
               <span className="sf-eyebrow">{mode === "edit" ? "Records" : "Admission"}</span>
-              <span className="sf-admission__brandt">{mode === "edit" ? "Edit character" : "New arcanist"}</span>
+              <span className="sf-admission__brandt">{mode === "edit" ? "Edit character" : npc ? "New NPC" : "New arcanist"}</span>
             </div>
           </div>
           <nav className="sf-admission__steps">
@@ -396,7 +404,7 @@ export function Admission({ mode, initial, data, classData, onCommit, onClose, l
         {/* content */}
         <div className="sf-admission__main">
           <div className="sf-admission__scroll">
-            {step.id === "identity" && <IdentityStep D={D} draft={draft} set={set} onRandomize={mode === "new" ? randomize : undefined} randomizeNeedsConfirm={F.hasDraftProgress(draft)} onOverview={mode === "edit" ? () => setOverview(true) : undefined} />}
+            {step.id === "identity" && <IdentityStep D={D} draft={draft} set={set} npc={npc} onRandomize={mode === "new" ? randomize : undefined} randomizeNeedsConfirm={F.hasDraftProgress(draft)} onOverview={mode === "edit" ? () => setOverview(true) : undefined} />}
             {step.id === "classes" && <AdmissionClasses D={D} classData={classData} draft={draft} set={set} />}
             {step.id === "wand" && <WandStep D={D} draft={draft} set={set} />}
             {step.id === "allocation" && <AdmissionAllocation D={D} draft={draft} set={set} />}

@@ -46,6 +46,8 @@ export interface PersistenceOptions {
   /** "edit" persists to an existing row; "create" waits for the Forge to commit. */
   mode: "edit" | "create";
   id?: string | null;
+  /** Create mode only: the campaign to add the new character to as a GM-only NPC. */
+  npcCampaignId?: string | null;
   /** Debounce window in ms (matches the prototype's 600ms). */
   debounceMs?: number;
   /** The sheet as server-rendered on load — the diff baseline for the first save. */
@@ -121,7 +123,7 @@ function logSaveEvent(
 }
 
 export function useCharacterPersistence({
-  mode, id, debounceMs = 600, initialSheet, initialUpdatedAt, onConflict, onSaved,
+  mode, id, debounceMs = 600, initialSheet, initialUpdatedAt, onConflict, onSaved, npcCampaignId,
 }: PersistenceOptions): Persistence {
   const router = useRouter();
   const idRef = React.useRef<string | null>(id ?? null);
@@ -209,7 +211,7 @@ export function useCharacterPersistence({
         const res = await fetch(`/api/characters`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sheet }),
+          body: JSON.stringify({ sheet, ...(npcCampaignId ? { npcCampaignId } : {}) }),
         });
         if (res.ok) {
           const { id: newId } = await res.json();
@@ -227,7 +229,7 @@ export function useCharacterPersistence({
         creatingRef.current = false;
       }
     },
-    [router]
+    [router, npcCampaignId]
   );
 
   // Runs a save if none is in flight; otherwise coalesces it as the one

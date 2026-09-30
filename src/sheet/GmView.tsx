@@ -28,6 +28,8 @@ import { INV } from "./data/inventory";
 import { DAYS, BLOCKS } from "./data/time";
 
 import { Sidebar } from "./components/parts/Sidebar";
+import { UNAFFILIATED_HOUSE } from "./forge/forge-state";
+import { RandomNpcModal, npcCreateHref, randomNpcOptions } from "./components/parts/RandomNpcModal";
 import { RollDock } from "./components/rolls/RollDock";
 import { RollPrompt } from "./components/rolls/RollPrompt";
 import { RollToasts } from "./components/rolls/RollToasts";
@@ -88,17 +90,21 @@ interface ActionState { active: boolean; included: string[]; selected: string[];
 export interface GmViewProps {
   campaign: Campaign;
   party: GMPartyMember[];
+  /** The campaign's full NPC character sheets (type='npc'), for the NPC board. */
+  npcSheets?: GMPartyMember[];
   npcs?: GmNpc[];
   notes?: GmNote[];
 }
 
-export function GmView({ campaign, party: hostParty, npcs: hostNpcs, notes: hostNotes }: GmViewProps) {
+export function GmView({ campaign, party: hostParty, npcSheets: hostNpcSheets, npcs: hostNpcs, notes: hostNotes }: GmViewProps) {
   const router = useRouter();
   const [tab, setTab] = React.useState("party");
   const [party, setParty] = React.useState<GmPartyMember[]>(() => {
     const src: GmPartyMember[] = (hostParty as unknown as GmPartyMember[]) ?? [];
     return src.map((p) => ({ ...p, conds: { fear: 0, despair: 0, wound: 0, loss: 0, doubt: 0, ...(p.conds || {}) } }));
   });
+  const [npcSheets, setNpcSheets] = React.useState<GmPartyMember[]>(() => ((hostNpcSheets as unknown as GmPartyMember[]) ?? []).map((p) => ({ ...p, conds: { fear: 0, despair: 0, wound: 0, loss: 0, doubt: 0, ...(p.conds || {}) } })));
+  const [randomNpcOpen, setRandomNpcOpen] = React.useState(false);
   const [npcs, setNpcs] = React.useState<GmNpc[]>(() => hostNpcs ?? []);
   const [notes, setNotes] = React.useState<GmNote[]>(() => hostNotes ?? []);
   const [activeNoteId, setActiveNoteId] = React.useState<string | null>(null);
@@ -145,12 +151,14 @@ export function GmView({ campaign, party: hostParty, npcs: hostNpcs, notes: host
   const onConditionPrompt = React.useCallback((raw: unknown) => {
     const prompt = raw as { kind?: string; character?: string; conds?: Record<string, number> } | null;
     if (!prompt || prompt.kind !== "condition" || !prompt.character || !prompt.conds) return;
-    setParty((s) => s.map((p) => {
+    const live = (p: GmPartyMember): GmPartyMember => {
       if (p.sheetId !== prompt.character) return p;
       const conds = { fear: 0, despair: 0, wound: 0, loss: 0, doubt: 0, ...prompt.conds };
       const resolve = Math.max(0, 5 - Object.values(conds).reduce((sum, v) => sum + (Number(v) || 0), 0));
       return { ...p, conds, resolve };
-    }));
+    };
+    setParty((s) => s.map(live));
+    setNpcSheets((s) => s.map(live));
   }, []);
 
   const rollSync = useRollSync({ campaignId: campaign.id, characterId: null, onRemoteRoll: injectRemote, onPrompt: onConditionPrompt });
@@ -190,7 +198,7 @@ export function GmView({ campaign, party: hostParty, npcs: hostNpcs, notes: host
   // campaign row, so no new policy or RPC is needed.
   const persistNpcs = (next: GmNpc[]) => {
     createClient().from("campaigns").update({ npcs: next }).eq("id", campaign.id).then(({ error }) => {
-      if (error) { console.error("NPC cast failed to persist", error.message); toast("Couldn't save NPC changes — try again."); }
+      if (error) { console.error("NPC cast failed to persist", error.message); toast("Couldn't save Extras changes — try again."); }
     });
   };
   const updateNpcs = (updater: (s: GmNpc[]) => GmNpc[]) => setNpcs((s) => {
@@ -406,7 +414,7 @@ export function GmView({ campaign, party: hostParty, npcs: hostNpcs, notes: host
   const openAddNpc = () => setAddNpc({ editId: null, name: "", title: "", resolve: 3, strong: 8, weak: 3, icon: "__mono", confirmDelete: false });
   const openEditNpc = (id: string) => { const n = npcs.find((x) => x.id === id); if (!n) return; setAddNpc({ editId: id, name: n.name, title: n.kind || "", resolve: n.maxResolve, strong: n.strong, weak: n.weak, icon: n.icon || "__mono", confirmDelete: false }); };
   const patchAddNpc = (patch: Partial<AddNpcState>) => setAddNpc((a) => a ? { ...a, ...patch } : a);
-  const deleteNpc = (id: string) => { updateNpcs((s) => s.filter((n) => n.id !== id)); toast("NPC removed from the cast."); };
+  const deleteNpc = (id: string) => { updateNpcs((s) => s.filter((n) => n.id !== id)); toast("Extra removed from the cast."); };
   const confirmAddNpc = () => {
     const a = addNpc; if (!a || !a.name.trim()) return;
     const name = a.name.trim();
@@ -596,22 +604,29 @@ export function GmView({ campaign, party: hostParty, npcs: hostNpcs, notes: host
 
   const campaignName = campaign.name || "Untitled campaign";
 
-  const TAB_META: Record<string, { title: string }> = { party: { title: "Party Board" }, npcs: { title: "NPCs" }, notes: { title: "Campaign Journal" }, action: { title: "Action Scene" } };
+  const TAB_META: Record<string, { title: string }> = { party: { title: "Party Board" }, npcs: { title: "Extras" }, notes: { title: "Campaign Journal" }, action: { title: "Action Scene" } };
   const sidebarGm = {
     brandSub: "Faculty View", tableLabel: "The Table", partyLabel: "The Party",
     tabs: [
       { id: "party", label: "Party", icon: "users", count: party.length, active: tab === "party", onClick: () => setTab("party") },
-      { id: "npcs", label: "NPCs", icon: "venetian-mask", count: npcs.length, active: tab === "npcs", onClick: () => setTab("npcs") },
+      { id: "npcs", label: "Extras", icon: "venetian-mask", count: npcs.length, active: tab === "npcs", onClick: () => setTab("npcs") },
       { id: "notes", label: "Notes", icon: "scroll-text", count: notes.length, active: tab === "notes", onClick: () => setTab("notes") },
       { id: "action", label: "Action", icon: "swords", count: "", active: tab === "action", onClick: () => setTab("action") },
     ],
     party: party.map((p) => ({ id: p.id, name: p.name, initials: p.initials, tone: String(p.tone), house: p.house.replace(" House", ""), onOpen: () => { if (p.sheetId) { markJumpOrigin("/gm/" + campaign.id); router.push("/characters/" + p.sheetId); } else toast("No sheet linked for " + p.name + "."); } })),
   };
+  const openNpcSheet = (id: string) => { markJumpOrigin("/gm/" + campaign.id); router.push("/characters/" + id); };
+  const sidebarNpcs = {
+    npcs: npcSheets.map((p) => ({ id: p.id, name: p.name, initials: p.initials, tone: String(p.tone), house: p.house.replace(" House", "") })),
+    onOpen: openNpcSheet,
+    onCreate: () => { markJumpOrigin("/gm/" + campaign.id); router.push(npcCreateHref(campaign.id)); },
+    onRandom: () => setRandomNpcOpen(true),
+  };
 
   return (
     <div className="sf-sheet" style={{ position: "fixed", inset: 0, overflow: "hidden" }}>
     <div className={"sf-app sf-app--gm" + (collapsed ? " sidebar-collapsed" : "")} data-tab={tab}>
-      <Sidebar gm={sidebarGm} onNavigate={() => {}} roster={[]} activeChar="" onPickChar={() => {}} compCount={0} onOverview={() => {}} onEditCharacter={() => {}} collapsed={collapsed} onToggleSidebar={() => setCollapsed((v) => !v)} mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
+      <Sidebar gm={sidebarGm} npcs={sidebarNpcs} onNavigate={() => {}} roster={[]} activeChar="" onPickChar={() => {}} compCount={0} onOverview={() => {}} onEditCharacter={() => {}} collapsed={collapsed} onToggleSidebar={() => setCollapsed((v) => !v)} mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
 
       <main className="sf-main">
         <header className="sf-top gm-top">
@@ -626,7 +641,7 @@ export function GmView({ campaign, party: hostParty, npcs: hostNpcs, notes: host
         </header>
 
         <div className="sf-canvas gm-canvas">
-          {tab === "party" && <PartyTab party={party} onResist={openResist} onGrant={openGrant} onGrantAll={openGrantAll} onCompendium={openCompendium} onCompendiumAll={() => setCompendiumGrant({ pcId: "__all__" })} />}
+          {tab === "party" && <PartyTab npcSheets={npcSheets} onOpenNpc={openNpcSheet} party={party} onResist={openResist} onGrant={openGrant} onGrantAll={openGrantAll} onCompendium={openCompendium} onCompendiumAll={() => setCompendiumGrant({ pcId: "__all__" })} />}
           {tab === "npcs" && <NpcsTab npcs={npcs} conds={GM_SEED.CONDS} onAdd={openAddNpc} onEdit={openEditNpc} onRoll={rollNpc} onBumpCond={bumpCondNpc} />}
           {tab === "notes" && <NotesTab notes={notes} activeId={activeNoteId} setActiveId={setActiveNoteId} tagFilter={tagFilter} setTagFilter={setTagFilter} onCreate={createNote} onPatch={patchNote} onToggleShared={toggleNoteShared} confirmId={confirmDeleteNoteId} setConfirmId={setConfirmDeleteNoteId} onDelete={deleteNote} />}
           {tab === "action" && <ActionTab party={party} action={action} onToggleInclude={toggleInclude} onToggleSelect={toggleSelect} onBegin={beginAction} onEnd={endAction} onThreat={threatMove} onTargeted={targetedThreat} onOpening={opening} onChangeAp={changeAp} onTarget={targetPlayer} setChangeApId={(id) => setAction((s) => ({ ...s, changeApId: s.changeApId === id ? null : id }))} />}
@@ -663,6 +678,13 @@ export function GmView({ campaign, party: hostParty, npcs: hostNpcs, notes: host
         />
       )}
       {addNpc && <AddNpcModal addNpc={addNpc} onPatch={patchAddNpc} onConfirm={confirmAddNpc} onDelete={(id) => { deleteNpc(id); setAddNpc(null); }} onClose={() => setAddNpc(null)} />}
+      {randomNpcOpen && (
+        <RandomNpcModal
+          options={randomNpcOptions({ years: SEED.creation.years, houses: [...SEED.houses, UNAFFILIATED_HOUSE], schools: SEED.magicSchools, classes: comp.classes })}
+          onSubmit={(v) => { setRandomNpcOpen(false); markJumpOrigin("/gm/" + campaign.id); router.push(npcCreateHref(campaign.id, v)); }}
+          onClose={() => setRandomNpcOpen(false)}
+        />
+      )}
       {timeModal && <TimeModal time={time} setTime={updateTime} onAdvance={advanceTime} onSleep={sleepTime} onClose={() => setTimeModal(false)} />}
 
       <div className={"sf-inv-toast" + (status ? " show" : "")} role="status">
@@ -674,7 +696,37 @@ export function GmView({ campaign, party: hostParty, npcs: hostNpcs, notes: host
 }
 
 /* ============================== PARTY TAB ================================= */
-function PartyTab({ party, onResist, onGrant, onGrantAll, onCompendium, onCompendiumAll }: { party: GmPartyMember[]; onResist: (id: string) => void; onGrant: (id: string) => void; onGrantAll: () => void; onCompendium: (id: string) => void; onCompendiumAll: () => void }) {
+function PcCard({ pc, actions }: { pc: GmPartyMember; actions: React.ReactNode }) {
+  return (
+    <article className="gm-card gm-pc">
+      <span className="gm-card__accent" style={{ background: TONE3[pc.tone] }} />
+      <div className="gm-pc__head">
+        <Avatar name={pc.name} initials={pc.initials} tone={String(pc.tone)} size={34} />
+        <div className="gm-pc__id">
+          <span className="gm-pc__name">{pc.name}</span>
+          <span className="gm-pc__class">{pc.className}</span>
+        </div>
+        <span className="gm-house" style={{ color: TONE3[pc.tone], background: "color-mix(in oklab," + TONE3[pc.tone] + " 16%,transparent)", borderColor: "color-mix(in oklab," + TONE3[pc.tone] + " 34%,transparent)" }}>
+          <span className="gm-house__dot" style={{ background: TONE3[pc.tone] }} />{pc.house.replace(" House", "")}
+        </span>
+      </div>
+      <div className="gm-pc__stats">
+        <div className="gm-stat">
+          <span className="gm-stat__label">Resolve</span>
+          <Stars value={pc.resolve} max={5} />
+        </div>
+        <div className="gm-stat__div" />
+        <div className="gm-stat">
+          <span className="gm-stat__label">Materials</span>
+          <span className="gm-mat"><Icon name="circle-star" /> {pc.materials.toLocaleString()}</span>
+        </div>
+      </div>
+      <div className="gm-pc__btns">{actions}</div>
+    </article>
+  );
+}
+
+function PartyTab({ party, npcSheets, onOpenNpc, onResist, onGrant, onGrantAll, onCompendium, onCompendiumAll }: { party: GmPartyMember[]; npcSheets: GmPartyMember[]; onOpenNpc: (id: string) => void; onResist: (id: string) => void; onGrant: (id: string) => void; onGrantAll: () => void; onCompendium: (id: string) => void; onCompendiumAll: () => void }) {
   return (
     <div>
       <div className="gm-sec-head">
@@ -683,37 +735,15 @@ function PartyTab({ party, onResist, onGrant, onGrantAll, onCompendium, onCompen
       </div>
       <div className="gm-party-grid">
         {party.map((pc) => (
-          <article key={pc.id} className="gm-card gm-pc">
-            <span className="gm-card__accent" style={{ background: TONE3[pc.tone] }} />
-            <div className="gm-pc__head">
-              <Avatar name={pc.name} initials={pc.initials} tone={String(pc.tone)} size={34} />
-              <div className="gm-pc__id">
-                <span className="gm-pc__name">{pc.name}</span>
-                <span className="gm-pc__class">{pc.className}</span>
-              </div>
-              <span className="gm-house" style={{ color: TONE3[pc.tone], background: "color-mix(in oklab," + TONE3[pc.tone] + " 16%,transparent)", borderColor: "color-mix(in oklab," + TONE3[pc.tone] + " 34%,transparent)" }}>
-                <span className="gm-house__dot" style={{ background: TONE3[pc.tone] }} />{pc.house.replace(" House", "")}
-              </span>
-            </div>
-            <div className="gm-pc__stats">
-              <div className="gm-stat">
-                <span className="gm-stat__label">Resolve</span>
-                <Stars value={pc.resolve} max={5} />
-              </div>
-              <div className="gm-stat__div" />
-              <div className="gm-stat">
-                <span className="gm-stat__label">Materials</span>
-                <span className="gm-mat"><Icon name="circle-star" /> {pc.materials.toLocaleString()}</span>
-              </div>
-            </div>
-            <div className="gm-pc__btns">
+          <PcCard key={pc.id} pc={pc} actions={
+            <React.Fragment>
               <div className="gm-pc__btnrow">
                 <button className="gm-btn" onClick={() => onResist(pc.id)}><Icon name="shield-alert" style={{ color: "var(--crimson-300)" }} />Resist</button>
                 <button className="gm-btn" onClick={() => onGrant(pc.id)}><Icon name="gift" style={{ color: "var(--gold-300)" }} />Grant</button>
               </div>
               <button className="gm-btn gm-btn-block" onClick={() => onCompendium(pc.id)}><Icon name="library-big" style={{ color: "var(--plum-300)" }} />Compendium</button>
-            </div>
-          </article>
+            </React.Fragment>
+          } />
         ))}
       </div>
       <div className="gm-grantall">
@@ -730,6 +760,22 @@ function PartyTab({ party, onResist, onGrant, onGrantAll, onCompendium, onCompen
         </div>
         <button className="gm-btn-gold" onClick={onCompendiumAll}><Icon name="library-big" />Compendium for All</button>
       </div>
+
+      <div className="gm-sec-head gm-sec-head--npcboard">
+        <h2>The NPC Board</h2>
+        <span className="gm-sec-sub">Every NPC with a full character sheet in this campaign. Only you can see them.</span>
+      </div>
+      {npcSheets.length ? (
+        <div className="gm-party-grid">
+          {npcSheets.map((n) => (
+            <PcCard key={n.id} pc={n} actions={
+              <button className="gm-btn gm-btn-block" onClick={() => onOpenNpc(n.id)}><Icon name="arrow-up-right" style={{ color: "var(--gold-300)" }} />Open sheet</button>
+            } />
+          ))}
+        </div>
+      ) : (
+        <p className="gm-sec-sub">No NPC sheets yet — use the + or the dice under NPCs in the side rail to make one.</p>
+      )}
     </div>
   );
 }
@@ -739,9 +785,9 @@ function NpcsTab({ npcs, conds, onAdd, onEdit, onRoll, onBumpCond }: { npcs: GmN
   return (
     <div>
       <div className="gm-sec-head">
-        <h2>NPCs</h2>
-        <span className="gm-sec-sub">A basic NPC uses their Strong roll for any check they’re good at and their Weak roll for any check they aren’t. Full NPCs are stored in their own sheets.</span>
-        <button className="gm-btn gm-sec-head__action" onClick={onAdd}><Icon name="plus" style={{ color: "var(--gold-300)" }} />Add NPC</button>
+        <h2>Extras</h2>
+        <span className="gm-sec-sub">A basic Extra uses their Strong roll for any check they’re good at and their Weak roll for any check they aren’t. Full NPCs (under NPCs in the side rail) are stored in their own sheets.</span>
+        <button className="gm-btn gm-sec-head__action" onClick={onAdd}><Icon name="plus" style={{ color: "var(--gold-300)" }} />Add Extra</button>
       </div>
       <div className="gm-npc-grid">
         {npcs.map((n) => {
@@ -1084,7 +1130,7 @@ function AddNpcModal({ addNpc, onPatch, onConfirm, onDelete, onClose }: { addNpc
       <div className="gm-modal gm-modal--wide" onClick={(e) => e.stopPropagation()}>
         <div className="gm-modal__head">
           <span className="gm-modal__glyph"><Icon name="venetian-mask" /></span>
-          <div className="gm-modal__titles"><span className="gm-modal__eyebrow">{isEdit ? "Update the cast" : "Add to the cast"}</span><span className="gm-modal__title">{isEdit ? "Edit NPC" : "New NPC"}</span></div>
+          <div className="gm-modal__titles"><span className="gm-modal__eyebrow">{isEdit ? "Update the cast" : "Add to the cast"}</span><span className="gm-modal__title">{isEdit ? "Edit Extra" : "New Extra"}</span></div>
           <button className="gm-modal__x" onClick={onClose}><Icon name="x" /></button>
         </div>
         <div className="gm-modal__body">
@@ -1110,10 +1156,10 @@ function AddNpcModal({ addNpc, onPatch, onConfirm, onDelete, onClose }: { addNpc
         {addNpc.confirmDelete ? (
           <div className="gm-modal__foot gm-modal__foot--danger">
             <Icon name="triangle-alert" style={{ color: "var(--crimson-300)" }} />
-            <span className="gm-modal__footnote">Remove this NPC permanently? This cannot be undone.</span>
+            <span className="gm-modal__footnote">Remove this Extra permanently? This cannot be undone.</span>
             <div className="gm-modal__footbtns">
               <button className="gm-btn" onClick={() => onPatch({ confirmDelete: false })}>Keep</button>
-              <button className="gm-btn-sm gm-btn-danger" onClick={() => addNpc.editId && onDelete(addNpc.editId)}><Icon name="trash-2" />Remove NPC</button>
+              <button className="gm-btn-sm gm-btn-danger" onClick={() => addNpc.editId && onDelete(addNpc.editId)}><Icon name="trash-2" />Remove Extra</button>
             </div>
           </div>
         ) : (

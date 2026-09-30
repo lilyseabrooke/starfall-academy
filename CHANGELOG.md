@@ -8,6 +8,66 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.23.3 — 2026-09-30
+- The **random-NPC form** has a new look. Year is a row of roman numerals;
+  House, major and classes each sit on one compact row showing your picks as
+  coloured tokens (or "Random" when left open), and clicking a row opens a
+  panel underneath: House crests, majors grouped by school, and class cards
+  with their icons. The form also fits on a phone screen now.
+- The built-in backup of the Classes table (used when the Google Sheet can't
+  be reached) is refreshed: it now includes the **Technician** and the
+  reworked Alchemist abilities.
+
+## v1.23.2 — 2026-09-30
+- **Unlimited build** now ignores the year's rank cap (ranks up to 12) and is
+  no longer the default for NPCs. A random Unlimited build rolls its point
+  total first, then takes its rank cap from the year whose point pool is
+  closest to that total.
+- NPCs can be **Unaffiliated** — "Not everyone who lives and works at Starfall
+  is tied to a House." — with gray as the sheet's theme colour. It's offered in
+  the NPC creator, and the random-NPC form can now pick a House (or Unaffiliated),
+  leaving it to chance if you don't.
+- The random-NPC form builds on the default (Quick) build, so the year you pick
+  decides the NPC's power level.
+- Backing out of the character creator now shows the loading screen instead of
+  flashing the demo sheet underneath.
+- The "Conjuring…" screen for a new random NPC picks from sixteen lines.
+
+## v1.23.1 — 2026-09-30
+- GM tools: the basic-NPC tab is now **Extras**, so it no longer shares a name
+  with the full NPC sheets in the side rail.
+- An NPC's sheet has **Delete character** under Edit character, behind a
+  confirmation.
+- Random NPC builds now build *around* a major you name: the random build's
+  archetype is centred on it (its subject, governing stat, or school), the same
+  way a randomly drawn major already shaped the build. Before, an archetype
+  focused elsewhere could zero the named major out entirely, leaving e.g. an
+  Evocation major with no Evocation or Focus. A major's governing stat also
+  can no longer be folded away by the "tidy the stray 1s" pass.
+- Random class choices are a fair 50/50 between a rank's two options (they
+  used to lean 85% toward one path).
+
+## v1.23.0 — 2026-09-30
+- **NPC character sheets.** A GM can now give an NPC a full character sheet,
+  stored inside the campaign and visible only to them. The side rail (on the
+  GM tools and on every character sheet the GM opens) has a new **NPCs**
+  category under the party: click an NPC to open their sheet, **+** to build a
+  new one in the character creator, or the **dice** to conjure a random one.
+- The creator has a new **Unlimited** build type for NPCs — a custom build
+  with no point limit (the year's rank cap still applies). Random Character on
+  an Unlimited build first rolls a point total between a first-year's and a
+  graduate's, then builds as usual.
+- The dice opens a form — name, pronouns, year, and optionally major(s),
+  class(es) and a bio — and builds and saves a random NPC from those answers.
+- An NPC's sheet works like a PC's. The GM rolls for them and the whole table
+  sees it, unless they choose **Secret** — offered on every NPC roll.
+- The Party Board now ends with **The NPC Board**: every NPC in the campaign,
+  laid out like the party cards above it.
+- Players can no longer read NPC rows at all (database policy), and the GM's
+  own character list no longer shows their NPCs.
+- The creator's "Begin" no longer navigates to the character list while the
+  new character saves.
+
 ## v1.22.1 — 2026-09-28
 - Fixed Sort by ID in the Compendium (drawer and standalone page both): it
   matched digits at the *end* of each ID rather than the row number right

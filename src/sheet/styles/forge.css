@@ -411,3 +411,8 @@
   .sf-sheet .sf-admission__foot { padding-left: var(--space-4); padding-right: var(--space-4); }
   .sf-sheet .sf-hud { display: none; }
 }
+
+/* Shown while a quick random NPC is being built and saved */
+.sf-sheet .sf-npc-conjure { position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: var(--ink-950); color: var(--text-strong); font-family: var(--font-display); text-transform: uppercase; letter-spacing: .08em; }
+.sf-sheet .sf-npc-conjure svg { width: 34px; height: 34px; color: var(--gold-400); animation: sf-npc-spin 1.4s linear infinite; }
+@keyframes sf-npc-spin { to { transform: rotate(360deg); } }

@@ -40,7 +40,7 @@ export default async function GMToolsPage({
   if (notesError) console.error("GM journal load failed", notesError.message);
 
   // The campaign's player characters (cross-user — RLS lets the GM read members'
-  // characters). NPCs (type='npc') are managed in the GM view, not the party board.
+  // characters). NPC sheets (type='npc') are loaded separately below.
   const { data: partyRows } = await supabase
     .from("characters")
     .select("id, name, c:sheet->c, conditions:sheet->conditions")
@@ -50,10 +50,21 @@ export default async function GMToolsPage({
     .map((r) => toGMPartyMember(r as GMRosterRow))
     .sort((a, b) => a.name.localeCompare(b.name));
 
+  // The campaign's full NPC sheets — GM-only (RLS hides them from players).
+  const { data: npcRows } = await supabase
+    .from("characters")
+    .select("id, name, c:sheet->c, conditions:sheet->conditions")
+    .eq("campaign_id", campaign.id)
+    .eq("type", "npc");
+  const npcSheets = (npcRows ?? [])
+    .map((r) => toGMPartyMember(r as GMRosterRow))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
   return (
     <GmView
       campaign={campaign}
       party={party}
+      npcSheets={npcSheets}
       npcs={(campaign.npcs as GmNpc[] | null) ?? []}
       notes={(notes as GmNote[] | null) ?? []}
     />

@@ -54,7 +54,7 @@ export const TONE_700: Record<string, string> = {
   forest: "var(--forest-700)",
   teal: "var(--teal-700)",
   crimson: "var(--crimson-700)",
-  silver: "var(--plum-700)",
+  silver: "oklch(34% 0.012 222)", // Unaffiliated: steel gray, not house-tinted
 };
 
 /* ----------------------- Level → tone mapping ----------------------- */
