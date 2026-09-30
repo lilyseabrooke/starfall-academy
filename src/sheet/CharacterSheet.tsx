@@ -71,6 +71,8 @@ import { RollToasts } from "./components/rolls/RollToasts";
 import { RollDock } from "./components/rolls/RollDock";
 import { RollPrompt } from "./components/rolls/RollPrompt";
 import { Admission } from "./forge/Forge";
+import { randomizeDraft } from "./forge/forge-random";
+import { RandomNpcModal, npcCreateHref } from "./components/parts/RandomNpcModal";
 import * as F from "./forge/forge-state";
 import type { Draft } from "./forge/forge-state";
 import { CharacterOverview } from "./overview/CharacterOverview";
@@ -136,6 +138,13 @@ interface GmPrompt {
   title?: string;
 }
 
+/** Create mode for a GM-only NPC: which campaign it joins, and — when the GM
+ *  used the side rail's dice — the answers to build a random one from. */
+export interface NpcCreate {
+  campaignId: string;
+  random: { name: string; pronouns: string; yearId: string; major: string[]; classIds: string[]; bio: string } | null;
+}
+
 export interface CharacterSheetProps {
   mode: "edit" | "create";
   id?: string | null;
@@ -150,6 +159,13 @@ export interface CharacterSheetProps {
    * pages get an editor — everyone else reads them.
    */
   ownsSheet?: boolean;
+  /** Create mode: build an NPC for this campaign rather than a player character. */
+  npc?: NpcCreate | null;
+  /** This sheet is a GM-only NPC. Its rolls can always be made in secret. */
+  isNpc?: boolean;
+  /** Set only for the campaign's GM: the campaign's NPCs, for the side rail's
+   *  NPC category (players never receive them). */
+  gmNpc?: { campaignId: string; npcs: RosterMember[] } | null;
 }
 
 /** A "Map Location" search result's `data` carries the matched region/seed
@@ -175,7 +191,7 @@ function mapFocusFromSearchResult(result: SearchResult): MapFocusSignal | null {
   return null;
 }
 
-export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roster, me, campaignId, ownsSheet = true }: CharacterSheetProps) {
+export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roster, me, campaignId, ownsSheet = true, npc = null, isNpc = false, gmNpc = null }: CharacterSheetProps) {
   const router = useRouter();
 
   // Whether we have real saved data to hydrate from at first paint (SSR
@@ -190,12 +206,16 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
 
   // ---- Party roster (host-provided, or seed when standalone) ----
   const ROSTER = React.useMemo<RosterMember[]>(
-    () => (roster && roster.length ? roster : SEED.roster.map((r) => ({ ...r }))),
+    // A host-provided roster is used as given — an NPC's party can be empty.
+    () => (roster ? roster : SEED.roster.map((r) => ({ ...r }))),
     [roster]
   );
+  // Rolls are attributed through this list, so the GM's NPCs (this sheet
+  // included, when it is one) have to be in it alongside the party.
+  const npcRoster = React.useMemo<RosterMember[]>(() => gmNpc?.npcs ?? [], [gmNpc]);
   const rollRoster = React.useMemo<RollRosterMember[]>(
-    () => ROSTER.map((r) => ({ id: r.id, name: r.name, initials: r.initials, tone: r.tone as Tone, active: r.active })),
-    [ROSTER]
+    () => ROSTER.concat(npcRoster.filter((n) => !ROSTER.some((r) => r.id === n.id))).map((r) => ({ id: r.id, name: r.name, initials: r.initials, tone: r.tone as Tone, active: r.active })),
+    [ROSTER, npcRoster]
   );
 
   // ---- Core UI / character state ----
@@ -221,6 +241,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
         : blankSchools()
   );
   const [activeChar, setActiveChar] = React.useState(me || (ROSTER.find((r) => r.active) || ROSTER[0]).id);
+  const [randomNpcOpen, setRandomNpcOpen] = React.useState(false);
 
   const pickChar = (cid: string) => {
     if (!cid || cid === activeChar) return;
@@ -353,6 +374,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     activeChar,
     {
       multiplayer: !!campaignId,
+      alwaysCanSecret: isNpc,
       onShareRoll: (r) => shareRef.current(r),
       // The single place a failed Resist roll (manual, GM-forced, or backfire) bumps its Condition.
       onResistFail: (conditionId) => setConditions((cs) => cs.map((x) => x.id === conditionId ? { ...x, value: Math.min(x.max != null ? x.max : 99, (x.value || 0) + 1) } : x)),
@@ -530,6 +552,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     id,
     initialSheet,
     initialUpdatedAt,
+    npcCampaignId: npc?.campaignId ?? null,
     onSaved: (sheet) => { syncedSheetRef.current = sheet; },
     onConflict: (serverSheet, retry) => retry(reconcileFromServer(serverSheet)),
   });
@@ -1170,9 +1193,9 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     [classState, spells, wands, artifacts, potions, plants, glyphs, items],
   );
   const openForgeNew = () => {
-    
-    let draft = F.blankDraft();
-    try { const s = JSON.parse(localStorage.getItem("sf-admission-draft") || "null"); if (s && s.mode === "new") draft = { ...F.blankDraft(), ...s }; } catch { /* ignore */ }
+    // An NPC starts on the Unlimited build, with a draft of its own.
+    let draft: Draft = npc ? { ...F.blankDraft(), buildType: "unlimited" } : F.blankDraft();
+    try { const s = JSON.parse(localStorage.getItem(npc ? "sf-admission-draft-npc" : "sf-admission-draft") || "null"); if (s && s.mode === "new") draft = { ...draft, ...s }; } catch { /* ignore */ }
     setForge({ open: true, mode: "new", draft });
   };
   const openForgeEdit = () => {
@@ -1187,7 +1210,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   const closeForge = () => {
     // In create mode there's no character until the Forge commits — closing
     // without committing would otherwise leave the seed demo sheet showing.
-    if (admission.mode === "new" && mode === "create") { router.push("/characters"); return; }
+    if (admission.mode === "new" && mode === "create") { router.push(npc ? `/gm/${npc.campaignId}` : "/characters"); return; }
     setForge((s) => ({ ...s, open: false }));
   };
 
@@ -1224,7 +1247,9 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       setRuneStack([]);
     }
     setNav("overview");
-    closeForge();
+    // Committing isn't cancelling: in create mode the row is saved next and the
+    // URL then swaps to it, so don't also navigate away to the list.
+    setForge((f) => ({ ...f, open: false }));
     persistence.notifyCommitted();
   };
 
@@ -1240,8 +1265,24 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     if (navId === "journal") loadJournal();
     setNav(navId);
   };
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  React.useEffect(() => { if (mode === "create") openForgeNew(); }, [mode]);
+  // A quick random NPC (the side rail's dice) skips the wizard: once the live
+  // compendium has loaded, roll a build from the form's answers and commit it,
+  // which saves the NPC and lands on its sheet. Without a name it falls back to
+  // the wizard.
+  const quickNpc = mode === "create" && npc?.random && npc.random.name.trim() ? npc.random : null;
+  const quickNpcRan = React.useRef(false);
+  const [quickNpcBusy, setQuickNpcBusy] = React.useState(!!quickNpc);
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+  React.useEffect(() => { if (mode === "create" && !quickNpc) openForgeNew(); }, [mode]);
+  React.useEffect(() => {
+    if (!quickNpc || !comp.ready || quickNpcRan.current) return;
+    quickNpcRan.current = true;
+    const year = SEED.creation.years.find((y) => y.id === quickNpc.yearId) || SEED.creation.years[0];
+    const house = SEED.houses[Math.floor(Math.random() * SEED.houses.length)];
+    const base: Draft = { ...F.blankDraft(), name: quickNpc.name.trim(), pronouns: quickNpc.pronouns, bio: quickNpc.bio, yearId: year.id, houseId: house.id, buildType: "unlimited" };
+    commitForge(randomizeDraft(base, forgeData, CL, { major: quickNpc.major, classIds: quickNpc.classIds }));
+    setQuickNpcBusy(false);
+  }, [quickNpc, comp.ready]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---- Character vital + condition steppers ----
   const stepVital = (key: string, delta: number) => setC((prev) => {
@@ -1450,9 +1491,9 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   return (
     <div className="sf-sheet" style={{ position: "fixed", inset: 0, overflow: "hidden" }}>
     <div className="sf-app" data-nav={nav}>
-      <Sidebar active={nav} onNavigate={onNavigate} roster={ROSTER} activeChar={activeChar} onPickChar={pickChar} compCount={D.compendium.length} onOverview={() => setOverviewOpen(true)} onEditCharacter={openForgeEdit} collapsed={sidebarCollapsed} onToggleSidebar={toggleSidebar} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
+      <Sidebar npcs={gmNpc ? { npcs: gmNpc.npcs, activeId: me || undefined, onOpen: pickChar, onCreate: () => router.push(npcCreateHref(gmNpc.campaignId)), onRandom: () => setRandomNpcOpen(true) } : undefined} active={nav} onNavigate={onNavigate} roster={ROSTER} activeChar={activeChar} onPickChar={pickChar} compCount={D.compendium.length} onOverview={() => setOverviewOpen(true)} onEditCharacter={openForgeEdit} collapsed={sidebarCollapsed} onToggleSidebar={toggleSidebar} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
       <main className="sf-main">
-        <TopBar title={titleMap[nav] || "Overview"} eyebrow={c.name + " · " + c.house} c={{ ...c, resolve: Math.max(0, 5 - conditions.reduce((s, cd) => s + cd.value, 0)), resolveMax: 5 }} onStep={stepVital} onRollAction={onRollAction} onToggleMobileMenu={() => setMobileMenuOpen((v) => !v)} hideVitals={nav === "map"} time={campaignId ? gmTime : undefined} searchQuery={searchQuery} onSearchQueryChange={setSearchQuery} searchResults={searchResults} onSearchSelect={handleSearchSelect} onSearchRoll={handleSearchRoll} onSearchRepair={handleSearchRepair} onSearchUse={handleSearchUse} searchMenuOpen={searchMenuOpen} onSearchMenuOpen={() => setSearchMenuOpen(true)} onSearchMenuClose={() => setSearchMenuOpen(false)} onSearchMobileOpen={() => setSearchMenuOpen(true)} />
+        <TopBar title={titleMap[nav] || "Overview"} eyebrow={c.name + " · " + c.house + (isNpc ? " · NPC" : "")} c={{ ...c, resolve: Math.max(0, 5 - conditions.reduce((s, cd) => s + cd.value, 0)), resolveMax: 5 }} onStep={stepVital} onRollAction={onRollAction} onToggleMobileMenu={() => setMobileMenuOpen((v) => !v)} hideVitals={nav === "map"} time={campaignId ? gmTime : undefined} searchQuery={searchQuery} onSearchQueryChange={setSearchQuery} searchResults={searchResults} onSearchSelect={handleSearchSelect} onSearchRoll={handleSearchRoll} onSearchRepair={handleSearchRepair} onSearchUse={handleSearchUse} searchMenuOpen={searchMenuOpen} onSearchMenuOpen={() => setSearchMenuOpen(true)} onSearchMenuClose={() => setSearchMenuOpen(false)} onSearchMobileOpen={() => setSearchMenuOpen(true)} />
 
         {nav === "overview" && (
           <div className="sf-canvas">
@@ -1555,7 +1596,19 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       <ManualModal open={!!manualKind} kind={manualKind} subjects={allSubjects} skills={stats.flatMap((st) => st.skills)} stats={stats} schools={schools} compendiumSpells={D.compendium.filter((e) => e.cat === "spell")} attuneFull={attunedCount >= caps.attuneCap} sheafFull={heldCount >= caps.potionCap} editSubject={manualKind === "recipe" ? editRecipe : manualKind === "artifact" ? editArtifact : manualKind === "wand" ? editWand : manualKind === "plant" ? editPlant : manualKind === "glyph" ? editGlyph : null} cultivationCap={caps.plantCap} cultivationUsed={plantSum} onSave={saveManual} onClose={() => { setManualKind(null); setEditRecipe(null); setEditArtifact(null); setEditWand(null); setEditPlant(null); setEditGlyph(null); }} />
       <GiveModal open={!!givePayload} payload={givePayload as GivePayload | null} roster={ROSTER} activeChar={activeChar} onConfirm={onGiveConfirm} onClose={() => setGivePayload(null)} />
       <ChoosePlantModal open={!!choosePlant} plant={choosePlant ? choosePlant.pl : null} onRoll={() => { const ctx = choosePlant; setChoosePlant(null); if (ctx) invH.rollPlant(ctx.pl, ctx.anchor); }} onJustUse={() => { const ctx = choosePlant; setChoosePlant(null); if (ctx) invH.markPlantUsed(ctx.pl); }} onClose={() => setChoosePlant(null)} />
-      {admission.open && admission.draft ? <Admission mode={admission.mode} initial={admission.draft} data={forgeData} classData={CL} live={forgeLive} onCommit={commitForge} onClose={closeForge} /> : null}
+      {admission.open && admission.draft ? <Admission mode={admission.mode} initial={admission.draft} data={forgeData} classData={CL} live={forgeLive} npc={!!npc || isNpc} onCommit={commitForge} onClose={closeForge} /> : null}
+      {randomNpcOpen && gmNpc ? (
+        <RandomNpcModal
+          options={{
+            years: SEED.creation.years.map((y) => ({ id: y.id, label: y.label })),
+            subjects: F.flatSubjects(forgeData).map((sb) => ({ key: sb.key, name: sb.name })),
+            classes: CL.classes.map((k) => ({ id: k.id, name: k.name })),
+          }}
+          onSubmit={(v) => { setRandomNpcOpen(false); router.push(npcCreateHref(gmNpc.campaignId, v)); }}
+          onClose={() => setRandomNpcOpen(false)}
+        />
+      ) : null}
+      {quickNpcBusy ? <div className="sf-npc-conjure" role="status"><Icon name="dices" /><span>Conjuring {quickNpc?.name.trim() || "an NPC"}…</span></div> : null}
       <CharacterOverview open={overviewOpen} model={overviewModel} onClose={() => setOverviewOpen(false)} />
       <BonusEditor open={bonusEdit.open} bonus={bonusEdit.bonus} mode={bonusEdit.mode} ctx={{ stats, schools, moves, spells, conditions }} classes={bonusClasses} onSave={saveBonus} onDelete={removeBonus} onClose={closeBonusEdit} />
       <div className={"sf-inv-toast" + (invToast ? " show" : "")} role="status">

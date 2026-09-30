@@ -37,6 +37,9 @@ export interface RollStateData {
 
 export interface RollStateOptions {
   multiplayer?: boolean;
+  /** Offer the Public/Secret toggle on every roll prompt — an NPC sheet, whose
+   *  rolls the GM may want to keep to themselves (like the GM tools' rolls). */
+  alwaysCanSecret?: boolean;
   /** Called for each locally-made roll (JSON-safe clone) to share with the party. */
   onShareRoll?: (roll: Roll) => void;
   /** Called once for every resist roll (forced or manual) that fails, with the
@@ -190,7 +193,7 @@ export function useRollState(data: RollStateData, activeChar: string, options: R
   // true` partial (a centered modal ignores `rect` entirely and needs no
   // button to anchor to).
   const openPrompt = (partial: PendingPrompt["partial"], anchorEl?: HTMLElement) =>
-    setPending({ id: ++pendSeq.current, partial, rect: (anchorEl || document.body).getBoundingClientRect() });
+    setPending({ id: ++pendSeq.current, partial: options.alwaysCanSecret ? { ...partial, canSecret: true } : partial, rect: (anchorEl || document.body).getBoundingClientRect() });
 
   const confirmPrompt = (opts: ConfirmPromptOpts) => {
     if (!pending) return;

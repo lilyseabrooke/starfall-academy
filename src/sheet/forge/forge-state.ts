@@ -45,7 +45,9 @@ export interface Draft {
   houseId: string;
   title: string;
   bio: string;
-  buildType: "quick" | "custom";
+  /** "unlimited" (NPCs only) is a custom build with no point ceiling — the year's
+   *  rank cap still applies. */
+  buildType: "quick" | "custom" | "unlimited";
   classMode: "single" | "double";
   classes: Record<string, { rank: number; choices: Record<string, number> }>;
   wandId: string;
@@ -232,6 +234,10 @@ export const itemPoints = (draft: Draft, D: ForgeData) => {
 export const wandPoints = (draft: Draft, D: ForgeData) => matPoints(D, draft.extraWands, D.creation.custom.wandPer);
 export const artifactPoints = (draft: Draft, D: ForgeData) => matPoints(D, draft.artifacts, D.creation.custom.artifactPer);
 
+/** Stand-in pool for the unlimited build: far beyond anything spendable, but
+ *  finite so the affordability math never sees Infinity - Infinity. */
+export const UNLIMITED_POOL = 1_000_000;
+
 export type Budgets =
   | {
       mode: "quick";
@@ -246,6 +252,7 @@ export type Budgets =
       pool: number;
       spent: number;
       remaining: number;
+      unlimited: boolean;
       breakdown: { stats: number; abilities: number; classes: number; wands: number; artifacts: number; items: number };
     };
 
@@ -267,8 +274,9 @@ export function budgets(draft: Draft, D: ForgeData): Budgets {
     };
   }
   const spent = statSpent * cc.statCost + (subjSpent + skillSpent) * cc.abilityCost + classExtra + wandPts + artiPts + itemPts;
+  const pool = draft.buildType === "unlimited" ? UNLIMITED_POOL : year.custom;
   return {
-    mode: "custom", limit: year.limit, pool: year.custom, spent, remaining: year.custom - spent,
+    mode: "custom", limit: year.limit, pool, spent, remaining: pool - spent, unlimited: draft.buildType === "unlimited",
     breakdown: { stats: statSpent * cc.statCost, abilities: (subjSpent + skillSpent) * cc.abilityCost, classes: classExtra, wands: wandPts, artifacts: artiPts, items: itemPts },
   };
 }

@@ -95,6 +95,11 @@
 /* Character switcher (party / multi-character future) */
 .sf-sheet .sf-switcher { display: flex; flex-direction: column; gap: 6px; }
 .sf-sheet .sf-switch-head { display: flex; align-items: center; justify-content: space-between; padding: 0 var(--space-2); }
+.sf-sheet .sf-switcher--npc { margin-top: var(--space-2); }
+.sf-sheet .sf-switch-head__tools { display: flex; align-items: center; gap: 4px; }
+.sf-sheet .sf-switch-head__btn { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; padding: 0; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm, 6px); background: transparent; color: var(--text-muted); cursor: pointer; }
+.sf-sheet .sf-switch-head__btn:hover { background: var(--ink-800); color: var(--gold-300); }
+.sf-sheet .sf-switch-head__btn svg { width: 13px; height: 13px; }
 .sf-sheet .sf-roster { display: flex; flex-direction: column; gap: 2px; }
 .sf-sheet .sf-roster__item {
   display: flex; align-items: center; gap: var(--space-3); width: 100%;

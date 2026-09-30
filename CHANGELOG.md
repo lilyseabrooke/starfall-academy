@@ -8,6 +8,27 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.23.0 — 2026-09-30
+- **NPC character sheets.** A GM can now give an NPC a full character sheet,
+  stored inside the campaign and visible only to them. The side rail (on the
+  GM tools and on every character sheet the GM opens) has a new **NPCs**
+  category under the party: click an NPC to open their sheet, **+** to build a
+  new one in the character creator, or the **dice** to conjure a random one.
+- The creator has a new **Unlimited** build type for NPCs — a custom build
+  with no point limit (the year's rank cap still applies). Random Character on
+  an Unlimited build first rolls a point total between a first-year's and a
+  graduate's, then builds as usual.
+- The dice opens a form — name, pronouns, year, and optionally major(s),
+  class(es) and a bio — and builds and saves a random NPC from those answers.
+- An NPC's sheet works like a PC's. The GM rolls for them and the whole table
+  sees it, unless they choose **Secret** — offered on every NPC roll.
+- The Party Board now ends with **The NPC Board**: every NPC in the campaign,
+  laid out like the party cards above it.
+- Players can no longer read NPC rows at all (database policy), and the GM's
+  own character list no longer shows their NPCs.
+- The creator's "Begin" no longer navigates to the character list while the
+  new character saves.
+
 ## v1.22.1 — 2026-09-28
 - Fixed Sort by ID in the Compendium (drawer and standalone page both): it
   matched digits at the *end* of each ID rather than the row number right

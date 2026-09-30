@@ -20,6 +20,13 @@ import type { Draft, ForgeData } from "./forge-state";
 type MapKey = "stats" | "subjects" | "skills";
 type Weights = Record<string, number>;
 
+/** Choices fixed ahead of the roll (the quick-NPC form): subject keys for the
+ *  major(s), and class ids. Anything left empty is picked at random. */
+export interface RandomPreset {
+  major?: string[];
+  classIds?: string[];
+}
+
 /* ------------------------------- utilities ----------------------------- */
 function shuffle<T>(arr: T[]): T[] {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -533,11 +540,17 @@ interface ClassMentionResult {
  *  no investment yet to weigh it against; what matters is that this runs
  *  first, so the character's stats/subjects/skills get built to support
  *  whatever the class actually rolls with, not the other way around. */
-function pickClassesAndChoices(nd: Draft, D: ForgeData, classData: { classes: ClassDef[] }): ClassMentionResult {
-  const mode = Math.random() < 0.5 ? "single" : "double";
+function pickClassesAndChoices(nd: Draft, D: ForgeData, classData: { classes: ClassDef[] }, presetIds: string[] = []): ClassMentionResult {
+  // Classes named up front (the quick-NPC form) are used as given — one is a
+  // single-class build, two a double — and only their rank choices are random.
+  const preset = presetIds
+    .map((id) => classData.classes.find((k) => k.id === id))
+    .filter((k): k is ClassDef => !!k)
+    .slice(0, 2);
+  const mode = preset.length ? (preset.length >= 2 ? "double" : "single") : Math.random() < 0.5 ? "single" : "double";
   nd.classMode = mode;
-  const pool = shuffle([...classData.classes]);
-  const n = mode === "single" ? 1 : Math.min(2, pool.length);
+  const pool = preset.length ? preset : shuffle([...classData.classes]);
+  const n = preset.length ? preset.length : mode === "single" ? 1 : Math.min(2, pool.length);
   const rank = mode === "single" ? 4 : 2;
   const mentions = new Map<string, number>();
   const ambiguousGroups: string[][] = [];
@@ -891,12 +904,23 @@ function pickInventory(nd: Draft, D: ForgeData) {
  *  player building a character on purpose would. Every point is spent
  *  through the same budget/cap rules the manual wizard enforces, so the
  *  result is always a legal, ready-to-begin build. */
-export function randomizeDraft(draft: Draft, D: ForgeData, classData: { classes: ClassDef[] }): Draft {
+export function randomizeDraft(draft: Draft, baseD: ForgeData, classData: { classes: ClassDef[] }, preset: RandomPreset = {}): Draft {
+  // An unlimited build has no pool of its own to spend, so it first rolls one:
+  // somewhere between a first-year's custom pool and a graduate's, then builds
+  // exactly like a custom build of that size (the year's rank caps unchanged).
+  const unlimited = draft.buildType === "unlimited";
+  let D = baseD;
+  if (unlimited) {
+    const pools = baseD.creation.years.map((y) => y.custom);
+    const pts = randInt(Math.min(...pools), Math.max(...pools));
+    const yearId = F.yearById(baseD, draft.yearId).id;
+    D = { ...baseD, creation: { ...baseD.creation, years: baseD.creation.years.map((y) => (y.id === yearId ? { ...y, custom: pts } : y)) } };
+  }
   const nd: Draft = {
     ...F.blankDraft(),
     mode: "new",
     name: draft.name, pronouns: draft.pronouns, title: draft.title, bio: draft.bio,
-    yearId: draft.yearId, houseId: draft.houseId, buildType: draft.buildType,
+    yearId: draft.yearId, houseId: draft.houseId, buildType: unlimited ? "custom" : draft.buildType,
   };
 
   const cfg = buildArchetypeConfig(ARCHETYPE_IDS[Math.floor(Math.random() * ARCHETYPE_IDS.length)], D);
@@ -904,7 +928,7 @@ export function randomizeDraft(draft: Draft, D: ForgeData, classData: { classes:
 
   // Classes and their rank choices first — nothing to weigh them against
   // yet, so the option side comes from the class's own per-rank lean.
-  const { mentions, ambiguousGroups } = pickClassesAndChoices(nd, D, classData);
+  const { mentions, ambiguousGroups } = pickClassesAndChoices(nd, D, classData, preset.classIds);
   const { statHits, subjectHits, skillHits } = resolveAbilityMentions(mentions, D);
 
   // Guarantee actual training in whatever the chosen moves roll with — a
@@ -919,7 +943,8 @@ export function randomizeDraft(draft: Draft, D: ForgeData, classData: { classes:
   Object.entries(skillHits).forEach(([id, n]) => { if (cfg.skillWeights[id] > 0) cfg.skillWeights[id] *= 1 + 2.5 * n; });
 
   // Majors next, from those (now class-informed) subject weights.
-  nd.major = weightedPickN(cfg.subjectWeights, cfg.majorCount);
+  const presetMajors = (preset.major || []).filter((key) => F.flatSubjects(D).some((s) => s.key === key)).slice(0, 2);
+  nd.major = presetMajors.length ? presetMajors : weightedPickN(cfg.subjectWeights, cfg.majorCount);
   if (!nd.major.length) {
     const subjects = F.flatSubjects(D);
     nd.major = subjects.length ? [subjects[Math.floor(Math.random() * subjects.length)].key] : [];
@@ -1061,5 +1086,6 @@ export function randomizeDraft(draft: Draft, D: ForgeData, classData: { classes:
   pickSpells(nd, D);
   pickInventory(nd, D);
 
+  if (unlimited) nd.buildType = "unlimited";
   return nd;
 }

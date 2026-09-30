@@ -84,6 +84,8 @@ export default async function CharactersPage() {
     .from("characters")
     .select("id, name, sheet, campaign_code, campaigns(name), updated_at")
     .eq("owner_id", user?.id ?? "")
+    // A GM owns their campaigns' NPC sheets too, but those live in the GM tools.
+    .eq("type", "pc")
     .order("updated_at", { ascending: false });
   const { data: campaigns } = await supabase
     .from("campaigns")
