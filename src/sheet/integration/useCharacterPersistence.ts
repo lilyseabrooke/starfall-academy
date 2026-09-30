@@ -63,6 +63,8 @@ export interface PersistenceOptions {
   onConflict?: (serverSheet: SerializedSheet, retry: (sheet: SerializedSheet) => void) => void;
   /** A sheet we sent was accepted and is now the server's state of record. */
   onSaved?: (sheet: SerializedSheet) => void;
+  /** Create mode: saving the new row failed, so the page is staying put. */
+  onCreateFailed?: () => void;
 }
 
 export interface Persistence {
@@ -123,7 +125,7 @@ function logSaveEvent(
 }
 
 export function useCharacterPersistence({
-  mode, id, debounceMs = 600, initialSheet, initialUpdatedAt, onConflict, onSaved, npcCampaignId,
+  mode, id, debounceMs = 600, initialSheet, initialUpdatedAt, onConflict, onSaved, onCreateFailed, npcCampaignId,
 }: PersistenceOptions): Persistence {
   const router = useRouter();
   const idRef = React.useRef<string | null>(id ?? null);
@@ -137,6 +139,7 @@ export function useCharacterPersistence({
   const baselineRef = React.useRef<SerializedSheet | null>(initialSheet ?? null);
   const onConflictRef = React.useRef(onConflict);
   const onSavedRef = React.useRef(onSaved);
+  const onCreateFailedRef = React.useRef(onCreateFailed);
 
   // Request serialization: at most one save in flight; a save requested
   // mid-flight is coalesced into a single trailing run with the latest sheet.
@@ -149,6 +152,7 @@ export function useCharacterPersistence({
   }, [id]);
   React.useEffect(() => { onConflictRef.current = onConflict; }, [onConflict]);
   React.useEffect(() => { onSavedRef.current = onSaved; }, [onSaved]);
+  React.useEffect(() => { onCreateFailedRef.current = onCreateFailed; }, [onCreateFailed]);
 
   const runRef = React.useRef<(sheet: SerializedSheet) => void>(() => {});
 
@@ -222,11 +226,13 @@ export function useCharacterPersistence({
           const detail = await res.text().catch(() => "");
           console.error("Character create failed", res.status, detail);
           creatingRef.current = false;
+          onCreateFailedRef.current?.();
           alert("Couldn't save the new character. Please try again.\n\n" + detail);
         }
       } catch (err) {
         console.error("Character create request failed", err);
         creatingRef.current = false;
+        onCreateFailedRef.current?.();
       }
     },
     [router, npcCampaignId]

@@ -8,6 +8,12 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.23.4 — 2026-09-30
+- Finishing a new character or NPC no longer flashes the demo party (Arianna
+  Valey and co.) in the side rail while it saves: the loading screen, or the
+  "Conjuring…" screen for a random NPC, now stays up until the new sheet
+  opens. If the save fails, the cover comes down with the error.
+
 ## v1.23.3 — 2026-09-30
 - The **random-NPC form** has a new look. Year is a row of roman numerals;
   House, major and classes each sit on one compact row showing your picks as
