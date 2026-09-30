@@ -427,16 +427,29 @@ function jitterFor(keys: string[], min = 0.65, max = 1.35): Weights {
 /** Wraps buildArchetypeCore with fresh random jitter maps per character —
  *  kept separate so the archetype-selection logic above stays free of the
  *  bookkeeping. */
-function buildArchetypeConfig(id: string, D: ForgeData): ArchetypeConfig {
+function buildArchetypeConfig(id: string, D: ForgeData, anchors: F.FlatSubject[] = []): ArchetypeConfig {
+  const core = buildArchetypeCore(id, D, anchors);
+  // Whatever the archetype's own focus, declared majors are always in play:
+  // their subject and governing stat carry weight, and have room in the T.
+  anchors.forEach((a) => {
+    const statId = a.stat.toLowerCase();
+    core.subjectWeights[a.key] = Math.max(core.subjectWeights[a.key] || 0, 1);
+    core.statWeights[statId] = Math.max(core.statWeights[statId] || 0, 1);
+  });
+  core.subjectSlots = Math.max(core.subjectSlots, anchors.length);
+  core.statSlots = Math.max(core.statSlots, new Set(anchors.map((a) => a.stat)).size);
   return {
-    ...buildArchetypeCore(id, D),
+    ...core,
     statJitter: jitterFor(D.stats.map((s) => s.id)),
     subjectJitter: jitterFor(F.flatSubjects(D).map((s) => s.key)),
     skillJitter: jitterFor(F.flatSkills(D).map((s) => s.id)),
   };
 }
 
-function buildArchetypeCore(id: string, D: ForgeData): ArchetypeCore {
+function buildArchetypeCore(id: string, D: ForgeData, anchors: F.FlatSubject[] = []): ArchetypeCore {
+  // The stat/subject an archetype would otherwise pick at random: the declared
+  // major's when there is one.
+  const anchorStat = anchors.length ? D.stats.find((f) => f.id === anchors[0].stat.toLowerCase()) : undefined;
   const stats = D.stats;
   const subjects = F.flatSubjects(D);
   const skills = F.flatSkills(D);
@@ -454,7 +467,7 @@ function buildArchetypeCore(id: string, D: ForgeData): ArchetypeCore {
         majorCount: Math.random() < 0.5 ? 1 : 2, preferStatWand: true };
 
     case "single-stat-focus": {
-      const focus = stats[Math.floor(Math.random() * stats.length)];
+      const focus = anchorStat || stats[Math.floor(Math.random() * stats.length)];
       const sw = zeroStats(); sw[focus.id] = 1;
       const skw = zeroSkills(); skills.forEach((s) => { skw[s.id] = s.fac.id === focus.id ? 4 : 0.3; });
       const subw = zeroSubjects(); subjects.forEach((s) => { subw[s.key] = s.stat.toLowerCase() === focus.id ? 1.5 : 0.4; });
@@ -464,7 +477,7 @@ function buildArchetypeCore(id: string, D: ForgeData): ArchetypeCore {
         shareStat: 0.3, shareSubject: 0.15, shareSkill: 0.55, statSlots: randInt(1, 2), subjectSlots: randInt(1, 3), skillSlots: randInt(3, 5), majorCount: 1, preferStatWand: true };
     }
     case "skill-specialist": {
-      const focus = stats[Math.floor(Math.random() * stats.length)];
+      const focus = anchorStat || stats[Math.floor(Math.random() * stats.length)];
       const skw = zeroSkills(); skills.forEach((s) => { skw[s.id] = s.fac.id === focus.id ? 4 : 1; });
       const sw = evenStats(); sw[focus.id] = 2;
       return { id, label: `Skill Specialist (${focus.name})`, statWeights: sw, subjectWeights: evenSubjects(), skillWeights: skw,
@@ -478,8 +491,9 @@ function buildArchetypeCore(id: string, D: ForgeData): ArchetypeCore {
         shareStat: 0.25, shareSubject: 0.55, shareSkill: 0.2, statSlots: randInt(3, 5), subjectSlots: randInt(6, 10), skillSlots: randInt(5, 7), majorCount: 2, preferStatWand: false };
 
     case "subject-specialist": {
-      const focus = subjects[Math.floor(Math.random() * subjects.length)];
+      const focus = anchors[0] || subjects[Math.floor(Math.random() * subjects.length)];
       const subw = zeroSubjects(); subw[focus.key] = 1;
+      anchors.forEach((a) => { subw[a.key] = 1; }); // a second declared major shares the specialty
       const statId = focus.stat.toLowerCase();
       const sw = zeroStats(); stats.forEach((s) => { sw[s.id] = s.id === statId ? 3 : 0.5; });
       const skw = zeroSkills(); skills.forEach((s) => { skw[s.id] = s.fac.id === statId ? 2 : 0.4; });
@@ -487,10 +501,12 @@ function buildArchetypeCore(id: string, D: ForgeData): ArchetypeCore {
         shareStat: 0.25, shareSubject: 0.5, shareSkill: 0.25, statSlots: randInt(1, 3), subjectSlots: randInt(1, 2), skillSlots: randInt(2, 4), majorCount: 1, preferStatWand: false };
     }
     case "school-specialist": {
-      const school = D.magicSchools[Math.floor(Math.random() * D.magicSchools.length)];
-      const schoolKeys = new Set(school.subjects.map((s) => s.key));
+      // The declared major's school (both, if two majors sit in different ones).
+      const schools = anchors.length ? [...new Set(anchors.map((a) => a.school))] : [D.magicSchools[Math.floor(Math.random() * D.magicSchools.length)]];
+      const school = schools[0];
+      const schoolKeys = new Set(schools.flatMap((sc) => sc.subjects.map((s) => s.key)));
       const subw = zeroSubjects(); subjects.forEach((s) => { subw[s.key] = schoolKeys.has(s.key) ? 1 : 0; });
-      const relevantStats = new Set(school.subjects.map((s) => s.stat.toLowerCase()));
+      const relevantStats = new Set(schools.flatMap((sc) => sc.subjects.map((s) => s.stat.toLowerCase())));
       const sw = zeroStats(); stats.forEach((s) => { sw[s.id] = relevantStats.has(s.id) ? 2 : 0.5; });
       const skw = zeroSkills(); skills.forEach((s) => { skw[s.id] = relevantStats.has(s.fac.id) ? 1.5 : 0.5; });
       return { id, label: `Magic School Specialist (${school.name})`, statWeights: sw, subjectWeights: subw, skillWeights: skw,
@@ -540,7 +556,7 @@ interface ClassMentionResult {
  *  no investment yet to weigh it against; what matters is that this runs
  *  first, so the character's stats/subjects/skills get built to support
  *  whatever the class actually rolls with, not the other way around. */
-function pickClassesAndChoices(nd: Draft, D: ForgeData, classData: { classes: ClassDef[] }, presetIds: string[] = [], hintNames: string[] = []): ClassMentionResult {
+function pickClassesAndChoices(nd: Draft, D: ForgeData, classData: { classes: ClassDef[] }, presetIds: string[] = []): ClassMentionResult {
   // Classes named up front (the quick-NPC form) are used as given — one is a
   // single-class build, two a double — and only their rank choices are random.
   const preset = presetIds
@@ -572,37 +588,12 @@ function pickClassesAndChoices(nd: Draft, D: ForgeData, classData: { classes: Cl
     if (clean.length === 1) mention(clean[0]);
     else if (clean.length > 1) ambiguousGroups.push(clean);
   };
-  // How well a rank option fits a declared major: its move rolls with the
-  // major's subject or governing stat (strong), or its text names the subject.
-  const hint = hintNames.map((h) => h.toLowerCase());
-  const fit = (opt: ClassDef["ranks"][number]["options"][number] | undefined): number => {
-    if (!opt || !hint.length) return 0;
-    let score = 0;
-    if (opt.move) score += opt.move.abilities.filter((a) => hint.includes(a.trim().toLowerCase())).length * 2;
-    const text = (opt.title + " " + (opt.desc || "")).toLowerCase();
-    if (hint.some((h) => h.length > 3 && text.includes(h))) score += 1;
-    return score;
-  };
-  const pathFit = (k: ClassDef, side: number) => k.ranks.slice(0, rank).reduce((s, r) => s + fit(r.options[side]), 0);
-  // With a major named but no classes, lean toward the classes whose paths
-  // actually serve it — a little noise so it isn't always the same pick.
-  if (!preset.length && hint.length) {
-    const noisy = new Map(pool.map((k) => [k.id, Math.max(pathFit(k, 0), pathFit(k, 1)) + Math.random() * 2]));
-    pool.sort((a, b) => (noisy.get(b.id) || 0) - (noisy.get(a.id) || 0));
-  }
   pool.slice(0, n).forEach((k) => {
-    // A class's two options at every rank belong to two paths (SPECIALIST vs
-    // MULTI-TALENTED…), so a sensible build walks one path start to finish
-    // rather than flipping between them at random. The path is the one that
-    // best serves the declared major, or a coin flip when nothing tells them apart.
-    const f0 = pathFit(k, 0), f1 = pathFit(k, 1);
-    const baseSide = f0 === f1 ? (Math.random() < 0.5 ? 0 : 1) : f0 > f1 ? 0 : 1;
     const choices: Record<string, number> = {};
     for (let L = 1; L <= rank; L++) {
-      // The one exception: this rung's other option rolls with the major and
-      // the path's own doesn't.
-      const own = fit(k.ranks[L - 1]?.options[baseSide]), other = fit(k.ranks[L - 1]?.options[1 - baseSide]);
-      const side = other >= 2 && own === 0 ? 1 - baseSide : baseSide;
+      // Mixing paths is normal — each rank is an independent coin flip
+      // between its two options.
+      const side = Math.random() < 0.5 ? 0 : 1;
       const rung = k.ranks[L - 1];
       const opt = rung && rung.options[side];
       choices[L] = side;
@@ -869,36 +860,6 @@ function pickSpells(nd: Draft, D: ForgeData) {
   });
 }
 
-/** A declared major should never come out with a token spell list: the weighted
- *  draw above favours it heavily but is still a draw, so top each major up to
- *  a couple of spells of its own, swapping out the weakest same-level pick from
- *  a non-major subject (the year's per-level quota is left exactly as it was). */
-function ensureMajorSpells(nd: Draft, D: ForgeData, minPerMajor = 2) {
-  const m = F.compById(D);
-  const majors = new Set(nd.major);
-  const statRank = (statName: string) => nd.stats[D.stats.find((f) => f.name.toLowerCase() === statName.toLowerCase())?.id || ""] || 0;
-  const subjectOf = (id: string) => m[id]?.subjectKey || "";
-  nd.major.forEach((key) => {
-    let guard = 0;
-    while (nd.spells.filter((id) => subjectOf(id) === key).length < minPerMajor && guard++ < 6) {
-      let swapped = false;
-      for (const level of ["Standard", "Basic"]) {
-        const cands = D.compendium.filter((e) => e.cat === "spell" && e.subjectKey === key && e.level === level && !nd.spells.includes(e.id));
-        const victims = nd.spells.filter((id) => m[id]?.level === level && !majors.has(subjectOf(id)));
-        if (!cands.length || !victims.length) continue;
-        // Best realistic odds for this character (2d10 + stat + subject vs DC).
-        const mod = (e: (typeof cands)[number]) => statRank(e.stat || "") + (nd.subjects[key] || 0);
-        const best = shuffle(cands).sort((a, b) => spellFeasibility(b.dc, mod(b)) - spellFeasibility(a.dc, mod(a)))[0];
-        const victim = victims.sort((a, b) => (nd.subjects[subjectOf(a)] || 0) - (nd.subjects[subjectOf(b)] || 0))[0];
-        nd.spells = nd.spells.map((id) => (id === victim ? best.id : id));
-        swapped = true;
-        break;
-      }
-      if (!swapped) break;
-    }
-  });
-}
-
 /* -------------------------------- inventory ------------------------------ */
 function pickInventory(nd: Draft, D: ForgeData) {
   const y = F.yields(nd, D);
@@ -979,16 +940,21 @@ export function randomizeDraft(draft: Draft, baseD: ForgeData, classData: { clas
     yearId: draft.yearId, houseId: draft.houseId, buildType: unlimited ? "custom" : draft.buildType,
   };
 
-  const cfg = buildArchetypeConfig(ARCHETYPE_IDS[Math.floor(Math.random() * ARCHETYPE_IDS.length)], D);
+  // Majors named up front decide the build the same way a drawn one does: the
+  // archetype is built *around* them (its focus stat/subject/school is theirs),
+  // so their subject and governing stat sit inside the archetype's weights —
+  // otherwise e.g. a Single-Subject Specialist of some other subject would have
+  // zeroed them out and no later boost could bring them back.
+  const anchors = (preset.major || []).map((key) => F.flatSubjects(D).find((s) => s.key === key)).filter((s): s is F.FlatSubject => !!s).slice(0, 2);
+  const anchorStats = new Set(anchors.map((s) => s.stat.toLowerCase()));
+  // A One-Stat Devotee has a single stat, so it can't serve majors on two.
+  const archetypeIds = ARCHETYPE_IDS.filter((id) => id !== "single-stat-focus" || anchorStats.size <= 1);
+  const cfg = buildArchetypeConfig(archetypeIds[Math.floor(Math.random() * archetypeIds.length)], D, anchors);
   const graph = buildStatGraph(D);
 
   // Classes and their rank choices first — nothing to weigh them against
   // yet, so the option side comes from the class's own per-rank lean.
-  // A declared major steers the class paths too: names its subject and its
-  // governing stat are matched against each option's move.
-  const declaredMajors = (preset.major || []).map((key) => F.flatSubjects(D).find((s) => s.key === key)).filter((s): s is F.FlatSubject => !!s).slice(0, 2);
-  const majorHint = declaredMajors.flatMap((s) => [s.name, s.key, s.stat]);
-  const { mentions, ambiguousGroups } = pickClassesAndChoices(nd, D, classData, preset.classIds, majorHint);
+  const { mentions, ambiguousGroups } = pickClassesAndChoices(nd, D, classData, preset.classIds);
   const { statHits, subjectHits, skillHits } = resolveAbilityMentions(mentions, D);
 
   // Guarantee actual training in whatever the chosen moves roll with — a
@@ -1016,17 +982,13 @@ export function randomizeDraft(draft: Draft, baseD: ForgeData, classData: { clas
   // below, which still respects a slot the archetype deliberately zeroed
   // out, a major's own governing stat should never end up at literal zero;
   // a demonologist with no Logic at all reads as a mistake, not a build.
-  // The floor scales with the year's rank cap, so a major reads as a real
-  // specialty (a third-year Evocation major starts at Evocation 4 and Focus 4,
-  // not 1 and 1) before the weighted spend takes it further.
-  const yearLimit = F.yearById(D, nd.yearId).limit;
   nd.major.forEach((key) => {
-    guaranteeFloor(nd, D, "subjects", key, Math.ceil(yearLimit * 0.6));
+    guaranteeFloor(nd, D, "subjects", key, 1);
     cfg.subjectWeights[key] *= 4;
     const subj = F.flatSubjects(D).find((s) => s.key === key);
     if (subj) {
       const statId = subj.stat.toLowerCase();
-      guaranteeFloor(nd, D, "stats", statId, Math.ceil(yearLimit * 0.5));
+      guaranteeFloor(nd, D, "stats", statId, 1);
       if (cfg.statWeights[statId] > 0) cfg.statWeights[statId] *= 1.8;
     }
   });
@@ -1151,7 +1113,6 @@ export function randomizeDraft(draft: Draft, baseD: ForgeData, classData: { clas
 
   pickStartWand(nd, D, cfg);
   pickSpells(nd, D);
-  ensureMajorSpells(nd, D);
   pickInventory(nd, D);
 
   if (unlimited) nd.buildType = "unlimited";

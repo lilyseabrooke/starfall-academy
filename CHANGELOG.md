@@ -13,10 +13,14 @@ when these shipped.
   with the full NPC sheets in the side rail.
 - An NPC's sheet has **Delete character** under Edit character, behind a
   confirmation.
-- Random NPC/Character builds are more coherent: a declared major always gets
-  real ranks in its subject and governing stat (the stat could previously be
-  folded to 0) and at least two of its own spells; class options follow one
-  path instead of flipping at random, and lean toward the declared major.
+- Random NPC builds now build *around* a major you name: the random build's
+  archetype is centred on it (its subject, governing stat, or school), the same
+  way a randomly drawn major already shaped the build. Before, an archetype
+  focused elsewhere could zero the named major out entirely, leaving e.g. an
+  Evocation major with no Evocation or Focus. A major's governing stat also
+  can no longer be folded away by the "tidy the stray 1s" pass.
+- Random class choices are a fair 50/50 between a rank's two options (they
+  used to lean 85% toward one path).
 
 ## v1.23.0 — 2026-09-30
 - **NPC character sheets.** A GM can now give an NPC a full character sheet,
