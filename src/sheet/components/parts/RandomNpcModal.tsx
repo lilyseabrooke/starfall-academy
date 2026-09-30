@@ -133,7 +133,7 @@ export function RandomNpcModal({ options, onSubmit, onClose }: { options: Random
       <div className="gm-modal gm-modal--wide sf-npcmodal" role="dialog" aria-label="Random NPC" onClick={(e) => e.stopPropagation()}>
         <div className="gm-modal__head">
           <span className="gm-modal__glyph"><Icon name="dices" /></span>
-          <div className="gm-modal__titles"><span className="gm-modal__eyebrow">Conjure an NPC</span><span className="gm-modal__title">Random NPC</span></div>
+          <div className="gm-modal__titles"><span className="gm-modal__eyebrow">Initiation</span><span className="gm-modal__title">Random NPC</span></div>
           <button className="gm-modal__x" onClick={onClose} aria-label="Close"><Icon name="x" /></button>
         </div>
         <div className="gm-modal__body">
