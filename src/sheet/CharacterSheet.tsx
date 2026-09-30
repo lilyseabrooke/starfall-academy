@@ -73,7 +73,7 @@ import { RollDock } from "./components/rolls/RollDock";
 import { RollPrompt } from "./components/rolls/RollPrompt";
 import { Admission } from "./forge/Forge";
 import { randomizeDraft } from "./forge/forge-random";
-import { RandomNpcModal, DeleteNpcModal, npcCreateHref } from "./components/parts/RandomNpcModal";
+import { RandomNpcModal, DeleteNpcModal, npcCreateHref, randomNpcOptions } from "./components/parts/RandomNpcModal";
 import * as F from "./forge/forge-state";
 import type { Draft } from "./forge/forge-state";
 import { CharacterOverview } from "./overview/CharacterOverview";
@@ -1609,12 +1609,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       {admission.open && admission.draft ? <Admission mode={admission.mode} initial={admission.draft} data={forgeData} classData={CL} live={forgeLive} npc={!!npc || isNpc} onCommit={commitForge} onClose={closeForge} /> : null}
       {randomNpcOpen && gmNpc ? (
         <RandomNpcModal
-          options={{
-            years: SEED.creation.years.map((y) => ({ id: y.id, label: y.label })),
-            houses: [...SEED.houses, F.UNAFFILIATED_HOUSE].map((h) => ({ id: h.id, name: h.name.replace(/ House$/, "") })),
-            subjects: F.flatSubjects(forgeData).map((sb) => ({ key: sb.key, name: sb.name })),
-            classes: CL.classes.map((k) => ({ id: k.id, name: k.name })),
-          }}
+          options={randomNpcOptions({ years: SEED.creation.years, houses: [...SEED.houses, F.UNAFFILIATED_HOUSE], schools: forgeData.magicSchools, classes: CL.classes })}
           onSubmit={(v) => { setRandomNpcOpen(false); router.push(npcCreateHref(gmNpc.campaignId, v)); }}
           onClose={() => setRandomNpcOpen(false)}
         />
