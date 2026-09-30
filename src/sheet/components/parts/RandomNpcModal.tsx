@@ -10,9 +10,9 @@
    same.
 
    House, major and classes each sit on one compact row of "slots": what's
-   been chosen shows as tinted tokens, and an open slot reads "left to
-   chance". Clicking a row opens its drawer of options underneath — Houses as
-   crests, majors grouped by school, classes as cards — one drawer at a time.
+   been chosen shows as tinted tokens, and an open slot reads "random".
+   Clicking a row opens its drawer of options underneath — Houses as crests,
+   majors grouped by school, classes as cards — one drawer at a time.
    =========================================================================== */
 import * as React from "react";
 import { Icon } from "../Icon";
@@ -32,9 +32,9 @@ export interface RandomNpcValues {
 
 export interface RandomNpcOptions {
   years: { id: string; label: string; roman: string }[];
-  houses: { id: string; name: string; tone: string; color: string; blurb: string }[];
+  houses: { id: string; name: string; tone: string; blurb: string }[];
   schools: { id: string; name: string; tone: string; icon: string; subjects: { key: string; name: string }[] }[];
-  classes: { id: string; name: string; tone: string; icon: string; tagline: string }[];
+  classes: { id: string; name: string; tone: string; icon: string }[];
 }
 
 const MAX_PICKS = 2;
@@ -45,9 +45,9 @@ const NO_HOUSE_ID = "none";
 export function randomNpcOptions(src: RandomNpcOptions): RandomNpcOptions {
   return {
     years: src.years.map((y) => ({ id: y.id, label: y.label, roman: y.roman })),
-    houses: src.houses.map((h) => ({ id: h.id, name: h.name.replace(/ House$/, ""), tone: h.tone, color: h.color, blurb: h.blurb })),
+    houses: src.houses.map((h) => ({ id: h.id, name: h.name.replace(/ House$/, ""), tone: h.tone, blurb: h.blurb })),
     schools: src.schools.map((sc) => ({ id: sc.id, name: sc.name.replace(/ Magics?$/, ""), tone: sc.tone, icon: sc.icon, subjects: sc.subjects.map((sb) => ({ key: sb.key, name: sb.name })) })),
-    classes: src.classes.map((k) => ({ id: k.id, name: k.name, tone: k.tone, icon: k.icon, tagline: k.tagline })),
+    classes: src.classes.map((k) => ({ id: k.id, name: k.name, tone: k.tone, icon: k.icon })),
   };
 }
 
@@ -93,7 +93,7 @@ function SlotRow({ label, hint, picks, max, open, onOpen, onClear, children }: {
           {picks.length < max ? (
             <button type="button" className={"sf-npcslot" + (picks.length ? " is-add" : "")} onClick={onOpen} aria-expanded={open}>
               <Icon name={picks.length ? "plus" : "dices"} />
-              {picks.length ? "Add another" : "Left to chance"}
+              {picks.length ? "Add another" : "Random"}
               <Icon name="chevron-down" className="sf-npcslot__chev" />
             </button>
           ) : null}
@@ -105,7 +105,7 @@ function SlotRow({ label, hint, picks, max, open, onOpen, onClear, children }: {
 }
 
 function DrawerFoot({ count, onDone }: { count: number; onDone: () => void }) {
-  const note = count >= MAX_PICKS ? "Two chosen — remove one to swap" : count ? "One chosen · add a second, or leave it at one" : "Pick one or two, or leave it to chance";
+  const note = count >= MAX_PICKS ? "Two chosen — remove one to swap" : count ? "One chosen · add a second, or leave it at one" : "Pick one or two, or leave it random";
   return (
     <div className="sf-npcdrawer__foot">
       <span>{note}</span>
@@ -166,7 +166,6 @@ export function RandomNpcModal({ options, onSubmit, onClose }: { options: Random
                     <button key={h.id} type="button" className={"sf-npchouse" + (on ? " is-on" : "")} style={toneVars(h.tone)} aria-pressed={on} title={h.blurb} onClick={() => { patch({ houseId: on ? "" : h.id }); setDrawer(null); }}>
                       <span className="sf-npchouse__crest"><Icon name={h.id === NO_HOUSE_ID ? "circle-dashed" : "shield"} /></span>
                       <span className="sf-npchouse__name">{h.name}</span>
-                      <span className="sf-npchouse__color">{h.id === NO_HOUSE_ID ? "No House" : h.color}</span>
                     </button>
                   );
                 })}
@@ -197,12 +196,9 @@ export function RandomNpcModal({ options, onSubmit, onClose }: { options: Random
                 {options.classes.map((k) => {
                   const on = v.classIds.includes(k.id);
                   return (
-                    <button key={k.id} type="button" className={"sf-npcclass" + (on ? " is-on" : "")} style={toneVars(k.tone)} aria-pressed={on} disabled={!on && v.classIds.length >= MAX_PICKS} title={k.tagline || undefined} onClick={() => toggle("classIds", k.id)}>
+                    <button key={k.id} type="button" className={"sf-npcclass" + (on ? " is-on" : "")} style={toneVars(k.tone)} aria-pressed={on} disabled={!on && v.classIds.length >= MAX_PICKS} onClick={() => toggle("classIds", k.id)}>
                       <span className="sf-npcclass__icon"><Icon name={k.icon} /></span>
-                      <span className="sf-npcclass__text">
-                        <span className="sf-npcclass__name">{k.name}</span>
-                        {k.tagline ? <span className="sf-npcclass__tag">{k.tagline}</span> : null}
-                      </span>
+                      <span className="sf-npcclass__name">{k.name}</span>
                     </button>
                   );
                 })}

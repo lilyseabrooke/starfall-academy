@@ -387,13 +387,11 @@
 
 /* Houses — crests */
 .sf-sheet .sf-npchouses { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.sf-sheet .sf-npchouse { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 10px; align-items: center; text-align: left; padding: 9px 11px; border-radius: 8px; border: 1px solid var(--border-subtle); background: var(--ink-900); cursor: pointer; transition: border-color .15s, background .15s, transform .15s var(--ease-out); }
+.sf-sheet .sf-npchouse { display: flex; gap: 10px; align-items: center; min-width: 0; text-align: left; padding: 9px 11px; border-radius: 8px; border: 1px solid var(--border-subtle); background: var(--ink-900); cursor: pointer; transition: border-color .15s, background .15s, transform .15s var(--ease-out); }
 .sf-sheet .sf-npchouse:hover { border-color: color-mix(in oklab, var(--t) 55%, transparent); transform: translateY(-1px); }
 .sf-sheet .sf-npchouse.is-on { border-color: color-mix(in oklab, var(--t) 75%, transparent); background: color-mix(in oklab, var(--t) 16%, var(--ink-900)); }
-.sf-sheet .sf-npchouse__crest { grid-row: 1 / span 2; width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 15px; color: var(--t-fg); background: color-mix(in oklab, var(--t) 22%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--t) 50%, transparent); }
+.sf-sheet .sf-npchouse__crest { flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 15px; color: var(--t-fg); background: color-mix(in oklab, var(--t) 22%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--t) 50%, transparent); }
 .sf-sheet .sf-npchouse__name { font-family: var(--font-display); font-weight: 700; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-strong); }
-.sf-sheet .sf-npchouse__color { font-family: var(--font-sans); font-size: 11px; color: var(--text-faint); }
-.sf-sheet .sf-npchouse.is-on .sf-npchouse__color { color: var(--t-fg); }
 
 /* Majors — subjects under their school */
 .sf-sheet .sf-npcschools { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
@@ -407,23 +405,21 @@
 .sf-sheet .sf-npcsubj.is-on .sf-npccheck { background: var(--t); border-color: var(--t); color: var(--ink-950); }
 
 /* Classes — icon cards */
-.sf-sheet .sf-npcclasses { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.sf-sheet .sf-npcclasses { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .sf-sheet .sf-npcclass { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-subtle); background: var(--ink-900); text-align: left; cursor: pointer; transition: border-color .15s, background .15s; }
 .sf-sheet .sf-npcclass:hover:not(:disabled) { border-color: color-mix(in oklab, var(--t) 55%, transparent); }
 .sf-sheet .sf-npcclass.is-on { border-color: color-mix(in oklab, var(--t) 75%, transparent); background: color-mix(in oklab, var(--t) 16%, var(--ink-900)); }
 .sf-sheet .sf-npcclass:disabled { opacity: .35; cursor: not-allowed; }
 .sf-sheet .sf-npcclass__icon { flex-shrink: 0; width: 30px; height: 30px; border-radius: 7px; display: inline-flex; align-items: center; justify-content: center; font-size: 15px; color: var(--t-fg); background: color-mix(in oklab, var(--t) 20%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--t) 45%, transparent); }
 .sf-sheet .sf-npcclass.is-on .sf-npcclass__icon { background: var(--t); color: var(--ink-950); }
-.sf-sheet .sf-npcclass__text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.sf-sheet .sf-npcclass__name { font-family: var(--font-sans); font-size: 13px; font-weight: 600; color: var(--text-strong); }
-.sf-sheet .sf-npcclass__tag { font-family: var(--font-serif); font-style: italic; font-size: 11.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sf-sheet .sf-npcclass__name { font-family: var(--font-sans); font-size: 13px; font-weight: 600; color: var(--text-strong); min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 @media (max-width: 620px) {
   .sf-sheet .sf-npcrow__head { grid-template-columns: 1fr; gap: 8px; }
   .sf-sheet .sf-npcrow__head .gm-field-label { flex-direction: row; gap: 6px; align-items: baseline; }
   .sf-sheet .sf-npcschools { grid-template-columns: repeat(2, 1fr); row-gap: 14px; }
   .sf-sheet .sf-npchouses { grid-template-columns: repeat(2, 1fr); }
-  .sf-sheet .sf-npcclasses { grid-template-columns: 1fr; }
+  .sf-sheet .sf-npcclasses { grid-template-columns: repeat(2, 1fr); }
   .sf-sheet .sf-npcyear__label { font-size: 8.5px; letter-spacing: .06em; }
 }
 .sf-sheet .sf-npcbio { background: var(--ink-950); border: 1px solid var(--border-default); border-radius: 6px; padding: 10px 12px; color: var(--text-strong); font-family: var(--font-serif); font-size: 14px; resize: vertical; }
