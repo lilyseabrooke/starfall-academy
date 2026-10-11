@@ -54,7 +54,7 @@ let currentView = "assets";
 const CATEGORY_ICONS = {
   "Spells": "sparkles", "Potions": "flask-conical", "Glyphs": "pen-tool",
   "Wands": "wand-2", "Artifacts": "gem", "Plants": "sprout", "Items": "backpack", "Classes": "graduation-cap",
-  "Events": "calendar-days", "Archetypes": "shapes", "Subcultures": "users", "Creatures": "paw-print"
+  "Events": "calendar-days", "Archetypes": "shapes", "Subcultures": "users", "Creatures": "bird"
 };
 
 /* header meta line per category (unchanged formats, rendered as badges below) */
