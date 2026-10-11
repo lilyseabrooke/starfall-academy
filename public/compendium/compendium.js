@@ -40,7 +40,8 @@ const ASSET_SHEETS = {
 const LORE_SHEETS = {
   "Events":      "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXtnorBMPVkIS5vVvc1hiPA_9MNwo3v5gcC__rVMLa28HHCjuKjCm5f_dwQgXfWVF9jF9rfl6oLsfd/pub?gid=1082602083&single=true&output=csv",
   "Archetypes":  "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXtnorBMPVkIS5vVvc1hiPA_9MNwo3v5gcC__rVMLa28HHCjuKjCm5f_dwQgXfWVF9jF9rfl6oLsfd/pub?gid=1862278646&single=true&output=csv",
-  "Subcultures": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXtnorBMPVkIS5vVvc1hiPA_9MNwo3v5gcC__rVMLa28HHCjuKjCm5f_dwQgXfWVF9jF9rfl6oLsfd/pub?gid=1363649626&single=true&output=csv"
+  "Subcultures": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXtnorBMPVkIS5vVvc1hiPA_9MNwo3v5gcC__rVMLa28HHCjuKjCm5f_dwQgXfWVF9jF9rfl6oLsfd/pub?gid=1363649626&single=true&output=csv",
+  "Creatures":   "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXtnorBMPVkIS5vVvc1hiPA_9MNwo3v5gcC__rVMLa28HHCjuKjCm5f_dwQgXfWVF9jF9rfl6oLsfd/pub?gid=1025548723&single=true&output=csv"
 };
 
 const VIEWS = { assets: ASSET_SHEETS, lore: LORE_SHEETS };
@@ -53,7 +54,7 @@ let currentView = "assets";
 const CATEGORY_ICONS = {
   "Spells": "sparkles", "Potions": "flask-conical", "Glyphs": "pen-tool",
   "Wands": "wand-2", "Artifacts": "gem", "Plants": "sprout", "Items": "backpack", "Classes": "graduation-cap",
-  "Events": "calendar-days", "Archetypes": "shapes", "Subcultures": "users"
+  "Events": "calendar-days", "Archetypes": "shapes", "Subcultures": "users", "Creatures": "bird"
 };
 
 /* header meta line per category (unchanged formats, rendered as badges below) */
@@ -70,8 +71,15 @@ const headerFields = {
      Timing falls in instead of a spell tier. */
   event:    e => ({ level: (e.TIMING || "").toString().trim(), tone: eventTone(e.TIMING), txt: "" }),
   archetype: e => ({ txt: e.CLASS ? "Class · " + e.CLASS : "" }),
-  subculture: e => ({ txt: "" })
+  subculture: e => ({ txt: "" }),
+  creature: e => ({
+    level: (e["CREATURE TYPE"] || "").toString().trim(),
+    tone: CREATURE_TONE[(e["CREATURE TYPE"] || "").toString().trim().toUpperCase()] || "neutral",
+    txt: [["Resolve", e.RESOLVE], ["Weak", e["WEAK ROLL"]], ["Strong", e["STRONG ROLL"]]]
+      .filter(([, v]) => v).map(([k, v]) => k + " · " + v).join("    ")
+  })
 };
+const CREATURE_TONE = { BEAST:"forest", FEY:"teal", "EXTRAPLANAR CREATURE":"plum", DEMON:"crimson", DRAGON:"gold" };
 function trio(a, av, b, bv){
   const parts = [];
   if (av) parts.push(a + " · " + av);
@@ -178,7 +186,8 @@ const SORT_FIELDS = {
      actual column) — both read TIMING via timingRank(), just with a
      different season order. See the "Events — Timing parsing" block. */
   EVENTS:    [["NAME","Name","text"],["TIMING_ACADEMIC","Timing (Academic Year)","timing-academic"],["TIMING_CALENDAR","Timing (Calendar Year)","timing-calendar"],["ID","ID","id-num"]],
-  ARCHETYPES: [["NAME","Name","text"],["CLASS","Class","text"],["ID","ID","id-num"]]
+  ARCHETYPES: [["NAME","Name","text"],["CLASS","Class","text"],["ID","ID","id-num"]],
+  CREATURES: [["NAME","Name","text"],["ID","ID","id-num"],["RESOLVE","Resolve","num"],["WEAK ROLL","Weak Roll","num"],["STRONG ROLL","Strong Roll","num"]]
 };
 const LEVEL_ORDER = { BASIC:0, STANDARD:1, ADVANCED:2, LEGENDARY:3, HEX:4, TWISTED:4 };
 function levelRank(v){
@@ -505,6 +514,7 @@ function renderClassCard(entry){
    =========================================================================== */
 const SUBJECTS = ["Any","Alchemy","Arcane History","Artificy","Bestiology","Chronomancy","Counterhexology","Crystallomancy","Demonology","Divination","Draconology","Enchantment","Evocation","Herbalism","Hypnomancy","Illusion","Necromancy","Restoration","Runology","Summoning","Telekinesis","Teleportation","Transmutation","Wandcrafting","Warding"];
 const SKILLS   = ["Any","Agility","Analyze","Art","Athletics","Comprehend","Concentration","Creature","Deception","Endurance","Hide Object","Improvise","Investigation","Perception","Persuasion","Read Person","Recall Information","Research","Search","Sleight of Hand","Stealth","Tact","Tracking","Willpower","Win Over"];
+const CREATURE_TYPES = ["Any","Beast","Fey","Extraplanar Creature","Demon","Dragon"];
 const STATS    = ["Any","Focus","Creativity","Logic","Insight","Body","Charm"];
 
 function renderFilters(category){
@@ -526,6 +536,8 @@ function renderFilters(category){
     appendRange("VALUE"); appendRange("INTENSITY"); appendRadios("SINGLE-USE");
   } else if (c === "ITEMS"){
     appendRange("COST"); appendRadios("SINGLE-USE");
+  } else if (c === "CREATURES"){
+    appendCategorySelect("TYPE", CREATURE_TYPES);
   }
   // Tabs with no filter config (Classes, and any Lore tab like Events) get no
   // header and no "Clear filters" button — there's nothing to refine or reset.
@@ -652,12 +664,17 @@ function setupFilterListeners(){
   filterMenu.querySelectorAll("select, input[type=radio], input[type=number]").forEach(input => input.addEventListener("change", applyFilters));
 }
 
+/* Filter control id → actual sheet column, where the two differ (the control
+   id can't contain a space, so Creatures' "CREATURE TYPE" filters as "TYPE"). */
+const FILTER_FIELD_ALIASES = { TYPE: "CREATURE TYPE" };
+
 function entryMatches(entry, filters, search){
   let show = true;
   for (const key in filters){
     const value = filters[key];
     if (!value || value === "ANY") continue;
-    const field = key.replace(/^filter-/, "").toUpperCase();
+    let field = key.replace(/^filter-/, "").toUpperCase();
+    if (FILTER_FIELD_ALIASES[field]) field = FILTER_FIELD_ALIASES[field];
     const splitEntry = entry[field] ? entry[field].split(",") : [];
     if (key.toUpperCase().endsWith("-MIN")){
       const real = field.replace("-MIN", "");

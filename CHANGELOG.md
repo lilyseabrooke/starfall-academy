@@ -8,6 +8,12 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.24.0 — 2026-10-11
+- The standalone Compendium's **Lore** view has a new **Creatures** tab, drawn
+  from the Creatures sheet. Filter by creature type (Beast, Fey, Extraplanar
+  Creature, Demon, Dragon) and sort by Name, ID, Resolve, Weak Roll or Strong
+  Roll.
+
 ## v1.23.4 — 2026-09-30
 - Finishing a new character or NPC no longer flashes the demo party (Arianna
   Valey and co.) in the side rail while it saves: the loading screen, or the
