@@ -7,10 +7,11 @@ export type RosterMember = {
   initials: string;
   tone: string;
   house: string;
+  pronouns?: string;
   active?: boolean;
 };
 
-type SheetCharacter = { name?: string; house?: string; houseTone?: string };
+type SheetCharacter = { name?: string; house?: string; houseTone?: string; pronouns?: string };
 
 // House → design-system tone (per the build plan).
 const HOUSE_TONE: Record<string, string> = {
@@ -58,7 +59,7 @@ export function toRosterMember(row: RosterRow, activeId: string): RosterMember {
   const c = (row.c ?? {}) as SheetCharacter;
   const name = (c.name || row.name || "Unnamed").toString();
   const tone = c.houseTone || (c.house ? HOUSE_TONE[c.house] : undefined) || "gold";
-  return { id: row.id, name, initials: initialsOf(name), tone, house: c.house || "", active: row.id === activeId };
+  return { id: row.id, name, initials: initialsOf(name), tone, house: c.house || "", pronouns: (c.pronouns || "").toString().trim(), active: row.id === activeId };
 }
 
 // ---- GM party board projection -------------------------------------------
