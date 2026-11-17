@@ -33,6 +33,7 @@ export interface GMSidebarPartyMember {
   id: string;
   name: string;
   house: string;
+  pronouns?: string;
   tone: string;
   initials: string;
   onOpen?: (id: string) => void;
@@ -150,7 +151,7 @@ export function Sidebar({
                 <span className={"sf-avatar t-" + p.tone}>{p.initials}</span>
                 <span className="sf-roster__meta">
                   <span className="sf-roster__name">{p.name}</span>
-                  <span className="sf-roster__house">{p.house}</span>
+                  <span className="sf-roster__house">{rosterSubline(p)}</span>
                 </span>
                 <Icon name="arrow-up-right" className="sf-roster__go" />
               </button>

@@ -613,11 +613,11 @@ export function GmView({ campaign, party: hostParty, npcSheets: hostNpcSheets, n
       { id: "notes", label: "Notes", icon: "scroll-text", count: notes.length, active: tab === "notes", onClick: () => setTab("notes") },
       { id: "action", label: "Action", icon: "swords", count: "", active: tab === "action", onClick: () => setTab("action") },
     ],
-    party: party.map((p) => ({ id: p.id, name: p.name, initials: p.initials, tone: String(p.tone), house: p.house.replace(" House", ""), onOpen: () => { if (p.sheetId) { markJumpOrigin("/gm/" + campaign.id); router.push("/characters/" + p.sheetId); } else toast("No sheet linked for " + p.name + "."); } })),
+    party: party.map((p) => ({ id: p.id, name: p.name, initials: p.initials, tone: String(p.tone), house: p.house.replace(" House", ""), pronouns: p.pronouns, onOpen: () => { if (p.sheetId) { markJumpOrigin("/gm/" + campaign.id); router.push("/characters/" + p.sheetId); } else toast("No sheet linked for " + p.name + "."); } })),
   };
   const openNpcSheet = (id: string) => { markJumpOrigin("/gm/" + campaign.id); router.push("/characters/" + id); };
   const sidebarNpcs = {
-    npcs: npcSheets.map((p) => ({ id: p.id, name: p.name, initials: p.initials, tone: String(p.tone), house: p.house.replace(" House", "") })),
+    npcs: npcSheets.map((p) => ({ id: p.id, name: p.name, initials: p.initials, tone: String(p.tone), house: p.house.replace(" House", ""), pronouns: p.pronouns })),
     onOpen: openNpcSheet,
     onCreate: () => { markJumpOrigin("/gm/" + campaign.id); router.push(npcCreateHref(campaign.id)); },
     onRandom: () => setRandomNpcOpen(true),

@@ -75,6 +75,7 @@ export type GMPartyMember = {
   initials: string;
   tone: string;
   house: string;
+  pronouns: string;
   className: string;
   resolve: number;
   ap: number;
@@ -125,6 +126,7 @@ export function toGMPartyMember(row: GMRosterRow): GMPartyMember {
     tone,
     // "Unaffiliated" is an NPC's no-House state, not a House to append "House" to.
     house: houseFull === "Unaffiliated" ? houseFull : houseFull ? `${houseFull} House` : "Unsorted",
+    pronouns: (c.pronouns || "").toString().trim(),
     className: (c.title || "").toString(),
     // Resolve isn't its own stored stat — it's 5 minus the character's total
     // condition severity, same formula as the player's own TopBar computes

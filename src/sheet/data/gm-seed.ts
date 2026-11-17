@@ -28,6 +28,7 @@ export interface GmPartyMember {
   initials: string;
   tone: Tone | string;
   house: string;
+  pronouns?: string;
   className: string;
   resolve: number;
   ap: number;
