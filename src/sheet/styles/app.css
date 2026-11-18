@@ -124,7 +124,7 @@
 .sf-sheet .sf-roster__item.is-active .sf-avatar { background: var(--grad-gold); color: var(--ink-950); border-color: transparent; box-shadow: var(--inset-hi); }
 .sf-sheet .sf-roster__meta { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
 .sf-sheet .sf-roster__name { font-family: var(--font-sans); font-weight: 500; font-size: var(--text-sm); color: var(--text-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sf-sheet .sf-roster__house { font-family: var(--font-sans); font-size: 11px; color: var(--text-muted); }
+.sf-sheet .sf-roster__house { font-family: var(--font-sans); font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sf-sheet .sf-nav { display: flex; flex-direction: column; gap: 2px; flex: 0 0 auto; }
 .sf-sheet .sf-nav__label { padding: 0 var(--space-2) var(--space-1); }
 .sf-sheet .sf-nav__item {

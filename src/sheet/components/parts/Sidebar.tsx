@@ -10,8 +10,14 @@ export interface SidebarRosterMember {
   id: string;
   name: string;
   house: string;
+  pronouns?: string;
   tone: string;
   initials: string;
+}
+
+/** Second line under a roster name: "House · pronouns" (either part optional). */
+function rosterSubline(r: { house: string; pronouns?: string }): string {
+  return [r.house, r.pronouns].filter(Boolean).join(" · ");
 }
 
 export interface GMSidebarTab {
@@ -27,6 +33,7 @@ export interface GMSidebarPartyMember {
   id: string;
   name: string;
   house: string;
+  pronouns?: string;
   tone: string;
   initials: string;
   onOpen?: (id: string) => void;
@@ -87,7 +94,7 @@ function NpcSection({ cfg, collapsed, onMobileClose }: { cfg: SidebarNpcConfig; 
             <span className={"sf-avatar t-" + r.tone}>{r.initials}</span>
             <span className="sf-roster__meta">
               <span className="sf-roster__name">{r.name}</span>
-              <span className="sf-roster__house">{r.house}</span>
+              <span className="sf-roster__house">{rosterSubline(r)}</span>
             </span>
           </button>
         ))}
@@ -144,7 +151,7 @@ export function Sidebar({
                 <span className={"sf-avatar t-" + p.tone}>{p.initials}</span>
                 <span className="sf-roster__meta">
                   <span className="sf-roster__name">{p.name}</span>
-                  <span className="sf-roster__house">{p.house}</span>
+                  <span className="sf-roster__house">{rosterSubline(p)}</span>
                 </span>
                 <Icon name="arrow-up-right" className="sf-roster__go" />
               </button>
@@ -185,7 +192,7 @@ export function Sidebar({
               <span className={"sf-avatar t-" + r.tone}>{r.initials}</span>
               <span className="sf-roster__meta">
                 <span className="sf-roster__name">{r.name}</span>
-                <span className="sf-roster__house">{r.house}</span>
+                <span className="sf-roster__house">{rosterSubline(r)}</span>
               </span>
             </button>
           ))}

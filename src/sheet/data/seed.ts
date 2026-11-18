@@ -78,6 +78,7 @@ export interface RosterSeedMember {
   house: string;
   tone: Tone;
   initials: string;
+  pronouns?: string;
   active?: boolean;
 }
 

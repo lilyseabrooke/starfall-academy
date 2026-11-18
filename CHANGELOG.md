@@ -8,6 +8,12 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.24.1 — 2026-11-18
+- The side rail now shows each character's pronouns after their House (e.g.
+  "Dragon · she / her"), on the character sheet (Arcanists and NPCs) and on the
+  GM dashboard (The Party and NPCs). Characters with no pronouns set show just
+  their House as before.
+
 ## v1.24.0 — 2026-10-11
 - The standalone Compendium's **Lore** view has a new **Creatures** tab, drawn
   from the Creatures sheet. Filter by creature type (Beast, Fey, Extraplanar
