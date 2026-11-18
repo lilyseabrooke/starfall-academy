@@ -15,9 +15,10 @@ export interface SidebarRosterMember {
   initials: string;
 }
 
-/** Second line under a roster name: "House · pronouns" (either part optional). */
+/** Second line under a roster name: "House · pronouns" (either part optional).
+ *  Pronouns are shown all-lowercase regardless of how the sheet stores them. */
 function rosterSubline(r: { house: string; pronouns?: string }): string {
-  return [r.house, r.pronouns].filter(Boolean).join(" · ");
+  return [r.house, r.pronouns?.toLowerCase()].filter(Boolean).join(" · ");
 }
 
 export interface GMSidebarTab {

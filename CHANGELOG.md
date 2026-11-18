@@ -8,6 +8,9 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.24.2 — 2026-11-18
+- Pronouns in the side rail are now shown in lowercase.
+
 ## v1.24.1 — 2026-11-18
 - The side rail now shows each character's pronouns after their House (e.g.
   "Dragon · she / her"), on the character sheet (Arcanists and NPCs) and on the
