@@ -19,6 +19,17 @@ PR — minor for a new feature, patch for a fix — before merging. `CHANGELOG.m
 gets a matching entry. The PR template (`.github/pull_request_template.md`)
 has a Version section for this so it isn't forgotten.
 
+### Quiet bumps
+
+A **quiet bump** is a small hotfix that ships *without* changing the version
+number: no `package.json` bump and no new `CHANGELOG.md` heading. Use it for
+tiny, low-risk fixes and touch-ups to something that just shipped, for example
+lowercasing the side rail's pronouns right after they were added. If the change
+is something a player or GM would want to read about, it isn't quiet: give it a
+patch bump instead.
+
+A quiet bump may go straight to `main` when the owner asks for one.
+
 Versioning started retroactively at **v1.0.0**: the build that was live for
 the first real game session (2026-07-17). See `CHANGELOG.md` for the full
 history, including how the early versions were reconstructed from git and

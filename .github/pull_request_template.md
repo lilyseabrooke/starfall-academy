@@ -13,7 +13,9 @@ backfill). -->
 ## Version
 
 <!-- See VERSIONING.md. Every PR merged to main bumps package.json's
-"version" and gets a CHANGELOG.md entry — pick one: -->
+"version" and gets a CHANGELOG.md entry, except a quiet bump. Pick one: -->
+
+- [ ] **Quiet** — small hotfix, no version change and no CHANGELOG entry
 
 - [ ] **Patch** — bug fix, copy/UI tweak, or a refinement to something already shipped this minor version
 - [ ] **Minor** — a new player- or GM-facing feature
