@@ -81,7 +81,7 @@ export function RollEntry({ roll, expanded, compact, affordance, hint }: RollEnt
         <span className="sf-re__label">{roll.label}</span>
         <span className="sf-re__dice">
           {roll.dice.map((d, i) => (
-            <span key={i} className={"sf-die" + (d === 10 ? " is-ten" : d === 1 ? " is-one" : "")}>{d}</span>
+            <span key={i} className={"sf-die" + (d === 10 ? " is-ten" : d === 1 ? " is-one" : "") + (!roll.crit && roll.outcome !== "inflection" ? " is-quiet" : "")}>{d}</span>
           ))}
           <span className="sf-re__mod">{roll.mod >= 0 ? "+" : "−"}{Math.abs(roll.mod)}</span>
           {roll.sit ? <span className="sf-re__sit">{sitText(roll.sit)}</span> : null}
