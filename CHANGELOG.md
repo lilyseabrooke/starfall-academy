@@ -12,6 +12,9 @@ when these shipped.
 - The site header's Theme, Discord and Sign In / Sign Out buttons now live
   together in a single menu button in the top-right corner. On phones and
   tablets that menu also lists the page links, as before.
+- Rolls only show the "Critical" / "Crit fail" headline when that kind of roll
+  actually has a crit effect; otherwise a natural 1 or 10 is a normal roll,
+  and its die keeps a muted tint instead of the full crit border.
 
 ## v1.25.0 — 2026-11-21
 - **Light mode.** A new "Vellum" light theme: warm parchment pages, paper cards
