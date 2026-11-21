@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Jost, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import "@/styles/design-system.css";
+import "@/styles/theme-light.css";
 
 const jost = Jost({
   variable: "--font-sans-google",
