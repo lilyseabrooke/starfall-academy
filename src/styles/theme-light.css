@@ -118,3 +118,7 @@
 :root[data-theme="light"] .sf-sheet .sf-avatar.t-silver  { background: oklch(55% 0.016 222); }
 :root[data-theme="light"] .sf-sheet .sf-avatar.t-crimson { background: color-mix(in oklab, var(--crimson-500) 80%, #fff); }
 :root[data-theme="light"] .sf-sheet .sf-roster__item.is-active .sf-avatar { background: var(--grad-gold); }
+:root[data-theme="light"] .sf-sheet .sf-hero__name {
+  background: linear-gradient(150deg, #8f7230 0%, #745a22 40%, #5f4a1c 65%, #3f3012 100%);
+  -webkit-background-clip: text; background-clip: text;
+}
