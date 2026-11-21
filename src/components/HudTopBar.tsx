@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useImperativeHandle, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -80,6 +80,30 @@ const HudTopBar = forwardRef<
     : BASE_NAV_LINKS;
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLElement>(null);
+  const burgerRef = useRef<HTMLButtonElement>(null);
+
+  // Close the menu on Escape or a click/tap outside it.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onDown = (e: PointerEvent) => {
+      const t = e.target as Node;
+      if (menuRef.current?.contains(t) || burgerRef.current?.contains(t)) return;
+      setMenuOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setMenuOpen(false);
+        burgerRef.current?.focus();
+      }
+    };
+    document.addEventListener("pointerdown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
   const [showDiscord, setShowDiscord] = useState(false);
   const [showSignIn, setShowSignIn] = useState(false);
   const [email, setEmail] = useState("");
@@ -131,6 +155,7 @@ const HudTopBar = forwardRef<
   }
 
   async function signOut() {
+    setMenuOpen(false);
     const supabase = createClient();
     await supabase.auth.signOut();
     router.push("/");
@@ -182,30 +207,16 @@ const HudTopBar = forwardRef<
 
         <span className="hud-spacer" />
 
-        <ThemeToggle className="sa-btn-ghost hud-theme" labelClassName="hud-theme-label" iconOnlyTitle />
-
-        <button className="sa-btn-ghost hud-discord" onClick={openDiscord}>
-          <MessageCircle size={15} aria-hidden="true" />
-          Discord
-        </button>
-
-        {signedIn ? (
-          <button className="sa-btn-ghost" onClick={signOut}>
-            <LogOut size={15} aria-hidden="true" />
-            Sign Out
-          </button>
-        ) : (
-          <button className="sa-btn-ghost" onClick={openSignIn}>
-            <KeyRound size={15} aria-hidden="true" />
-            <span className="hud-signin-label">Sign In</span>
-          </button>
-        )}
-
+        {/* One menu for the account / site utilities. On desktop it's a small
+            dropdown; at tablet/phone widths (where .hud-nav is hidden) it
+            becomes the full-width drawer and lists the page links first. */}
         <button
+          ref={burgerRef}
           className="sa-btn-ghost hud-burger"
           onClick={() => setMenuOpen((o) => !o)}
-          aria-label="Menu"
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
           aria-expanded={menuOpen}
+          aria-controls="hud-menu"
         >
           {menuOpen ? (
             <X size={19} aria-hidden="true" />
@@ -213,35 +224,50 @@ const HudTopBar = forwardRef<
             <Menu size={19} aria-hidden="true" />
           )}
         </button>
-      </header>
 
-      {/* Mobile / tablet nav drawer */}
-      {menuOpen && (
-        <nav className="hud-menu">
-          {navLinks.map((link) => {
-            const Icon = link.icon;
-            return (
-              <Link
-                key={link.name}
-                className="hud-menu__link"
-                href={link.href}
-                {...(link.href.startsWith("http")
-                  ? { target: "_blank", rel: "noopener noreferrer" }
-                  : {})}
-                onClick={() => setMenuOpen(false)}
-              >
-                <Icon size={18} aria-hidden="true" />
-                {link.name}
-              </Link>
-            );
-          })}
-          <button className="hud-menu__discord" onClick={openDiscord}>
-            <MessageCircle size={18} aria-hidden="true" />
-            Join the Discord
-          </button>
-          <ThemeToggle className="hud-menu__theme" />
-        </nav>
-      )}
+        {menuOpen && (
+          <nav className="hud-menu" id="hud-menu" ref={menuRef} aria-label="Site menu">
+            <div className="hud-menu__pages">
+              {navLinks.map((link) => {
+                const Icon = link.icon;
+                return (
+                  <Link
+                    key={link.name}
+                    className="hud-menu__link"
+                    href={link.href}
+                    {...(link.href.startsWith("http")
+                      ? { target: "_blank", rel: "noopener noreferrer" }
+                      : {})}
+                    aria-current={link.name === active ? "page" : undefined}
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <Icon size={18} aria-hidden="true" />
+                    {link.name}
+                  </Link>
+                );
+              })}
+            </div>
+            <div className="hud-menu__utils">
+              <ThemeToggle className="hud-menu__item" />
+              <button className="hud-menu__item" onClick={openDiscord}>
+                <MessageCircle aria-hidden="true" />
+                Join the Discord
+              </button>
+              {signedIn ? (
+                <button className="hud-menu__item" onClick={signOut}>
+                  <LogOut aria-hidden="true" />
+                  Sign Out
+                </button>
+              ) : (
+                <button className="hud-menu__item hud-menu__item--accent" onClick={openSignIn}>
+                  <KeyRound aria-hidden="true" />
+                  Sign In
+                </button>
+              )}
+            </div>
+          </nav>
+        )}
+      </header>
 
       {/* ===================== MAGIC-LINK SIGN-IN MODAL ===================== */}
       {showSignIn && (
