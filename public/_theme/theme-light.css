@@ -1,0 +1,141 @@
+/* ===========================================================================
+   Starfall Academy — Light theme ("Vellum")
+   ---------------------------------------------------------------------------
+   Opt-in via <html data-theme="light"> (set by the theme switch; see
+   src/lib/theme.ts). Loaded by the Next app's root layout AND by the embedded
+   static apps under /public via theme-sync.js, so there is one palette.
+   Works by re-pointing the design-system ramps rather than restyling components: the ink ramp flips from midnight to
+   warm vellum (950 stays the "page", 800 stays the "card" — the card is now the
+   lighter surface), the pale gold/accent steps used as text deepen so they
+   read on paper, and every derived semantic token is re-declared here because
+   custom properties resolve where they are declared (on :root).
+   =========================================================================== */
+
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  /* ---- Ink → vellum (page darkest, cards lightest) --------------------- */
+  --ink-950: #ebe4d3;
+  --ink-900: #f1ebdd;
+  --ink-850: #f6f1e6;
+  --ink-800: #fbf8f1;
+  --ink-700: #efe6d1;
+  --ink-600: #d6cbb0;
+  --ink-500: #b9ad8f;
+  --ink-400: #978c70;
+
+  /* ---- Gold: pale steps become deep, legible-on-paper golds ------------- */
+  --gold-100: #6a5422;
+  --gold-200: #7a6128;
+  --gold-300: #85692b;
+  --gold-400: #9a7a32;
+  --gold-500: #a8873c;
+  --gold-600: #8a6d2e;
+  --gold-700: #e6d6a8;
+  --gold-800: #efe4c4;
+
+  /* ---- Accent "fg" steps deepen; "700" wells lighten -------------------- */
+  --plum-300:    #7d2f62;
+  --plum-700:    #ecd9e3;
+  --forest-300:  #3f6b45;
+  --forest-700:  #dde8da;
+  --teal-300:    #11607f;
+  --teal-700:    #d5e7ee;
+  --crimson-300: #9c3b39;
+  --crimson-700: #f2dcd9;
+
+  /* ---- Surfaces --------------------------------------------------------- */
+  --surface-page:      var(--ink-950);
+  --surface-app:       var(--ink-900);
+  --surface-raised:    var(--ink-850);
+  --surface-card:      var(--ink-800);
+  --surface-card-hi:   var(--ink-700);
+  --surface-overlay:   color-mix(in oklab, #2a2618 38%, transparent);
+  --surface-parchment: var(--parchment-50);
+
+  /* ---- Text ------------------------------------------------------------- */
+  --text-strong:  #1a1b22;
+  --text-body:    #34343a;
+  --text-muted:   #6b6451;
+  --text-faint:   #8f8770;
+  --text-gold:    #85692b;
+  --text-on-gold: #fbf8f1;
+
+  /* ---- Brand ------------------------------------------------------------ */
+  --brand:         var(--gold-500);
+  --brand-hover:   var(--gold-400);
+  --brand-press:   var(--gold-600);
+  --brand-subtle:  color-mix(in oklab, #b99d53 20%, var(--ink-800));
+
+  /* ---- Lines ------------------------------------------------------------ */
+  --border-subtle:  color-mix(in oklab, #8a6d2e 20%, transparent);
+  --border-default: color-mix(in oklab, #8a6d2e 34%, transparent);
+  --border-strong:  color-mix(in oklab, #8a6d2e 58%, transparent);
+  --hairline:       color-mix(in oklab, #3a3220 12%, transparent);
+  --focus-ring:     color-mix(in oklab, #9a7a32 70%, transparent);
+
+  /* ---- Status ----------------------------------------------------------- */
+  --success:     var(--forest-500);
+  --success-fg:  var(--forest-300);
+  --info:        var(--teal-500);
+  --info-fg:     var(--teal-300);
+  --danger:      var(--crimson-500);
+  --danger-fg:   var(--crimson-300);
+  --warning:     var(--gold-500);
+  --warning-fg:  var(--gold-300);
+  --arcane:      var(--plum-500);
+  --arcane-fg:   var(--plum-300);
+
+  /* ---- Elevation: warm, soft shadows on paper --------------------------- */
+  --shadow-sm:  0 1px 2px rgba(58,46,20,0.10);
+  --shadow-md:  0 4px 14px rgba(58,46,20,0.10);
+  --shadow-lg:  0 14px 40px rgba(58,46,20,0.14);
+  --shadow-xl:  0 28px 70px rgba(58,46,20,0.18);
+  --glow-gold:  0 0 0 1px color-mix(in oklab, #a8873c 40%, transparent),
+                0 8px 30px color-mix(in oklab, #a8873c 18%, transparent);
+  --inset-hi:   inset 0 1px 0 rgba(255,255,255,0.7);
+
+  /* ---- Gradients -------------------------------------------------------- */
+  /* Deeper gilt so it carries both clipped display type and fills that sit
+     under vellum-coloured (ink-950) labels. */
+  --grad-gold:      linear-gradient(150deg, #b8974a 0%, #9a7a32 40%, #86692a 65%, #5f4a1c 100%);
+  --grad-gold-soft: linear-gradient(150deg, #a8873c 0%, #8a6d2e 70%, #6e5622 100%);
+  --grad-vignette: radial-gradient(120% 90% at 50% -10%, #f7f2e6 0%, #efe8d8 50%, #e6dec9 100%);
+  --grad-scrim:    linear-gradient(180deg, transparent 0%, rgba(235,228,211,0.9) 100%);
+  --rule-gold:     linear-gradient(90deg, transparent, #b99d53 18%, #8a6d2e 50%, #b99d53 82%, transparent);
+}
+
+:root[data-theme="light"] ::selection {
+  background: color-mix(in oklab, #b99d53 35%, transparent);
+  color: #1a1b22;
+}
+
+/* ---- Character sheet touch-ups ------------------------------------------
+   The few places that hard-code dark-surface assumptions. */
+:root[data-theme="light"] .sf-sheet .sf-hero__crest { filter: brightness(0); opacity: .06; }
+:root[data-theme="light"] .sf-sheet .sf-avatar { color: #fbf8f1; }
+:root[data-theme="light"] .sf-sheet .sf-avatar.t-plum    { background: color-mix(in oklab, var(--plum-500) 80%, #fff); }
+:root[data-theme="light"] .sf-sheet .sf-avatar.t-forest  { background: color-mix(in oklab, var(--forest-500) 80%, #fff); }
+:root[data-theme="light"] .sf-sheet .sf-avatar.t-teal    { background: color-mix(in oklab, var(--teal-500) 80%, #fff); }
+:root[data-theme="light"] .sf-sheet .sf-avatar.t-silver  { background: oklch(55% 0.016 222); }
+:root[data-theme="light"] .sf-sheet .sf-avatar.t-crimson { background: color-mix(in oklab, var(--crimson-500) 80%, #fff); }
+:root[data-theme="light"] .sf-sheet .sf-roster__item.is-active .sf-avatar { background: var(--grad-gold); }
+:root[data-theme="light"] .sf-sheet .sf-hero__name {
+  background: linear-gradient(150deg, #8f7230 0%, #745a22 40%, #5f4a1c 65%, #3f3012 100%);
+  -webkit-background-clip: text; background-clip: text;
+}
+
+/* ---- Hard-coded dark-surface spots elsewhere --------------------------- */
+/* Classes: the rank ladder's centre spine was a fixed midnight wash. */
+:root[data-theme="light"] .sf-sheet .sf-rung__spine { background: color-mix(in oklab, var(--ink-950) 70%, transparent); }
+
+/* Gold-tinted crest line art (design-system Crest "gold", loading screen):
+   the dark-theme filter yields a pale gold that vanishes on vellum. */
+:root[data-theme="light"] .sa-crest--gold img,
+:root[data-theme="light"] .sa-loading__crest-img--base {
+  filter: brightness(0) saturate(100%) invert(42%) sepia(62%) saturate(480%) hue-rotate(8deg) brightness(88%) contrast(95%);
+}
+
+/* My Characters: the monogram sits on a deep house-coloured token in both
+   themes, so it keeps the pale-gold ink (the token, not the page, is dark). */
+:root[data-theme="light"] .cp-token__mono { color: #f4ecd2; }

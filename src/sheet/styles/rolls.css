@@ -45,6 +45,9 @@
 }
 .sf-sheet .sf-die.is-ten { color: var(--forest-300); background: color-mix(in oklab, var(--forest-700) 38%, var(--ink-800)); border-color: color-mix(in oklab, var(--forest-500) 55%, transparent); }
 .sf-sheet .sf-die.is-one { color: var(--crimson-300); background: color-mix(in oklab, var(--crimson-700) 36%, var(--ink-800)); border-color: color-mix(in oklab, var(--crimson-500) 55%, transparent); }
+/* A 1 or 10 with no crit effect on this roll type: keep the tint, mute it. */
+.sf-sheet .sf-die.is-ten.is-quiet { background: color-mix(in oklab, var(--forest-700) 14%, var(--ink-800)); border-color: color-mix(in oklab, var(--forest-500) 20%, transparent); }
+.sf-sheet .sf-die.is-one.is-quiet { background: color-mix(in oklab, var(--crimson-700) 14%, var(--ink-800)); border-color: color-mix(in oklab, var(--crimson-500) 20%, transparent); }
 .sf-sheet .sf-re__mod { font-family: var(--font-mono); font-size: 12px; color: var(--text-faint); margin-left: 2px; }
 .sf-sheet .sf-re__eq { font-family: var(--font-mono); font-size: 13px; color: var(--text-faint); }
 .sf-sheet .sf-re__total {

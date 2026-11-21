@@ -7,6 +7,7 @@
 <link rel="icon" type="image/png" href="assets/crest-simple.png" />
 
 <!-- Starfall Academy design tokens (shared with the rest of the app) -->
+<script src="/_theme/theme-sync.js"></script>
 <link rel="stylesheet" href="/_ds/starfall-academy-design-system-61fef24c-b8ee-469f-860f-a6fd95fb2a6e/tokens/fonts.css" />
 <link rel="stylesheet" href="/_ds/starfall-academy-design-system-61fef24c-b8ee-469f-860f-a6fd95fb2a6e/tokens/colors.css" />
 <link rel="stylesheet" href="/_ds/starfall-academy-design-system-61fef24c-b8ee-469f-860f-a6fd95fb2a6e/tokens/typography.css" />
@@ -17,9 +18,10 @@
 
 <!-- App styling -->
 <link rel="stylesheet" href="tree.css" />
+<link rel="stylesheet" href="/_theme/theme-light.css" />
 </head>
 <body>
-<div id="root"><div style="display:grid;place-items:center;height:100vh;color:#b09060;font-family:sans-serif;background:#0d0b12;font-size:14px;letter-spacing:.08em">Loading the Ledger…</div></div>
+<div id="root"><div style="display:grid;place-items:center;height:100vh;color:var(--gold-400,#b09060);font-family:sans-serif;background:var(--ink-950,#0d0b12);font-size:14px;letter-spacing:.08em">Loading the Ledger…</div></div>
 
 <!-- React + Babel (pinned) -->
 <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>

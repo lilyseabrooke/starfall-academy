@@ -8,6 +8,22 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.25.1 — 2026-11-21
+- The site header's Theme, Discord and Sign In / Sign Out buttons now live
+  together in a single menu button in the top-right corner. On phones and
+  tablets that menu also lists the page links, as before.
+- Rolls only show the "Critical" / "Crit fail" headline when that kind of roll
+  actually has a crit effect; otherwise a natural 1 or 10 is a normal roll,
+  and its die keeps a muted tint instead of the full crit border.
+
+## v1.25.0 — 2026-11-21
+- **Light mode.** A new "Vellum" light theme: warm parchment pages, paper cards
+  and deep-gold accents. Switch between Dark, Light and System (follows your
+  device) from the theme button in the site header (or the menu on phones), or
+  from the bottom of the side rail on the character sheet and GM dashboard.
+  Your choice is remembered on this device. The Compendium, Campus Map,
+  Character Ledger and Chronicle follow it too. Dark stays the default.
+
 ## v1.24.2 — 2026-11-18
 - Pronouns in the side rail are now shown in lowercase.
 

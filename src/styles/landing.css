@@ -154,38 +154,42 @@
 }
 
 .hud-burger {
-  display: none;
+  display: grid;
   width: 42px;
   height: 42px;
   flex: none;
   place-items: center;
   padding: 0;
-  background: var(--ink-850);
-  color: var(--text-body);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: border-color var(--dur-base), color var(--dur-base),
-    box-shadow var(--dur-base);
 }
-.hud-burger:hover {
+.hud-burger[aria-expanded="true"] {
   border-color: var(--gold-600);
   color: var(--gold-200);
-  box-shadow: var(--glow-gold);
 }
 
-/* Mobile / tablet nav drawer */
+/* Site menu. Anchored to the (sticky, positioned) .hud: a compact dropdown
+   under the menu button on desktop, a full-width drawer at <=900px. */
 .hud-menu {
-  position: sticky;
-  top: 74px;
-  z-index: 19;
-  padding: var(--space-3) var(--space-4) var(--space-4);
-  border-bottom: 1px solid var(--border-subtle);
-  background: color-mix(in oklab, var(--ink-900) 96%, transparent);
-  backdrop-filter: blur(10px);
+  position: absolute;
+  top: calc(100% + 8px);
+  right: var(--space-7);
+  z-index: 30;
+  width: 264px;
+  padding: var(--space-2);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  /* Solid: a backdrop-filter nested inside the .hud's own doesn't render,
+     so a translucent panel would let page text show through. */
+  background: var(--ink-900);
   box-shadow: var(--shadow-lg);
   animation: saDrop 0.22s var(--ease-out);
   display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Page links duplicate .hud-nav, so they only appear in the drawer. */
+.hud-menu__pages {
+  display: none;
   flex-direction: column;
   gap: 2px;
 }
@@ -209,27 +213,60 @@
   cursor: pointer;
   transition: color var(--dur-base);
 }
-.hud-menu__link:hover {
+.hud-menu__link:hover,
+.hud-menu__link[aria-current="page"] {
   color: var(--gold-200);
 }
 
-.hud-menu__discord {
+.hud-menu__utils {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hud-menu__item {
   display: flex;
   align-items: center;
-  gap: 13px;
-  height: 52px;
-  margin-top: 8px;
-  padding: 0 14px;
+  gap: 12px;
+  width: 100%;
+  height: 44px;
+  padding: 0 12px;
   border-radius: var(--radius-sm);
-  background: var(--ink-800);
-  border: 1px solid var(--border-default);
+  background: none;
+  border: 1px solid transparent;
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  text-align: left;
+  color: var(--text-body);
+  cursor: pointer;
+  transition: color var(--dur-base), background var(--dur-base),
+    border-color var(--dur-base);
+}
+.hud-menu__item svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--text-muted);
+  transition: color var(--dur-base);
+}
+.hud-menu__item:hover {
+  color: var(--gold-200);
+  background: var(--ink-800);
+  border-color: var(--border-subtle);
+}
+.hud-menu__item:hover svg {
+  color: var(--gold-300);
+}
+.hud-menu__item:focus-visible,
+.hud-menu__link:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+.hud-menu__item--accent,
+.hud-menu__item--accent svg {
   color: var(--text-gold);
-  text-decoration: none;
-  transition: color var(--dur-base), border-color var(--dur-base);
 }
 
 /* ===================== HERO / MAIN ===================== */
@@ -747,11 +784,30 @@
   .hud-nav {
     display: none;
   }
-  .hud-discord {
-    display: none;
+  .hud-menu {
+    left: 0;
+    right: 0;
+    top: 100%;
+    width: auto;
+    padding: var(--space-3) var(--space-4) var(--space-4);
+    border: none;
+    border-bottom: 1px solid var(--border-subtle);
+    border-radius: 0;
   }
-  .hud-burger {
-    display: grid;
+  .hud-menu__pages {
+    display: flex;
+  }
+  .hud-menu__utils {
+    margin-top: var(--space-2);
+  }
+  .hud-menu__item {
+    height: 52px;
+    padding: 0 14px;
+    font-size: 14px;
+  }
+  .hud-menu__item svg {
+    width: 18px;
+    height: 18px;
   }
   .hud {
     padding-left: var(--space-4);
@@ -761,9 +817,6 @@
 }
 @media (max-width: 480px) {
   .hud-titles {
-    display: none;
-  }
-  .hud-signin-label {
     display: none;
   }
 }

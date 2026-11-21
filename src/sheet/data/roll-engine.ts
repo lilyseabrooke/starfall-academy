@@ -225,7 +225,9 @@ export function headline(roll: Roll): Headline {
     return { key: roll.result || "" };
   }
   if (roll.outcome === "inflection") return { key: "inflection", tone: "gold", label: "Inflection Point" };
-  if (roll.outcome === "crit-success") return { key: "crit-success", tone: "forest", label: "Critical" };
-  if (roll.outcome === "crit-fail") return { key: "crit-fail", tone: "crimson", label: "Crit fail" };
+  // A natural 1/10 only earns a crit headline when this roll type actually has a
+  // crit effect (roll.crit resolved); otherwise it's just a normal roll.
+  if (roll.outcome === "crit-success" && roll.crit?.kind === "success") return { key: "crit-success", tone: "forest", label: "Critical" };
+  if (roll.outcome === "crit-fail" && roll.crit?.kind === "fail") return { key: "crit-fail", tone: "crimson", label: "Crit fail" };
   return { key: "normal" };
 }

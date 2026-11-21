@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Jost, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { THEME_INIT_SCRIPT } from "@/lib/theme-init";
 import "@/styles/design-system.css";
 
 const jost = Jost({
@@ -42,8 +43,17 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      data-theme="dark"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} ${jost.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
+      <head>
+        {/* Applies the saved light/dark preference before first paint. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        {/* Served from /public so the embedded static apps (compendium, map,
+            chronicle, character map) share the exact same light palette. */}
+        <link rel="stylesheet" href="/_theme/theme-light.css" />
+      </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
