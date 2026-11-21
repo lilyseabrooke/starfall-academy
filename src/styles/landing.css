@@ -232,6 +232,43 @@
   transition: color var(--dur-base), border-color var(--dur-base);
 }
 
+/* Theme switch: icon-only in the bar, a full row in the mobile drawer. */
+.hud-theme {
+  width: 40px;
+  padding: 0;
+  justify-content: center;
+  flex: none;
+}
+.hud-theme svg { width: 16px; height: 16px; }
+.hud-theme-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.hud-menu__theme {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  height: 48px;
+  margin-top: 8px;
+  padding: 0 14px;
+  border-radius: var(--radius-sm);
+  background: none;
+  border: 1px solid var(--hairline);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color var(--dur-base), border-color var(--dur-base);
+}
+.hud-menu__theme svg { width: 18px; height: 18px; }
+.hud-menu__theme:hover { color: var(--gold-200); border-color: var(--border-default); }
+
 /* ===================== HERO / MAIN ===================== */
 .lp-main {
   position: relative;
@@ -748,6 +785,9 @@
     display: none;
   }
   .hud-discord {
+    display: none;
+  }
+  .hud-theme {
     display: none;
   }
   .hud-burger {

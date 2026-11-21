@@ -4,6 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Crest } from "@/ds";
 import { Icon } from "../Icon";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { consumeReturnTarget } from "../../nav-return";
 
 export interface SidebarRosterMember {
@@ -162,6 +163,8 @@ export function Sidebar({
 
         {npcs ? <div className="sf-nav sf-nav--party"><NpcSection cfg={npcs} collapsed={collapsed} onMobileClose={onMobileClose} /></div> : null}
 
+        <ThemeToggle className="sf-nav__item sf-side__theme" labelClassName="sf-side__label" iconOnlyTitle={collapsed} />
+
         <button className="sf-side__toggle-btn" onClick={onToggleSidebar} title={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
           <Icon name={collapsed ? "chevrons-right" : "chevrons-left"} />
           <span className="sf-side__label">{collapsed ? "Expand" : "Collapse"}</span>
@@ -228,6 +231,7 @@ export function Sidebar({
             <Icon name="trash-2" /><span className="sf-side__label">Delete character</span>
           </button>
         ) : null}
+        <ThemeToggle className="sf-nav__item sf-side__theme" labelClassName="sf-side__label" iconOnlyTitle={collapsed} />
       </div>
       <button className="sf-side__toggle-btn" onClick={onToggleSidebar} title={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
         <Icon name={collapsed ? "chevrons-right" : "chevrons-left"} />

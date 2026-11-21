@@ -1,8 +1,10 @@
 /* ===========================================================================
    Starfall Academy — Light theme ("Vellum")
    ---------------------------------------------------------------------------
-   Opt-in via <html data-theme="light">. Works by re-pointing the design-system
-   ramps rather than restyling components: the ink ramp flips from midnight to
+   Opt-in via <html data-theme="light"> (set by the theme switch; see
+   src/lib/theme.ts). Loaded by the Next app's root layout AND by the embedded
+   static apps under /public via theme-sync.js, so there is one palette.
+   Works by re-pointing the design-system ramps rather than restyling components: the ink ramp flips from midnight to
    warm vellum (950 stays the "page", 800 stays the "card" — the card is now the
    lighter surface), the pale gold/accent steps used as text deepen so they
    read on paper, and every derived semantic token is re-declared here because
@@ -122,3 +124,18 @@
   background: linear-gradient(150deg, #8f7230 0%, #745a22 40%, #5f4a1c 65%, #3f3012 100%);
   -webkit-background-clip: text; background-clip: text;
 }
+
+/* ---- Hard-coded dark-surface spots elsewhere --------------------------- */
+/* Classes: the rank ladder's centre spine was a fixed midnight wash. */
+:root[data-theme="light"] .sf-sheet .sf-rung__spine { background: color-mix(in oklab, var(--ink-950) 70%, transparent); }
+
+/* Gold-tinted crest line art (design-system Crest "gold", loading screen):
+   the dark-theme filter yields a pale gold that vanishes on vellum. */
+:root[data-theme="light"] .sa-crest--gold img,
+:root[data-theme="light"] .sa-loading__crest-img--base {
+  filter: brightness(0) saturate(100%) invert(42%) sepia(62%) saturate(480%) hue-rotate(8deg) brightness(88%) contrast(95%);
+}
+
+/* My Characters: the monogram sits on a deep house-coloured token in both
+   themes, so it keeps the pale-gold ink (the token, not the page, is dark). */
+:root[data-theme="light"] .cp-token__mono { color: #f4ecd2; }

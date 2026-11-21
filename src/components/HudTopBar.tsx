@@ -20,6 +20,7 @@ import {
   X,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import "@/styles/landing.css";
 
 type IconType = typeof BookOpen;
@@ -181,6 +182,8 @@ const HudTopBar = forwardRef<
 
         <span className="hud-spacer" />
 
+        <ThemeToggle className="sa-btn-ghost hud-theme" labelClassName="hud-theme-label" iconOnlyTitle />
+
         <button className="sa-btn-ghost hud-discord" onClick={openDiscord}>
           <MessageCircle size={15} aria-hidden="true" />
           Discord
@@ -236,6 +239,7 @@ const HudTopBar = forwardRef<
             <MessageCircle size={18} aria-hidden="true" />
             Join the Discord
           </button>
+          <ThemeToggle className="hud-menu__theme" />
         </nav>
       )}
 
