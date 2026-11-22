@@ -8,6 +8,17 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.26.0 — 2026-11-22
+- Add **By Hook or By Crook**, a hidden heist briefing page at `/hookorcrook`.
+  Like the Vialbottom Board, it isn't linked from the nav and you can only
+  reach it by URL. The pitch is laid out as a sealed dossier from Riot: break
+  the wax seal to open it, then scroll through eight chapters. Along the way:
+  memo and personnel-file cards with rubber stamps, redaction bars that wipe
+  away, Riot's messages unscrambling from rune glyphs into text, a December 14
+  calendar slip, and a build-up to the Shepherd's Crook where the screen
+  darkens and its name comes into focus behind hazard tape. It ends on Riot's
+  ticket. Motion is toned down for anyone with reduced motion turned on.
+
 ## v1.25.1 — 2026-11-21
 - The site header's Theme, Discord and Sign In / Sign Out buttons now live
   together in a single menu button in the top-right corner. On phones and
