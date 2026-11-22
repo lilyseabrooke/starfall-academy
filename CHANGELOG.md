@@ -11,13 +11,14 @@ when these shipped.
 ## v1.26.0 — 2026-11-22
 - Add **By Hook or By Crook**, a hidden heist briefing page at `/hookorcrook`.
   Like the Vialbottom Board, it isn't linked from the nav and you can only
-  reach it by URL. The pitch is laid out as a sealed dossier from Riot: break
-  the wax seal to open it, then scroll through eight chapters. Along the way:
-  memo and personnel-file cards with rubber stamps, redaction bars that wipe
-  away, Riot's messages unscrambling from rune glyphs into text, a December 14
-  calendar slip, and a build-up to the Shepherd's Crook where the screen
-  darkens and its name comes into focus behind hazard tape. It ends on Riot's
-  ticket. Motion is toned down for anyone with reduced motion turned on.
+  reach it by URL. The pitch plays as one narrated cold open: the title
+  gilds in between letterbox bars, then the briefing comes up out of the
+  dark line by line as you scroll, with the big one-liners arriving word by
+  word. Gold motes drift down behind the text, with the odd falling star.
+  As the narration closes in on the Shepherd's Crook the light dims and the
+  motes slow, lifting again at Riot's request. At the end, the letterbox
+  closes around a final title card. Motion is toned down for anyone with
+  reduced motion turned on.
 
 ## v1.25.1 — 2026-11-21
 - The site header's Theme, Discord and Sign In / Sign Out buttons now live

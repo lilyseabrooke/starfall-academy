@@ -8,303 +8,104 @@
 <title>By Hook or By Crook — Starfall Academy</title>
 <link rel="icon" type="image/png" href="/_ds/starfall-academy-design-system-61fef24c-b8ee-469f-860f-a6fd95fb2a6e/assets/crest-simple.png" />
 
-<!-- Starfall Academy webfonts (Spectral self-hosted, Jost + JetBrains Mono via the fonts.css import) -->
+<!-- Starfall Academy webfonts (Spectral self-hosted, Jost via the fonts.css import) -->
 <link rel="stylesheet" href="/_ds/starfall-academy-design-system-61fef24c-b8ee-469f-860f-a6fd95fb2a6e/tokens/fonts.css" />
 <link rel="stylesheet" href="hookorcrook.css" />
 </head>
-<body class="sealed">
+<body>
 
-<!-- ============================================================ fixed layers -->
+<!-- Atmosphere: drifting gold motes, the dimming light, the letterbox frame -->
+<canvas class="motes" id="motes" aria-hidden="true"></canvas>
+<div class="shade" aria-hidden="true"></div>
 <div class="grain" aria-hidden="true"></div>
-<div class="dread" aria-hidden="true"></div>
+<div class="bar bar--top" aria-hidden="true"></div>
+<div class="bar bar--bottom" aria-hidden="true"></div>
 
-<header class="hud" aria-hidden="true">
-  <span class="hud-file">File HC-1214 <span class="hud-sep">//</span> Eyes only</span>
-  <span class="hud-chapter" id="hud-chapter">Sealed</span>
-  <span class="hud-progress" id="hud-progress"></span>
-</header>
+<main class="reel">
 
-<!-- ============================================================ the seal -->
-<div class="seal-screen" id="seal-screen">
-  <p class="seal-kicker">Federal Department of Magic <span>·</span> Starfall Garrison</p>
-  <p class="seal-kicker seal-kicker--strike">Not for circulation</p>
-
-  <button class="seal" id="seal-button" type="button" aria-label="Break the seal and open the briefing">
-    <span class="seal-half seal-half--l" aria-hidden="true">
-      <svg viewBox="0 0 200 200"><use href="#seal-art" /></svg>
-    </span>
-    <span class="seal-half seal-half--r" aria-hidden="true">
-      <svg viewBox="0 0 200 200"><use href="#seal-art" /></svg>
-    </span>
-  </button>
-
-  <p class="seal-stamp">Sealed briefing <span>·</span> For the crew’s eyes only</p>
-  <p class="seal-hint">Break the seal</p>
-
-  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-    <defs>
-      <radialGradient id="wax" cx="42%" cy="38%" r="70%">
-        <stop offset="0%" stop-color="#8d3b39" />
-        <stop offset="55%" stop-color="#5e2727" />
-        <stop offset="100%" stop-color="#3a1616" />
-      </radialGradient>
-      <path id="seal-ring-path" d="M100,100 m-66,0 a66,66 0 1,1 132,0 a66,66 0 1,1 -132,0" />
-      <g id="seal-art">
-        <path d="M100 6 C128 4 150 18 166 30 C186 46 196 72 194 100 C197 126 186 152 168 168 C150 186 126 196 100 194 C72 197 48 186 32 168 C14 150 4 126 6 100 C3 72 16 46 32 32 C50 14 74 3 100 6 Z" fill="url(#wax)" />
-        <circle cx="100" cy="100" r="82" fill="none" stroke="#c9ae63" stroke-opacity=".55" stroke-width="1.2" />
-        <circle cx="100" cy="100" r="77" fill="none" stroke="#c9ae63" stroke-opacity=".3" stroke-width=".6" stroke-dasharray="1.5 3.2" />
-        <text font-family="Jost, sans-serif" font-size="9.5" letter-spacing="2" fill="#ddc983" fill-opacity=".85">
-          <textPath href="#seal-ring-path" startOffset="0" textLength="412" lengthAdjust="spacing">BY HOOK · OR · BY CROOK · BY HOOK · OR · BY CROOK · </textPath>
-        </text>
-        <circle cx="100" cy="100" r="54" fill="none" stroke="#c9ae63" stroke-opacity=".6" stroke-width="1" />
-        <path d="M100 52 L104 96 L148 100 L104 104 L100 148 L96 104 L52 100 L96 96 Z" fill="#c9ae63" fill-opacity=".12" />
-        <text x="100" y="117" text-anchor="middle" font-family="Spectral, serif" font-weight="700" font-size="50" fill="#ddc983">R</text>
-      </g>
-    </defs>
-  </svg>
-</div>
-
-<!-- ============================================================ the briefing -->
-<main class="page" id="page">
-
-  <!-- Title card -->
-  <section class="title-card" data-chapter="By Hook or By Crook">
-    <p class="kicker reveal">Briefing <span class="kicker-dot">·</span> Classification: Riot</p>
-    <h1 class="title reveal" id="title" tabindex="-1">
+  <header class="opening">
+    <h1 class="title" id="title">
       <span class="title-line">By Hook</span>
       <span class="title-or">or</span>
       <span class="title-line">By Crook</span>
     </h1>
-    <div class="rule reveal" aria-hidden="true"><span></span></div>
-    <p class="lede reveal">New Deputy Enforcer’s been making waves. Shadows are saying he’s got secrets that might change that, though.</p>
-    <p class="scroll-cue reveal" aria-hidden="true">Read on</p>
+    <p class="line line--first">New Deputy Enforcer’s been making waves. Shadows are saying he’s got secrets that might change that, though.</p>
+    <span class="cue" aria-hidden="true"></span>
+  </header>
+
+  <div class="break" aria-hidden="true">✦</div>
+
+  <section class="movement">
+    <p class="line">Now, for the uninitiated, Deputy Enforcer’s a cursed position. Nobody ever makes it more than a year. Pretty bureaucratic post—generally a changing of the guard’s a flicker you don’t feel. A scandal happens somewhere out of view. New one comes in. Black-suits grumble and make small talk, and it settles in until something gets the new one taken out.</p>
+    <p class="line beat">This time around’s a whole other field of magic.</p>
   </section>
 
-  <!-- I. The Post -->
-  <section class="chapter" data-chapter="I · The Post">
-    <header class="chapter-head reveal">
-      <span class="chapter-num">I</span>
-      <h2>The Post</h2>
-      <span class="chapter-tag">Office of the Deputy Enforcer</span>
-    </header>
+  <div class="break" aria-hidden="true">✦</div>
 
-    <article class="memo reveal">
-      <div class="memo-head">
-        <span>Internal memorandum</span>
-        <span>Re: Succession</span>
-      </div>
-      <p>Now, for the uninitiated, Deputy Enforcer’s a cursed position. Nobody ever makes it more than a year. Pretty bureaucratic post—generally a changing of the guard’s a flicker you don’t feel. A scandal happens somewhere out of view. New one comes in. Black-suits grumble and make small talk, and it settles in until something gets the new one taken out.</p>
-      <span class="stamp stamp--memo" aria-hidden="true">Tenure: &lt; 1 year</span>
-    </article>
-
-    <p class="pull reveal">This time around’s a whole other field of magic.</p>
+  <section class="movement">
+    <p class="line">Meet <span class="name">Samuel Lewis Wayne</span>, Mayweather alum. Studied summoning back in the SIEF incident in Mayweather and then hung up his golden bolts to work with artifacts ever since. Before coming here, he was an FDM spook for eight years, with multiple high-level ops in Central American magic facilities.</p>
+    <p class="line">He’s good with his wand and a menace in the artificy lab, but infinitely more dangerous, he’s got a knack for working a crowd. He’s been more public-facing than past Deputy Enforcers, delivering regular State of Starfall briefings, positioning himself as a demagogue while Head Enforcer Walker is the staid old dragon at the head of things.</p>
+    <p class="line beat">People love him. That’s what makes him dangerous.</p>
   </section>
 
-  <!-- II. The Mark -->
-  <section class="chapter" data-chapter="II · The Mark">
-    <header class="chapter-head reveal">
-      <span class="chapter-num">II</span>
-      <h2>The Mark</h2>
-      <span class="chapter-tag">Personnel record</span>
-    </header>
+  <div class="break" aria-hidden="true">✦</div>
 
-    <article class="dossier reveal">
-      <div class="dossier-photo" aria-hidden="true">
-        <span>No photograph<br />on file</span>
-      </div>
-      <dl class="dossier-fields">
-        <div><dt>Subject</dt><dd>Samuel Lewis Wayne</dd></div>
-        <div><dt>Post</dt><dd>Deputy Enforcer, Starfall</dd></div>
-        <div><dt>Alma mater</dt><dd>Mayweather</dd></div>
-        <div><dt>Prior service</dt><dd>Federal Department of Magic, 8 yrs</dd></div>
-        <div><dt>Discipline</dt><dd>Summoning <span class="arrow">→</span> Artifacts</dd></div>
-        <div><dt>Known kin</dt><dd>Daniel Lewis Wayne (son)</dd></div>
-      </dl>
-      <span class="stamp stamp--dossier" aria-hidden="true">Threat: High</span>
-    </article>
-
-    <div class="prose">
-      <p class="reveal">Meet Samuel Lewis Wayne, Mayweather alum. Studied summoning back in the SIEF incident in Mayweather and then hung up his golden bolts to work with artifacts ever since. Before coming here, he was an FDM spook for eight years, with multiple high-level ops in Central American magic facilities.</p>
-      <p class="reveal">He’s good with his wand and a menace in the artificy lab, but infinitely more dangerous, he’s got a knack for working a crowd. He’s been more public-facing than past Deputy Enforcers, delivering regular State of Starfall briefings, positioning himself as a demagogue while Head Enforcer Walker is the staid old dragon at the head of things.</p>
-    </div>
-
-    <p class="pull pull--big reveal">People love him. That’s what makes him dangerous.</p>
-
-    <div class="prose">
-      <p class="reveal">He’s a crony enabler, selling off <span class="redact">backdoor access to the Garrison</span> and <span class="redact">shelling Academy artifacts for secrets</span> to auction off. His son Daniel Lewis Wayne got a powerful administrative position off the credentials of his father’s name alone, when little Daniel wouldn’t know a spell if it hit him in the face.</p>
-      <p class="reveal">And Samuel isn’t subtle with his ambitions—even though he never says it outright, everyone knows he wants to be Head Enforcer, and a dangerous and growing number of people want him there.</p>
-    </div>
+  <section class="movement">
+    <p class="line">He’s a crony enabler, selling off backdoor access to the Garrison and shelling Academy artifacts for secrets to auction off. His son Daniel Lewis Wayne got a powerful administrative position off the credentials of his father’s name alone, when little Daniel wouldn’t know a spell if it hit him in the face.</p>
+    <p class="line">And Samuel isn’t subtle with his ambitions—even though he never says it outright, everyone knows he wants to be Head Enforcer, and a dangerous and growing number of people want him there.</p>
   </section>
 
-  <!-- III. The Liabilities -->
-  <section class="chapter" data-chapter="III · The Liabilities">
-    <header class="chapter-head reveal">
-      <span class="chapter-num">III</span>
-      <h2>The Liabilities</h2>
-      <span class="chapter-tag">Off the record</span>
-    </header>
+  <div class="break" aria-hidden="true">✦</div>
 
-    <div class="prose">
-      <p class="reveal">His issues go beyond the professional. He’s known for being a <span class="redact">cheating womanizer</span>, for <span class="redact">leveraging his professional power to use against his personal opponents</span> and for petty grievances, and the FDM is scary quiet about the day-to-day reality of his operations in Central America, so all we know is that <span class="redact">this man’s net worth went up by no small sum</span> over those years.</p>
-    </div>
-
-    <figure class="sealed-file reveal" aria-label="Central America operations file, sealed">
-      <figcaption>FDM operations file <span>·</span> Central America <span>·</span> 8 yrs</figcaption>
-      <div class="bars" aria-hidden="true">
-        <span style="--w:92%"></span><span style="--w:78%"></span><span style="--w:96%"></span>
-        <span style="--w:64%"></span><span style="--w:88%"></span><span style="--w:41%"></span>
-      </div>
-      <p class="sealed-file-note">Records sealed by order of the Federal Department of Magic</p>
-    </figure>
-
-    <p class="pull reveal">Suffice to say, he’s made his fair share of enemies. One of which has come to you.</p>
+  <section class="movement">
+    <p class="line">His issues go beyond the professional. He’s known for being a cheating womanizer, for leveraging his professional power to use against his personal opponents and for petty grievances, and the FDM is scary quiet about the day-to-day reality of his operations in Central America, so all we know is that this man’s net worth went up by no small sum over those years.</p>
+    <p class="line beat">Suffice to say, he’s made his fair share of enemies. One of which has come to you.</p>
   </section>
 
-  <!-- IV. The Client -->
-  <section class="chapter" data-chapter="IV · The Client">
-    <header class="chapter-head reveal">
-      <span class="chapter-num">IV</span>
-      <h2>The Client</h2>
-      <span class="chapter-tag">Identity obscured</span>
-    </header>
+  <div class="break" aria-hidden="true">✦</div>
 
-    <article class="channel reveal">
-      <div class="channel-head">
-        <span class="channel-live">Incoming</span>
-        <span>Source: unknown</span>
-        <span>Handle: <strong>Riot</strong></span>
-      </div>
-      <p class="decode">A mastermind with her identity obscured, who goes only by her moniker, Riot. She won’t say what her issue with him is—only that there is one, in that tone of voice that says it’s no surprise that there is.</p>
-      <p class="decode">And Riot knows a very dangerous secret about this man. A secret she wants your help to exploit.</p>
-      <div class="channel-foot" aria-hidden="true">Channel encrypted <span>·</span> Trace failed</div>
-    </article>
+  <section class="movement">
+    <p class="line">A mastermind with her identity obscured, who goes only by her moniker, <span class="name name--riot">Riot</span>. She won’t say what her issue with him is—only that there is one, in that tone of voice that says it’s no surprise that there is.</p>
+    <p class="line">And Riot knows a very dangerous secret about this man. A secret she wants your help to exploit.</p>
   </section>
 
-  <!-- V. The Symposium -->
-  <section class="chapter" data-chapter="V · The Symposium">
-    <header class="chapter-head reveal">
-      <span class="chapter-num">V</span>
-      <h2>The Symposium</h2>
-      <span class="chapter-tag">Operation window</span>
-    </header>
+  <div class="break" aria-hidden="true">✦</div>
 
-    <div class="symposium">
-      <div class="date-slip reveal" aria-hidden="true">
-        <span class="date-month">December</span>
-        <span class="date-day">14</span>
-        <span class="date-note">Heritage magic<br />symposium</span>
-      </div>
-      <div class="prose">
-        <p class="reveal">On December 14th, Samuel is hosting a symposium for powerful heritage magic interests. To democratize heritage magic and bring the interests closer to the people.</p>
-        <p class="reveal">And also to bring his high-paying heritage magic cronies closer to what might be Starfall’s most tightly controlled legendary artifact. Saints only know what they’re paying him. And saints only know what they’re planning to do with it at that symposium that they’re willing to pay him as much as they did.</p>
-      </div>
-    </div>
+  <section class="movement">
+    <p class="line">On December 14th, Samuel is hosting a symposium for powerful heritage magic interests. To democratize heritage magic and bring the interests closer to the people.</p>
+    <p class="line" data-dim="0.15">And also to bring his high-paying heritage magic cronies closer to what might be Starfall’s most tightly controlled legendary artifact. Saints only know what they’re paying him. And saints only know what they’re planning to do with it at that symposium that they’re willing to pay him as much as they did.</p>
+    <p class="line" data-dim="0.4">Starfall keeps one of the world’s largest repositories of ancient and legendary artifacts. There’s plenty under lock and rune, but most of them pale next to <span class="name name--crook">the Shepherd’s Crook</span>.</p>
+    <p class="line" data-dim="0.65">You wouldn’t think it looking at the thing. Looks like a classic wooden cane, sheep’s head carved at the top. But even looking at the thing can be enough to bring a lesser caster to their knees.</p>
+    <p class="line" data-dim="0.8">The Shepherd’s Crook belonged to an ancient true demon, the Shepherd of the Forsaken, for a thousand years before it fell into human hands. Its full capabilities are yet undiscovered, because of the amount of restriction that goes into a true demon’s legendary artifact, but it’s said to be able to steer the direction of a person’s life.</p>
   </section>
 
-  <!-- VI. The Prize -->
-  <section class="chapter chapter--prize" id="prize" data-chapter="VI · The Prize">
-    <header class="chapter-head reveal">
-      <span class="chapter-num">VI</span>
-      <h2>The Prize</h2>
-      <span class="chapter-tag">Restricted vault</span>
-    </header>
+  <div class="break" aria-hidden="true" data-dim="0.7">✦</div>
 
-    <div class="prose">
-      <p class="reveal">Starfall keeps one of the world’s largest repositories of ancient and legendary artifacts. There’s plenty under lock and rune, but most of them pale next to the Shepherd’s Crook.</p>
-    </div>
-
-    <div class="vault" id="vault">
-      <div class="vault-stage">
-        <div class="tape tape--top" aria-hidden="true"><span>Restricted · Under lock and rune · Restricted · Under lock and rune · Restricted · Under lock and rune · Restricted · Under lock and rune · </span></div>
-        <div class="vault-rings" aria-hidden="true"><span></span><span></span><span></span></div>
-        <p class="vault-kicker">Legendary artifact <span>·</span> Item of record</p>
-        <h3 class="vault-name">The Shepherd’s Crook</h3>
-        <p class="vault-warning">Warning <span>·</span> Visual exposure hazard</p>
-        <div class="tape tape--bottom" aria-hidden="true"><span>Do not look directly · Do not look directly · Do not look directly · Do not look directly · Do not look directly · Do not look directly · </span></div>
-      </div>
-    </div>
-
-    <div class="prose prose--prize">
-      <p class="reveal">You wouldn’t think it looking at the thing. Looks like a classic wooden cane, sheep’s head carved at the top. But even looking at the thing can be enough to <span class="knees">bring a lesser caster to their knees.</span></p>
-
-      <dl class="catalog reveal">
-        <div><dt>Former bearer</dt><dd>The Shepherd of the Forsaken <em>(true demon)</em></dd></div>
-        <div><dt>Held</dt><dd>One thousand years</dd></div>
-        <div><dt>Containment</dt><dd>Lock and rune</dd></div>
-        <div><dt>Capabilities</dt><dd class="catalog-unknown">Undetermined</dd></div>
-      </dl>
-
-      <p class="reveal">The Shepherd’s Crook belonged to an ancient true demon, the Shepherd of the Forsaken, for a thousand years before it fell into human hands. Its full capabilities are yet undiscovered, because of the amount of restriction that goes into a true demon’s legendary artifact, but it’s said to be able to <em class="steer">steer the direction of a person’s life.</em></p>
-    </div>
-
-    <p class="pull pull--alarm reveal">And Samuel Lewis Wayne is keeping it secretly at this symposium of his, letting someone or someones do something with it, behind the Academy’s back.</p>
+  <section class="movement">
+    <p class="line beat" data-dim="0.6">And Samuel Lewis Wayne is keeping it secretly at this symposium of his, letting someone or someones do something with it, behind the Academy’s back.</p>
   </section>
 
-  <!-- VII. The Ask -->
-  <section class="chapter" data-chapter="VII · The Ask">
-    <header class="chapter-head reveal">
-      <span class="chapter-num">VII</span>
-      <h2>The Ask</h2>
-      <span class="chapter-tag">Terms</span>
-    </header>
+  <div class="break" aria-hidden="true" data-dim="0.3">✦</div>
 
-    <article class="channel channel--ask reveal">
-      <div class="channel-head">
-        <span class="channel-live">Incoming</span>
-        <span>Handle: <strong>Riot</strong></span>
-      </div>
-      <p class="decode decode--quiet">Riot’s request is simple.</p>
-      <p class="decode decode--order">Obtain the Shepherd’s Crook, and bring it to her instead.</p>
-    </article>
-
-    <div class="prose">
-      <p class="reveal">The reward—well, at risk of sounding like a cliché, you’ll never need to work a day in your lives.</p>
-    </div>
-    <p class="pull reveal">And Samuel Lewis Wayne alone will be left holding the bag.</p>
+  <section class="movement">
+    <p class="line beat beat--quiet" data-dim="0.1">Riot’s request is simple.</p>
+    <p class="line beat beat--strong">Obtain the Shepherd’s Crook, and bring it to her instead.</p>
+    <p class="line">The reward—well, at risk of sounding like a cliché, you’ll never need to work a day in your lives.</p>
+    <p class="line beat">And Samuel Lewis Wayne alone will be left holding the bag.</p>
   </section>
 
-  <!-- VIII. The Odds -->
-  <section class="chapter" data-chapter="VIII · The Odds">
-    <header class="chapter-head reveal">
-      <span class="chapter-num">VIII</span>
-      <h2>The Odds</h2>
-      <span class="chapter-tag">Risk assessment</span>
-    </header>
+  <div class="break" aria-hidden="true">✦</div>
 
-    <div class="odds reveal" aria-hidden="true">
-      <div><span class="odds-n">0</span><span class="odds-l">Ways in</span></div>
-      <div><span class="odds-n">0</span><span class="odds-l">Ways out</span></div>
-      <div><span class="odds-n">0</span><span class="odds-l">Loose threads</span></div>
-    </div>
-
-    <div class="prose">
-      <p class="reveal">There’s no doubt the mission is suicide. Samuel has incredible resources, and he’s going to be deploying everything he has to guard this. He wouldn’t leave a single loose thread: no way in, and no way out.</p>
-    </div>
-
-    <p class="pull pull--big reveal">But every Starfaller wants to be part of a legend.</p>
+  <section class="movement">
+    <p class="line">There’s no doubt the mission is suicide. Samuel has incredible resources, and he’s going to be deploying everything he has to guard this. He wouldn’t leave a single loose thread: no way in, and no way out.</p>
+    <p class="line beat">But every Starfaller wants to be part of a legend.</p>
+    <p class="line beat beat--final">And this is your ticket.</p>
   </section>
 
-  <!-- The ticket -->
-  <section class="finale" data-chapter="Your ticket">
-    <p class="finale-line reveal">And this is your ticket.</p>
-
-    <div class="ticket reveal" aria-label="Ticket: admit the crew, By Hook or By Crook, December 14">
-      <div class="ticket-main">
-        <span class="ticket-kicker">Admit the crew</span>
-        <span class="ticket-title">By Hook or<br />By Crook</span>
-        <span class="ticket-meta">December 14 <span>·</span> The Symposium</span>
-      </div>
-      <div class="ticket-stub" aria-hidden="true">
-        <span>No.</span>
-        <strong>1214</strong>
-        <span>One way</span>
-      </div>
-    </div>
-
-    <p class="signoff reveal" aria-hidden="true">— R.</p>
-    <p class="burn reveal">Burn after reading.</p>
-    <button class="reseal reveal" id="reseal" type="button">Reseal the file</button>
-  </section>
+  <footer class="endcard" id="endcard" aria-hidden="true">
+    <span class="endcard-star">✦</span>
+    <span class="endcard-title">By Hook or By Crook</span>
+  </footer>
 </main>
 
 <script src="hookorcrook.js"></script>

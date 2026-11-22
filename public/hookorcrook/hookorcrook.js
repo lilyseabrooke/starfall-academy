@@ -1,9 +1,12 @@
 /* ===========================================================================
-   By Hook or By Crook — briefing behaviour
-   - the wax seal that has to be broken before the file opens
-   - scroll reveals, redaction wipes, HUD chapter + progress
-   - Riot's transmissions unscrambling into plain text
-   - the dread that builds around the Shepherd's Crook
+   By Hook or By Crook — narrated cold open
+   - lines fade up out of the dark as they're scrolled to; beats arrive word
+     by word
+   - drifting gold motes (a slow starfall) behind everything, with the odd
+     falling star
+   - the light dims as the narration nears the Shepherd's Crook (per-line
+     data-dim values), and the motes slow with it
+   - a letterbox that slides in on open and closes around the end card
    =========================================================================== */
 (function () {
   "use strict";
@@ -11,6 +14,7 @@
   var root = document.documentElement;
   var body = document.body;
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var vw = window.innerWidth;
   var vh = window.innerHeight;
 
   if ("scrollRestoration" in history) history.scrollRestoration = "manual";
@@ -20,236 +24,244 @@
     return Math.min(hi, Math.max(lo, v));
   }
 
-  /* ------------------------------------------------------------ the seal */
-  var sealScreen = document.getElementById("seal-screen");
-  var sealButton = document.getElementById("seal-button");
-  var opened = false;
+  /* ------------------------------------------------------------ beats → words */
+  Array.prototype.forEach.call(document.querySelectorAll(".beat"), function (beat) {
+    var words = beat.textContent.split(" ");
+    beat.textContent = "";
+    words.forEach(function (w, i) {
+      if (i > 0) beat.appendChild(document.createTextNode(" "));
+      var span = document.createElement("span");
+      span.className = "word";
+      span.style.setProperty("--w", i);
+      span.textContent = w;
+      beat.appendChild(span);
+    });
+  });
 
-  function breakSeal() {
-    if (opened) return;
-    opened = true;
-    window.scrollTo(0, 0);
-    body.classList.remove("sealed");
-    body.classList.add("breaking", "unsealed");
-    var settle = reduceMotion ? 250 : 2100;
-    setTimeout(startBriefing, reduceMotion ? 0 : 650);
-    setTimeout(function () {
-      body.classList.remove("breaking");
-      var title = document.getElementById("title");
-      if (title) title.focus({ preventScroll: true });
-    }, settle);
+  /* ------------------------------------------------------------ reveals */
+  var firstLine = document.querySelector(".line--first");
+  var io = new IntersectionObserver(
+    function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("is-in");
+        io.unobserve(entry.target);
+      });
+    },
+    { rootMargin: "0px 0px -12% 0px", threshold: 0.15 }
+  );
+  Array.prototype.forEach.call(document.querySelectorAll(".line, .break, .endcard"), function (el) {
+    if (el !== firstLine) io.observe(el);
+  });
+
+  /* ------------------------------------------------------------ open */
+  var barBase = 0;
+  var barTarget = vw < 640 ? 4.5 : 7;
+  var openStart = null;
+
+  function open() {
+    body.classList.add("opened");
+    firstLine.classList.add("is-in");
+    if (reduceMotion) {
+      barBase = barTarget;
+      update();
+      return;
+    }
+    requestAnimationFrame(function step(ts) {
+      if (openStart === null) openStart = ts;
+      var t = clamp((ts - openStart) / 1800, 0, 1);
+      barBase = barTarget * (1 - Math.pow(1 - t, 3));
+      update();
+      if (t < 1) requestAnimationFrame(step);
+    });
+  }
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(function () {
+      setTimeout(open, 250);
+    });
+  } else {
+    setTimeout(open, 250);
   }
 
-  sealButton.addEventListener("click", breakSeal);
-  sealScreen.addEventListener("wheel", breakSeal, { passive: true });
-  sealScreen.addEventListener("touchmove", breakSeal, { passive: true });
-  window.addEventListener("keydown", function (e) {
-    if (opened) return;
-    if (e.key === "ArrowDown" || e.key === "PageDown" || e.key === " " || e.key === "Enter") {
-      if (e.target !== sealButton) e.preventDefault();
-      breakSeal();
-    }
-  });
-  window.addEventListener("load", function () {
-    if (!opened) sealButton.focus({ preventScroll: true });
-  });
+  /* ------------------------------------------------------------ light + letterbox */
+  var dimEls = Array.prototype.slice.call(document.querySelectorAll(".line, .break"));
+  var endcard = document.getElementById("endcard");
+  var dimTarget = 0;
+  var dim = 0;
 
-  document.getElementById("reseal").addEventListener("click", function () {
-    window.scrollTo(0, 0);
-    window.location.reload();
-  });
-
-  /* ------------------------------------------------------------ decode setup */
-  var GLYPHS = "†‡§¶∴∵◊※✦✧⁂#%&*/\\<>=+~^";
-  var decodeQueue = [];
-
-  Array.prototype.forEach.call(document.querySelectorAll(".decode"), function (p) {
-    var text = p.textContent;
-    if (reduceMotion) return;
-    p.textContent = "";
-    var wrap = document.createElement("span");
-    wrap.className = "decode-wrap";
-    wrap.setAttribute("aria-hidden", "true");
-    var ghost = document.createElement("span");
-    ghost.className = "decode-ghost";
-    ghost.textContent = text;
-    var live = document.createElement("span");
-    live.className = "decode-live";
-    wrap.appendChild(ghost);
-    wrap.appendChild(live);
-    var sr = document.createElement("span");
-    sr.className = "sr-only";
-    sr.textContent = text;
-    p.appendChild(wrap);
-    p.appendChild(sr);
-    decodeQueue.push({ p: p, text: text, live: live, done: false });
-  });
-
-  function runDecode(item, delay) {
-    if (item.done) return;
-    item.done = true;
-    var text = item.text;
-    var len = text.length;
-    var duration = clamp(700 + len * 11, 900, 3200);
-    var tail = 14;
-    var start = null;
-
-    function frame(ts) {
-      if (start === null) start = ts;
-      var t = clamp((ts - start) / duration, 0, 1);
-      var shown = Math.floor(t * len);
-      var html = escapeHtml(text.slice(0, shown));
-      var noise = "";
-      for (var i = shown; i < Math.min(len, shown + tail); i++) {
-        var ch = text[i];
-        noise += ch === " " ? " " : GLYPHS[(Math.random() * GLYPHS.length) | 0];
+  function update() {
+    // Which line is the narrator on? The one nearest the middle of the screen.
+    var mid = vh / 2;
+    var best = null;
+    var bestDist = Infinity;
+    for (var i = 0; i < dimEls.length; i++) {
+      var r = dimEls[i].getBoundingClientRect();
+      if (r.bottom < 0 || r.top > vh) continue;
+      var d = Math.abs((r.top + r.bottom) / 2 - mid);
+      if (d < bestDist) {
+        bestDist = d;
+        best = dimEls[i];
       }
-      if (noise) html += '<span class="glyph">' + escapeHtml(noise) + "</span>";
-      item.live.innerHTML = html;
-      if (t < 1) requestAnimationFrame(frame);
-      else item.live.textContent = text;
     }
-    setTimeout(function () {
-      requestAnimationFrame(frame);
-    }, delay);
-  }
-
-  function escapeHtml(s) {
-    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  }
-
-  /* ------------------------------------------------------------ hazard tape */
-  // Repeat the tape text so it always overruns the widest screen; the marquee
-  // scrolls by half its length, so an even number of copies loops seamlessly.
-  Array.prototype.forEach.call(document.querySelectorAll(".tape span"), function (span) {
-    span.textContent = new Array(5).join(span.textContent);
-  });
-
-  /* ------------------------------------------------------------ redaction order */
-  Array.prototype.forEach.call(document.querySelectorAll("p"), function (p) {
-    var bars = p.querySelectorAll(".redact");
-    for (var i = 0; i < bars.length; i++) bars[i].style.setProperty("--i", i);
-  });
-
-  /* ------------------------------------------------------------ the briefing */
-  function startBriefing() {
-    // Scroll reveals
-    var revealIO = new IntersectionObserver(
-      function (entries) {
-        entries.forEach(function (entry) {
-          if (!entry.isIntersecting) return;
-          entry.target.classList.add("is-in");
-          revealIO.unobserve(entry.target);
-        });
-      },
-      { rootMargin: "0px 0px -12% 0px", threshold: 0.12 }
-    );
-    Array.prototype.forEach.call(document.querySelectorAll(".reveal"), function (el) {
-      revealIO.observe(el);
-    });
-
-    // Riot's transmissions decode once the channel is on screen
-    var channelIO = new IntersectionObserver(
-      function (entries) {
-        entries.forEach(function (entry) {
-          if (!entry.isIntersecting) return;
-          channelIO.unobserve(entry.target);
-          var delay = 650;
-          decodeQueue.forEach(function (item) {
-            if (!entry.target.contains(item.p)) return;
-            runDecode(item, delay);
-            delay += clamp(700 + item.text.length * 11, 900, 3200) * 0.7;
-          });
-        });
-      },
-      { rootMargin: "0px 0px -25% 0px", threshold: 0.2 }
-    );
-    Array.prototype.forEach.call(document.querySelectorAll(".channel"), function (el) {
-      channelIO.observe(el);
-    });
-
-    // HUD chapter label
-    var hudChapter = document.getElementById("hud-chapter");
-    var chapterIO = new IntersectionObserver(
-      function (entries) {
-        entries.forEach(function (entry) {
-          if (entry.isIntersecting) hudChapter.textContent = entry.target.getAttribute("data-chapter");
-        });
-      },
-      { rootMargin: "-45% 0px -50% 0px" }
-    );
-    Array.prototype.forEach.call(document.querySelectorAll("[data-chapter]"), function (el) {
-      chapterIO.observe(el);
-    });
-
-    // "...bring a lesser caster to their knees."
-    var knees = document.querySelector(".knees");
-    if (knees) {
-      var kneesIO = new IntersectionObserver(
-        function (entries) {
-          entries.forEach(function (entry) {
-            if (!entry.isIntersecting) return;
-            kneesIO.disconnect();
-            setTimeout(function () {
-              knees.classList.add("is-hit");
-              if (reduceMotion) return;
-              body.classList.add("kneel");
-              setTimeout(function () {
-                body.classList.remove("kneel");
-              }, 1250);
-            }, 900);
-          });
-        },
-        { rootMargin: "0px 0px -35% 0px", threshold: 1 }
-      );
-      kneesIO.observe(knees);
+    dimTarget = best ? parseFloat(best.getAttribute("data-dim") || "0") : 0;
+    if (reduceMotion) {
+      dim = dimTarget;
+      root.style.setProperty("--dim", dim.toFixed(3));
     }
 
-    onScroll();
+    // The letterbox closes to a slit as the end card comes up.
+    var e = endcard.getBoundingClientRect();
+    var t = clamp(1 - e.top / vh, 0, 1);
+    var slit = vw < 640 ? 34 : 37;
+    var bar = barBase + (slit - barBase) * t * t * (3 - 2 * t);
+    root.style.setProperty("--bar", bar.toFixed(2));
   }
 
-  /* ------------------------------------------------------------ scroll-driven bits */
-  var progress = document.getElementById("hud-progress");
-  var vault = document.getElementById("vault");
-  var prizeProse = document.querySelector(".prose--prize");
   var ticking = false;
-
-  function onScroll() {
-    ticking = false;
-    var max = root.scrollHeight - vh;
-    progress.style.setProperty("--progress", max > 0 ? clamp(window.scrollY / max, 0, 1) : 0);
-
-    // Focus: the Crook's name sharpens out of a blur as you close in on it.
-    var r = vault.getBoundingClientRect();
-    var t = (vh - r.top) / r.height;
-    var focus = reduceMotion ? (t > 0.2 ? 1 : 0) : clamp((t - 0.15) / 0.6, 0, 1);
-    vault.style.setProperty("--focus", focus.toFixed(3));
-    vault.classList.toggle("is-gazing", focus > 0.95 && !reduceMotion);
-
-    // Dread: the vignette closes in on the approach, holds while you read about
-    // the thing, then lets go.
-    var dread;
-    var p = prizeProse.getBoundingClientRect();
-    if (r.top > vh) dread = 0;
-    else if (r.top > 0) dread = 1 - r.top / vh;
-    else if (r.bottom > vh) dread = 1;
-    else if (p.bottom > vh * 0.45) dread = 0.72 + 0.28 * clamp((r.bottom - vh * 0.3) / (vh * 0.7), 0, 1);
-    else dread = 0.72 * clamp(1 - (vh * 0.45 - p.bottom) / (vh * 0.55), 0, 1);
-    root.style.setProperty("--dread", (dread * (reduceMotion ? 0.6 : 1)).toFixed(3));
-  }
-
   window.addEventListener(
     "scroll",
     function () {
-      if (!ticking) {
-        ticking = true;
-        requestAnimationFrame(onScroll);
-      }
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(function () {
+        ticking = false;
+        update();
+      });
     },
     { passive: true }
   );
-  window.addEventListener("resize", function () {
+
+  /* ------------------------------------------------------------ motes */
+  var canvas = document.getElementById("motes");
+  var ctx = canvas.getContext("2d");
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  var motes = [];
+  var star = null;
+  var nextStar = 4000 + Math.random() * 5000;
+  var last = null;
+
+  function seed() {
+    vw = window.innerWidth;
     vh = window.innerHeight;
-    onScroll();
+    canvas.width = Math.round(vw * dpr);
+    canvas.height = Math.round(vh * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    var n = Math.min(150, Math.round((vw * vh) / 12000));
+    motes = [];
+    for (var i = 0; i < n; i++) {
+      var depth = Math.random();
+      motes.push({
+        x: Math.random() * vw,
+        y: Math.random() * vh,
+        r: 0.35 + depth * 1.5,
+        depth: depth,
+        vy: 0.004 + depth * 0.012,      // px per ms, downward: a slow starfall
+        sway: Math.random() * Math.PI * 2,
+        swaySpeed: 0.0002 + Math.random() * 0.0004,
+        a: 0.15 + depth * 0.55,
+        tw: Math.random() * Math.PI * 2,
+        twSpeed: 0.0008 + Math.random() * 0.0016,
+      });
+    }
+  }
+
+  function draw(now, dt) {
+    ctx.clearRect(0, 0, vw, vh);
+    var speed = 1 - dim * 0.85;
+    var light = 1 - dim * 0.55;
+    var scroll = window.scrollY;
+
+    for (var i = 0; i < motes.length; i++) {
+      var m = motes[i];
+      m.y += m.vy * dt * speed;
+      m.sway += m.swaySpeed * dt * speed;
+      m.tw += m.twSpeed * dt;
+      if (m.y > vh + 10) {
+        m.y = -10;
+        m.x = Math.random() * vw;
+      }
+      // a little parallax against the scroll, deeper motes move more
+      var py = (m.y - scroll * 0.04 * m.depth) % (vh + 20);
+      if (py < -10) py += vh + 20;
+      var px = m.x + Math.sin(m.sway) * 14 * m.depth;
+      var alpha = m.a * light * (0.65 + 0.35 * Math.sin(m.tw));
+      // ember-warm as the light dims
+      var g = Math.round(201 - dim * 70);
+      var b = Math.round(131 - dim * 50);
+      ctx.beginPath();
+      ctx.fillStyle = "rgba(236," + g + "," + b + "," + alpha.toFixed(3) + ")";
+      ctx.arc(px, py, m.r, 0, Math.PI * 2);
+      ctx.fill();
+      if (m.r > 1.3) {
+        ctx.beginPath();
+        ctx.fillStyle = "rgba(236," + g + "," + b + "," + (alpha * 0.12).toFixed(3) + ")";
+        ctx.arc(px, py, m.r * 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // the odd falling star, only while the room is lit
+    if (dt) {
+      nextStar -= dt;
+      if (!star && nextStar <= 0 && dim < 0.25) {
+        star = {
+          x: vw * (0.15 + Math.random() * 0.7),
+          y: vh * (0.05 + Math.random() * 0.3),
+          vx: (Math.random() < 0.5 ? -1 : 1) * (0.25 + Math.random() * 0.2),
+          vy: 0.35 + Math.random() * 0.15,
+          life: 0,
+          span: 1100,
+        };
+        nextStar = 9000 + Math.random() * 9000;
+      }
+    }
+    if (star) {
+      star.life += dt;
+      var p = star.life / star.span;
+      if (p >= 1) {
+        star = null;
+      } else {
+        var hx = star.x + star.vx * star.life;
+        var hy = star.y + star.vy * star.life;
+        var tx = hx - star.vx * 260;
+        var ty = hy - star.vy * 260;
+        var fade = Math.sin(p * Math.PI);
+        var grad = ctx.createLinearGradient(hx, hy, tx, ty);
+        grad.addColorStop(0, "rgba(244,236,210," + (0.85 * fade).toFixed(3) + ")");
+        grad.addColorStop(1, "rgba(244,236,210,0)");
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(hx, hy);
+        ctx.lineTo(tx, ty);
+        ctx.stroke();
+      }
+    }
+  }
+
+  function loop(now) {
+    var dt = last === null ? 16 : Math.min(now - last, 50);
+    last = now;
+    // ease the light toward wherever the narration is
+    dim += (dimTarget - dim) * Math.min(1, dt / 900);
+    root.style.setProperty("--dim", dim.toFixed(3));
+    draw(now, dt);
+    requestAnimationFrame(loop);
+  }
+
+  seed();
+  update();
+  if (reduceMotion) {
+    draw(0, 0);
+  } else {
+    requestAnimationFrame(loop);
+  }
+
+  window.addEventListener("resize", function () {
+    seed();
+    barTarget = vw < 640 ? 4.5 : 7;
+    if (body.classList.contains("opened")) barBase = barTarget;
+    update();
+    if (reduceMotion) draw(0, 0);
   });
 })();
