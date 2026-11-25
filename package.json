@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "import-campus": "tsx scripts/import-campus.ts",
+    "bake-map": "tsx scripts/bake-map.ts",
+    "roundtrip-campus": "tsx scripts/roundtrip-campus.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",
@@ -26,6 +29,7 @@
     "eslint-config-next": "16.2.9",
     "supabase": "^2.106.0",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5"
   }
 }
