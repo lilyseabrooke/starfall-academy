@@ -4,54 +4,31 @@
    ensureRegionZones, computeCampusCells, computeCitadelCells).
 
    A ZoneHost is whatever a district-field/dossier pair needs, whether the
-   underlying thing is one of the 5 outer regions or one of the Citadel's 21
-   districts — same shape, same renderer (DistrictField + Dossier).
+   underlying thing is one of an atlas's outer regions or one of its
+   centrepiece's districts — same shape, same renderer (DistrictField +
+   Dossier). Everything here takes the AtlasDefinition being drawn, so any
+   area map works, not just the campus.
    =========================================================================== */
-import type { DistrictSeed, Point, Region, SubArea } from "./types";
+import type { AtlasDefinition, DistrictSeed, Point, Region, SubArea, ZoneLink } from "./types";
 import { ensureSubAreas, seedSlug } from "./citadelData";
 import { DISTRICT_FIELD_BOX, fitPointsToBox, fromBoxSpace, polylabel, shieldOutline, smoothClosed, toBoxSpace, toPts, voronoiCells } from "./geom";
 
-export const CAMPUS_OUTLINE =
-  "120,250 440,150 820,112 1190,150 1466,345 1500,716 1330,1052 905,1132 470,1086 180,892 94,556";
-
-export interface CampusSeed { id: string; x: number; y: number; w: number; ldx: number; ldy: number; }
-
-export const CAMPUS_SEEDS: CampusSeed[] = [
-  { id: "amber-woods", x: 730, y: 300, w: 44, ldx: 0, ldy: -10 },
-  { id: "jewelstone-hollow", x: 909, y: 512, w: -100, ldx: 0, ldy: 0 },
-  { id: "ryker-cliffs", x: 1287, y: 508, w: 4, ldx: 0, ldy: -51 },
-  { id: "glimmerdeep-lake", x: 243, y: 989, w: 6, ldx: -4, ldy: 29 },
-  { id: "the-grounds", x: 770, y: 896, w: -4, ldx: 291, ldy: 120 },
-];
-
-export const CITADEL_PLACE = { cx: 722, top: 736, hw: 118, h: 296 };
-
-export interface CampusPoi {
-  id: string;
-  name: string;
-  x: number;
-  y: number;
-  link: { region?: string; zone?: string; citadelDistrict?: string };
+/** The Region an atlas's centrepiece draws (the campus's Citadel), if it has one. */
+export function centrepieceRegion(atlas: AtlasDefinition): Region | null {
+  const c = atlas.centrepiece;
+  return (c && atlas.regions.find((r) => r.id === c.regionId)) || null;
 }
 
-export const CAMPUS_POIS: CampusPoi[] = [
-  { id: "boar-house", name: "Boar House", link: { region: "amber-woods", zone: "Boar House" }, x: 530, y: 553 },
-  { id: "dragon-house", name: "Dragon House", link: { region: "jewelstone-hollow", zone: "Dragon House" }, x: 968, y: 634 },
-  { id: "eagle-house", name: "Eagle House", link: { region: "ryker-cliffs", zone: "Eagle House" }, x: 1181, y: 709 },
-  { id: "dolphin-house", name: "Dolphin House", link: { region: "glimmerdeep-lake", zone: "Dolphin House" }, x: 380, y: 855 },
-  { id: "scorpion-house", name: "Scorpion House", link: { citadelDistrict: "crescent_district", zone: "Scorpion House" }, x: 747, y: 799 },
-];
-
-/** Compute every campus region's live Voronoi cell (point-string), keyed by region id. */
-export function computeCampusCells(): Record<string, string> {
-  const outline = smoothClosed(toPts(CAMPUS_OUTLINE));
-  const cells = voronoiCells(CAMPUS_SEEDS.map((s) => ({ x: s.x, y: s.y, w: s.w })), outline);
+/** Compute every world region's live Voronoi cell (point-string), keyed by region id. */
+export function computeWorldCells(atlas: AtlasDefinition): Record<string, string> {
+  const outline = smoothClosed(toPts(atlas.outline));
+  const cells = voronoiCells(atlas.seeds.map((s) => ({ x: s.x, y: s.y, w: s.w })), outline);
   const map: Record<string, string> = {};
-  CAMPUS_SEEDS.forEach((s, i) => { map[s.id] = cells[i]; });
+  atlas.seeds.forEach((s, i) => { map[s.id] = cells[i]; });
   return map;
 }
 
-/** Compute every Citadel district's Voronoi cell (point-string), keyed by seed index. */
+/** Compute every centrepiece district's Voronoi cell (point-string), keyed by seed index. */
 export function computeCitadelCells(citadel: Region): Record<number, string> {
   const sm = citadel.submap, g0 = sm.shieldGeom!;
   const outline = shieldOutline(g0.cx, g0.top, g0.hw, g0.h, sm.shieldOpts);
@@ -77,9 +54,11 @@ export interface ZoneHost {
   isRegion: boolean;
   backLabel: string;
   /** Stable id used to build whereabouts pick ids — the region's own id, or
-   *  the Citadel district's slug (joined under "starfall-citadel/" by
+   *  the centrepiece district's slug (joined under `parentId/` by
    *  pickPrefixForHost). */
   slug: string;
+  /** The centrepiece region's id for a district host; null for a region. */
+  parentId: string | null;
 }
 
 /** Materialise a region's A–E zones from its authored submap.subs (parallel
@@ -98,32 +77,36 @@ export function ensureRegionZones(region: Region): SubArea[] {
   return sm._zones;
 }
 
-export function regionHost(region: Region, cells: Record<string, string>): ZoneHost {
+export function regionHost(region: Region, atlas: AtlasDefinition, cells: Record<string, string>): ZoneHost {
   return {
     name: region.name, house: region.house, house_color: region.house_color, hcOverride: null,
     sector: region.sector, coord: region.coord, blurb: region.blurb, facts: region.facts,
     sub: ensureRegionZones(region), cell: cells[region.id] || region.submap.outline,
-    isRegion: true, backLabel: "Campus", slug: region.id,
+    isRegion: true, backLabel: atlas.name, slug: region.id, parentId: null,
   };
 }
 
-export function districtHost(seed: DistrictSeed, backLabel: string): ZoneHost {
+/** A centrepiece district's host. Only meaningful for an atlas with a centrepiece. */
+export function districtHost(seed: DistrictSeed, atlas: AtlasDefinition): ZoneHost {
   ensureSubAreas(seed);
+  const citadel = centrepieceRegion(atlas)!;
   return {
-    name: seed.name, house: "Citadel district", house_color: "gold", hcOverride: seed.color || null,
-    sector: "District " + seed.tag, coord: "Starfall Citadel", blurb: seed.blurb || "",
-    facts: [["Ledger no.", seed.tag], ["Within", "Starfall Citadel"]],
-    sub: seed.sub || [], cell: seed._cell, isRegion: false, backLabel, slug: seedSlug(seed),
+    name: seed.name, house: atlas.centrepiece!.districtHouse, house_color: citadel.house_color, hcOverride: seed.color || null,
+    sector: "District " + seed.tag, coord: citadel.name, blurb: seed.blurb || "",
+    facts: [["Ledger no.", seed.tag], ["Within", citadel.name]],
+    sub: seed.sub || [], cell: seed._cell, isRegion: false, backLabel: citadel.name, slug: seedSlug(seed),
+    parentId: citadel.id,
   };
 }
 
 /* ---- whereabouts pick ids --------------------------------------------------
    A stable, host-facing identifier for "the exact thing that was clicked".
-   Top-level regions/Citadel use their bare id; anything nested joins
-   ancestor slugs with "/", e.g. "starfall-citadel/dragon_s_walk/C" for
-   La Avenida. */
+   Top-level regions/the centrepiece use their bare id; anything nested
+   joins ancestor slugs with "/", e.g. "starfall-citadel/dragon_s_walk/C"
+   for La Avenida. These ids are saved as player whereabouts, so they must
+   stay stable once a map ships. */
 export function pickPrefixForHost(host: ZoneHost): string {
-  return host.isRegion ? host.slug : "starfall-citadel/" + host.slug;
+  return host.parentId ? host.parentId + "/" + host.slug : host.slug;
 }
 
 export function zoneTagByName(zones: SubArea[], name: string): string | null {
@@ -131,22 +114,19 @@ export function zoneTagByName(zones: SubArea[], name: string): string | null {
   return found ? found.tag : null;
 }
 
-/** Resolve a campus POI's link (a named zone inside a region or Citadel
+/** Resolve a POI's link (a named zone inside a region or centrepiece
  *  district) to a pick id, for when the POI plaque is clicked in pick mode. */
-export function pickIdForZoneLink(
-  link: { region?: string; zone?: string; citadelDistrict?: string },
-  regions: Region[],
-): string | null {
-  if (link.citadelDistrict) {
-    const citadel = regions.find((r) => r.isCitadel);
-    const seed = citadel && (citadel.submap.seeds || []).find((s) => seedSlug(s) === link.citadelDistrict);
-    if (!seed) return null;
+export function pickIdForZoneLink(link: ZoneLink, atlas: AtlasDefinition): string | null {
+  if (link.district) {
+    const citadel = centrepieceRegion(atlas);
+    const seed = citadel && (citadel.submap.seeds || []).find((s) => seedSlug(s) === link.district);
+    if (!citadel || !seed) return null;
     ensureSubAreas(seed);
     const tag = link.zone ? zoneTagByName(seed.sub || [], link.zone) : null;
-    return "starfall-citadel/" + link.citadelDistrict + (tag ? "/" + tag : "");
+    return citadel.id + "/" + link.district + (tag ? "/" + tag : "");
   }
   if (link.region) {
-    const region = regions.find((r) => r.id === link.region);
+    const region = atlas.regions.find((r) => r.id === link.region);
     const zones = region ? ensureRegionZones(region) : [];
     const tag = link.zone ? zoneTagByName(zones, link.zone) : null;
     return link.region + (tag ? "/" + tag : "");
@@ -160,8 +140,8 @@ export function pickIdForZoneLink(
    label anchor (polylabel's pole-of-inaccessibility + that entity's authored
    nudge) for its own text — these functions reproject that same anchor
    across the coordinate spaces the map uses: a district-field's normalised
-   display box, the Citadel's full-size shield, and the Citadel's small
-   fixed placement on the campus map. */
+   display box, the centrepiece's full-size shield, and the centrepiece's
+   small fixed placement on the world field. */
 
 /** A zone's own label anchor, reprojected out of DistrictField's normalised
  *  display box into the host's real coordinate space — Citadel-shield space
@@ -193,12 +173,13 @@ function districtAnchor(seed: DistrictSeed, cellStr: string | undefined): Point 
   return [base[0] + (seed.labelDx || 0), base[1] + (seed.labelDy || 0)];
 }
 
-/** Resolve any "starfall-citadel/…" location to a point in Citadel-shield
+/** Resolve any "<centrepiece id>/…" location to a point in centrepiece-shield
  *  space: the district's own anchor for a bare district pick, or that
  *  district's zone anchor for a nested one. Null for anything outside the
- *  Citadel. */
-export function resolveCitadelPoint(locId: string, citadel: Region, citadelCells: Record<number, string>): Point | null {
-  if (!locId.startsWith("starfall-citadel/")) return null;
+ *  centrepiece. */
+export function resolveCitadelPoint(locId: string, atlas: AtlasDefinition, citadelCells: Record<number, string>): Point | null {
+  const citadel = centrepieceRegion(atlas);
+  if (!citadel || !locId.startsWith(citadel.id + "/")) return null;
   const parts = locId.split("/");
   const slug = parts[1];
   const seeds = citadel.submap.seeds || [];
@@ -209,47 +190,48 @@ export function resolveCitadelPoint(locId: string, citadel: Region, citadelCells
   const anchor = districtAnchor(seed, cellStr);
   const tag = parts[2];
   if (!tag || !cellStr) return anchor;
-  const host = districtHost(seed, "Starfall Citadel");
+  const host = districtHost(seed, atlas);
   host.cell = cellStr;
   return zoneAnchorInHostSpace(host, tag) || anchor;
 }
 
-/** The Citadel is drawn full-size in its own view but as a small, fixed
- *  shield glyph on the campus map — proportionally remap a point from one
+/** The centrepiece is drawn full-size in its own view but as a small, fixed
+ *  shield glyph on the world field — proportionally remap a point from one
  *  shield's coordinate space to the other's. */
-export function citadelPointToWorld(pt: Point, citadel: Region): Point {
+export function citadelPointToWorld(pt: Point, citadel: Region, atlas: AtlasDefinition): Point {
   const g = citadel.submap.shieldGeom!;
-  const sx = CITADEL_PLACE.hw / g.hw, sy = CITADEL_PLACE.h / g.h;
-  return [CITADEL_PLACE.cx + (pt[0] - g.cx) * sx, CITADEL_PLACE.top + (pt[1] - g.top) * sy];
+  const place = atlas.centrepiece!.place;
+  const sx = place.hw / g.hw, sy = place.h / g.h;
+  return [place.cx + (pt[0] - g.cx) * sx, place.top + (pt[1] - g.top) * sy];
 }
 
-/** Resolve any location id to a point in campus/world space (1600×1200) —
- *  the finest anchor available at each level: a zone's own position if the
- *  location names one, else that region/district's own label anchor. */
+/** Resolve any location id to a point in world-field space — the finest
+ *  anchor available at each level: a zone's own position if the location
+ *  names one, else that region/district's own label anchor. */
 export function resolveWorldPoint(
   locId: string,
-  regions: Region[],
-  campusCells: Record<string, string>,
-  citadel: Region,
+  atlas: AtlasDefinition,
+  worldCells: Record<string, string>,
   citadelCells: Record<number, string>,
 ): Point {
   const topId = locId.split("/")[0];
-  if (topId === citadel.id) {
+  const citadel = centrepieceRegion(atlas);
+  if (citadel && topId === citadel.id) {
     const g = citadel.submap.shieldGeom!;
     const fallback: Point = [g.cx, g.top + g.h * 0.42];
-    const citPt = resolveCitadelPoint(locId, citadel, citadelCells) || fallback;
-    return citadelPointToWorld(citPt, citadel);
+    const citPt = resolveCitadelPoint(locId, atlas, citadelCells) || fallback;
+    return citadelPointToWorld(citPt, citadel, atlas);
   }
-  const region = regions.find((r) => r.id === topId);
-  if (!region) return [800, 600];
+  const region = atlas.regions.find((r) => r.id === topId);
+  if (!region) return [atlas.field[0] / 2, atlas.field[1] / 2];
   const tag = locId.split("/")[1];
   if (tag) {
-    const host = regionHost(region, campusCells);
+    const host = regionHost(region, atlas, worldCells);
     const pt = zoneAnchorInHostSpace(host, tag);
     if (pt) return pt;
   }
-  const cellStr = campusCells[region.id];
-  const seed = CAMPUS_SEEDS.find((s) => s.id === region.id);
+  const cellStr = worldCells[region.id];
+  const seed = atlas.seeds.find((s) => s.id === region.id);
   if (cellStr && seed) {
     const base = polylabel(cellStr);
     return [base[0] + (seed.ldx || 0), base[1] + (seed.ldy || 0)];

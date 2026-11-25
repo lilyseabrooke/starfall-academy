@@ -2,28 +2,31 @@
 
 /* ===========================================================================
    Starfall Atlas — party-location marker overlay (typed port of party.js's
-   buildCluster). Renders directly into the world-svg (campus user-space,
-   1600×1200) so markers pan & zoom with the map. AtlasStage counter-scales
+   buildCluster). Renders directly into the world-svg (the atlas's
+   world-field user-space) so markers pan & zoom with the map. AtlasStage counter-scales
    every ".pm-scale" group on each pan/zoom tick so avatars stay a constant
    on-screen size — no postMessage bridge needed once this isn't an iframe.
    =========================================================================== */
 import * as React from "react";
-import { computeCampusCells, computeCitadelCells, resolveWorldPoint } from "../../data/map/hosts";
-import type { Region } from "../../data/map/types";
+import { centrepieceRegion, computeCitadelCells, computeWorldCells, resolveWorldPoint } from "../../data/map/hosts";
+import type { AtlasDefinition } from "../../data/map/types";
 import { PartyMarkerCluster } from "./PartyMarkerCluster";
 import type { MapRosterMember } from "./MapPage";
 
 export interface PartyMarkersProps {
-  regions: Region[];
+  atlas: AtlasDefinition;
   roster: MapRosterMember[];
   locations: Record<string, string | null | undefined>;
   selfId: string;
 }
 
-export function PartyMarkers({ regions, roster, locations, selfId }: PartyMarkersProps) {
-  const citadel = React.useMemo(() => regions.find((r) => r.isCitadel)!, [regions]);
-  const campusCells = React.useMemo(() => computeCampusCells(), []);
-  const citadelCells = React.useMemo(() => computeCitadelCells(citadel), [citadel]);
+export function PartyMarkers({ atlas, roster, locations, selfId }: PartyMarkersProps) {
+  const { regions } = atlas;
+  const worldCells = React.useMemo(() => computeWorldCells(atlas), [atlas]);
+  const citadelCells = React.useMemo(() => {
+    const citadel = centrepieceRegion(atlas);
+    return citadel ? computeCitadelCells(citadel) : {};
+  }, [atlas]);
 
   // Group by the exact location string (not just the top-level region) so
   // people in different districts/zones of the same region don't collapse
@@ -43,7 +46,7 @@ export function PartyMarkers({ regions, roster, locations, selfId }: PartyMarker
   return (
     <g id="party-layer" className="party-layer">
       {Object.entries(byLoc).map(([loc, members]) => {
-        const [ax, ay] = resolveWorldPoint(loc, regions, campusCells, citadel, citadelCells);
+        const [ax, ay] = resolveWorldPoint(loc, atlas, worldCells, citadelCells);
         return <PartyMarkerCluster key={loc} x={ax} y={ay} members={members} selfId={selfId} />;
       })}
     </g>

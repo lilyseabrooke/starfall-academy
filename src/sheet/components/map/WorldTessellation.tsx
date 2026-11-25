@@ -1,19 +1,18 @@
 "use client";
 
 /* ===========================================================================
-   Starfall Atlas — world (campus) tessellation (typed port of app.js's
-   renderWorld). Five outer regions as a clipped Voronoi tessellation, the
-   Citadel riding on top as its heater-shield, and five gilded House plaques.
+   Starfall Atlas — world tessellation (typed port of app.js's renderWorld).
+   The atlas's outer regions as a clipped Voronoi tessellation, its
+   centrepiece (the campus's Citadel) riding on top as a heater-shield, and
+   gilded POI plaques (the campus's five Houses).
    =========================================================================== */
 import * as React from "react";
 import { bbox, polylabel, shieldPath, smoothClosed, splitLabel, tilePath, toPts, voronoiCells } from "../../data/map/geom";
-import { CAMPUS_OUTLINE, CAMPUS_POIS, CAMPUS_SEEDS, CITADEL_PLACE, pickIdForZoneLink } from "../../data/map/hosts";
-import type { Region } from "../../data/map/types";
-
-const SHIELD_OPTS = { spike: 0.095, shoulder: -0.02, side: 0.4 };
+import { centrepieceRegion, pickIdForZoneLink } from "../../data/map/hosts";
+import type { AtlasDefinition } from "../../data/map/types";
 
 export interface WorldTessellationProps {
-  regions: Region[];
+  atlas: AtlasDefinition;
   hoveredId: string | null;
   onHover: (id: string | null) => void;
   onEnterRegion: (id: string) => void;
@@ -25,22 +24,31 @@ export interface WorldTessellationProps {
 }
 
 export function WorldTessellation({
-  regions, hoveredId, onHover, onEnterRegion, onEnterCitadel, onJumpToZone, onJumpToCitadelZone, picking, onPick,
+  atlas, hoveredId, onHover, onEnterRegion, onEnterCitadel, onJumpToZone, onJumpToCitadelZone, picking, onPick,
 }: WorldTessellationProps) {
-  const outline = React.useMemo(() => smoothClosed(toPts(CAMPUS_OUTLINE)), []);
+  const { regions } = atlas;
+  const outline = React.useMemo(() => smoothClosed(toPts(atlas.outline)), [atlas.outline]);
   const cells = React.useMemo(
-    () => voronoiCells(CAMPUS_SEEDS.map((s) => ({ x: s.x, y: s.y, w: s.w })), outline),
-    [outline],
+    () => voronoiCells(atlas.seeds.map((s) => ({ x: s.x, y: s.y, w: s.w })), outline),
+    [atlas.seeds, outline],
   );
-  const citadel = regions.find((r) => r.isCitadel)!;
+  const citadel = centrepieceRegion(atlas);
+  const place = atlas.centrepiece?.place;
+  const shieldD = citadel && place
+    ? shieldPath(place.cx, place.top, place.hw, place.h, citadel.submap.shieldOpts)
+    : null;
 
   const enter = (id: string) => (picking ? onPick(id) : onEnterRegion(id));
-  const enterCitadel = () => (picking ? onPick(citadel.id) : onEnterCitadel());
+  const enterCitadel = () => {
+    if (!citadel) return;
+    if (picking) onPick(citadel.id);
+    else onEnterCitadel();
+  };
 
   return (
     <>
       <g id="world-regions">
-        {CAMPUS_SEEDS.map((s, i) => {
+        {atlas.seeds.map((s, i) => {
           const r = regions.find((R) => R.id === s.id);
           const cell = cells[i];
           if (!r || !cell || cell.split(" ").length < 3) return null;
@@ -51,7 +59,7 @@ export function WorldTessellation({
           const dim = Math.min(bb.maxX - bb.minX, bb.maxY - bb.minY);
           const fs = Math.max(22, Math.min(46, dim * 0.2));
           const lx = a[0] + (s.ldx || 0), ly = a[1] + (s.ldy || 0);
-          const lines = splitLabel(r.name, r.id === "jewelstone-hollow");
+          const lines = splitLabel(r.name, !!s.splitLabel);
           const startY = ly - (lines.length - 1) * fs * 0.55 - fs * 0.28;
           return (
             <g
@@ -76,28 +84,28 @@ export function WorldTessellation({
           );
         })}
 
-        {/* Starfall Citadel — floating heater-shield on top (over The Grounds) */}
-        <g
+        {/* Centrepiece (the campus's Starfall Citadel) — floating heater-shield on top */}
+        {citadel && place && shieldD && <g
           className={"region region--citadel" + (hoveredId === citadel.id ? " is-active" : "")}
-          data-house="gold" data-id={citadel.id}
+          data-house={citadel.house_color} data-id={citadel.id}
           tabIndex={0} role="button" aria-label={citadel.name + " — " + citadel.house}
           onClick={enterCitadel}
           onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); enterCitadel(); } }}
           onMouseEnter={() => onHover(citadel.id)}
           onMouseLeave={() => onHover(null)}
         >
-          <path className="region__shape" d={shieldPath(CITADEL_PLACE.cx, CITADEL_PLACE.top, CITADEL_PLACE.hw, CITADEL_PLACE.h, SHIELD_OPTS)} />
-          <path className="region__sheen" d={shieldPath(CITADEL_PLACE.cx, CITADEL_PLACE.top, CITADEL_PLACE.hw, CITADEL_PLACE.h, SHIELD_OPTS)} />
-          <path className="region__hatch" d={shieldPath(CITADEL_PLACE.cx, CITADEL_PLACE.top, CITADEL_PLACE.hw, CITADEL_PLACE.h, SHIELD_OPTS)} />
+          <path className="region__shape" d={shieldD} />
+          <path className="region__sheen" d={shieldD} />
+          <path className="region__hatch" d={shieldD} />
           <g className="region__label">
-            {["STARFALL", "CITADEL"].map((ln, i) => (
-              <text key={ln} className="region__name" x={CITADEL_PLACE.cx} y={CITADEL_PLACE.top + CITADEL_PLACE.h * 0.42 + i * 26} fontSize={22} dominantBaseline="middle">{ln}</text>
+            {atlas.centrepiece!.label.map((ln, i) => (
+              <text key={ln} className="region__name" x={place.cx} y={place.top + place.h * 0.42 + i * 26} fontSize={22} dominantBaseline="middle">{ln}</text>
             ))}
           </g>
-        </g>
+        </g>}
 
-        {/* House POIs — gold plaques floating on top, jumping to a named zone */}
-        {CAMPUS_POIS.map((p) => {
+        {/* POIs — gold plaques floating on top, jumping to a named zone */}
+        {atlas.pois.map((p) => {
           const fs = 18;
           const lines = splitLabel(p.name, true);
           const longest = lines.reduce((m, s) => Math.max(m, s.length), 0);
@@ -107,11 +115,11 @@ export function WorldTessellation({
           const topY = p.y - (lines.length - 1) * (fs * 0.6);
           const go = () => {
             if (picking) {
-              const id = pickIdForZoneLink(p.link, regions);
+              const id = pickIdForZoneLink(p.link, atlas);
               if (id) onPick(id);
               return;
             }
-            if (p.link.citadelDistrict) onJumpToCitadelZone(p.link.citadelDistrict, p.link.zone || "");
+            if (p.link.district) onJumpToCitadelZone(p.link.district, p.link.zone || "");
             else if (p.link.region) onJumpToZone(p.link.region, p.link.zone || "");
           };
           return (
