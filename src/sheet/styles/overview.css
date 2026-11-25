@@ -1,9 +1,9 @@
 /* ===========================================================================
    Starfall Academy — character sheet overview card
    ---------------------------------------------------------------------------
-   Authored directly against the .sf-sheet scope (unlike the ported prototype
-   sheets in this folder, this one has no public/character-sheet source to
-   regenerate from — see scripts/scope-css.js). Composed on the design-system
+   Authored directly against the .sf-sheet scope (the other sheets in this
+   folder started as scoped copies of the old prototype's stylesheets; this
+   one was written here from the start). Composed on the design-system
    tokens: a gilded one-page summary meant to be screenshotted and shared.
    =========================================================================== */
 
