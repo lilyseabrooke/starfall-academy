@@ -15,6 +15,8 @@
 import * as React from "react";
 import { Icon } from "../Icon";
 import { AtlasMap } from "./AtlasMap";
+import { CAMPUS_ATLAS } from "../../data/map/areas/campus";
+import type { AtlasDefinition } from "../../data/map/types";
 
 export interface MapRosterMember {
   id: string;
@@ -35,9 +37,11 @@ export interface MapPageProps {
   locations: Record<string, string | null | undefined>;
   onSetLocation: (id: string, regionId: string | null) => void;
   focusLocation?: MapFocusSignal | null;
+  /** Which area map to draw. Defaults to the Campus Map. */
+  atlas?: AtlasDefinition;
 }
 
-export function MapPage({ roster, activeChar, locations, onSetLocation, focusLocation }: MapPageProps) {
+export function MapPage({ roster, activeChar, locations, onSetLocation, focusLocation, atlas = CAMPUS_ATLAS }: MapPageProps) {
   const [picking, setPicking] = React.useState(false);
 
   const handlePick = React.useCallback((regionId: string) => {
@@ -54,6 +58,7 @@ export function MapPage({ roster, activeChar, locations, onSetLocation, focusLoc
     <div className="sf-map">
       <div className={"sf-map__stage" + (picking ? " is-picking" : "")}>
         <AtlasMap
+          atlas={atlas}
           roster={roster}
           activeChar={activeChar}
           locations={locations}

@@ -8,6 +8,12 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.25.2 — 2026-11-25
+- Behind the scenes: the character sheet's Map tab now draws from a single
+  map definition (outline, regions, House plaques, Citadel) instead of having
+  the Campus Map built into its code, so maps of other areas can later use the
+  same renderer. Nothing about the map looks or behaves differently.
+
 ## v1.25.1 — 2026-11-21
 - The site header's Theme, Discord and Sign In / Sign Out buttons now live
   together in a single menu button in the top-right corner. On phones and

@@ -41,7 +41,7 @@ export function Dossier({ host, onBack, zone, onZonePick, onZoneBack, hoveredIdx
         <div>
           <div className="dossier__sector">{host.name}</div>
           <h1 className="dossier__name dossier__name--zone">{nm}</h1>
-          <div className="dossier__house"><span className="dot" />{host.isRegion ? host.house : "Starfall Citadel"}</div>
+          <div className="dossier__house"><span className="dot" />{host.isRegion ? host.house : host.backLabel}</div>
         </div>
         <div className="dossier__rule" />
         {zone.blurb ? (

@@ -14,12 +14,13 @@ import { PartyMarkers, type PartyMarkersProps } from "./PartyMarkers";
 import { CitadelPartyMarkers } from "./CitadelPartyMarkers";
 import { WorldTessellation } from "./WorldTessellation";
 import { seedSlug } from "../../data/map/citadelData";
-import type { Region } from "../../data/map/types";
+import { centrepieceRegion } from "../../data/map/hosts";
+import type { AtlasDefinition } from "../../data/map/types";
 
 export interface Crumb { label: string; onClick?: () => void; }
 
 export interface AtlasStageProps {
-  regions: Region[];
+  atlas: AtlasDefinition;
   mode: "world" | "citadel";
   onEnterRegion: (id: string) => void;
   onEnterCitadel: () => void;
@@ -30,13 +31,13 @@ export interface AtlasStageProps {
   picking: boolean;
   onPick: (id: string) => void;
   onCancelPick: () => void;
-  party: Omit<PartyMarkersProps, "regions"> | null;
+  party: Omit<PartyMarkersProps, "atlas"> | null;
 }
 
 const MIN = 0.3, MAX = 3;
 
 export function AtlasStage({
-  regions, mode, onEnterRegion, onEnterCitadel, onExitCitadel, onSelectDistrict,
+  atlas, mode, onEnterRegion, onEnterCitadel, onExitCitadel, onSelectDistrict,
   onJumpToZone, onJumpToCitadelZone, picking, onPick, onCancelPick, party,
 }: AtlasStageProps) {
   const stageRef = React.useRef<HTMLDivElement>(null);
@@ -48,8 +49,9 @@ export function AtlasStage({
   const [hoveredId, setHoveredId] = React.useState<string | null>(null);
   const [hoveredDistrict, setHoveredDistrict] = React.useState<number | null>(null);
 
-  const view = mode === "citadel" ? ([1000, 1200] as const) : ([1600, 1200] as const);
-  const citadel = regions.find((r) => r.isCitadel)!;
+  const { regions } = atlas;
+  const citadel = centrepieceRegion(atlas);
+  const view = mode === "citadel" && citadel ? citadel.submap.view : atlas.field;
 
   // ---- pan/zoom state kept in refs; DOM transform written imperatively ----
   const scaleRef = React.useRef(1), txRef = React.useRef(0), tyRef = React.useRef(0);
@@ -98,18 +100,20 @@ export function AtlasStage({
     const r = stage.getBoundingClientRect();
     const pad = 90;
     let s: number, tx: number, ty: number;
-    if (mode === "citadel") {
-      s = clampScale(Math.min((r.width - pad) / 1000, (r.height - pad) / 1200));
+    if (mode === "citadel" && citadel) {
+      const [vw, vh] = citadel.submap.view;
+      s = clampScale(Math.min((r.width - pad) / vw, (r.height - pad) / vh));
       tx = 0; ty = -6;
     } else {
-      s = clampScale(Math.min((r.width - pad) / 1480, (r.height - pad) / 1120));
-      tx = 78; ty = -14 * s;
+      const f = atlas.fit;
+      s = clampScale(Math.min((r.width - pad) / f.w, (r.height - pad) / f.h));
+      tx = f.tx; ty = f.ty * s;
     }
     if (animated) { animateTo(s, tx, ty); return; }
     cancelZoomAnim();
     scaleRef.current = s; txRef.current = tx; tyRef.current = ty;
     apply();
-  }, [mode, apply, animateTo, cancelZoomAnim]);
+  }, [mode, citadel, atlas.fit, apply, animateTo, cancelZoomAnim]);
 
   React.useEffect(() => { fit(); }, [fit]);
   React.useEffect(() => {
@@ -211,11 +215,11 @@ export function AtlasStage({
   const enterRegion = (id: string) => { if (!dragMoved()) onEnterRegion(id); };
   const enterCitadel = () => { if (!dragMoved()) onEnterCitadel(); };
   const pickDistrictId = (idx: number): string | null => {
-    const seed = (citadel.submap.seeds || [])[idx];
-    if (!seed) return null;
+    const seed = citadel && (citadel.submap.seeds || [])[idx];
+    if (!citadel || !seed) return null;
     return seed.special && seed.link
-      ? `starfall-citadel/${seed.link[0]}/${seed.link[1]}`
-      : `starfall-citadel/${seedSlug(seed)}`;
+      ? `${citadel.id}/${seed.link[0]}/${seed.link[1]}`
+      : `${citadel.id}/${seedSlug(seed)}`;
   };
   const pickDistrict = (idx: number) => {
     if (dragMoved()) return;
@@ -239,11 +243,11 @@ export function AtlasStage({
         <div className="panner" ref={pannerRef}>
           <svg
             ref={svgRef} className="world-svg" width={view[0]} height={view[1]} viewBox={`0 0 ${view[0]} ${view[1]}`}
-            xmlns="http://www.w3.org/2000/svg" aria-label={mode === "citadel" ? "Starfall Citadel map" : "World map"}
+            xmlns="http://www.w3.org/2000/svg" aria-label={mode === "citadel" && citadel ? citadel.name + " map" : "World map"}
           >
-            {mode === "world" ? (
+            {mode === "world" || !citadel ? (
               <WorldTessellation
-                regions={regions} hoveredId={hoveredId} onHover={setHoveredId}
+                atlas={atlas} hoveredId={hoveredId} onHover={setHoveredId}
                 onEnterRegion={enterRegion} onEnterCitadel={enterCitadel}
                 onJumpToZone={onJumpToZone} onJumpToCitadelZone={onJumpToCitadelZone}
                 picking={picking} onPick={onPick}
@@ -251,19 +255,19 @@ export function AtlasStage({
             ) : (
               <CitadelTessellation citadel={citadel} hoveredIdx={hoveredDistrict} onHover={setHoveredDistrict} onPick={pickDistrict} />
             )}
-            {mode === "world" && party && <PartyMarkers regions={regions} {...party} />}
-            {mode === "citadel" && party && <CitadelPartyMarkers citadel={citadel} {...party} />}
+            {(mode === "world" || !citadel) && party && <PartyMarkers atlas={atlas} {...party} />}
+            {mode === "citadel" && citadel && party && <CitadelPartyMarkers atlas={atlas} citadel={citadel} {...party} />}
           </svg>
         </div>
       </div>
 
-      {mode === "citadel" ? (
+      {mode === "citadel" && citadel ? (
         <aside className="float legend legend--citadel" id="citadel-legend">
           <div className="legend__head legend__head--citadel">
-            <button type="button" className="citadel-back" onClick={onExitCitadel}>‹ CAMPUS</button>
+            <button type="button" className="citadel-back" onClick={onExitCitadel}>‹ {atlas.name.toUpperCase()}</button>
             <div className="legend__titles">
-              <span className="legend__eyebrow">HEART OF THE ACADEMY</span>
-              <span className="legend__title">Starfall Citadel</span>
+              <span className="legend__eyebrow">{atlas.centrepiece!.eyebrow}</span>
+              <span className="legend__title">{citadel.name}</span>
             </div>
           </div>
           <div className="legend__list">
@@ -299,15 +303,15 @@ export function AtlasStage({
       ) : (
         <aside className="float legend" id="legend">
           <div className="legend__head">
-            <div className="legend__eyebrow">ARCANE CAMPUS</div>
-            <div className="legend__title">STARFALL ACADEMY</div>
+            <div className="legend__eyebrow">{atlas.eyebrow}</div>
+            <div className="legend__title">{atlas.title}</div>
           </div>
           <div className="legend__list">
             {regions.map((r) => (
               <button
                 key={r.id} type="button" className={"legend__item" + (hoveredId === r.id ? " is-active" : "")}
                 data-house={r.house_color}
-                onClick={() => (picking ? onPick(r.isCitadel ? citadel.id : r.id) : (r.isCitadel ? enterCitadel() : enterRegion(r.id)))}
+                onClick={() => (picking ? onPick(r.id) : (r.id === citadel?.id ? enterCitadel() : enterRegion(r.id)))}
                 onMouseEnter={() => setHoveredId(r.id)} onMouseLeave={() => setHoveredId(null)}
               >
                 <span className={"legend__swatch" + (r.house_color === "gold" ? " legend__swatch--gold" : "")} />

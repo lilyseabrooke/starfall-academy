@@ -113,6 +113,18 @@ Notes:
 ## Phases
 
 ### Phase 0 — Data-driven renderer (PR to **main**)
+
+> **Status: done (v1.25.2).** `AtlasDefinition` lives in
+> `src/sheet/data/map/types.ts`; the campus is `CAMPUS_ATLAS` in
+> `src/sheet/data/map/areas/campus.ts`; `MapPage` takes an optional `atlas`
+> prop (default campus). Verified against 26 captured map states (world,
+> hover, region/zone, POI jumps, Citadel, districts, special locations,
+> legends, every pick path, search focus): DOM and pixels identical before
+> and after. Campus-specific bits that became data: legend text, fit
+> framing, the forced two-line label (`splitLabel`), the centrepiece label
+> and eyebrow, the district "house" line, and the field watermark. POI links
+> now use `district` instead of `citadelDistrict`.
+
 Make the React map components render any map, not just campus. This is a
 behaviour-neutral refactor that ships on main, as a patch bump.
 
