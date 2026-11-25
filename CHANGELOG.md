@@ -8,6 +8,20 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.25.3 — 2026-11-25
+- The standalone Campus Map page (`/map`) now runs on the same map as the
+  character sheet's Map tab instead of a separate older copy, so the two can
+  no longer drift apart. It looks and works the same: the breadcrumb is now a
+  small floating button and the Fit button sits with the zoom controls.
+- Region names on the campus map are no longer cut off where they spill over
+  into a neighbouring region (e.g. "Jewelstone Hollow", "Glimmerdeep Lake").
+- On phones, the Starfall Citadel map now has a "‹ Campus" button to get back
+  out, on both the Map tab and `/map`; before, the Map tab had no way back.
+- On `/map`, Escape steps back out one level (zone or region to the campus,
+  district to the Citadel), as the old page did.
+- Apostrophes in `/map` place names and descriptions are now straight
+  (Hero's Walkway) rather than curly, matching the Map tab and search.
+
 ## v1.25.2 — 2026-11-25
 - Behind the scenes: the character sheet's Map tab now draws from a single
   map definition (outline, regions, House plaques, Citadel) instead of having

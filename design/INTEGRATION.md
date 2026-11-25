@@ -264,11 +264,10 @@ handoff yet — its nav link stays a placeholder.)
 - **`public/compendium/`** — the reference browser (spells, potions, artifacts,
   etc.), unchanged vanilla DOM + PapaParse pulling the same live Google Sheets
   CSVs the character sheet's `compendium-db.js` uses.
-- **`public/map/`** — a second, standalone copy of the campus atlas already
-  vendored at `public/character-sheet/map/` for the sheet's Map tab. Kept
-  separate (rather than shared) so this route's chrome changes can't regress
-  the sheet's embedded map; the `party.js` whereabouts bridge is dropped here
-  since there's no host character sheet to sync with.
+- **`public/map/`** — *(removed in v1.25.3)* a second, standalone copy of the
+  campus atlas. `/map` now renders the same native React atlas as the sheet's
+  Map tab (`src/app/map/CampusMap.tsx`), without the whereabouts pin or party
+  markers.
 - **`public/character-map/`** — the family tree (`starfall-family-tree`), a
   React 18 + Babel-standalone app in the same style as the character sheet
   prototype.

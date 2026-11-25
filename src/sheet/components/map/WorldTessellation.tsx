@@ -38,6 +38,20 @@ export function WorldTessellation({
     ? shieldPath(place.cx, place.top, place.hw, place.h, citadel.submap.shieldOpts)
     : null;
 
+  const tiles = atlas.seeds.flatMap((s, i) => {
+    const r = regions.find((R) => R.id === s.id);
+    const cell = cells[i];
+    if (!r || !cell || cell.split(" ").length < 3) return [];
+    const a = polylabel(cell);
+    const bb = bbox(cell);
+    const dim = Math.min(bb.maxX - bb.minX, bb.maxY - bb.minY);
+    const fs = Math.max(22, Math.min(46, dim * 0.2));
+    const lx = a[0] + (s.ldx || 0), ly = a[1] + (s.ldy || 0);
+    const lines = splitLabel(r.name, !!s.splitLabel);
+    const startY = ly - (lines.length - 1) * fs * 0.55 - fs * 0.28;
+    return [{ r, dp: tilePath(cell, 8, 22), lx, startY, fs, lines }];
+  });
+
   const enter = (id: string) => (picking ? onPick(id) : onEnterRegion(id));
   const enterCitadel = () => {
     if (!citadel) return;
@@ -48,41 +62,34 @@ export function WorldTessellation({
   return (
     <>
       <g id="world-regions">
-        {atlas.seeds.map((s, i) => {
-          const r = regions.find((R) => R.id === s.id);
-          const cell = cells[i];
-          if (!r || !cell || cell.split(" ").length < 3) return null;
-          const dp = tilePath(cell, 8, 22);
-          const active = hoveredId === r.id;
-          const a = polylabel(cell);
-          const bb = bbox(cell);
-          const dim = Math.min(bb.maxX - bb.minX, bb.maxY - bb.minY);
-          const fs = Math.max(22, Math.min(46, dim * 0.2));
-          const lx = a[0] + (s.ldx || 0), ly = a[1] + (s.ldy || 0);
-          const lines = splitLabel(r.name, !!s.splitLabel);
-          const startY = ly - (lines.length - 1) * fs * 0.55 - fs * 0.28;
-          return (
-            <g
-              key={r.id}
-              className={"region region--tile" + (active ? " is-active" : "")}
-              data-house={r.house_color} data-id={r.id}
-              tabIndex={0} role="button" aria-label={r.name + " — " + r.house}
-              onClick={() => enter(r.id)}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); enter(r.id); } }}
-              onMouseEnter={() => onHover(r.id)}
-              onMouseLeave={() => onHover(null)}
-            >
-              <path className="region__shape" d={dp} />
-              <path className="region__sheen" d={dp} />
-              <path className="region__hatch" d={dp} />
-              <g className="region__label">
-                {lines.map((ln, k) => (
-                  <text key={k} className="region__name" x={lx} y={startY + k * fs * 1.02} fontSize={fs} dominantBaseline="middle">{ln}</text>
-                ))}
-              </g>
+        {tiles.map(({ r, dp }) => (
+          <g
+            key={r.id}
+            className={"region region--tile" + (hoveredId === r.id ? " is-active" : "")}
+            data-house={r.house_color} data-id={r.id}
+            tabIndex={0} role="button" aria-label={r.name + " — " + r.house}
+            onClick={() => enter(r.id)}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); enter(r.id); } }}
+            onMouseEnter={() => onHover(r.id)}
+            onMouseLeave={() => onHover(null)}
+          >
+            <path className="region__shape" d={dp} />
+            <path className="region__sheen" d={dp} />
+            <path className="region__hatch" d={dp} />
+          </g>
+        ))}
+
+        {/* Region names in one layer above every tile, so a long name that
+            spills past its own cell isn't painted over by the next tile. */}
+        <g className="region-labels">
+          {tiles.map(({ r, lx, startY, fs, lines }) => (
+            <g key={r.id} className="region__label">
+              {lines.map((ln, k) => (
+                <text key={k} className="region__name" x={lx} y={startY + k * fs * 1.02} fontSize={fs} dominantBaseline="middle">{ln}</text>
+              ))}
             </g>
-          );
-        })}
+          ))}
+        </g>
 
         {/* Centrepiece (the campus's Starfall Citadel) — floating heater-shield on top */}
         {citadel && place && shieldD && <g

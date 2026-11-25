@@ -104,6 +104,8 @@ fold the relevant slice of `styles.css`/`party.css` into
 rest of the sheet's CSS was scoped. Decide what happens to the standalone
 `/map` page (`public/map/`) at this point too — either point it at the same
 ported components or leave it on the (now-duplicated) vendored copy.
+*(Resolved in v1.25.3: `/map` renders the ported components and
+`public/map/` was deleted.)*
 
 **Phase 6 — Multiplayer location sync (separate follow-up, per `ROADMAP.md`)**
 Once native, back `locations` with Supabase Realtime broadcast/presence

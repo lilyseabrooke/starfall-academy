@@ -319,9 +319,23 @@
 .sf-sheet .watermark { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; z-index: 0; opacity: .05; }
 .sf-sheet .watermark img { width: min(58%, 540px); height: auto; filter: saturate(0.2); }
 
+/* Phone-only "‹ Campus" button on the Citadel map: the crumbs and the
+   Citadel legend (which carries the desktop back button) are hidden there. */
+.sf-sheet .mobile-back { display: none; }
+
 /* Mobile: dock the dossier as a bottom sheet, map fills the top half */
 @media (max-width: 760px) {
   .sf-sheet .crumbs-bar { display: none; }
+  .sf-sheet .atlas-shell .mobile-back {
+    display: inline-flex; align-items: center; gap: 8px;
+    top: 16px; left: 16px; z-index: 6;
+    height: 40px; padding: 0 16px;
+    background: color-mix(in oklab, var(--ink-850) 92%, transparent);
+    border: 1px solid var(--border-default); border-radius: var(--radius-sm);
+    color: var(--text-body); font-family: var(--font-sans); font-size: 13px;
+    letter-spacing: .08em; text-transform: uppercase; backdrop-filter: blur(8px);
+    box-shadow: var(--shadow-md);
+  }
   .sf-sheet .legend, .sf-sheet .legend--citadel { display: none; }
   .sf-sheet .submap { display: block; overflow: hidden; }
   .sf-sheet .submap__field { position: absolute; top: 0; left: 0; right: 0; bottom: 48%; overflow: hidden; }
