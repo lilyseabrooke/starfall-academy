@@ -144,6 +144,17 @@ behaviour-neutral refactor that ships on main, as a patch bump.
    with before/after screenshots at each zoom level and drill-down.
 
 ### Phase 1 — Staging branch and format
+
+> **Status: built (on the staging work branch, awaiting the
+> `staging/mapmaking` push).** Differences from the sketch above, all to keep
+> the bake exact: sub-areas are complete records (`x, y, w, on, lx, ly, name,
+> blurb, generic`), the centrepiece is one block holding its lore, world
+> placement, shield and `districts[]` / `specials[]`, an optional
+> `legendOrder` keeps the legend order separate from draw order, and an
+> optional `legacy { points, label }` carries the old static polygon so the
+> campus bakes back unchanged (new maps derive both from the live cell).
+> Files: `src/mapmaker/{format,convert,stringify,migrate,bake}.ts`,
+> `scripts/import-campus.ts`, `maps/campus.map.json`.
 1. Create `staging/mapmaking` from main once Phase 0 has merged.
 2. `src/mapmaker/format.ts`: the JSON types, plus a **validator** with readable
    errors (unknown region link, sub-area out of the outline, duplicate ids, and
@@ -154,6 +165,14 @@ behaviour-neutral refactor that ships on main, as a patch bump.
    `CAMPUS_ATLAS`.
 
 ### Phase 2 — Bake script and campus round-trip
+
+> **Status: built.** `npm run bake-map -- <area> [--out file]` (refuses to
+> overwrite a hand-written module, so it never clobbers `campus.ts`);
+> `npm run roundtrip-campus` checks the normal form, the world and district
+> Voronoi cells, and that JSON → atlas → JSON is byte-stable. Also checked in
+> the browser: the baked campus gives identical DOM to the shipped one in all
+> 26 captured map states. Finding: nothing live reads a region's `points`;
+> `label` is only a last-resort fallback for a pin.
 1. `scripts/bake-map.ts <area>` validates the JSON, runs `jsonToAtlas`, and
    writes `src/sheet/data/map/areas/<area>.ts`: a generated, typed
    `export const <AREA>_ATLAS: AtlasDefinition = …` with a "generated, do not
@@ -163,6 +182,15 @@ behaviour-neutral refactor that ships on main, as a patch bump.
    script, since the repo has no test runner yet.
 
 ### Phase 3 — The `/mapmaker` route (geometry)
+
+> **Status: built.** One deliberate change: the edit canvas draws its own SVG
+> with the renderer's geometry functions (same smoothing, weighted Voronoi,
+> label poles and district-field box), rather than overlaying handles on
+> `AtlasStage`, whose pan/zoom transform is internal. "Exactly what players
+> see" is the Preview toggle, which renders the real `AtlasMap` from
+> `jsonToAtlas(doc)`. Finding: a region's `submap.outline` is only a fallback;
+> its zones are laid out inside the region's live world cell, so the editor
+> shows that cell and does not offer outline editing for submaps.
 Route: `src/app/mapmaker/` (staging only). A three-column layout: a map list
 and outline tree on the left, the live canvas in the centre, an inspector on
 the right.
@@ -185,6 +213,10 @@ the right.
   would see, including drill-down and dossiers.
 
 ### Phase 4 — Text and metadata authoring
+
+> **Status: built.** Renaming a region id, district or zone rewrites the POI,
+> special-location and legend references that use it. Ids are committed on
+> blur/Enter so a half-typed id never rewrites references.
 Inspector forms for everything the dossier shows: area name; region name,
 house, crest, colour (from the design-system house palette), sector, coord,
 tagline, blurb and facts (add/remove rows); sub-area name, blurb, generic
@@ -192,6 +224,10 @@ type and on/off; POI name and link; and centrepiece district text. Validation
 errors show inline and on a "Problems" list.
 
 ### Phase 5 — Save / load
+
+> **Status: built.** Also a "Baked module…" dialog that shows (and downloads)
+> exactly what `bake-map` writes. Uploads that are not usable maps are
+> refused with the reason; ones with fixable problems open and list them.
 - **New map:** start from a blank template (outline and three starter seeds),
   or "Duplicate campus" as a starting point.
 - **Download** the `.map.json`, using the area id as the filename.
@@ -205,6 +241,8 @@ errors show inline and on a "Problems" list.
   → `npm run bake-map <area>` when ready to ship.
 
 ### Phase 6 — Shipping a map (per map, later)
+
+> **Status: waiting on a finished map and a destination decision.**
 1. On staging: bake, and check the result in the `/mapmaker` preview.
 2. Branch off **main**, copy in `src/sheet/data/map/areas/<area>.ts`, and wire
    the chosen destination: its own `/map/<area>` route, a switcher on `/map`,

@@ -1,0 +1,189 @@
+/* ===========================================================================
+   Mapmaker (staging only). Everything is prefixed .mm- and scoped under
+   .mm-root; the preview pane borrows the atlas styles via .sf-sheet.
+   =========================================================================== */
+.mm-root, .mm-loading {
+  --mm-bg: var(--ink-950);
+  --mm-panel: var(--ink-900);
+  --mm-line: var(--border-subtle, rgba(255, 255, 255, 0.1));
+  --mm-text: var(--text-body);
+  --mm-muted: var(--text-muted);
+  --mm-gold: var(--gold-400);
+  --mm-danger: var(--crimson-300);
+  --mm-warn: var(--gold-300);
+  --meadow-300: #9cc49a; --meadow-500: #5f8f63; --meadow-700: #33502f;
+}
+.mm-loading { position: fixed; inset: 0; display: grid; place-items: center; background: var(--mm-bg); color: var(--mm-muted); font-family: var(--font-sans); }
+
+.mm-root {
+  position: fixed; inset: 0;
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr) 340px;
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas: "top top top" "left centre right";
+  background: var(--mm-bg); color: var(--mm-text);
+  font-family: var(--font-sans); font-size: 13px; line-height: 1.4;
+}
+.mm-root * { box-sizing: border-box; }
+.mm-root code { font-family: var(--font-mono); font-size: 11px; color: var(--mm-muted); }
+
+.mm-top { grid-area: top; display: flex; align-items: center; gap: 16px; padding: 8px 14px; border-bottom: 1px solid var(--mm-line); background: var(--mm-panel); flex-wrap: wrap; }
+.mm-top__title { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.mm-top__title b { font-family: var(--font-serif); font-size: 17px; font-weight: 500; color: var(--text-strong); }
+.mm-eyebrow { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mm-gold); }
+.mm-top__actions { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.mm-left, .mm-right { overflow-y: auto; background: var(--mm-panel); }
+.mm-left { grid-area: left; border-right: 1px solid var(--mm-line); }
+.mm-right { grid-area: right; border-left: 1px solid var(--mm-line); }
+.mm-centre { grid-area: centre; position: relative; min-width: 0; min-height: 0; display: flex; }
+
+.mm-sec { padding: 12px 14px; border-bottom: 1px solid var(--mm-line); }
+.mm-sec h3 { margin: 0 0 8px; font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mm-muted); }
+.mm-sec--danger { border-bottom: 0; }
+.mm-hint { margin: 6px 0 0; color: var(--mm-muted); font-size: 12px; }
+.mm-notice { margin: 8px 0 0; padding: 6px 8px; border-left: 2px solid var(--mm-gold); background: rgba(255, 255, 255, 0.03); font-size: 12px; }
+.mm-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+.mm-grow { flex: 1; }
+
+/* controls */
+.mm-btn {
+  appearance: none; border: 1px solid var(--mm-line); background: var(--ink-850); color: var(--mm-text);
+  border-radius: var(--radius-sm, 4px); padding: 5px 10px; font: inherit; font-size: 12px; cursor: pointer;
+}
+.mm-btn:hover:not(:disabled) { border-color: var(--mm-gold); }
+.mm-btn:disabled { opacity: 0.4; cursor: default; }
+.mm-btn--gold { border-color: var(--gold-600); color: var(--gold-200); }
+.mm-btn--danger { color: var(--mm-danger); }
+.mm-btn--small { padding: 2px 8px; margin-top: 4px; }
+.mm-sec .mm-btn + .mm-btn { margin-left: 6px; }
+.mm-btns .mm-btn + .mm-btn { margin-left: 0; }
+.mm-iconbtn { appearance: none; border: 0; background: none; color: var(--mm-muted); cursor: pointer; padding: 2px 6px; font: inherit; }
+.mm-iconbtn:hover:not(:disabled) { color: var(--mm-gold); }
+.mm-iconbtn:disabled { opacity: 0.25; cursor: default; }
+.mm-seg { display: inline-flex; border: 1px solid var(--mm-line); border-radius: var(--radius-sm, 4px); overflow: hidden; }
+.mm-seg button { appearance: none; border: 0; background: var(--ink-850); color: var(--mm-muted); padding: 5px 12px; font: inherit; font-size: 12px; cursor: pointer; }
+.mm-seg button.is-on { background: var(--gold-700); color: var(--gold-100); }
+.mm-check { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--mm-text); cursor: pointer; }
+
+.mm-field { display: flex; flex-direction: column; gap: 3px; margin-bottom: 8px; min-width: 0; flex: 1; }
+.mm-field__label { font-size: 11px; color: var(--mm-muted); }
+.mm-field input, .mm-field textarea, .mm-field select, .mm-fact input {
+  width: 100%; min-width: 0; background: var(--ink-950); color: var(--mm-text); border: 1px solid var(--mm-line);
+  border-radius: var(--radius-xs, 3px); padding: 5px 7px; font: inherit; font-size: 13px;
+}
+.mm-field textarea { resize: vertical; font-family: var(--font-serif); font-size: 14px; line-height: 1.45; }
+.mm-field input:focus, .mm-field textarea:focus, .mm-field select:focus, .mm-fact input:focus { outline: none; border-color: var(--mm-gold); }
+.mm-field input.is-bad { border-color: var(--mm-danger); }
+.mm-field--num input { font-family: var(--font-mono); font-size: 12px; }
+.mm-field--slider input { padding: 0; accent-color: var(--gold-500); }
+.mm-row { display: flex; gap: 8px; }
+.mm-fact { display: grid; grid-template-columns: 1fr 1.4fr auto; gap: 4px; margin-bottom: 4px; }
+.mm-color { display: flex; align-items: center; gap: 6px; }
+.mm-color__sw { width: 18px; height: 18px; flex: none; border-radius: 3px; border: 1px solid var(--mm-line); }
+
+/* tree */
+.mm-tree ul { list-style: none; margin: 0; padding: 0 0 0 12px; }
+.mm-tree > ul { padding-left: 0; }
+.mm-node { appearance: none; display: flex; align-items: center; gap: 6px; width: 100%; text-align: left; border: 0; background: none; color: var(--mm-text); padding: 3px 6px; border-radius: 3px; font: inherit; cursor: pointer; }
+.mm-node:hover { background: rgba(255, 255, 255, 0.04); }
+.mm-node.is-sel { background: color-mix(in oklab, var(--gold-500) 22%, transparent); color: var(--gold-100); }
+.mm-node em { color: var(--mm-muted); font-style: normal; font-size: 11px; }
+.mm-node--zone { font-size: 12px; color: var(--mm-muted); }
+.mm-node.is-off { opacity: 0.5; }
+.mm-node--add { color: var(--mm-muted); font-size: 12px; }
+.mm-node__row { display: flex; align-items: center; }
+.mm-node__label { margin: 10px 0 4px; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mm-muted); }
+.mm-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; background: var(--hc, var(--gold-500)); }
+
+/* problems */
+.mm-problems, .mm-insp__problems { list-style: none; margin: 0; padding: 0; }
+.mm-problems li button { appearance: none; border: 0; background: none; text-align: left; color: inherit; font: inherit; font-size: 12px; padding: 4px 0 4px 10px; cursor: pointer; border-left: 2px solid; width: 100%; }
+.mm-problems li + li { margin-top: 4px; }
+.mm-problems .is-error button, .mm-insp__problems .is-error { border-color: var(--mm-danger); }
+.mm-problems .is-warning button, .mm-insp__problems .is-warning { border-color: var(--mm-warn); }
+.mm-problems code { display: block; }
+.mm-insp__problems { padding: 10px 14px 0; }
+.mm-insp__problems li { border-left: 2px solid; padding: 3px 0 3px 8px; margin-bottom: 4px; font-size: 12px; }
+
+.mm-zonelist { list-style: none; margin: 0 0 8px; padding: 0; }
+.mm-zonelist button { appearance: none; border: 0; background: none; color: var(--mm-text); font: inherit; text-align: left; padding: 2px 0; cursor: pointer; }
+.mm-zonelist button:hover { color: var(--gold-200); }
+.mm-zonelist button.is-off { opacity: 0.5; }
+.mm-zonelist b { display: inline-block; width: 16px; color: var(--mm-gold); }
+
+/* house tints (same palette as the atlas) */
+.mm-root [data-house="forest"]  { --hc: var(--forest-500); --hc-hi: var(--forest-300); }
+.mm-root [data-house="crimson"] { --hc: var(--crimson-500); --hc-hi: var(--crimson-300); }
+.mm-root [data-house="plum"]    { --hc: var(--plum-500); --hc-hi: var(--plum-300); }
+.mm-root [data-house="teal"]    { --hc: var(--teal-500); --hc-hi: var(--teal-300); }
+.mm-root [data-house="meadow"]  { --hc: var(--meadow-500); --hc-hi: var(--meadow-300); }
+.mm-root [data-house="gold"]    { --hc: var(--gold-500); --hc-hi: var(--gold-300); }
+
+/* canvas */
+.mm-canvas { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.mm-canvas__bar { display: flex; align-items: center; gap: 12px; padding: 6px 12px; border-bottom: 1px solid var(--mm-line); }
+.mm-crumbs { display: flex; align-items: center; gap: 6px; font-family: var(--font-serif); font-size: 14px; }
+.mm-crumbs button { appearance: none; border: 0; background: none; color: var(--gold-300); font: inherit; cursor: pointer; padding: 0; }
+.mm-crumbs__sep { color: var(--mm-muted); }
+.mm-readout { margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: var(--mm-muted); }
+.mm-svg { flex: 1; width: 100%; min-height: 0; touch-action: none; user-select: none; }
+.mm-fieldrect { fill: rgba(255, 255, 255, 0.015); stroke: var(--mm-line); stroke-dasharray: 4 6; }
+.mm-grid line { stroke: rgba(255, 255, 255, 0.05); stroke-width: 1; }
+.mm-outline { fill: rgba(255, 255, 255, 0.03); stroke: var(--gold-600); stroke-width: 2; pointer-events: none; }
+.mm-outline--host { fill: none; stroke-width: 2.5; }
+.mm-raw { fill: none; stroke: var(--gold-400); stroke-width: 1; stroke-dasharray: 3 5; opacity: 0.6; pointer-events: none; }
+.mm-edge { stroke: transparent; stroke-width: 14; cursor: copy; }
+.mm-edge:hover { stroke: color-mix(in oklab, var(--gold-400) 35%, transparent); }
+.mm-vertex { fill: var(--ink-950); stroke: var(--gold-400); stroke-width: 2; cursor: move; }
+.mm-vertex.is-sel { fill: var(--gold-400); }
+.mm-cell { fill: var(--hc, var(--gold-500)); fill-opacity: 0.32; stroke: var(--hc-hi, var(--gold-300)); stroke-width: 2; cursor: pointer; }
+.mm-cell:hover { fill-opacity: 0.45; }
+.mm-cell.is-sel { fill-opacity: 0.55; stroke: var(--gold-200); stroke-width: 3; }
+.mm-cell--district { fill-opacity: 0.75; stroke: rgba(0, 0, 0, 0.5); }
+.mm-cell--district:hover { fill-opacity: 0.9; }
+.mm-cell--district.is-sel { fill-opacity: 1; }
+.mm-zone { fill: var(--hc, var(--gold-500)); stroke: var(--hc-hi, var(--gold-300)); stroke-width: 1.5; cursor: pointer; }
+.mm-zone.is-sel { stroke: var(--gold-200); stroke-width: 3; fill-opacity: 0.5 !important; }
+.mm-label { fill: var(--parchment-100); font-family: var(--font-serif); text-anchor: middle; dominant-baseline: middle; pointer-events: none; paint-order: stroke; stroke: rgba(0, 0, 0, 0.65); stroke-width: 3px; stroke-linejoin: round; }
+.mm-label--poi { font-size: 18px; fill: var(--gold-200); }
+.mm-label--centre { font-size: 22px; letter-spacing: 0.12em; fill: var(--gold-100); }
+.mm-label--off { font-size: 13px; fill: var(--mm-muted); }
+.mm-empty { fill: var(--mm-muted); font-size: 22px; text-anchor: middle; font-family: var(--font-serif); }
+.mm-ring { fill: none; stroke: var(--parchment-200); stroke-opacity: 0.35; stroke-width: 1.5; }
+.mm-ring.is-neg { stroke-dasharray: 5 5; }
+.mm-seed { fill: var(--ink-950); stroke: var(--parchment-100); stroke-width: 2.5; cursor: move; }
+.mm-knob { fill: var(--parchment-200); stroke: var(--ink-950); stroke-width: 1.5; cursor: ew-resize; }
+.mm-lhandle { fill: var(--gold-400); stroke: var(--ink-950); stroke-width: 1.5; cursor: move; }
+.mm-handles .mm-ring, .mm-handles .mm-knob { opacity: 0.55; }
+.mm-handles.is-sel .mm-ring, .mm-handles.is-sel .mm-knob { opacity: 1; }
+.mm-handles.is-sel .mm-seed { fill: var(--gold-400); stroke: var(--gold-100); }
+.mm-handles.is-off .mm-seed { stroke: var(--mm-muted); stroke-dasharray: 3 3; }
+.mm-handles.is-off.is-sel .mm-seed { fill: var(--ink-700); }
+.mm-shield { fill: color-mix(in oklab, var(--gold-500) 45%, var(--ink-950)); stroke: var(--gold-300); stroke-width: 2.5; cursor: move; }
+.mm-centre.is-sel .mm-shield { stroke: var(--gold-100); stroke-width: 4; }
+.mm-poi rect { fill: var(--gold-500); stroke: var(--ink-950); stroke-width: 2; cursor: move; }
+.mm-poi.is-sel rect, .mm-special.is-sel path { fill: var(--gold-100); }
+.mm-special path { fill: var(--gold-300); stroke: var(--ink-950); stroke-width: 1.5; cursor: move; }
+
+/* preview + blocked states */
+.mm-preview.sf-sheet { position: relative; flex: 1; min-height: 0; overflow: hidden; background: var(--ink-950); color: var(--text-body); font-family: var(--font-serif); }
+.mm-preview.sf-sheet .zoom { bottom: 16px; }
+.mm-blocked { margin: auto; padding: 24px; text-align: center; color: var(--mm-muted); font-family: var(--font-serif); font-size: 16px; }
+.mm-blocked .mm-btn { margin: 10px 4px 0; }
+
+/* baked-module dialog */
+.mm-modal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 24px; }
+.mm-modal__box { width: min(980px, 100%); min-width: 0; max-height: calc(100vh - 48px); display: flex; flex-direction: column; background: var(--mm-panel); border: 1px solid var(--mm-line); border-radius: var(--radius-md, 6px); padding: 14px; }
+.mm-modal__box header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.mm-modal__box pre { flex: 1; min-height: 0; overflow: auto; margin: 0; padding: 12px; background: var(--ink-950); border-radius: 4px; font-family: var(--font-mono); font-size: 11px; line-height: 1.5; color: var(--parchment-200); }
+
+/* narrow screens: stack the panels (the tool is meant for a desktop, but
+   should not break on a tablet or phone) */
+@media (max-width: 900px) {
+  .mm-root { position: static; min-height: 100vh; display: flex; flex-direction: column; }
+  .mm-centre { height: 70vh; flex: none; order: 1; }
+  .mm-right { order: 2; }
+  .mm-left { order: 3; }
+  .mm-left, .mm-right { overflow: visible; border: 0; }
+}
