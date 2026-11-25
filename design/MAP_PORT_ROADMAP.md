@@ -101,9 +101,12 @@ exposes today — the external contract to `CharacterSheet.tsx` shouldn't
 need to change). Retire `public/character-sheet/map/{app,party}.js` and
 fold the relevant slice of `styles.css`/`party.css` into
 `src/sheet/styles/map.css` via `scripts/scope-css.js`, the same way the
-rest of the sheet's CSS was scoped. Decide what happens to the standalone
+rest of the sheet's CSS was scoped. *(That generator was retired in v1.25.3; the files in
+`src/sheet/styles/` are now edited directly.)* Decide what happens to the standalone
 `/map` page (`public/map/`) at this point too — either point it at the same
 ported components or leave it on the (now-duplicated) vendored copy.
+*(Resolved in v1.25.3: `/map` renders the ported components and
+`public/map/` was deleted.)*
 
 **Phase 6 — Multiplayer location sync (separate follow-up, per `ROADMAP.md`)**
 Once native, back `locations` with Supabase Realtime broadcast/presence

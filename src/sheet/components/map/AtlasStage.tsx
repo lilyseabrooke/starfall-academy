@@ -327,6 +327,10 @@ export function AtlasStage({
         </aside>
       )}
 
+      {mode === "citadel" && citadel && (
+        <button type="button" className="float mobile-back" onClick={onExitCitadel}>‹ {atlas.name}</button>
+      )}
+
       <svg className="float compass" viewBox="0 0 100 100" aria-hidden="true">
         <circle cx="50" cy="50" r="46" fill="none" stroke="var(--border-default)" strokeWidth={1} />
         <circle cx="50" cy="50" r="38" fill="none" stroke="var(--border-subtle)" strokeWidth={1} />

@@ -50,9 +50,10 @@ staging/mapmaking ●──●──●──●──●──●─┘
 - **Citadel:** shield geometry and options, 21 seeded districts plus specials
   that link elsewhere, each district with its own A–F. (`regions.ts`,
   `citadelData.ts`)
-- **Two copies of the map:** the vendored vanilla `public/map/` serves `/map`.
-  The typed React port powers the sheet's Map tab. The tool builds on the
-  **React port only**.
+- **One renderer (since v1.25.3):** the typed React port powers both the
+  sheet's Map tab and the standalone `/map` page (`src/app/map/CampusMap.tsx`,
+  which uses it without the whereabouts pin or party markers). The old
+  vendored vanilla copy in `public/map/` has been deleted.
 - **The renderer is hard-wired to campus.** `WorldTessellation.tsx`,
   `AtlasMap.tsx`, `PartyMarkers.tsx` and `CharacterSheet.tsx` import campus
   constants directly. Phase 0 fixes that.
@@ -211,9 +212,8 @@ errors show inline and on a "Problems" list.
 3. Minor bump plus a CHANGELOG entry, per VERSIONING.md.
 
 ## Out of scope / open for later
-- `/map` (the standalone Campus Map) still uses the vendored vanilla copy. A
-  baked map shipped to its own route would use the React renderer. Moving
-  `/map` itself onto the React renderer is a separate decision.
+- ~~Moving `/map` onto the React renderer~~ — done in v1.25.3. A baked map
+  can ship the same way: a route rendering `<AtlasMap atlas={…} />`.
 - Re-baking campus from its JSON (making the tool the way the Campus Map is
   maintained) was declined for now. The round-trip test keeps that option open.
 - Deeper nesting than 3 levels, multi-user editing, and storing drafts in

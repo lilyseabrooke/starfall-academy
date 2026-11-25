@@ -1,6 +1,7 @@
 import HudTopBar from "@/components/HudTopBar";
 import { createClient } from "@/lib/supabase/server";
 import "@/styles/landing.css";
+import CampusMap from "./CampusMap";
 
 export const metadata = {
   title: "Campus Map — Starfall Academy",
@@ -15,11 +16,7 @@ export default async function MapPage() {
   return (
     <div className="embed-root">
       <HudTopBar active="Map" signedIn={!!user} title="Campus Map" />
-      <iframe
-        className="embed-frame"
-        src="/map/index.html"
-        title="Starfall Academy campus map"
-      />
+      <CampusMap />
     </div>
   );
 }

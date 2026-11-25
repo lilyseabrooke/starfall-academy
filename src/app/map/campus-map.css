@@ -1,0 +1,18 @@
+/* Standalone /map host for the atlas. The base look normally comes from the
+   sheet's .sf-sheet root rules (src/sheet/styles/app.css); only the few the
+   atlas relies on are repeated here rather than pulling in the whole sheet. */
+.sf-sheet.campus-map {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  height: auto;
+  overflow: hidden;
+  background: var(--ink-950);
+  color: var(--text-body);
+  font-family: var(--font-serif);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The sheet lifts the zoom controls to clear its whereabouts pin dock; there
+   is no dock here, so they sit in the corner. */
+.sf-sheet.campus-map .zoom { bottom: 16px; }

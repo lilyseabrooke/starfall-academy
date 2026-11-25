@@ -26,16 +26,26 @@ type Nav =
 
 export interface AtlasMapProps {
   atlas: AtlasDefinition;
-  roster: MapRosterMember[];
-  activeChar: string;
-  locations: Record<string, string | null | undefined>;
-  picking: boolean;
-  onPick: (regionId: string) => void;
-  onCancelPick: () => void;
-  focusSignal: { regionId?: string; isCitadel?: boolean; districtName?: string } | null;
+  /** Party whereabouts overlay. Leave out for a plain browsing map (no markers). */
+  roster?: MapRosterMember[];
+  activeChar?: string;
+  locations?: Record<string, string | null | undefined>;
+  /** Whereabouts pick mode: clicks report a location id via onPick instead of navigating. */
+  picking?: boolean;
+  onPick?: (regionId: string) => void;
+  onCancelPick?: () => void;
+  focusSignal?: { regionId?: string; isCitadel?: boolean; districtName?: string } | null;
+  /** Escape backs out one level (zone/region → world, district → centrepiece → world). */
+  closeOnEscape?: boolean;
 }
 
-export function AtlasMap({ atlas, roster, activeChar, locations, picking, onPick, onCancelPick, focusSignal }: AtlasMapProps) {
+const NO_LOCATIONS: Record<string, string | null | undefined> = {};
+const noop = () => {};
+
+export function AtlasMap({
+  atlas, roster, activeChar = "", locations = NO_LOCATIONS, picking = false,
+  onPick = noop, onCancelPick = noop, focusSignal = null, closeOnEscape = false,
+}: AtlasMapProps) {
   const [nav, setNav] = React.useState<Nav>({ view: "world" });
   const citadel = centrepieceRegion(atlas);
   const districtSeeds: DistrictSeed[] = citadel?.submap.seeds || [];
@@ -61,6 +71,16 @@ export function AtlasMap({ atlas, roster, activeChar, locations, picking, onPick
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusSignal]);
   /* eslint-enable react-hooks/set-state-in-effect */
+
+  React.useEffect(() => {
+    if (!closeOnEscape) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setNav((n) => (n.view === "district" ? { view: "citadel" } : { view: "world" }));
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [closeOnEscape]);
 
   const worldCells = React.useMemo(() => computeWorldCells(atlas), [atlas]);
   const citadelCells = React.useMemo(() => {
@@ -198,7 +218,7 @@ export function AtlasMap({ atlas, roster, activeChar, locations, picking, onPick
           picking={picking}
           onPick={onPick}
           onCancelPick={onCancelPick}
-          party={nav.view === "world" || nav.view === "citadel" ? { roster, locations, selfId: activeChar } : null}
+          party={roster && (nav.view === "world" || nav.view === "citadel") ? { roster, locations, selfId: activeChar } : null}
         />
       ) : (
         <div className="submap" data-house={host!.house_color}
@@ -222,7 +242,7 @@ export function AtlasMap({ atlas, roster, activeChar, locations, picking, onPick
               onHover={setFieldHoverIdx}
               onPick={pickOrSelectZone}
               onBackgroundClick={backgroundOrCancel}
-              party={{ roster, locations, selfId: activeChar }}
+              party={roster ? { roster, locations, selfId: activeChar } : undefined}
             />
           </div>
         </div>
