@@ -8,6 +8,18 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.26.0 — 2026-11-26
+- New area map: **Santa Lucencia**, the Lost Mission, with its five regions,
+  their zones, the House plaques, an About section, and its own crests. For
+  now it is reachable only by direct link: `/map?area=santa-lucencia`. The
+  Campus Map stays the default at `/map`.
+- Maps can now show their own crest: a faint line-art crest behind the map
+  and, optionally, a full-colour crest heading the legend (and the phone
+  About sheet).
+- Inside a region, the zones now take that region's colour (Amber Woods
+  green, Ryker Cliffs crimson, and so on) instead of all being gold.
+  Citadel districts keep their own colours.
+
 ## v1.25.5 — 2026-11-26
 - On phones, where the map's legend is hidden, maps with an "About" blurb now
   show a small info button in the top-left corner of the map. It opens the

@@ -7,7 +7,12 @@ export const metadata = {
   title: "Campus Map — Starfall Academy",
 };
 
-export default async function MapPage() {
+export default async function MapPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const { area } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -16,7 +21,7 @@ export default async function MapPage() {
   return (
     <div className="embed-root">
       <HudTopBar active="Map" signedIn={!!user} title="Campus Map" />
-      <CampusMap />
+      <CampusMap initialArea={typeof area === "string" ? area : undefined} />
     </div>
   );
 }
