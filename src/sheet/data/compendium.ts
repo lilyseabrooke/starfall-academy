@@ -47,7 +47,8 @@ function parseRows(text: string): Row[] {
   const rows = parseCSV(text).filter((r) => r.length > 1 && (r[0] || "").trim());
   if (!rows.length) return [];
   const header = rows.shift()!.map((h) => String(h || "").trim().toUpperCase());
-  return rows.map((r) => {
+  // The sheet repeats its header row mid-tab; drop those pseudo-entries.
+  return rows.filter((r) => String(r[0] || "").trim().toUpperCase() !== header[0]).map((r) => {
     const o: Row = {};
     header.forEach((h, i) => {
       if (h) o[h] = r[i] == null ? "" : String(r[i]);
