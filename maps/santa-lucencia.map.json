@@ -20,7 +20,8 @@
     [112, 945],
     [147, 428]
   ],
-  "watermark": "/character-sheet/map/assets/crest-lines.png",
+  "watermark": "/character-sheet/map/assets/santa-lucencia-crest-lines.png",
+  "crest": "/character-sheet/map/assets/santa-lucencia-crest.png",
   "regions": [
     {
       "id": "rosa",

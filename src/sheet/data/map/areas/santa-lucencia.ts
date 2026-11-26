@@ -288,7 +288,8 @@ export const SANTA_LUCENCIA_ATLAS: AtlasDefinition = {
     {"id": "poi-5", "name": "The Guard", "link": {"region": "east", "zone": "The Guard"}, "x": 1244, "y": 847}
   ],
   "centrepiece": null,
-  "watermark": "/character-sheet/map/assets/crest-lines.png",
+  "watermark": "/character-sheet/map/assets/santa-lucencia-crest-lines.png",
+  "crest": "/character-sheet/map/assets/santa-lucencia-crest.png",
   "about": {
     "blurb": "The symbol of West Coast magic in North America, Academy of Santa Lucencia is renowned for putting you through your paces.\n\nAn intense academy that produces highly-skilled and highly sought-after arcanists, Santa Lucencia holds onto its strict Spanish Catholic heritage, built around the original Spanish mission that was established around its legendary ley line outcropping the White Tree.\n\nSmaller than its east-coast cousin Starfall, Santa Lucencia has a close-knit character where everyone is competing with everyone else in its grounds. Its mission winds in tight back paths where it's easy to get lost in the subtropical foliage, and promises of powerful magic seem to be lurking behind old stucco walls.\n\nStudents here love to ride giant creatures, taking to the wide-open California skies. This is sometimes to the dismay of the wineries that aren't too far from campus."
   }

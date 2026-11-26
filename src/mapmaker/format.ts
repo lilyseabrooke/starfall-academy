@@ -137,7 +137,10 @@ export interface MapJson {
   field: [number, number];
   fit: { w: number; h: number; tx: number; ty: number };
   outline: Pt[];
+  /** Line-art crest: faint behind the world field and region fields. */
   watermark: string;
+  /** Full-colour crest at the top of the legend (and phone About sheet). */
+  crest?: string | null;
   /** World regions, in draw (seed) order. */
   regions: RegionJson[];
   /** Legend order by id (regions and the centrepiece). Defaults to the
@@ -197,6 +200,7 @@ export function validateMap(input: unknown, shipped?: { regionIds: string[]; dis
   if (m.version !== MAP_FORMAT_VERSION) err("version", `Unsupported version ${JSON.stringify(m.version)} (this tool reads ${MAP_FORMAT_VERSION}).`);
   if (!isStr(m.id) || !/^[a-z][a-z0-9-]*$/.test(m.id)) err("id", "Map id must be a lowercase slug (letters, digits, hyphens), starting with a letter.");
   for (const k of ["name", "eyebrow", "title", "watermark"] as const) if (!isStr(m[k])) err(k, `"${k}" must be text.`);
+  if (m.crest !== undefined && m.crest !== null && !isStr(m.crest)) err("crest", '"crest" must be an image path or null.');
   const ab = m.about;
   if (ab !== undefined && ab !== null) {
     if (!isObj(ab) || !isStr(ab.blurb)) err("about", "about must be { blurb, facts } or null.");

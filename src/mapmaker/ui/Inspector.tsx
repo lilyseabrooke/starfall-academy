@@ -322,7 +322,8 @@ function MapForm({ doc, edit, onSelect }: { doc: MapJson; edit: EditFn; onSelect
         <Text label="Name (breadcrumb root)" value={doc.name} onChange={(v) => edit((d) => { d.name = v; }, "name")} />
         <Text label="Legend eyebrow" value={doc.eyebrow} onChange={(v) => edit((d) => { d.eyebrow = v; }, "eyebrow")} />
         <Text label="Legend title" value={doc.title} onChange={(v) => edit((d) => { d.title = v; }, "title")} />
-        <Text label="Field watermark image" value={doc.watermark} onChange={(v) => edit((d) => { d.watermark = v; }, "wm")} />
+        <Text label="Line-art crest (faint, behind the map)" value={doc.watermark} onChange={(v) => edit((d) => { d.watermark = v; }, "wm")} />
+        <Text label="Full crest (top of the legend; blank for none)" value={doc.crest ?? ""} onChange={(v) => edit((d) => { if (v) d.crest = v; else delete d.crest; }, "crest")} />
       </Section>
       <Section title="About this map (legend)">
         <Area label="Blurb (blank line between paragraphs)" value={doc.about?.blurb ?? ""}

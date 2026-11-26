@@ -111,6 +111,7 @@ export function atlasToJson(atlas: AtlasDefinition): MapJson {
     id: atlas.id, name: atlas.name, eyebrow: atlas.eyebrow, title: atlas.title,
     field: [atlas.field[0], atlas.field[1]], fit: { ...atlas.fit },
     outline: toPts(atlas.outline) as Pt[], watermark: atlas.watermark,
+    ...(atlas.crest ? { crest: atlas.crest } : {}),
     regions,
     ...(legend.join() !== defaultLegend.join() ? { legendOrder: legend } : {}),
     pois: atlas.pois.map((p) => ({ id: p.id, name: p.name, x: p.x, y: p.y, link: { ...p.link } })),
@@ -222,6 +223,7 @@ export function jsonToAtlas(m: MapJson): AtlasDefinition {
     pois: m.pois.map((q) => ({ id: q.id, name: q.name, link: { ...q.link }, x: q.x, y: q.y })),
     centrepiece: c ? { regionId: c.id, place: { ...c.place }, label: [...c.label], eyebrow: c.eyebrow, districtHouse: c.districtHouse } : null,
     watermark: m.watermark,
+    ...(m.crest ? { crest: m.crest } : {}),
     ...(m.about?.blurb.trim()
       ? { about: { blurb: m.about.blurb, ...(m.about.facts.length ? { facts: m.about.facts.map((f) => [f[0], f[1]] as [string, string]) } : {}) } }
       : {}),

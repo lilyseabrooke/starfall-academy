@@ -157,7 +157,11 @@ export interface AtlasDefinition {
   regions: Region[];
   pois: AtlasPoi[];
   centrepiece: AtlasCentrepiece | null;
-  /** Watermark image behind a region/district field. */
+  /** Line-art crest: drawn faintly behind the world field and as the
+   *  watermark behind a region/district field. */
   watermark: string;
+  /** Full-colour crest, shown at the top of the legend and the phone About
+   *  sheet. Maps without one (the campus) show none. */
+  crest?: string | null;
   about?: AtlasAbout | null;
 }
