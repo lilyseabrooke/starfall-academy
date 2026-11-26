@@ -317,18 +317,19 @@ export function AtlasStage({
                 <span>About {atlas.name}</span>
                 <Icon name="chevron-down" />
               </button>
-              {aboutOpen && (
-                <div className="legend__about-body" id="legend-about">
-                  {atlas.about.blurb.split(/\n\s*\n/).map((para, i) => <p key={i}>{para}</p>)}
-                  {!!atlas.about.facts?.length && (
-                    <dl className="legend__facts">
-                      {atlas.about.facts.map(([k, v], i) => (
-                        <div key={i}><dt>{k}</dt><dd>{v}</dd></div>
-                      ))}
-                    </dl>
-                  )}
-                </div>
-              )}
+              {/* Collapsed, the body still shows its first few lines fading out
+                  (a peek that says there's more); clicking the peek opens it. */}
+              <div className={"legend__about-body" + (aboutOpen ? "" : " is-peek")} id="legend-about"
+                   onClick={aboutOpen ? undefined : () => setAboutOpen(true)}>
+                {atlas.about.blurb.split(/\n\s*\n/).map((para, i) => <p key={i}>{para}</p>)}
+                {aboutOpen && !!atlas.about.facts?.length && (
+                  <dl className="legend__facts">
+                    {atlas.about.facts.map(([k, v], i) => (
+                      <div key={i}><dt>{k}</dt><dd>{v}</dd></div>
+                    ))}
+                  </dl>
+                )}
+              </div>
             </div>
           )}
           <div className="legend__list">
