@@ -68,7 +68,7 @@
   content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0;
   background:
     radial-gradient(58% 52% at 50% 42%, color-mix(in oklab, var(--gold-500) 5%, transparent), transparent 70%),
-    url("/character-sheet/map/assets/crest-lines.png") no-repeat center 46% / min(640px, 52vw);
+    var(--atlas-crest, url("/character-sheet/map/assets/crest-lines.png")) no-repeat center 46% / min(640px, 52vw);
   filter: saturate(0.2);
   opacity: .5; mix-blend-mode: screen;
 }
@@ -164,6 +164,15 @@
   box-shadow: var(--shadow-lg), var(--inset-hi); backdrop-filter: blur(8px); overflow: hidden;
 }
 .sf-sheet .legend__head { padding: var(--space-4) var(--space-4) var(--space-3); flex: none; }
+/* A map with a full-colour crest heads its legend with it, centred like a
+   title card. The faint parchment edge keeps dark parts of a crest (wings,
+   outlines) from sinking into the panel. */
+.sf-sheet .legend__head--crest { display: flex; flex-direction: column; align-items: center; text-align: center; padding-top: var(--space-3); }
+.sf-sheet .legend__crest, .sf-sheet .about-sheet__crest {
+  display: block; height: auto; pointer-events: none; user-select: none;
+  filter: drop-shadow(0 0 0.6px color-mix(in oklab, var(--parchment-200) 70%, transparent)) drop-shadow(0 4px 10px rgba(0,0,0,.45));
+}
+.sf-sheet .legend__crest { width: 132px; margin-bottom: var(--space-2); }
 .sf-sheet .legend__eyebrow { font-family: var(--font-sans); font-size: 10px; letter-spacing: var(--tracking-widest); text-transform: uppercase; color: var(--text-gold); }
 .sf-sheet .legend__title { font-family: var(--font-display); font-weight: 700; font-size: 15px; letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--text-strong); margin-top: 4px; }
 .sf-sheet .legend__list {
@@ -371,6 +380,7 @@
   }
   .sf-sheet .atlas-shell .about-btn svg { width: 20px; height: 20px; }
   .sf-sheet .about-sheet { display: flex; z-index: 7; background: var(--ink-850); }
+  .sf-sheet .about-sheet__crest { width: 120px; align-self: center; flex: none; }
   .sf-sheet .submap { display: block; overflow: hidden; }
   .sf-sheet .submap__field { position: absolute; top: 0; left: 0; right: 0; bottom: 48%; overflow: hidden; }
   .sf-sheet .dossier {
