@@ -184,6 +184,27 @@
 .sf-sheet .legend__sector { margin-left: auto; font-family: var(--font-mono); font-size: 10px; color: var(--text-faint); letter-spacing: .04em; flex: none; }
 .sf-sheet .legend__hint { padding: 0 var(--space-4) var(--space-4); flex: none; font-family: var(--font-serif); font-style: italic; font-size: 11.5px; color: var(--text-faint); }
 
+/* "About <map>": an optional expandable blurb between the legend's header and
+   its region list (only maps that define atlas.about show it). */
+.sf-sheet .legend__about { flex: none; margin: 0 var(--space-2) var(--space-2); border-top: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle); }
+.sf-sheet .legend__about-toggle {
+  display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 8px 10px;
+  font-family: var(--font-sans); font-size: 10px; letter-spacing: var(--tracking-widest); text-transform: uppercase;
+  color: var(--text-gold); border-radius: var(--radius-sm); transition: background var(--dur-base), color var(--dur-base);
+}
+.sf-sheet .legend__about-toggle:hover { background: var(--ink-700); color: var(--gold-200); }
+.sf-sheet .legend__about-toggle svg { width: 14px; height: 14px; transition: transform var(--dur-base); }
+.sf-sheet .legend__about.is-open .legend__about-toggle svg { transform: rotate(180deg); }
+.sf-sheet .legend__about-body {
+  padding: 2px 10px 10px; max-height: min(42vh, 340px); overflow-y: auto;
+  scrollbar-width: thin; scrollbar-color: color-mix(in oklab, var(--gold-600) 40%, transparent) transparent;
+}
+.sf-sheet .legend__about-body p { margin: 0 0 8px; font-family: var(--font-serif); font-size: 13px; line-height: 1.5; color: var(--text-body); }
+.sf-sheet .legend__facts { margin: 4px 0 0; display: flex; flex-direction: column; gap: 4px; }
+.sf-sheet .legend__facts div { display: flex; justify-content: space-between; gap: 10px; font-size: 11.5px; }
+.sf-sheet .legend__facts dt { font-family: var(--font-sans); color: var(--text-muted); }
+.sf-sheet .legend__facts dd { margin: 0; font-family: var(--font-serif); color: var(--text-strong); text-align: right; }
+
 .sf-sheet .legend--citadel { display: flex; flex-direction: column; max-height: calc(100% - 88px); }
 .sf-sheet .legend__head--citadel { display: flex; flex-direction: column; gap: 12px; }
 .sf-sheet .legend__titles { display: flex; flex-direction: column; line-height: 1.08; }

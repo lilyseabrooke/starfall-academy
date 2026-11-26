@@ -48,6 +48,7 @@ export function AtlasStage({
 
   const [hoveredId, setHoveredId] = React.useState<string | null>(null);
   const [hoveredDistrict, setHoveredDistrict] = React.useState<number | null>(null);
+  const [aboutOpen, setAboutOpen] = React.useState(false);
 
   const { regions } = atlas;
   const citadel = centrepieceRegion(atlas);
@@ -306,6 +307,27 @@ export function AtlasStage({
             <div className="legend__eyebrow">{atlas.eyebrow}</div>
             <div className="legend__title">{atlas.title}</div>
           </div>
+          {atlas.about?.blurb && (
+            <div className={"legend__about" + (aboutOpen ? " is-open" : "")}>
+              <button type="button" className="legend__about-toggle" aria-expanded={aboutOpen} aria-controls="legend-about"
+                      onClick={() => setAboutOpen((o) => !o)}>
+                <span>About {atlas.name}</span>
+                <Icon name="chevron-down" />
+              </button>
+              {aboutOpen && (
+                <div className="legend__about-body" id="legend-about">
+                  {atlas.about.blurb.split(/\n\s*\n/).map((para, i) => <p key={i}>{para}</p>)}
+                  {!!atlas.about.facts?.length && (
+                    <dl className="legend__facts">
+                      {atlas.about.facts.map(([k, v], i) => (
+                        <div key={i}><dt>{k}</dt><dd>{v}</dd></div>
+                      ))}
+                    </dl>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
           <div className="legend__list">
             {regions.map((r) => (
               <button
