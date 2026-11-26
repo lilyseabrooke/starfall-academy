@@ -129,6 +129,14 @@ export interface AtlasCentrepiece {
   districtHouse: string;
 }
 
+/** Optional "About this map" text, shown as an expandable section of the
+ *  world legend. Maps without it (the campus) show no section at all. */
+export interface AtlasAbout {
+  /** Paragraphs separated by a blank line. */
+  blurb: string;
+  facts?: [string, string][];
+}
+
 export interface AtlasDefinition {
   id: string;
   /** Top-level name: the root breadcrumb and region dossiers' back label. */
@@ -151,4 +159,5 @@ export interface AtlasDefinition {
   centrepiece: AtlasCentrepiece | null;
   /** Watermark image behind a region/district field. */
   watermark: string;
+  about?: AtlasAbout | null;
 }
