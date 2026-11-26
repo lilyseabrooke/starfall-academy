@@ -380,7 +380,7 @@
   }
   .sf-sheet .atlas-shell .about-btn svg { width: 20px; height: 20px; }
   .sf-sheet .about-sheet { display: flex; z-index: 7; background: var(--ink-850); }
-  .sf-sheet .about-sheet__crest { width: 120px; align-self: center; flex: none; }
+  .sf-sheet .about-sheet__crest { width: 100px; align-self: center; flex: none; }
   .sf-sheet .submap { display: block; overflow: hidden; }
   .sf-sheet .submap__field { position: absolute; top: 0; left: 0; right: 0; bottom: 48%; overflow: hidden; }
   .sf-sheet .dossier {
