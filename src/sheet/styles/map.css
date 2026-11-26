@@ -344,6 +344,9 @@
 /* Phone-only "‹ Campus" button on the Citadel map: the crumbs and the
    Citadel legend (which carries the desktop back button) are hidden there. */
 .sf-sheet .mobile-back { display: none; }
+/* Phone-only info button + bottom sheet for the map's "About" text (on
+   desktop it lives in the legend). */
+.sf-sheet .about-btn, .sf-sheet .about-sheet { display: none; }
 
 /* Mobile: dock the dossier as a bottom sheet, map fills the top half */
 @media (max-width: 760px) {
@@ -359,6 +362,15 @@
     box-shadow: var(--shadow-md);
   }
   .sf-sheet .legend, .sf-sheet .legend--citadel { display: none; }
+  .sf-sheet .atlas-shell .about-btn {
+    display: grid; place-items: center; top: 16px; left: 16px; z-index: 6;
+    width: 40px; height: 40px; padding: 0;
+    background: color-mix(in oklab, var(--ink-850) 92%, transparent);
+    border: 1px solid var(--border-default); border-radius: 50%;
+    color: var(--gold-300); backdrop-filter: blur(8px); box-shadow: var(--shadow-md);
+  }
+  .sf-sheet .atlas-shell .about-btn svg { width: 20px; height: 20px; }
+  .sf-sheet .about-sheet { display: flex; z-index: 7; background: var(--ink-850); }
   .sf-sheet .submap { display: block; overflow: hidden; }
   .sf-sheet .submap__field { position: absolute; top: 0; left: 0; right: 0; bottom: 48%; overflow: hidden; }
   .sf-sheet .dossier {

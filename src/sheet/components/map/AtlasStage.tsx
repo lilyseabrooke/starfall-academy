@@ -49,6 +49,7 @@ export function AtlasStage({
   const [hoveredId, setHoveredId] = React.useState<string | null>(null);
   const [hoveredDistrict, setHoveredDistrict] = React.useState<number | null>(null);
   const [aboutOpen, setAboutOpen] = React.useState(false);
+  const [aboutSheet, setAboutSheet] = React.useState(false);
 
   const { regions } = atlas;
   const citadel = centrepieceRegion(atlas);
@@ -352,6 +353,32 @@ export function AtlasStage({
       {mode === "citadel" && citadel && (
         <button type="button" className="float mobile-back" onClick={onExitCitadel}>‹ {atlas.name}</button>
       )}
+
+      {/* Phones hide the legend, so its "About" section is reached from an
+          info button instead, opening the same bottom sheet as a dossier. */}
+      {(mode === "world" || !citadel) && atlas.about?.blurb && (aboutSheet ? (
+        <aside className="dossier about-sheet" data-house="gold" aria-label={"About " + atlas.name}>
+          <button type="button" className="dossier__back" onClick={() => setAboutSheet(false)}>‹ &nbsp;{atlas.name}</button>
+          <div>
+            <div className="dossier__sector">{atlas.eyebrow}</div>
+            <h1 className="dossier__name">{atlas.title}</h1>
+          </div>
+          <div className="dossier__rule" />
+          {atlas.about.blurb.split(/\n\s*\n/).map((para, i) => <p key={i} className="dossier__blurb">{para}</p>)}
+          {!!atlas.about.facts?.length && (
+            <div className="dossier__facts">
+              {atlas.about.facts.map(([k, v], i) => (
+                <div className="fact" key={i}><span className="fact__k">{k}</span><span className="fact__v">{v}</span></div>
+              ))}
+            </div>
+          )}
+          <div className="dossier__decree">Semper ad astra</div>
+        </aside>
+      ) : (
+        <button type="button" className="float about-btn" aria-label={"About " + atlas.name} onClick={() => setAboutSheet(true)}>
+          <Icon name="info" />
+        </button>
+      ))}
 
       <svg className="float compass" viewBox="0 0 100 100" aria-hidden="true">
         <circle cx="50" cy="50" r="46" fill="none" stroke="var(--border-default)" strokeWidth={1} />
