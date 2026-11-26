@@ -8,6 +8,12 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.25.5 — 2026-11-26
+- On phones, where the map's legend is hidden, maps with an "About" blurb now
+  show a small info button in the top-left corner of the map. It opens the
+  About text in the same bottom sheet a region's details use. The Campus Map
+  has no About text, so it shows no button.
+
 ## v1.25.4 — 2026-11-26
 - Area maps can now carry an "About" blurb for the whole map, with optional
   facts. It sits in the map's legend as a collapsed "About <map>" section
