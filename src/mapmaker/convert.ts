@@ -115,6 +115,7 @@ export function atlasToJson(atlas: AtlasDefinition): MapJson {
     ...(legend.join() !== defaultLegend.join() ? { legendOrder: legend } : {}),
     pois: atlas.pois.map((p) => ({ id: p.id, name: p.name, x: p.x, y: p.y, link: { ...p.link } })),
     centrepiece,
+    ...(atlas.about ? { about: { blurb: atlas.about.blurb, facts: (atlas.about.facts ?? []).map((f) => [f[0], f[1]] as [string, string]) } } : {}),
   };
 }
 
@@ -221,6 +222,9 @@ export function jsonToAtlas(m: MapJson): AtlasDefinition {
     pois: m.pois.map((q) => ({ id: q.id, name: q.name, link: { ...q.link }, x: q.x, y: q.y })),
     centrepiece: c ? { regionId: c.id, place: { ...c.place }, label: [...c.label], eyebrow: c.eyebrow, districtHouse: c.districtHouse } : null,
     watermark: m.watermark,
+    ...(m.about?.blurb.trim()
+      ? { about: { blurb: m.about.blurb, ...(m.about.facts.length ? { facts: m.about.facts.map((f) => [f[0], f[1]] as [string, string]) } : {}) } }
+      : {}),
   };
 }
 

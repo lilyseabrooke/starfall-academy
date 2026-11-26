@@ -214,7 +214,9 @@ the right.
 
 ### Phase 4 — Text and metadata authoring
 
-> **Status: built.** Renaming a region id, district or zone rewrites the POI,
+> **Status: built.** Also the map's own "About" blurb and facts (shown as a
+> collapsed section of the legend since v1.25.4; maps without one, like the
+> campus, show nothing). Renaming a region id, district or zone rewrites the POI,
 > special-location and legend references that use it. Ids are committed on
 > blur/Enter so a half-typed id never rewrites references.
 Inspector forms for everything the dossier shows: area name; region name,

@@ -114,6 +114,7 @@ export function blankMap(): MapJson {
     ],
     pois: [],
     centrepiece: null,
+    about: { blurb: "", facts: [] },
   };
 }
 

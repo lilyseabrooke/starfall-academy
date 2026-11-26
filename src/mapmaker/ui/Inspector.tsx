@@ -324,6 +324,22 @@ function MapForm({ doc, edit, onSelect }: { doc: MapJson; edit: EditFn; onSelect
         <Text label="Legend title" value={doc.title} onChange={(v) => edit((d) => { d.title = v; }, "title")} />
         <Text label="Field watermark image" value={doc.watermark} onChange={(v) => edit((d) => { d.watermark = v; }, "wm")} />
       </Section>
+      <Section title="About this map (legend)">
+        <Area label="Blurb (blank line between paragraphs)" value={doc.about?.blurb ?? ""}
+          onChange={(v) => edit((d) => { d.about = { blurb: v, facts: d.about?.facts ?? [] }; }, "aboutb")} />
+        <div className="mm-field">
+          <span className="mm-field__label">Facts</span>
+          {(doc.about?.facts ?? []).map((f, j) => (
+            <div key={j} className="mm-fact">
+              <input value={f[0]} placeholder="Label" onChange={(e) => edit((d) => { d.about!.facts[j][0] = e.target.value; }, "aboutf" + j + "a")} />
+              <input value={f[1]} placeholder="Value" onChange={(e) => edit((d) => { d.about!.facts[j][1] = e.target.value; }, "aboutf" + j + "b")} />
+              <button type="button" className="mm-iconbtn" aria-label="Remove fact" onClick={() => edit((d) => { d.about!.facts.splice(j, 1); })}>×</button>
+            </div>
+          ))}
+          <button type="button" className="mm-btn mm-btn--small" onClick={() => edit((d) => { d.about = { blurb: d.about?.blurb ?? "", facts: [...(d.about?.facts ?? []), ["", ""]] }; })}>Add fact</button>
+        </div>
+        <p className="mm-hint">Shown as a collapsed &ldquo;About {doc.name || "this map"}&rdquo; section in the legend. Leave it empty for none.</p>
+      </Section>
       <Section title="Field and framing">
         <Row>
           <Num label="field w" value={doc.field[0]} onChange={(v) => edit((d) => { d.field[0] = v; }, "fw")} />

@@ -145,6 +145,9 @@ export interface MapJson {
   legendOrder?: string[];
   pois: PoiJson[];
   centrepiece: CentrepieceJson | null;
+  /** "About <map>" in the legend: a blurb for the whole map (paragraphs
+   *  separated by a blank line) and optional facts. Absent or null = none. */
+  about?: { blurb: string; facts: [string, string][] } | null;
 }
 
 export const SUB_TAG_LETTERS = ["A", "B", "C", "D", "E", "F"] as const;
@@ -194,6 +197,14 @@ export function validateMap(input: unknown, shipped?: { regionIds: string[]; dis
   if (m.version !== MAP_FORMAT_VERSION) err("version", `Unsupported version ${JSON.stringify(m.version)} (this tool reads ${MAP_FORMAT_VERSION}).`);
   if (!isStr(m.id) || !/^[a-z][a-z0-9-]*$/.test(m.id)) err("id", "Map id must be a lowercase slug (letters, digits, hyphens), starting with a letter.");
   for (const k of ["name", "eyebrow", "title", "watermark"] as const) if (!isStr(m[k])) err(k, `"${k}" must be text.`);
+  const ab = m.about;
+  if (ab !== undefined && ab !== null) {
+    if (!isObj(ab) || !isStr(ab.blurb)) err("about", "about must be { blurb, facts } or null.");
+    else {
+      if (!Array.isArray(ab.facts) || !ab.facts.every((f) => Array.isArray(f) && f.length === 2 && isStr(f[0]) && isStr(f[1]))) err("about.facts", "facts must be a list of [label, value] pairs.");
+      if (!ab.blurb.trim()) warn("about.blurb", "The map's About section is empty, so the legend won't show it.");
+    }
+  } else if (m.id !== "campus") warn("about", "This map has no About blurb for its legend.");
   if (isStr(m.name) && !m.name.trim()) err("name", "The map needs a name.");
   if (!isPt(m.field) || m.field[0] <= 0 || m.field[1] <= 0) err("field", "Field must be [width, height] with positive numbers.");
   const fit = m.fit;
