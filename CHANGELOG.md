@@ -8,6 +8,13 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.26.1 — 2026-11-26
+- A map's "About" section in the legend now shows the first three lines of
+  its text while collapsed, fading out toward the bottom, so it's clear
+  there's more to read. Clicking the text (or the About bar) opens it in
+  full. Only maps with About text have the section (Santa Lucencia, not the
+  Campus Map).
+
 ## v1.26.0 — 2026-11-26
 - New area map: **Santa Lucencia**, the Lost Mission, with its five regions,
   their zones, the House plaques, an About section, and its own crests. For
