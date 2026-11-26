@@ -230,7 +230,7 @@ export function AtlasStage({
   };
 
   return (
-    <div className="stage" ref={stageRef}>
+    <div className="stage" ref={stageRef} style={{ "--atlas-crest": `url("${atlas.watermark}")` } as React.CSSProperties}>
       <div
         className="canvas" id="canvas" ref={canvasRef}
         onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endDrag} onPointerCancel={endDrag}
@@ -304,7 +304,9 @@ export function AtlasStage({
         </aside>
       ) : (
         <aside className="float legend" id="legend">
-          <div className="legend__head">
+          <div className={"legend__head" + (atlas.crest ? " legend__head--crest" : "")}>
+            {/* eslint-disable-next-line @next/next/no-img-element -- decorative crest art */}
+            {atlas.crest && <img className="legend__crest" src={atlas.crest} alt="" />}
             <div className="legend__eyebrow">{atlas.eyebrow}</div>
             <div className="legend__title">{atlas.title}</div>
           </div>
@@ -359,6 +361,8 @@ export function AtlasStage({
       {(mode === "world" || !citadel) && atlas.about?.blurb && (aboutSheet ? (
         <aside className="dossier about-sheet" data-house="gold" aria-label={"About " + atlas.name}>
           <button type="button" className="dossier__back" onClick={() => setAboutSheet(false)}>‹ &nbsp;{atlas.name}</button>
+          {/* eslint-disable-next-line @next/next/no-img-element -- decorative crest art */}
+          {atlas.crest && <img className="about-sheet__crest" src={atlas.crest} alt="" />}
           <div>
             <div className="dossier__sector">{atlas.eyebrow}</div>
             <h1 className="dossier__name">{atlas.title}</h1>

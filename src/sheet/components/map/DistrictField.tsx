@@ -37,7 +37,9 @@ export interface DistrictFieldProps {
 export function DistrictField({ host, interactive, hoveredIdx, selectedIdx, onHover, onPick, onBackgroundClick, party }: DistrictFieldProps) {
   const norm = React.useMemo(() => (host.cell ? normalizeCellToBox(toPts(host.cell)) : []), [host.cell]);
   const normStr = React.useMemo(() => norm.map((p) => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" "), [norm]);
-  const color = host.hcOverride || "var(--gold-500)";
+  // A district carries its own colour; a region takes its house colour,
+  // which the .submap wrapper sets as --hc-500 from its data-house.
+  const color = host.hcOverride || "var(--hc-500)";
   const subsOn = React.useMemo(() => host.sub.filter((a) => a.on), [host.sub]);
 
   const cells = React.useMemo(() => {
