@@ -1,0 +1,488 @@
+{
+  "format": "starfall-map",
+  "version": 1,
+  "id": "santa-lucencia",
+  "name": "Santa Lucencia",
+  "eyebrow": "LOST MISSION",
+  "title": "SANTA LUCENCIA",
+  "field": [1600, 1200],
+  "fit": {"w": 1480, "h": 1120, "tx": 0, "ty": 0},
+  "outline": [
+    [471, 75],
+    [839, 135],
+    [1096, 141],
+    [1219, 259],
+    [1401, 638],
+    [1290, 902],
+    [952, 1046],
+    [719, 1146],
+    [302, 1123],
+    [112, 945],
+    [147, 428]
+  ],
+  "watermark": "/character-sheet/map/assets/crest-lines.png",
+  "regions": [
+    {
+      "id": "rosa",
+      "name": "Santa Rosa",
+      "house": "Prudencia",
+      "crest": "",
+      "house_color": "plum",
+      "sector": "Region 4",
+      "coord": "",
+      "tagline": "",
+      "blurb": "Filled with small gardens wrapped in ornate wrought-iron fences, Spanish Baroque architecture, stained-glass masterpieces, and beautiful rows of plants that flower all year long, Santa Rosa is the cultural center of the academy, as well as the home of House Prudencia. The region is known for artificy labs and enchanters' forums, as well as for great backdrops for duelbirds.",
+      "facts": [["Features", "Sculpted streams"]],
+      "seed": {"x": 642, "y": 231, "w": 0, "ldx": -37, "ldy": 21},
+      "submap": {
+        "view": [1000, 760],
+        "outline": [
+          [130, 170],
+          [380, 95],
+          [660, 110],
+          [880, 200],
+          [925, 420],
+          [840, 620],
+          [560, 690],
+          [280, 665],
+          [120, 500],
+          [75, 330]
+        ],
+        "subs": [
+          {
+            "x": 450,
+            "y": 534,
+            "w": 0,
+            "on": true,
+            "lx": -74,
+            "ly": -2,
+            "name": "Eversong",
+            "blurb": "The heart of artificy in Santa Lucencia, the south wall alongside Eversong overlooking Paloma and the countryside from up high is lined with artificy labs ranging from small, personal workshops to great halls and symposiums. Students are always showing off their artifacts in the big plazas and common squares of the district. Sometimes in duels. The Guard tries to stop them. Results are mixed.",
+            "generic": null
+          },
+          {
+            "x": 344,
+            "y": 341,
+            "w": 0,
+            "on": true,
+            "lx": 0,
+            "ly": 0,
+            "name": "Castilla River",
+            "blurb": "The home of many well-off staff and faculty, iconic businesses, and some of the greatest wandcrafting studios in the West, Castilla River is nonetheless known for something else: students taking off on the backs of great flying creatures from the scenic overlooks on the west wall, over the manmade river that cascades down the south wall and into Paloma. The mist rising from the waterfall is said to improve the aesthetics, because it looks good when it glints off wyvernscale.",
+            "generic": null
+          },
+          {
+            "x": 670,
+            "y": 250,
+            "w": 0,
+            "on": true,
+            "lx": 41,
+            "ly": 0,
+            "name": "House Prudencia",
+            "blurb": "The House of Santa Lucencia's creators, designers, and dreamers, House Prudencia is set in a breathtaking Spanish Baroque style complex with gardens full of magic plants and enchanted light displays that dance on ornate windows, and the interiors seem to always hold another room you didn't know about before, each with a little surprise to delight you. The Prudencias who call this house home also have a habit of surprising people: constantly lively and unpredictable, their highest virtue is seeing two options and picking a third, better option.",
+            "generic": null
+          },
+          {
+            "x": 667,
+            "y": 492,
+            "w": 0,
+            "on": true,
+            "lx": 5,
+            "ly": -8,
+            "name": "Camino de Rosa",
+            "blurb": "The bridge between the Mission, the administrative center, and the nicer parts of Santa Rosa, Camino de Rosa is, in many ways, the real heart of the Academy. The Mission Hall, the main gathering place for official events, is here, as well as the academy's infirmary. Beautiful class halls and commercial areas line the streets, and some of the greatest enchanters' forums can be found in Camino de Rosa. The roses that line the streets are herbalogical varieties that stay in bloom all year and change colors with the seasons.",
+            "generic": null
+          },
+          {
+            "x": 453,
+            "y": 423,
+            "w": 0,
+            "on": true,
+            "lx": -12,
+            "ly": 5,
+            "name": "Skylark",
+            "blurb": "The Skylark Observatory and its surrounding area is known as the most luxurious and prestigious area of Santa Lucencia, where powerful arcanists from East and West alike travel to the academy and meet in the gilded halls and, frankly, overpriced shops in the area. Many new developments in crystallomancy come from the crystal labs here.",
+            "generic": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "west",
+      "name": "Paloma",
+      "house": "Temperanza",
+      "crest": "",
+      "house_color": "forest",
+      "sector": "Region 5",
+      "coord": "",
+      "tagline": "",
+      "blurb": "Paloma is the home of House Temperanza as well as the gateway to the rest of the world, opening out into wide-open fields. Powerful ley line energies underrun the fields here, drawing in great big creatures that call the plains their home. The rest of the academy stands atop great old monastic walls with Paloma below, and its placement on the ground separates it physically and culturally from the rest of the academy.",
+      "facts": [["Features", "Open skies"]],
+      "seed": {"x": 600, "y": 726, "w": 0, "ldx": 0, "ldy": 0},
+      "submap": {
+        "view": [1000, 760],
+        "outline": [
+          [130, 170],
+          [380, 95],
+          [660, 110],
+          [880, 200],
+          [925, 420],
+          [840, 620],
+          [560, 690],
+          [280, 665],
+          [120, 500],
+          [75, 330]
+        ],
+        "subs": [
+          {
+            "x": 758,
+            "y": 378,
+            "w": 0,
+            "on": true,
+            "lx": 0,
+            "ly": 0,
+            "name": "The Stables",
+            "blurb": "The center of bestiological and draconological study in Santa Lucencia, countless creatures call the Stables their home. The main path into the academy, into Las Calles and up towards the Mission, starts here, and the many Lucencians who have a love for riding great creatures over the plains like to finish their classes, race down Camino Verde and into the Stables, grab their beast friend, and ride them off into the sunset.",
+            "generic": null
+          },
+          {
+            "x": 513,
+            "y": 401,
+            "w": 0,
+            "on": true,
+            "lx": 0,
+            "ly": 0,
+            "name": "Open Fields",
+            "blurb": "One can be forgiven for thinking these open fields are where nothing happens, but in truth, this is the symbol of the academy, for one simple reason: Lucencians have an identity deeply wrapped up in riding big, flying creatures through the open skies here. Official academy athletics involve riding sports, and students' personal love of creature riding leads them recreationally into the sky, whether to race, bond with a creature, socialize with other riders, or just to clear their head in the way you only can at a thousand feet. Wyverns and California's native devilbill are the favorites, but people will ride anything big enough to sit on.",
+            "generic": null
+          },
+          {
+            "x": 655,
+            "y": 228,
+            "w": 0,
+            "on": true,
+            "lx": -2,
+            "ly": 11,
+            "name": "House Temperanza",
+            "blurb": "The home of Santa Lucencia's most practical and pragmatic, Temperanza is set up for the engineers, builders, the transmuters, and the runologists who keep everything running around campus. The house is really a complex of several buildings set in the shadow of the great walls at the foot of the Mission, with dorms woven in among workshops and common areas where a Temperanza is picking up a new hobby. These are the constantly curious, and the ones who like to be a part of a community, with Temperanza especially standing together with other members of the same House against the others, its relative physical separation from the rest of the academy reinforcing its own identity. Temperanzas make the best tacos. Seriously.",
+            "generic": null
+          },
+          {
+            "x": 602,
+            "y": 174,
+            "w": -27,
+            "on": true,
+            "lx": -45,
+            "ly": -15,
+            "name": "The Catacombs",
+            "blurb": "The south wall of Santa Rosa sets it high over Paloma, and the long stairways winding up conceal countless passageways into the deep catacombs that run underneath the academy. A few of them are open to the public and even have classes held here, especially necromancy and demonology techniques. Most of the catacombs are not open to the public. Those are the ones people are really interested in.",
+            "generic": null
+          },
+          {
+            "x": 680,
+            "y": 332,
+            "w": -17,
+            "on": true,
+            "lx": 0,
+            "ly": 0,
+            "name": "The Gardens",
+            "blurb": "The biggest center of herbalist study and practice in Santa Lucencia, the Gardens are lush and dense with magic plants of countless varieties, enough that students can get lost in here for days. Countless Temperanzas harvest materials here and rush them immediately back to a makeshift alchemy lab somewhere in House Temperanza, usually to disastrous results. But they're curious people.",
+            "generic": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "east",
+      "name": "Las Calles",
+      "house": "Justicia",
+      "crest": "",
+      "house_color": "teal",
+      "sector": "Region 3",
+      "coord": "",
+      "tagline": "",
+      "blurb": "The winding streets of Las Calles run in haphazard paths that are easy to get lost in, especially when you start opening doorways you shouldn't and going downstairs in places you don't need to. Densely populated, Las Calles is home to most class halls, magic research centers, and commercial areas, as well as staff and faculties' private residences.",
+      "facts": [["Features", "Terraced hills"]],
+      "seed": {"x": 1204, "y": 661, "w": -46, "ldx": -8, "ldy": 13},
+      "submap": {
+        "view": [1000, 760],
+        "outline": [
+          [130, 170],
+          [380, 95],
+          [660, 110],
+          [880, 200],
+          [925, 420],
+          [840, 620],
+          [560, 690],
+          [280, 665],
+          [120, 500],
+          [75, 330]
+        ],
+        "subs": [
+          {
+            "x": 366,
+            "y": 492,
+            "w": 0,
+            "on": true,
+            "lx": -5,
+            "ly": 34,
+            "name": "Camino Verde",
+            "blurb": "The pathway down to Paloma and out of Santa Lucencia, Camino Verde is a very picturesque boulevard that very quickly turns into shady backstreets as soon as you step off an alley and down a tight, winding stone stairwell. Countless unlicensed business operate in the shadows of Camino Verde, but the main streets are very polished and full of flashy class halls and alchemy labs. The main boulevard is also the academy's longest continuous downward slope and leads out to the plains, which means people like to race down it, sometimes on creatures' backs. The fact that it's practically on the Guard's doorstep is, to these people, only a bonus.",
+            "generic": null
+          },
+          {
+            "x": 462,
+            "y": 295,
+            "w": 0,
+            "on": true,
+            "lx": -11,
+            "ly": 3,
+            "name": "San Oxilo",
+            "blurb": "The main commercial area of Santa Lucencia, San Oxilo is always busy and always has something interesting happening. The Santa Lucencia habit of students keeping magic pets is always obvious here, with a cacophany of strange creatures always greeting you like the district's anthem when you enter. Named for a man sainted without the Church's approval, San Oxilo is consequently an unofficial symbol of Santa Lucencia's independence, and academy festivals are often held here, and the crest is flown everywhere.",
+            "generic": null
+          },
+          {
+            "x": 661,
+            "y": 266,
+            "w": 0,
+            "on": true,
+            "lx": -7,
+            "ly": -44,
+            "name": "House Justicia",
+            "blurb": "Woven in among the winding streets of Las Calles, House Justicia is more sprawling complex than it is a single house, connected by open-air walkways and subterranean common rooms. It reflects the dogged tenacity of its people: a Justicia is never facing ideal circumstances, but they refuse to ever give up, always adapting to their situation, flowing like water to adapt and still find their way to their goal.",
+            "generic": null
+          },
+          {
+            "x": 553,
+            "y": 501,
+            "w": 0,
+            "on": true,
+            "lx": 20,
+            "ly": 0,
+            "name": "The Guard",
+            "blurb": "The Santa Lucencia Guard is the official campus enforcement of the academy, set in a heavy old piece of colonial defensive architecture technically referred to as Castillo but only ever known also as the Guard. In contrast to many other academies' enforcement branches, which are known for a more holistic and community-focused approach to justice, the Guard has a reputation for being strict and punitive, taking Santa Lucencia's reputation as a harsh school as a personal objective.",
+            "generic": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "mission",
+      "name": "The Mission",
+      "house": "Academy Center",
+      "crest": "",
+      "house_color": "gold",
+      "sector": "Region 1",
+      "coord": "",
+      "tagline": "",
+      "blurb": "The Mission is the original missionary complex from the Academy's founding days it was built up around. Perfectly preserved Spanish Colonial architecture lines cobblestone streets filled with palm trees and lush magical plants, centered around the Academy's famous White Tree, one of the world's single most powerful ley line outcroppings. Though the urban complex has extended through the surrounding areas over the years, you can still tell the moment you've crossed into the Mission, because it feels like time has stopped since 1800.",
+      "facts": [["Features", "Monastic center"]],
+      "seed": {"x": 881, "y": 442, "w": -35, "ldx": -28, "ldy": -14},
+      "submap": {
+        "view": [1000, 760],
+        "outline": [
+          [130, 170],
+          [380, 95],
+          [660, 110],
+          [880, 200],
+          [925, 420],
+          [840, 620],
+          [560, 690],
+          [280, 665],
+          [120, 500],
+          [75, 330]
+        ],
+        "subs": [
+          {
+            "x": 460,
+            "y": 183,
+            "w": 0,
+            "on": true,
+            "lx": 0,
+            "ly": 0,
+            "name": "Santa Catarina",
+            "blurb": "Santa Catarina Library and its surrounding buildings are a significant resource of magical scholarship, the center of knowledge for all Santa Lucencia. The library itself is renowned worldwide.",
+            "generic": null
+          },
+          {
+            "x": 629,
+            "y": 352,
+            "w": 0,
+            "on": true,
+            "lx": 0,
+            "ly": 0,
+            "name": "Divina",
+            "blurb": "Divina was a center of celestial magic studies at one time, and with the development of formalized magic education, its grand class halls and arcane labs have transitioned into restoration and divination centers that attract students from all around the world.",
+            "generic": null
+          },
+          {
+            "x": 369,
+            "y": 339,
+            "w": 0,
+            "on": true,
+            "lx": 0,
+            "ly": 0,
+            "name": "Sombra",
+            "blurb": "Sombra is a district that feels closed away from the rest of the academy despite its central location. Once a center for magic that would later be labeled as hexological, Sombra's magic scars manifest in an uneasy feeling in the magic here. Nowadays it's legendary as a center of counterhexological and warding study.",
+            "generic": null
+          },
+          {
+            "x": 467,
+            "y": 473,
+            "w": 0,
+            "on": true,
+            "lx": 0,
+            "ly": 0,
+            "name": "Las Torres",
+            "blurb": "Las Torres climbs up towards the highest point of the academy, Cielo. Its narrow paths are lined by old Spanish walls and watchtowers that were designed as self-contained magic centers, and have stayed that way into the present, where they're used as heavily protected centers for testing and studying demonological and dangerous evocation magic. For reasons unknown, there are a lot of churro vendors here. The best place in arcania to get a churro.",
+            "generic": null
+          },
+          {
+            "x": 570,
+            "y": 566,
+            "w": 0,
+            "on": true,
+            "lx": 0,
+            "ly": 0,
+            "name": "Cielo",
+            "blurb": "The highest point and overlook of the entire academy, Cielo was once home to places of worship that adapted to the modern world as \"cloisters,\" centers for extended hands-on work between students and their professors, researchers, resident arcanists, and other experts, to build larger arcane projects. The old white stucco walls here feel like they're always hiding something more.",
+            "generic": null
+          },
+          {
+            "x": 497,
+            "y": 363,
+            "w": 0,
+            "on": true,
+            "lx": 0,
+            "ly": 0,
+            "name": "The Arbory",
+            "blurb": "The heart of the old mission, the Arbory is the area right around the White Tree and the structure built around it. The class halls and research labs in this area are reserved for the highest echelons: the White Tree is an incredibly powerful ley line outcropping, and casting is heavily controlled in the Arbory. Unauthorized casting here can and will get you in trouble.",
+            "generic": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "misericordia",
+      "name": "Misericordia",
+      "house": "Fortaleza",
+      "crest": "",
+      "house_color": "crimson",
+      "sector": "Region 2",
+      "coord": "",
+      "tagline": "",
+      "blurb": "Misericordia is the home of the modern academy administration, including the Evaluation Committee, which means it's home to the scariest things in Santa Lucencia. House Fortaleza is based here, which doesn't make it less scary. The Spanish Colonial architecture of the Mission extends here, but it feels less ancient and more imposing, with dark, winding back streets lost in dense brush, and the district extends into the wooded area at the northern end.",
+      "facts": [["Features", "Wooded Copses"]],
+      "seed": {"x": 1015, "y": 292, "w": 0, "ldx": 0, "ldy": 0},
+      "submap": {
+        "view": [1000, 760],
+        "outline": [
+          [130, 170],
+          [380, 95],
+          [660, 110],
+          [880, 200],
+          [925, 420],
+          [840, 620],
+          [560, 690],
+          [280, 665],
+          [120, 500],
+          [75, 330]
+        ],
+        "subs": [
+          {
+            "x": 279,
+            "y": 290,
+            "w": 0,
+            "on": true,
+            "lx": 0,
+            "ly": 0,
+            "name": "Pozo de Gracia",
+            "blurb": "The administrative heart of the Academy, Pozo de Gracia feels intimidating even just to walk down its boulevards, where it feels like all the windows have unseen eyes watching you. Final exams aren't enough: finishing a semester means facing the Evaluation Committee here, which is a universally terrifying affair. However, there is a famous karaoke venue here. Balance in all things.",
+            "generic": null
+          },
+          {
+            "x": 539,
+            "y": 208,
+            "w": 0,
+            "on": true,
+            "lx": 0,
+            "ly": 0,
+            "name": "La Fuente",
+            "blurb": "The top of the hilly terrain that dives down into thick scrub beyond, La Fuente is filled with evocation class halls, where the bitter taste of overcasting evocation magic is always heavy in the air. The professors teaching here always have a somber air of intensity, and the buildings reach up to great heights, with heavy, tiered structures where you're always just about to discover a new hidden courtyard on an open-air fifth floor.",
+            "generic": null
+          },
+          {
+            "x": 396,
+            "y": 465,
+            "w": 0,
+            "on": true,
+            "lx": 0,
+            "ly": 0,
+            "name": "Verdad",
+            "blurb": "Verdad is home to the Old Roots Tower, a building that extends as far down as it does up, one of arcania's most venerated research centers. That ethos is visible all across Verdad: practical research that breaks boundaries in magic. The district is known for having a lot of locked doors with a lot of powerful magic and experiments behind them, which means rascals lose their little minds when they come here.",
+            "generic": null
+          },
+          {
+            "x": 625,
+            "y": 404,
+            "w": 0,
+            "on": true,
+            "lx": 0,
+            "ly": 0,
+            "name": "House Fortaleza",
+            "blurb": "The most feared House in Santa Lucencia, House Fortaleza is where you go when you're trying to prove something. The dark, dramatic structure of the House is a testament to its people: people who won't be cowed by anything, people whose presence can make a room go quiet when they walk in, and people who make babies cry just by looking at them.",
+            "generic": null
+          },
+          {
+            "x": 561,
+            "y": 577,
+            "w": 0,
+            "on": true,
+            "lx": 0,
+            "ly": 0,
+            "name": "Carmesi",
+            "blurb": "Carmesi is home to countless magical gardens, with tiered complexes of plants woven in among white stucco walls and small cubbyholes it feels like nobody else knows about, rooms where you feel like the world might forget you. Small dragons are drawn to the magics here, and draconewts build their little hoards in the most tucked-away rooms here, and steelnoses lurk in the ventilation shafts of the deepest places.",
+            "generic": null
+          }
+        ]
+      }
+    }
+  ],
+  "pois": [
+    {
+      "id": "poi",
+      "name": "House Prudencia",
+      "x": 694,
+      "y": 176,
+      "link": {"region": "rosa", "zone": "House Prudencia"}
+    },
+    {
+      "id": "poi-2",
+      "name": "House Temperanza",
+      "x": 692,
+      "y": 623,
+      "link": {"region": "west", "zone": "House Temperanza"}
+    },
+    {
+      "id": "poi-3",
+      "name": "House Fortaleza",
+      "x": 1162,
+      "y": 337,
+      "link": {"region": "misericordia", "zone": "House Fortaleza"}
+    },
+    {
+      "id": "poi-4",
+      "name": "House Justicia",
+      "x": 1299,
+      "y": 546,
+      "link": {"region": "east", "zone": "House Justicia"}
+    },
+    {"id": "poi-5", "name": "The Guard", "x": 1244, "y": 847, "link": {"region": "east", "zone": "The Guard"}}
+  ],
+  "centrepiece": null,
+  "legendOrder": ["mission", "misericordia", "east", "rosa", "west"],
+  "about": {
+    "blurb": "The symbol of West Coast magic in North America, Academy of Santa Lucencia is renowned for putting you through your paces.\n\nAn intense academy that produces highly-skilled and highly sought-after arcanists, Santa Lucencia holds onto its strict Spanish Catholic heritage, built around the original Spanish mission that was established around its legendary ley line outcropping the White Tree.\n\nSmaller than its east-coast cousin Starfall, Santa Lucencia has a close-knit character where everyone is competing with everyone else in its grounds. Its mission winds in tight back paths where it's easy to get lost in the subtropical foliage, and promises of powerful magic seem to be lurking behind old stucco walls.\n\nStudents here love to ride giant creatures, taking to the wide-open California skies. This is sometimes to the dismay of the wineries that aren't too far from campus.",
+    "facts": []
+  }
+}
