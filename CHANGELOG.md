@@ -8,7 +8,7 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
-## v1.27.0 — 2026-11-26
+## v1.26.1 — 2026-11-26
 - The map page (`/map`) now has a map selector: a pill at the top centre
   that switches between the Starfall Academy campus and Santa Lucencia. The
   chosen map is kept in the address (`?area=santa-lucencia`), so it can be
