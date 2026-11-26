@@ -331,13 +331,29 @@ viewToggleEl.addEventListener("click", e => {
 /* ===========================================================================
    Data loading
    =========================================================================== */
+/* The published Spells CSV has no header row (its first line is already a
+   spell), so header:true would swallow the first spell as column names and
+   every row would then lack NAME/ID. Parse it headerless and apply these
+   column names instead (same order as the sheet; matches the in-app drawer). */
+const HEADERLESS_COLUMNS = {
+  "Spells": ["NAME","LEVEL","DC","SUBJECT","STAT","RITUAL","VOLATILE","DESCRIPTION","HIGHER-LEVEL BEHAVIOR","ID"]
+};
+
 function loadSheet(name){
   showState("loading");
+  const fixedCols = HEADERLESS_COLUMNS[name];
   Papa.parse(sheets[name], {
     download: true,
-    header: true,
+    header: !fixedCols,
     complete: results => {
-      currentData = (results.data || []).filter(r => r && r.ID && (r.NAME || "").trim());
+      let rows = results.data || [];
+      if (fixedCols){
+        // If the sheet owner adds a real header row later, drop it.
+        rows = rows
+          .filter(r => r && r.length > 1 && String(r[0] || "").trim().toUpperCase() !== "NAME")
+          .map(r => { const o = {}; fixedCols.forEach((c, i) => { o[c] = r[i] == null ? "" : r[i]; }); return o; });
+      }
+      currentData = rows.filter(r => r && r.ID && (r.NAME || "").trim());
       if (!currentData.length){ showState("empty"); return; }
       renderFilters(name);
       setupFilterListeners();
