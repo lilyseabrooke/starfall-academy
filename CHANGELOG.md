@@ -12,6 +12,9 @@ when these shipped.
 - Casting a spell now spends Action Points automatically: 1 for Basic, 2 for
   Standard, 3 for Advanced, 4 for Legendary, and a Hex's listed AP. Enchanting
   a spell spends the same amount. AP never drops below 0.
+- Clicking a skill's or magic subject's improvement button now opens the
+  regular roll prompt instead of the centered "just narrowly" modal; that modal
+  still appears when a DC tie triggers the improvement roll automatically.
 
 ## v1.26.1 — 2026-11-26
 - The map page (`/map`) now has a map selector: a pill at the top centre
