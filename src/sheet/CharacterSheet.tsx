@@ -1399,6 +1399,11 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       onResult: (r) => { if (r.pass) { setSpellDays(sp.id, (sp.days || 0) - 1); if ((sp.days || 0) - 1 <= 0) toast(sp.name + " — fully learned."); } maybeImproveOnTie(r, subjectTarget(sp.subjectKey)); },
     }, e.currentTarget as HTMLElement);
   };
+  // Casting or enchanting always spends AP: 1 Basic / 2 Standard / 3 Advanced / 4 Legendary; Hexes list their own.
+  const spendSpellAp = (lvlKey: string, hexAp: number) => {
+    const apCost = lvlKey === "basic" ? 1 : lvlKey === "standard" ? 2 : lvlKey === "advanced" ? 3 : lvlKey === "legendary" ? 4 : hexAp;
+    if (apCost > 0) setC((prev) => ({ ...prev, actionPoints: Math.max(0, prev.actionPoints - apCost) }));
+  };
   const onRollSpell = (sp: Spell, e: { currentTarget: Element }) => {
     const hasHL = !hlbIsNA(sp.higherLevel);
     const hl = hasHL ? ((deg: number, ok: boolean) => (ok ? hlbResolveText(sp.higherLevel, deg) || "" : "Sparked out—the spell fails without a cast.")) : null;
@@ -1422,9 +1427,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
         toast(msg);
       },
       onResult: (r) => {
-        // Casting always spends AP: 1 Basic / 2 Standard / 3 Advanced / 4 Legendary; Hexes list their own.
-        const apCost = lvlKey === "basic" ? 1 : lvlKey === "standard" ? 2 : lvlKey === "advanced" ? 3 : lvlKey === "legendary" ? 4 : ap;
-        if (apCost > 0) setC((prev) => ({ ...prev, actionPoints: Math.max(0, prev.actionPoints - apCost) }));
+        spendSpellAp(lvlKey, ap);
         maybeImproveOnTie(r, subjectTarget(sp.subjectKey));
       },
     }, e.currentTarget as HTMLElement);
@@ -1458,7 +1461,10 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
         }
         toast(msg);
       },
-      onResult: (r) => maybeImproveOnTie(r, subjectTarget("enchantment")),
+      onResult: (r) => {
+        spendSpellAp(lvlKey, ap);
+        maybeImproveOnTie(r, subjectTarget("enchantment"));
+      },
     }, e.currentTarget as HTMLElement);
   };
 
