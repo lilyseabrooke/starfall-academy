@@ -23,13 +23,18 @@ export interface BackfireResistProps {
   roll: ResistRoll | null;
   conditions: Condition[];
   facRank: (name: string) => number;
-  onResist: (opts: { condition: Condition; dc: number | null; mod: number }) => void;
+  onResist: (opts: { condition: Condition; dc: number | null; mod: number; situational: number }) => void;
   onClose: () => void;
 }
 
 export function BackfireResist({ open, roll, conditions, facRank, onResist, onClose }: BackfireResistProps) {
   const [cond, setCond] = React.useState("");
   const [dc, setDc] = React.useState("");
+  const [sit, setSit] = React.useState("0");
+  // Start every new save at +0: reset during render when the roll changes (or clears).
+  const rollId = roll ? roll.id : null;
+  const [sitFor, setSitFor] = React.useState(rollId);
+  if (sitFor !== rollId) { setSitFor(rollId); setSit("0"); }
   const rcfg = (roll && roll.resist) || null;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   React.useEffect(() => {
@@ -49,11 +54,14 @@ export function BackfireResist({ open, roll, conditions, facRank, onResist, onCl
   if (!roll) return null;
   const condObj = conditions.find((c) => c.id === cond) || null;
   const mod = condObj ? facRank(condObj.resist) : 0;
+  const sitNum = parseInt(sit, 10) || 0;
+  const bumpSit = (d: number) => setSit((v) => String(Math.max(-20, Math.min(20, (parseInt(v || "0", 10) || 0) + d))));
+  const signed = (n: number) => (n >= 0 ? "+" : "−") + Math.abs(n);
   const cast = roll.pass;
   const isEnchant = roll.kind === "enchant";
   const resist = () => {
     if (!condObj) return;
-    onResist({ condition: condObj, dc: dc === "" ? null : parseInt(dc, 10), mod });
+    onResist({ condition: condObj, dc: dc === "" ? null : parseInt(dc, 10), mod, situational: sitNum });
     onClose();
   };
   const condOptions = [{ value: "", label: "Select condition…" }, ...conditions.map((c) => ({ value: c.id, label: c.name }))];
@@ -89,7 +97,17 @@ export function BackfireResist({ open, roll, conditions, facRank, onResist, onCl
             <Select label="Condition to resist" options={condOptions} value={cond} onChange={(e) => setCond(e.target.value)} />
             <Input label="Save DC" type="number" placeholder="—" value={dc} onChange={(e) => setDc(e.target.value)} />
           </div>
-          <p className="sf-modal__hint"><Icon name="info" /> {condObj ? <React.Fragment>This save rolls {condObj.resist} ({mod >= 0 ? "+" : "−"}{Math.abs(mod)}).</React.Fragment> : "Choose which condition this save resists."}</p>
+
+          <div className="sf-prompt__field">
+            <span className="sf-prompt__flabel">Situational modifier</span>
+            <div className="sf-prompt__row">
+              <button type="button" className="sf-step" tabIndex={-1} onClick={() => bumpSit(-1)}>−</button>
+              <input className="sf-prompt__num" type="number" inputMode="numeric" value={sit} placeholder="0" onChange={(e) => setSit(e.target.value)} />
+              <button type="button" className="sf-step" tabIndex={-1} onClick={() => bumpSit(1)}>+</button>
+              <span className="sf-prompt__sithint">applied to this roll only</span>
+            </div>
+          </div>
+          <p className="sf-modal__hint"><Icon name="info" /> {condObj ? <React.Fragment>This save rolls {condObj.resist} ({signed(mod)}{sitNum ? ", " + signed(sitNum) + " situational" : ""}).</React.Fragment> : "Choose which condition this save resists."}</p>
         </div>
         <div className="sf-modal__foot">
           <Button variant="ghost" onClick={onClose}>Shrug it off</Button>

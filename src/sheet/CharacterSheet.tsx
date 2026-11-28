@@ -737,7 +737,7 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conditions]);
 
-  const handleResist = (args: { condition: Condition; dc: number | null; mod: number }) => {
+  const handleResist = (args: { condition: Condition; dc: number | null; mod: number; situational?: number }) => {
     onResist(args);
     forcedResistRef.current = null;
   };
@@ -1353,12 +1353,12 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
       onResult: (r) => maybeImproveOnTie(r, "kind" in opt && opt.kind === "subject" ? subjectTarget(opt.subjectKey) : skillTarget(opt.skill)),
     }, e.currentTarget as HTMLElement);
   };
-  const onArtifactResist = () => {
+  const onArtifactResist = (situational: number = 0) => {
     if (!artifactResistRoll) return;
     const ar = artifactResistRoll as Roll;
     const dc = artifactBackfireDC(ar.artifactLevel, ar.artifactCost);
     const mod = effFacRank("Creativity") + subRank("artificy");
-    const made = pushRoll({ who: meWho(), label: "Artificy save · " + ar.label, kind: "artificy", stat: "Creativity", mod, dc, meta: ["Artificy", "Artifact backfire"], crit: "resist" });
+    const made = pushRoll({ who: meWho(), label: "Artificy save · " + ar.label, kind: "artificy", stat: "Creativity", mod, situational, dc, meta: ["Artificy", "Artifact backfire"], crit: "resist" });
     maybeImproveOnTie(made, subjectTarget("artificy"));
     if (made && !made.pass) {
       const artId = ar.artifactId;
