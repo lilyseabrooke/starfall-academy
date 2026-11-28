@@ -1475,42 +1475,43 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
   const bumpSubjectRank = (schoolId: string, subKey: string) => setSchools((prev) => prev.map((sc) => (sc.id === schoolId ? { ...sc, subjects: sc.subjects.map((s) => (s.key === subKey ? { ...s, rank: s.rank + 1 } : s)) } : sc)));
 
   const improveCrit = (statName: string) => ({ success: { on: "ten" as const, forces: true, label: "Breakthrough", text: "A natural 10 — the lesson lifts your " + statName + " itself by a rank." } });
-  // Both improvement rolls below are always auto-triggered by a DC tie —
-  // nobody clicks a button to open them — so they always render as the
-  // centered modal (see RollPrompt's `centered` branch), never the anchored
-  // popover a real button click would otherwise position.
-  const onImproveSkill = (fac: Stat, sk: RollSkill & { rank: number }) => {
+  // Improvement rolls auto-triggered by a DC tie (no click event) render as the
+  // centered "just narrowly" modal (see RollPrompt's `centered` branch). When the
+  // player clicks the improve button themselves, `e` is passed and they get the
+  // regular anchored roll prompt instead.
+  const improveOpts = (e?: React.MouseEvent) => (e ? {} : { centered: true as const });
+  const onImproveSkill = (fac: Stat, sk: RollSkill & { rank: number }, e?: React.MouseEvent) => {
     const dc = 10 + sk.rank;
     openPrompt({
       who: meWho(), label: sk.name, kind: "improve", stat: fac.name, mod: effFacRank(fac.name) + rollBonusFor("improve", sk.id), dc,
       meta: ["Improvement", "DC 10 + " + sk.rank + " rank" + (sk.rank === 1 ? "" : "s")],
-      crit: improveCrit(fac.name), centered: true,
+      crit: improveCrit(fac.name), ...improveOpts(e),
       dosMod: dosShiftFor((b) => b.type === "improve" && (!b.target || b.target === sk.id)),
       condBonuses: catCond("improve", sk.id),
-      detail: "Sparked it, just narrowly. Your skills improve from pushing them to their limits. Roll " + fac.name + " to improve your " + sk.name + ", or boost " + fac.name + " on a critical success.",
+      detail: e ? undefined : "Sparked it, just narrowly. Your skills improve from pushing them to their limits. Roll " + fac.name + " to improve your " + sk.name + ", or boost " + fac.name + " on a critical success.",
       fail: "The lesson eludes you — no progress this time.",
       onResult: (r) => {
         if (r.crit && r.crit.kind === "success") { bumpStatById(fac.id); toast(fac.name + " rises to rank " + (fac.rank + 1) + " · +1 Rank Point"); grantRp(1); }
         else if (r.pass && sk.id) { bumpSkillRank(fac.id, sk.id); toast(sk.name + " deepens to rank " + (sk.rank + 1) + " · +1 Rank Point"); grantRp(1); }
       },
-    });
+ }, e && (e.currentTarget as HTMLElement));
   };
-  const onImproveSubject = (school: MagicSchool, sub: RollSubject) => {
+  const onImproveSubject = (school: MagicSchool, sub: RollSubject, e?: React.MouseEvent) => {
     const fr = facRank(sub.stat);
     const dc = 10 + sub.rank;
     openPrompt({
       who: meWho(), label: sub.name, kind: "improve", stat: sub.stat, mod: effFacRank(sub.stat) + rollBonusFor("improve", sub.key), dc,
       meta: [school.name.replace(" Magics", ""), "Improvement", "DC 10 + " + sub.rank + " rank" + (sub.rank === 1 ? "" : "s")],
-      crit: improveCrit(sub.stat), centered: true,
+      crit: improveCrit(sub.stat), ...improveOpts(e),
       dosMod: dosShiftFor((b) => b.type === "improve" && (!b.target || b.target === sub.key)),
       condBonuses: catCond("improve", sub.key),
-      detail: "Sparked it, just narrowly. Your skills improve from pushing them to their limits. Roll " + sub.stat + " to improve your " + sub.name + ", or boost " + sub.stat + " on a critical success.",
+      detail: e ? undefined : "Sparked it, just narrowly. Your skills improve from pushing them to their limits. Roll " + sub.stat + " to improve your " + sub.name + ", or boost " + sub.stat + " on a critical success.",
       fail: "The field resists you — no progress this time.",
       onResult: (r) => {
         if (r.crit && r.crit.kind === "success") { bumpStatByName(sub.stat); toast(sub.stat + " rises to rank " + (fr + 1) + " · +1 Rank Point"); grantRp(1); }
         else if (r.pass) { bumpSubjectRank(school.id, sub.key); toast(sub.name + " deepens to rank " + (sub.rank + 1) + " · +1 Rank Point"); grantRp(1); }
       },
-    });
+ }, e && (e.currentTarget as HTMLElement));
   };
 
   const titleMap: Record<string, string> = { overview: "Overview", classes: "Classes", magic: "Magic", inventory: "Inventory", journal: "Journal", map: "Map" };
