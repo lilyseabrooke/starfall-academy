@@ -240,7 +240,7 @@ export function useRollState(data: RollStateData, activeChar: string, options: R
   const closeResist = () => setResistRoll(null);
   const closeArtifactResist = () => setArtifactResistRoll(null);
 
-  const onResist = ({ condition, dc, mod }: { condition: Condition; dc: number | null; mod: number }) => {
+  const onResist = ({ condition, dc, mod, situational }: { condition: Condition; dc: number | null; mod: number; situational?: number }) => {
     const rr = resistRoll as Roll | null;
     const meta = rr && rr.resist ? [rr.resist.eyebrow || "Resist"] : ["Backfire recoil"];
     return pushRoll({
@@ -249,6 +249,7 @@ export function useRollState(data: RollStateData, activeChar: string, options: R
       kind: "resist",
       stat: condition.resist,
       mod,
+      situational: situational || 0,
       dc,
       meta,
       resist: { condition: condition.id },
@@ -266,8 +267,8 @@ export function useRollState(data: RollStateData, activeChar: string, options: R
       resist: {
         condition: conditionId,
         eyebrow: "Game Master",
-        heading: "A save is called for",
-        verdict: "The Game Master calls for a save — roll to resist.",
+        heading: "Resist",
+        verdict: "The Game Master is forcing you to Resist. Roll against the Game Master's chosen Condition.",
       },
     });
   };
