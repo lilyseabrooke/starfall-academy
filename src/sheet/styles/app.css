@@ -1792,3 +1792,20 @@
   background: color-mix(in oklab, var(--forest-500) 16%, var(--ink-800));
   border-color: var(--forest-500);
 }
+
+/* ---- Artifact backfire: save summary + condition change ---------------- */
+.sf-sheet .sf-bf-stats { display: grid; grid-template-columns: 1.3fr 1fr 1fr; margin: 0; background: var(--ink-950); border: 1px solid var(--hairline); border-radius: var(--radius-sm); }
+.sf-sheet .sf-bf-stats__cell { display: flex; flex-direction: column; gap: 4px; padding: 10px 14px; min-width: 0; }
+.sf-sheet .sf-bf-stats__cell + .sf-bf-stats__cell { border-left: 1px solid var(--hairline); }
+.sf-sheet .sf-bf-stats dt { font-family: var(--font-sans); font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: var(--tracking-wider, .14em); color: var(--text-faint); }
+.sf-sheet .sf-bf-stats dd { margin: 0; font-family: var(--font-sans); font-size: var(--text-md, 15px); font-weight: 500; color: var(--text-strong); }
+.sf-sheet .sf-bf-stats dd span { font-size: 11px; font-weight: 400; letter-spacing: var(--tracking-wide); color: var(--text-faint); }
+.sf-sheet .sf-bf-stats__cell--mod dd { color: var(--gold-200); }
+.sf-sheet .sf-bf-cond { display: flex; align-items: center; gap: var(--space-2); padding: 9px 14px; border-radius: var(--radius-sm); background: color-mix(in oklab, var(--crimson-500) 8%, var(--ink-950)); border: 1px solid color-mix(in oklab, var(--crimson-500) 28%, transparent); font-family: var(--font-sans); font-size: var(--text-sm); }
+.sf-sheet .sf-bf-cond > svg { width: 16px; height: 16px; flex: none; color: var(--crimson-300); }
+.sf-sheet .sf-bf-cond__label { color: var(--text-body); letter-spacing: var(--tracking-wide); }
+.sf-sheet .sf-bf-cond__flow { display: inline-flex; align-items: center; gap: 7px; margin-left: auto; }
+.sf-sheet .sf-bf-cond__flow b { font-weight: 500; color: var(--text-muted); }
+.sf-sheet .sf-bf-cond__flow b.is-next { color: var(--crimson-300); }
+.sf-sheet .sf-bf-cond__flow svg { width: 14px; height: 14px; color: var(--text-faint); }
+.sf-sheet .sf-bf-cond__note { font-size: 11px; color: var(--text-faint); letter-spacing: var(--tracking-wide); }

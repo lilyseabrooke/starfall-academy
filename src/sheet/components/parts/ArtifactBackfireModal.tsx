@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Button, IconButton } from "@/ds";
+import { Button, IconButton, Input } from "@/ds";
 import { Icon } from "../Icon";
 import { artifactBackfireDC } from "../../data/roll-engine";
 import type { Roll } from "../../types";
@@ -16,19 +16,18 @@ export interface ArtifactBackfireModalProps {
 }
 
 export function ArtifactBackfireModal({ open, roll, effFacRank, subRank, onRoll, onClose }: ArtifactBackfireModalProps) {
-  const [sit, setSit] = React.useState("0");
+  const [sit, setSit] = React.useState("");
   // Start every new save at +0: reset during render when the roll changes (or clears).
   const rollId = roll ? roll.id : null;
   const [sitFor, setSitFor] = React.useState(rollId);
-  if (sitFor !== rollId) { setSitFor(rollId); setSit("0"); }
+  if (sitFor !== rollId) { setSitFor(rollId); setSit(""); }
   if (!roll) return null;
   const level = roll.artifactLevel || "Basic";
   const cost = roll.artifactCost || 0;
   const curCond = roll.artifactCondition || "stable";
   const dc = artifactBackfireDC(level, cost);
   const mod = (effFacRank ? effFacRank("Creativity") : 0) + (subRank ? subRank("artificy") : 0);
-  const sitNum = parseInt(sit, 10) || 0;
-  const bumpSit = (d: number) => setSit((v) => String(Math.max(-20, Math.min(20, (parseInt(v || "0", 10) || 0) + d))));
+  const sitNum = Math.max(-20, Math.min(20, parseInt(sit, 10) || 0));
   const total = mod + sitNum;
   const nextCond = curCond === "stable" ? "Damaged" : "Broken";
   const moveLanded = roll.pass === true;
@@ -55,21 +54,18 @@ export function ArtifactBackfireModal({ open, roll, effFacRank, subRank, onRoll,
                 : "Sparked out! The " + artName + " overloads and blows your magic out. Roll Artificy, DC" + dc + " to keep it from becoming " + nextCond + "."}
             </span>
           </p>
-          <div className="sf-re__chips" style={{ marginBottom: "var(--space-3)" }}>
-            <span className="sf-chip"><b>Stat</b> Creativity · Artificy</span>
-            <span className="sf-chip"><b>DC</b> {dc} · {level}</span>
-            <span className="sf-chip"><b>Modifier</b> {total >= 0 ? "+" : "−"}{Math.abs(total)}</span>
-            <span className="sf-chip"><Icon name={curCond === "stable" ? "shield" : "shield-alert"} /> {curCond.charAt(0).toUpperCase() + curCond.slice(1)} → {nextCond}</span>
+          <dl className="sf-bf-stats">
+            <div className="sf-bf-stats__cell"><dt>Save</dt><dd>Creativity <span>· Artificy</span></dd></div>
+            <div className="sf-bf-stats__cell"><dt>DC</dt><dd>{dc} <span>· {level}</span></dd></div>
+            <div className="sf-bf-stats__cell sf-bf-stats__cell--mod"><dt>Modifier</dt><dd>{total >= 0 ? "+" : "−"}{Math.abs(total)}{sitNum ? <span> · base {mod >= 0 ? "+" : "−"}{Math.abs(mod)}</span> : null}</dd></div>
+          </dl>
+          <div className="sf-bf-cond">
+            <Icon name={curCond === "stable" ? "shield" : "shield-alert"} />
+            <span className="sf-bf-cond__label">Artifact condition</span>
+            <span className="sf-bf-cond__flow"><b>{curCond.charAt(0).toUpperCase() + curCond.slice(1)}</b><Icon name="arrow-right" /><b className="is-next">{nextCond}</b></span>
+            <span className="sf-bf-cond__note">on a failed save</span>
           </div>
-          <div className="sf-prompt__field">
-            <span className="sf-prompt__flabel">Situational modifier</span>
-            <div className="sf-prompt__row">
-              <button type="button" className="sf-step" tabIndex={-1} onClick={() => bumpSit(-1)}>−</button>
-              <input className="sf-prompt__num" type="number" inputMode="numeric" value={sit} placeholder="0" onChange={(e) => setSit(e.target.value)} />
-              <button type="button" className="sf-step" tabIndex={-1} onClick={() => bumpSit(1)}>+</button>
-              <span className="sf-prompt__sithint">applied to this roll only</span>
-            </div>
-          </div>
+          <Input className="sf-no-spin" label="Situational modifier" type="number" inputMode="numeric" placeholder="0" hint="Applied to this roll only" value={sit} onChange={(e) => setSit(e.target.value)} />
         </div>
         <div className="sf-modal__foot">
           <Button variant="ghost" onClick={onClose}>Shrug it off</Button>
