@@ -8,6 +8,11 @@ commit-by-commit; v1.0.0 onward is rebuilt from git + Vercel deployment
 history, since the practice of bumping a version number didn't exist yet
 when these shipped.
 
+## v1.27.0 — 2026-11-28
+- Casting a spell now spends Action Points automatically: 1 for Basic, 2 for
+  Standard, 3 for Advanced, 4 for Legendary, and a Hex's listed AP. Enchanting
+  a spell spends the same amount. AP never drops below 0.
+
 ## v1.26.1 — 2026-11-26
 - The map page (`/map`) now has a map selector: a pill at the top centre
   that switches between the Starfall Academy campus and Santa Lucencia. The
