@@ -1421,7 +1421,12 @@ export function CharacterSheet({ mode, id, initialSheet, initialUpdatedAt, roste
         }
         toast(msg);
       },
-      onResult: (r) => maybeImproveOnTie(r, subjectTarget(sp.subjectKey)),
+      onResult: (r) => {
+        // Casting always spends AP: 1 Basic / 2 Standard / 3 Advanced / 4 Legendary; Hexes list their own.
+        const apCost = lvlKey === "basic" ? 1 : lvlKey === "standard" ? 2 : lvlKey === "advanced" ? 3 : lvlKey === "legendary" ? 4 : ap;
+        if (apCost > 0) setC((prev) => ({ ...prev, actionPoints: Math.max(0, prev.actionPoints - apCost) }));
+        maybeImproveOnTie(r, subjectTarget(sp.subjectKey));
+      },
     }, e.currentTarget as HTMLElement);
   };
   const onEnchantSpell = (sp: Spell, e: { currentTarget: Element }) => {
