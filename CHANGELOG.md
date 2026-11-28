@@ -15,6 +15,10 @@ when these shipped.
 - Clicking a skill's or magic subject's improvement button now opens the
   regular roll prompt instead of the centered "just narrowly" modal; that modal
   still appears when a DC tie triggers the improvement roll automatically.
+- The Resist and Artifact Backfire modals now have a Situational modifier
+  field, applied to that save only. Both modals got a visual pass (a save
+  summary strip and condition-change row on Artifact Backfire), and the
+  GM-forced Resist modal now reads "Resist" with clearer help text.
 
 ## v1.26.1 — 2026-11-26
 - The map page (`/map`) now has a map selector: a pill at the top centre
